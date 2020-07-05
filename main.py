@@ -151,7 +151,7 @@ def load_map(coord):
 
 
 # Open GPX-File with the way-points
-gpx_file = open('murgseentourtag2.gpx', 'r')
+gpx_file = open('tourjuly2020sp1day.gpx', 'r')
 gpx = gpxpy.parse(gpx_file)
 
 start_time = datetime(year=2020, month=8, day=10, hour=10, minute=00)
