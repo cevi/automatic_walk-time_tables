@@ -15,7 +15,7 @@ from transformation import GPSConverter
 
 
 # creates a plot of the raw data points overlayed with the calculated way points
-def create_plot(raw_data_points, way_points, file_name):
+def create_plot(raw_data_points, way_points, temp_points, file_name):
     # plot heights of exported data from SchweizMobil
     distances, heights = prepare_for_plot(raw_data_points)
     plt.plot(distances, heights, label='Wanderweg')
@@ -25,6 +25,7 @@ def create_plot(raw_data_points, way_points, file_name):
     plt.ylim(ymax=max(heights) + additional_space, ymin=min(heights) - additional_space)
 
     # add way_points to plot
+   # plt.scatter([dist[0] for dist in temp_points], [height[1].elevation for height in temp_points], c='gray', )
     plt.scatter([dist[0] for dist in way_points], [height[1].elevation for height in way_points], c='orange', )
     plt.plot([dist[0] for dist in way_points], [height[1].elevation for height in way_points],
              label='Marschzeittabelle')
@@ -150,7 +151,7 @@ def load_map(coord):
 
 
 # Open GPX-File with the way-points
-gpx_file = open('hikesommerlager2020tag2.gpx', 'r')
+gpx_file = open('murgseentourtag2.gpx', 'r')
 gpx = gpxpy.parse(gpx_file)
 
 start_time = datetime(year=2020, month=8, day=10, hour=10, minute=00)
@@ -160,10 +161,10 @@ name = gpx.tracks[0].name
 
 # calc Points for walk table
 total_distance, temp_points, way_points_walk_table = find_points(gpx)
-create_plot(gpx, way_points_walk_table, file_name=name + '.png')
+create_plot(gpx, way_points_walk_table, temp_points, file_name=name + '.png')
 
 create_walk_table(start_time, 4.2)
 
 # load map
-# for point in way_points_walk_table:
-    # load_map(point[1])
+for point in way_points_walk_table:
+    load_map(point[1])

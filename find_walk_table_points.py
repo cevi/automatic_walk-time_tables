@@ -49,31 +49,44 @@ def find_points(gpx):
             way_points_walk_table.append((total_distance, segment.points[len(segment.points) - 1]))
 
     # remove points
-    current_point = None
     final_way_points_walk_table = [way_points_walk_table[0]]
-    max_heights_delta = max([h.elevation for h in segment.points]) - min([h.elevation for h in segment.points])
+    old_index = 0
 
-    for next_point in way_points_walk_table:
+    for i, point in enumerate(way_points_walk_table):
 
-        if current_point is not None:
+        old_point = final_way_points_walk_table[len(final_way_points_walk_table) - 1]
 
-            old_point = final_way_points_walk_table[len(final_way_points_walk_table) - 1]
+        if old_point == point:
+            continue
 
-            x1, y1 = old_point[0], old_point[1].elevation
-            x2, y2 = next_point[0], next_point[1].elevation
+        x1, y1 = old_point[0], old_point[1].elevation
+        x2, y2 = point[0], point[1].elevation
 
-            m = (y1 - y2) / (x1 - x2)
-            b = (x1 * y2 - x2 * y1) / (x1 - x2)
+        m = (y1 - y2) / (x1 - x2)
+        b = (x1 * y2 - x2 * y1) / (x1 - x2)
 
-            diff = abs(m * current_point[0] + b - current_point[1].elevation)
+        diff = 0
+        for j in range(old_index, i):
+            diff += abs(m * way_points_walk_table[j][0] + b - way_points_walk_table[j][1].elevation)
 
-            if diff > min(max_heights_delta * 0.05, 25):
-                final_way_points_walk_table.append(current_point)
+        diff /= float(i - old_index)
 
-            if (current_point[0] - old_point[0]) > 1:
-                final_way_points_walk_table.append(current_point)
+        if diff > 15 or point[0] - old_point[0] > 1.5:
 
-        current_point = next_point
+            new_index = int(old_index + 2.0 / 3.0 * (i - old_index))
+            new_point = way_points_walk_table[new_index]
+
+            if new_point[0] - old_point[0] > 0.25:
+                final_way_points_walk_table.append(new_point)
+
+            else:
+                new_index = int(old_index + 1.0 / 2.0 * (i - old_index))
+                new_point = way_points_walk_table[new_index]
+                final_way_points_walk_table.remove(old_point)
+                final_way_points_walk_table.append(new_point)
+
+            old_index = new_index
+
     final_way_points_walk_table.append(way_points_walk_table[len(way_points_walk_table) - 1])
 
     print('Anzahl Punkte: ' + str(len(final_way_points_walk_table)))
