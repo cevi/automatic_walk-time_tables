@@ -93,27 +93,36 @@ def find_points(gpx):
 
     final_way_points_walk_table.append(way_points_walk_table[len(way_points_walk_table) - 1])
 
-
     # check for points on one line
     old_point = None
     current_point = None
+    removedAPoint = True
 
-    for next_point in final_way_points_walk_table:
+    deviation = 0
 
-        if old_point is not None:
+    while removedAPoint or len(final_way_points_walk_table) > 30:
 
-            x1, y1 = old_point[0], old_point[1].elevation
-            x2, y2 = next_point[0], next_point[1].elevation
+        if not removedAPoint:
+            deviation += 5
 
-            m = (y1 - y2) / (x1 - x2)
-            b = (x1 * y2 - x2 * y1) / (x1 - x2)
+        removedAPoint = False
 
-            if abs(m * current_point[0] + b - current_point[1].elevation) < 12:
-                final_way_points_walk_table.remove(current_point)
+        for next_point in final_way_points_walk_table:
 
-        old_point = current_point
-        current_point = next_point
+            if old_point is not None:
 
+                x1, y1 = old_point[0], old_point[1].elevation
+                x2, y2 = next_point[0], next_point[1].elevation
+
+                m = (y1 - y2) / (x1 - x2)
+                b = (x1 * y2 - x2 * y1) / (x1 - x2)
+
+                if abs(m * current_point[0] + b - current_point[1].elevation) < deviation:
+                    final_way_points_walk_table.remove(current_point)
+                    removedAPoint = True
+
+            old_point = current_point
+            current_point = next_point
 
     print('Anzahl Punkte: ' + str(len(final_way_points_walk_table)))
 

@@ -86,7 +86,7 @@ def create_walk_table(time_stamp, speed):
     print()
 
 
-def load_map(coord):
+def load_map(coord, index):
     # convert Coordinates to LV03
     converter = GPSConverter()
     wgs84 = [coord.latitude, coord.longitude, coord.elevation]
@@ -142,7 +142,7 @@ def load_map(coord):
     img_coods = (img_x - 18, img_y - 18, img_x + 18, img_y + 18)
 
     draw.ellipse(img_coods, outline=(255, 0, 0), width=5)
-    result.save('imgs/' + str(int(lv03[0])) + '_' + str(int(lv03[1])) + '.jpg')
+    result.save('imgs/' + str(index) + '_' + str(int(lv03[0])) + '_' + str(int(lv03[1])) + '.jpg')
 
 
 ########################################################################################################################
@@ -166,5 +166,5 @@ create_plot(gpx, way_points_walk_table, temp_points, file_name=name + '.png')
 create_walk_table(start_time, 4.2)
 
 # load map
-for point in way_points_walk_table:
-    load_map(point[1])
+for i, point in enumerate(way_points_walk_table):
+    load_map(point[1], i)
