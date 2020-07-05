@@ -2,7 +2,6 @@ import csv
 import math
 from math import sqrt
 
-
 class SwissName:
 
     def __init__(self, name, object_type, x, y):
@@ -52,6 +51,13 @@ def find_name(coord, dist):
     return ('bei/m ' if sqrt(abs(list[0].x - coord[0]) ** 2 + abs(list[0].y - coord[1]) ** 2) > dist else '') + list[
         0].name
 
+
+
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+
+# loads the data form the three CSV files into the "database"
 
 database = []
 
