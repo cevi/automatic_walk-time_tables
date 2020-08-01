@@ -62,10 +62,10 @@ def find_name(coord, dist):
 database = []
 
 # Linien (Verkehrsbauten, Sportanlagen, Fliessgewässern ...)
-add_to_database('swissNAMES3D_LIN.csv', database, 1, 5, 10, 11)
+add_to_database('./res/swissNAMES3D_LIN.csv', database, 1, 5, 10, 11)
 
 # Punkte (Topografische Namen, Flur- und Lokalnamen, Gebäudenamen ...)
-add_to_database('swissNAMES3D_PKT.csv', database, 1, 6, 11, 12)
+add_to_database('./res/swissNAMES3D_PKT.csv', database, 1, 6, 11, 12)
 
 # Polygone (Siedlungsnamen, Seenamen, Geländenamen ..)
-add_to_database('swissNAMES3D_PLY.csv', database, 1, 5, 10, 11)
+add_to_database('./res/swissNAMES3D_PLY.csv', database, 1, 5, 10, 11)

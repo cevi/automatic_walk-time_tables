@@ -151,7 +151,7 @@ def create_map_snippet(coord, point_index):
 
 
 # Open GPX-File with the way-points
-gpx_file = open('tourjuly2020sp1day.gpx', 'r')
+gpx_file = open('./testWalks/hikesommerlager2020tag2.gpx', 'r')
 gpx = gpxpy.parse(gpx_file)
 
 # define the departure time of the hike
@@ -162,7 +162,7 @@ name = gpx.tracks[0].name
 
 # calc Points for walk table
 total_distance, temp_points, way_points_walk_table = find_points(gpx)
-create_plot(gpx, way_points_walk_table, temp_points, file_name=name + '.png')
+create_plot(gpx, way_points_walk_table,  file_name=name + '.png')
 
 # prints the walk table and the associated timestamps / meta infos
 create_walk_table(start_time, 4.2)
