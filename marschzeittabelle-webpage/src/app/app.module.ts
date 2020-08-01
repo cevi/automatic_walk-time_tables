@@ -13,6 +13,10 @@ import {MatSlideToggleModule} from '@angular/material/slide-toggle';
 import {MatTooltipModule} from '@angular/material/tooltip';
 import {AppRoutingModule} from './app-routing.module';
 import { LandingPageComponent } from './pages/landing-page/landing-page.component';
+import {HttpClientModule} from '@angular/common/http';
+import {MarkdownModule} from 'ngx-markdown';
+import { DesignWalkTableComponent } from './pages/design-walk-table/design-walk-table.component';
+import { MapComponent } from './components/map/map.component';
 
 @NgModule({
   declarations: [
@@ -21,11 +25,15 @@ import { LandingPageComponent } from './pages/landing-page/landing-page.componen
     MainMenuComponent,
     TemplateFooterComponent,
     HeaderNavComponent,
-    LandingPageComponent
+    LandingPageComponent,
+    DesignWalkTableComponent,
+    MapComponent
   ],
   imports: [
     BrowserModule,
     RouterModule,
+    MarkdownModule,
+    HttpClientModule,
     MatIconModule,
     NoopAnimationsModule,
     MatSlideToggleModule,
