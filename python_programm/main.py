@@ -5,6 +5,7 @@ from io import BytesIO
 import gpxpy.gpx
 import matplotlib.pyplot as plt
 import numpy as np
+import openpyxl
 import requests
 from PIL import Image, ImageDraw
 
@@ -46,6 +47,8 @@ def create_plot(raw_data_points, way_points, file_name):
 
 # creates the walk table and print it on the console
 def create_walk_table(time_stamp, speed):
+    xfile = openpyxl.load_workbook('res/Marschzeit_Template.xlsx')
+    sheet = xfile.worksheets[0]
     oldPoint = None
     time = 0
 
@@ -53,8 +56,11 @@ def create_walk_table(time_stamp, speed):
     print()
     print('Distanz Höhe           Zeit   Uhrzeit     Ort (Koordinaten und Namen)')
 
+    sheet['N3'] = speed
+    sheet['K8'] = time_stamp.strftime('%H:%M')
+
     # get Infos points
-    for point in way_points_walk_table:
+    for i, point in enumerate(way_points_walk_table):
 
         # convert Coordinates to LV03
         converter = GPSConverter()
@@ -70,13 +76,19 @@ def create_walk_table(time_stamp, speed):
 
         time_stamp = time_stamp + timedelta(hours=deltaTime)
 
-        # print infos
+        # print in§fos
         print(
             round(abs((oldPoint[0] if oldPoint is not None else 0.0) - point[0]), 1), 'km ',
             int(lv03[2]), 'm ü. M.  ',
             round(deltaTime, 1), 'h ',
             time_stamp.strftime('%H:%M'), 'Uhr  ',
             (int(lv03[0]), int(lv03[1])), find_name((lv03[0] + 2_000_000, lv03[1] + 1_000_000), 75))
+
+        sheet['A' + str(8 + i)] = str(find_name((lv03[0] + 2_000_000, lv03[1] + 1_000_000), 75)) + ' (' + str(
+            int(lv03[0])) + ', ' + str(int(lv03[1])) + ')'
+        sheet['C' + str(8 + i)] = int(lv03[2])
+        if i > 0:
+            sheet['E' + str(8 + i)] = round(abs((oldPoint[0] if oldPoint is not None else 0.0) - point[0]), 1)
 
         oldPoint = point
 
@@ -86,9 +98,11 @@ def create_walk_table(time_stamp, speed):
     print()
     print()
 
+    xfile.save('Marschzeittabelle_Generiert.xlsx')
 
-# creates a map snippet of the point at the given coord (WGS84 format) and and mark it
-# saves the imag in the folder 'imgs/'
+    # creates a map snippet of the point at the given coord (WGS84 format) and and mark it
+    # saves the imag in the folder 'imgs/'
+
 
 def create_map_snippet(coord, point_index):
     # convert Coordinates to LV03
@@ -151,22 +165,22 @@ def create_map_snippet(coord, point_index):
 
 
 # Open GPX-File with the way-points
-gpx_file = open('./testWalks/hikesommerlager2020tag2.gpx', 'r')
+gpx_file = open('./testWalks/wanderungsommerlager_v2.gpx', 'r')
 gpx = gpxpy.parse(gpx_file)
 
 # define the departure time of the hike
-start_time = datetime(year=2020, month=8, day=10, hour=10, minute=00)
+start_time = datetime(year=2021, month=8, day=16, hour=10, minute=00)
 
 # get Meta-Data
 name = gpx.tracks[0].name
 
 # calc Points for walk table
 total_distance, temp_points, way_points_walk_table = find_points(gpx)
-create_plot(gpx, way_points_walk_table,  file_name=name + '.png')
+create_plot(gpx, way_points_walk_table, file_name=name + '.png')
 
 # prints the walk table and the associated timestamps / meta infos
-create_walk_table(start_time, 4.2)
+create_walk_table(start_time, 3.75)
 
-# create ma snippets of each way point
-for i, point in enumerate(way_points_walk_table):
-    create_map_snippet(point[1], i)
+# create map snippets of each way point
+# for i, point in enumerate(way_points_walk_table):
+#    create_map_snippet(point[1], i)
