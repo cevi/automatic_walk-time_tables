@@ -1,0 +1,29 @@
+<div class="header-nav" *ngIf="getHeaderNav().length > 0 else defaultHeader">
+
+  <ng-container *ngFor="let navElem of getHeaderNav(); let index = index">
+
+    <ng-container *ngIf="navElem.type == 'toggle'; else defaultIcon">
+      <div class="clickable nav-elem {{navElem.active ? '': 'deactive'}}" matTooltip="{{navElem.description}}">
+        <mat-slide-toggle class="slider" (click)="navElem.active ? navElem.action(): null"></mat-slide-toggle>
+      </div>
+
+      <hr *ngIf="navElem.separatorAfter == true && (index != getHeaderNav().length -1 )"/>
+    </ng-container>
+
+    <ng-template #defaultIcon>
+      <div class="clickable nav-elem {{navElem.active ? '': 'deactive'}}" matTooltip="{{navElem.description}}"
+           (click)="navElem.active ? navElem.action(): null">
+
+        <mat-icon *ngIf="navElem.icon !== undefined" class="nav-icon">{{navElem.icon}}</mat-icon>
+        <span class="nav-icon-description"> {{navElem.name}} </span>
+      </div>
+
+      <hr *ngIf="navElem.separatorAfter == true && (index != getHeaderNav().length -1 )"/>
+    </ng-template>
+
+  </ng-container>
+</div>
+
+<ng-template #defaultHeader>
+  <span id="defaultHeader">Cevi Züri 11 - Marschzeittabellen</span>
+</ng-template>
