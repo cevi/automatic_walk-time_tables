@@ -2,6 +2,7 @@ import csv
 import math
 from math import sqrt
 
+
 class SwissName:
 
     def __init__(self, name, object_type, x, y):
@@ -20,10 +21,10 @@ def add_to_database(file, db, typeIndex, name, x, y):
 
 
 def find_name(coord, dist):
-    list = [swiss_name
-            for swiss_name in database if
-            abs(swiss_name.x - coord[0]) < dist * 4 and
-            abs(swiss_name.y - coord[1]) < dist * 4]
+    flurname_list = [swiss_name
+                     for swiss_name in database if
+                     abs(swiss_name.x - coord[0]) < dist * 4 and
+                     abs(swiss_name.y - coord[1]) < dist * 4]
 
     # Suche nach der min. Distanz, dabei werden gewisse Objekte bevorzugt:
     # Turm, Haupthuegel, Huegel, Pass, Strassenpass, Alpiner Gipfel: 2.5
@@ -33,24 +34,28 @@ def find_name(coord, dist):
     # lokalname swisstopo: 1.2
     # Flurname swisstopo: 0.9
 
-    list.sort(key=lambda swiss_name:
+    flurname_list.sort(key=lambda swiss_name:
     math.sqrt((abs(swiss_name.x - coord[0]) ** 2 + abs(swiss_name.y - coord[1]) ** 2)) / (
         2 if swiss_name.object_type in ['Haupthuegel', 'Huegel', 'Pass', 'Strassenpass', 'Alpiner Gipfel', 'Gipfel',
-                                        'Graben', 'Gletscher'] else
+                                        'Gletscher'] else
         1.25 if swiss_name.object_type in ['Kapelle', 'Turm', 'Schwimmbadareal', 'Campingplatzareal', 'Golfplatzareal',
                                            'Zooareal', 'Freizeitanlagenareal', 'Abwasserreinigungsareal', 'Friedhof',
                                            'Spitalareal', 'Quartierteil', 'Ort', 'See', 'Bach'] else
         1.15 if swiss_name.object_type in ['Haltestelle Bus', 'Haltestelle Schiff', 'Uebrige Bahnen',
                                            'Haltestelle Bahn'] else
         1.05 if swiss_name.object_type in ['Gebaeude', 'Offenes Gebaeude', 'Schul- und Hochschulareal'] else
-        1 if swiss_name.object_type in ['Lokalname swisstopo', 'Flurname swisstopo', 'Tal', 'Grat'] else 0.95))
+        1 if swiss_name.object_type in ['Lokalname swisstopo', 'Flurname swisstopo', 'Tal', 'Grat',
+                                        'Graben'] else 0.95))
 
-    if len(list) == 0:
+    print(list(map(lambda place: place.name + ' ' + str(place.x) + ' ' + str(place.y), flurname_list)))
+
+    if len(flurname_list) == 0:
         return ''
 
-    return ('bei/m ' if sqrt(abs(list[0].x - coord[0]) ** 2 + abs(list[0].y - coord[1]) ** 2) > dist else '') + list[
-        0].name
-
+    return ('bei/m ' if sqrt(
+        abs(flurname_list[0].x - coord[0]) ** 2 + abs(flurname_list[0].y - coord[1]) ** 2) > dist else '') + \
+           flurname_list[
+               0].name
 
 
 ########################################################################################################################
