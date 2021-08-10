@@ -1,19 +1,27 @@
 import geopy.distance
+import gpxpy
 
 
-def find_points(gpx):
+def find_points(raw_gpx_data: gpxpy.gpx):
+    """
+
+    Algorithm that selects suitable points for the Marschzeittabelle.
+
+    The aim is to choose points that are as evenly distributed as possible
+    and that cover the topology of the path as well as possible.
+
+    """
+
     total_distance = 0
     way_points_walk_table = []
 
-    heights = []
-    distances = []
     oldHeight = 0
     slope = None
     coord = None
 
     points = []
 
-    for track in gpx.tracks:
+    for track in raw_gpx_data.tracks:
         for segment in track.segments:
 
             # insert first point
@@ -27,8 +35,6 @@ def find_points(gpx):
 
                     distDelta = geopy.distance.distance(coord, newCoord).km
                     total_distance += distDelta
-                    distances.append(total_distance)
-                    heights.append(point.elevation)
                     points.append(point)
 
                     if distDelta != 0:
@@ -125,6 +131,10 @@ def find_points(gpx):
             current_point = next_point
 
     print('Anzahl Punkte: ' + str(len(final_way_points_walk_table)))
+
+    print(raw_gpx_data.length_3d())
+    print(raw_gpx_data.length_2d())
+    print(total_distance)
 
     return total_distance, way_points_walk_table, final_way_points_walk_table
 

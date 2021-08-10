@@ -41,7 +41,7 @@ def create_plot(raw_data_points, way_points, file_name):
     plt.grid(color='gray', linestyle='dashed', linewidth=0.5)
 
     # show the plot and save image
-    plt.savefig('imgs/' + file_name, dpi=300)
+    plt.savefig('imgs/' + file_name, dpi=750)
     plt.show()
 
 
@@ -159,13 +159,120 @@ def create_map_snippet(coord, point_index):
     card_snippet_as_image.save('imgs/' + str(point_index) + '_' + str(int(lv03[0])) + '_' + str(int(lv03[1])) + '.jpg')
 
 
+def calc_perimeter(raw_gpx_data):
+    min_latitude = None
+    max_latitude = None
+    min_longitude = None
+    max_longitude = None
+
+    for track in raw_gpx_data.tracks:
+        for segment in track.segments:
+            for point in segment.points:
+
+                if min_latitude is None or point.latitude < min_latitude:
+                    min_latitude = point.latitude
+
+                if max_latitude is None or point.latitude > max_latitude:
+                    max_latitude = point.latitude
+
+                if min_longitude is None or point.longitude < min_longitude:
+                    min_longitude = point.longitude
+
+                if max_longitude is None or point.longitude > max_longitude:
+                    max_longitude = point.longitude
+
+        # convert Coordinates to LV03
+        converter = GPSConverter()
+        lv03_min = np.round(converter.WGS84toLV03(min_latitude, min_longitude, 400))
+        lv03_max = np.round(converter.WGS84toLV03(max_latitude, max_longitude, 400))
+
+    return lv03_min, lv03_max
+
+
+def create_map_plot(gpx, way_points_walk_table):
+    lv03_min, lv03_max = calc_perimeter(gpx)
+
+    # zoom level of the map snippets (a value form 0 to 12)
+    zoom_level = 4
+
+    # define constants
+    tile_sizes = [64000, 25600, 12800, 5120, 2560, 1280, 640, 512, 384, 256, 128, 64, 25.6]
+    zoom_levels = [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28]
+
+    # calc the number of the bottom left tile
+    x_tile = math.floor((lv03_min[0] - 420_000) / tile_sizes[zoom_level]) - 1
+    y_tile = math.floor((350_000 - lv03_min[1]) / tile_sizes[zoom_level]) + 1
+
+    # calc number of tiles in each direction
+    x_count = math.ceil((lv03_max[0] - lv03_min[0]) / tile_sizes[zoom_level]) + 2
+    y_count = math.ceil((lv03_max[1] - lv03_min[1]) / tile_sizes[zoom_level]) + 2
+
+    lv03_min = (x_tile * tile_sizes[zoom_level] + 420_000, 350_000 - y_tile * tile_sizes[zoom_level])
+    print(x_count, ' ', y_count)
+
+    # creates the urls of the image tiles as a 3x3 grid around the centered tile
+    base_url = 'https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/2056/' + str(
+        zoom_levels[zoom_level]) + '/'
+
+    # load tiles and combine map parts
+    card_snippet_as_image = Image.new("RGB", (254 * x_count, 254 * y_count))
+
+    for i in range(0, x_count):
+        for j in range(1, y_count + 1):
+            url = base_url + str(x_tile + i) + '/' + str(y_tile - j) + '.jpeg'
+            response = requests.get(url)
+            img = Image.open(BytesIO(response.content))
+            img.thumbnail((254, 254), Image.ANTIALIAS)
+
+            w, h = img.size
+            card_snippet_as_image.paste(img, (i * w, h * (y_count - j), i * w + w, h * (y_count - j) + h))
+
+    converter = GPSConverter()
+
+    # mark point on the map
+    draw = ImageDraw.Draw(card_snippet_as_image)
+    pixels_per_meter = (254.0 / tile_sizes[zoom_level])
+
+    old_coords = None
+    for track in gpx.tracks:
+        for segment in track.segments:
+            for point in segment.points:
+                wgs84 = [point.latitude, point.longitude, point.elevation]
+                lv03 = np.round(converter.WGS84toLV03(wgs84[0], wgs84[1], wgs84[2]))
+
+                # calc the coords in respect to the image pixels
+                img_x = (lv03[0] - lv03_min[0]) * pixels_per_meter
+                img_y = card_snippet_as_image.size[1] - (lv03[1] - lv03_min[1]) * pixels_per_meter
+
+                if old_coords is not None:
+                    draw.line((old_coords, (img_x, img_y)), fill=(255, 0, 0), width=5)
+
+                old_coords = (img_x, img_y)
+
+    for point in way_points_walk_table:
+        wgs84 = [point[1].latitude, point[1].longitude, point[1].elevation]
+        lv03 = np.round(converter.WGS84toLV03(wgs84[0], wgs84[1], wgs84[2]))
+
+        # calc the coords in respect to the image pixels
+        img_x = (lv03[0] - lv03_min[0]) * pixels_per_meter
+        img_y = card_snippet_as_image.size[1] - (lv03[1] - lv03_min[1]) * pixels_per_meter
+
+        circle_coords = (img_x - 18, img_y - 18, img_x + 18, img_y + 18)
+
+        draw.ellipse(circle_coords, outline=(128, 255, 255), width=5)
+
+    # saves the image as '.jpg'
+    card_snippet_as_image.save('imgs/test.jpg')
+    card_snippet_as_image.show()
+
+
 ########################################################################################################################
 ########################################################################################################################
 ########################################################################################################################
 
 
 # Open GPX-File with the way-points
-gpx_file = open('./testWalks/wanderungsommerlager_v2.gpx', 'r')
+gpx_file = open('./testWalks/hikesommerlager2020tag2.gpx', 'r')
 gpx = gpxpy.parse(gpx_file)
 
 # define the departure time of the hike
@@ -179,8 +286,6 @@ total_distance, temp_points, way_points_walk_table = find_points(gpx)
 create_plot(gpx, way_points_walk_table, file_name=name + '.png')
 
 # prints the walk table and the associated timestamps / meta infos
-create_walk_table(start_time, 3.75)
+# create_walk_table(start_time, 3.75)
 
-# create map snippets of each way point
-# for i, point in enumerate(way_points_walk_table):
-#    create_map_snippet(point[1], i)
+create_map_plot(gpx, way_points_walk_table)
