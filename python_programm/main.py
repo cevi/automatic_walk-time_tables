@@ -192,23 +192,29 @@ def calc_perimeter(raw_gpx_data):
 def create_map_plot(gpx, way_points_walk_table):
     lv03_min, lv03_max = calc_perimeter(gpx)
 
-    # zoom level of the map snippets (a value form 0 to 12)
-    zoom_level = 4
-
     # define constants
     tile_sizes = [64000, 25600, 12800, 5120, 2560, 1280, 640, 512, 384, 256, 128, 64, 25.6]
     zoom_levels = [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28]
 
-    # calc the number of the bottom left tile
-    x_tile = math.floor((lv03_min[0] - 420_000) / tile_sizes[zoom_level]) - 1
-    y_tile = math.floor((350_000 - lv03_min[1]) / tile_sizes[zoom_level]) + 1
+    # zoom level of the map snippets (a value form 0 to 12)
+    zoom_level = 0
 
-    # calc number of tiles in each direction
-    x_count = math.ceil((lv03_max[0] - lv03_min[0]) / tile_sizes[zoom_level]) + 2
-    y_count = math.ceil((lv03_max[1] - lv03_min[1]) / tile_sizes[zoom_level]) + 2
+    x_count = 0
+    y_count = 0
+
+    while zoom_level < 12 and x_count * y_count < 64:
+        zoom_level = zoom_level + 1
+
+        # calc the number of the bottom left tile
+        x_tile = math.floor((lv03_min[0] - 420_000) / tile_sizes[zoom_level]) - 1
+        y_tile = math.floor((350_000 - lv03_min[1]) / tile_sizes[zoom_level]) + 1
+
+        # calc number of tiles in each direction
+        x_count = math.ceil((lv03_max[0] - lv03_min[0]) / tile_sizes[zoom_level]) + 2
+        y_count = math.ceil((lv03_max[1] - lv03_min[1]) / tile_sizes[zoom_level]) + 2
 
     lv03_min = (x_tile * tile_sizes[zoom_level] + 420_000, 350_000 - y_tile * tile_sizes[zoom_level])
-    print(x_count, ' ', y_count)
+    print(zoom_level, ': ', x_count, ' ', y_count)
 
     # creates the urls of the image tiles as a 3x3 grid around the centered tile
     base_url = 'https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/2056/' + str(
@@ -272,7 +278,7 @@ def create_map_plot(gpx, way_points_walk_table):
 
 
 # Open GPX-File with the way-points
-gpx_file = open('./testWalks/hikesommerlager2020tag2.gpx', 'r')
+gpx_file = open('./testWalks/hikesola2021esperia.gpx', 'r')
 gpx = gpxpy.parse(gpx_file)
 
 # define the departure time of the hike
