@@ -2,7 +2,7 @@ import geopy.distance
 import gpxpy
 
 
-def find_points(raw_gpx_data: gpxpy.gpx):
+def select_waypoints(raw_gpx_data: gpxpy.gpx):
     """
 
     Algorithm that selects suitable points for the Marschzeittabelle.
