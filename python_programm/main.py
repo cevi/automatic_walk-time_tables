@@ -4,7 +4,7 @@ import gpxpy.gpx
 
 from find_walk_table_points import select_waypoints
 from python_programm.create_map import plot_route_on_map
-from python_programm.walk_table import plot_elevation_profile
+from python_programm.walk_table import plot_elevation_profile, create_walk_table
 
 # Open GPX-File with the way-points
 gpx_file = open('./testWalks/badiglk1.gpx', 'r')
@@ -19,6 +19,9 @@ name = raw_gpx_data.tracks[0].name
 # calc Points for walk table
 total_distance, temp_points, way_points = select_waypoints(raw_gpx_data)
 
+# Walk-Speed in km/h
+walk_speed = 3.75
+
 plot_elevation_profile(raw_gpx_data, way_points, file_name=name + '.png')
-# create_walk_table(start_time, 3.75)
+create_walk_table(start_time, walk_speed, way_points, total_distance)
 plot_route_on_map(raw_gpx_data, way_points)
