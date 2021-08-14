@@ -5,8 +5,8 @@ import numpy as np
 import requests
 from PIL import Image, ImageDraw
 
-from python_programm.gpx_utils import calc_perimeter
-from python_programm.transformation import GPSConverter
+from python_program.gpx_utils import calc_perimeter
+from python_program.transformation import GPSConverter
 
 TILE_SIZES = [64000, 25600, 12800, 5120, 2560, 1280, 640, 512, 384, 256, 128, 64, 25.6]
 ZOOM_LEVELS = [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28]

@@ -5,10 +5,10 @@ import numpy as np
 import openpyxl
 from matplotlib import pyplot as plt
 
-from python_programm.calculations import calcTime
-from python_programm.find_name import find_name
-from python_programm.find_walk_table_points import prepare_for_plot
-from python_programm.transformation import GPSConverter
+from python_program.calculations import calcTime
+from python_program.find_name import find_name
+from python_program.find_walk_table_points import prepare_for_plot
+from python_program.transformation import GPSConverter
 
 
 def plot_elevation_profile(raw_data_points, way_points, file_name):

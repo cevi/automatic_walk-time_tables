@@ -1,6 +1,6 @@
 import numpy as np
 
-from python_programm.transformation import GPSConverter
+from python_program.transformation import GPSConverter
 
 
 def calc_perimeter(raw_gpx_data):
