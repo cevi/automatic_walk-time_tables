@@ -7,7 +7,7 @@ from python_program.create_map import plot_route_on_map
 from python_program.walk_table import plot_elevation_profile, create_walk_table
 
 # Open GPX-File with the way-points
-gpx_file = open('./testWalks/murgseentourtag2.gpx', 'r')
+gpx_file = open('./testWalks/spitzmeilen.gpx', 'r')
 raw_gpx_data = gpxpy.parse(gpx_file)
 
 # define the departure time of the hike
@@ -24,4 +24,4 @@ walk_speed = 3.75
 
 plot_elevation_profile(raw_gpx_data, way_points, temp_points, file_name=name + '.png')
 create_walk_table(start_time, walk_speed, way_points, total_distance)
-# plot_route_on_map(raw_gpx_data, way_points)
+plot_route_on_map(raw_gpx_data, way_points)

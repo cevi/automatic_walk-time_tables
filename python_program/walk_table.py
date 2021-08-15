@@ -21,7 +21,7 @@ def plot_elevation_profile(raw_data_points, way_points, temp_points, file_name):
     plt.ylim(ymax=max(heights) + additional_space, ymin=min(heights) - additional_space)
 
     # add way_points to plot
-    plt.scatter([dist[0] for dist in temp_points], [height[1].elevation for height in temp_points], c='gray', )
+    plt.scatter([dist[0] for dist in temp_points], [height[1].elevation for height in temp_points], c='lightgray', )
     plt.scatter([dist[0] for dist in way_points], [height[1].elevation for height in way_points], c='orange', )
     plt.plot([dist[0] for dist in way_points], [height[1].elevation for height in way_points],
              label='Marschzeittabelle')

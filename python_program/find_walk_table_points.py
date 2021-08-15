@@ -1,4 +1,4 @@
-from copy import deepcopy
+from copy import copy
 
 import geopy.distance
 import gpxpy
@@ -29,7 +29,7 @@ def select_waypoints(raw_gpx_data: gpxpy.gpx, walk_point_limit=21):
         - distance to last selected point bigger than 500 meters
         - elevation difference to last selected point bigger than 50 meters
 
-    (2) TODO: UNDERSTAND CURRENT ALGORITHM AND IMPROVE ON IT (E.G. ENSURE MINIMAL DISTANCE BETWEEN TWO POINTS)
+    (2) TODO: ENSURE MINIMAL DISTANCE BETWEEN TWO POINTS (250 meter) unless elevation difference bigger than 20 meters
 
     (3) Final selection: Iteratively reduce the number of points to the maximum specified in walk_point_limit. To
         achieve this we iteratively increase a maximum derivation (drv_limit) value until we have dropped enough points.
@@ -51,7 +51,7 @@ def select_waypoints(raw_gpx_data: gpxpy.gpx, walk_point_limit=21):
     """
 
     total_distance = 0
-    way_points_walk_table = []
+    pkts_step_1 = []
 
     oldHeight = 0
     slope = None
@@ -61,7 +61,9 @@ def select_waypoints(raw_gpx_data: gpxpy.gpx, walk_point_limit=21):
         for segment in track.segments:
 
             # insert first point
-            way_points_walk_table.append((0, segment.points[0]))
+            last_pkt = segment.points[0]
+            pkts_step_1.append((0, last_pkt))
+            last_pkt = (last_pkt.latitude, last_pkt.longitude)
 
             for point in segment.points:
 
@@ -77,7 +79,11 @@ def select_waypoints(raw_gpx_data: gpxpy.gpx, walk_point_limit=21):
 
                         if slope is not None and newSlope != 0 and (
                                 (slope / newSlope < -0.75 or abs(slope / newSlope) > 1.5)):
-                            way_points_walk_table.append((total_distance, point))
+                            pkts_step_1.append((total_distance, point))
+
+                        if geopy.distance.distance(last_pkt, newCoord).m > 250:
+                            pkts_step_1.append((total_distance, point))
+                            last_pkt = newCoord
 
                         slope = newSlope
 
@@ -85,68 +91,69 @@ def select_waypoints(raw_gpx_data: gpxpy.gpx, walk_point_limit=21):
                 oldHeight = point.elevation
 
             # insert last point
-            if abs(way_points_walk_table[len(way_points_walk_table) - 1][0] - total_distance) < 0.5:
-                del way_points_walk_table[len(way_points_walk_table) - 1]
-            way_points_walk_table.append((total_distance, segment.points[len(segment.points) - 1]))
+            if abs(pkts_step_1[len(pkts_step_1) - 1][0] - total_distance) < 0.5:
+                del pkts_step_1[len(pkts_step_1) - 1]
+            pkts_step_1.append((total_distance, segment.points[len(segment.points) - 1]))
 
     # remove points
-    final_way_points_walk_table = [way_points_walk_table[0]]
-    old_index = 0
+    # (2) Step
+    last_pkt = pkts_step_1[0]
+    pkts_step_2 = [last_pkt]
 
-    for i, point in enumerate(way_points_walk_table):
+    for pkt in pkts_step_1[1:]:
 
-        pkt_A = final_way_points_walk_table[len(final_way_points_walk_table) - 1]
+        if last_pkt is not None:
 
-        if pkt_A == point:
-            continue
+            last_cood = (last_pkt[1].latitude, last_pkt[1].longitude)
+            cood = (pkt[1].latitude, pkt[1].longitude)
 
-        b, m = calc_secant_line(pkt_A, point)
+            if (abs(last_pkt[1].elevation - pkt[1].elevation) > 20
+                and geopy.distance.distance(last_cood, cood).m > 250) \
+                    or geopy.distance.distance(last_cood, cood).m > 1500:
 
-        diff = 0
-        max_diff = 0
-        for j in range(old_index, i):
-            diff += abs(calc_secant_elevation(b, m, way_points_walk_table[j]) - way_points_walk_table[j][1].elevation)
+                b, m = calc_secant_line(last_pkt, pkt)
 
-            if max_diff < diff:
-                max_diff = diff
+                max_drv = 10
 
-        diff /= float(i - old_index)
+                # add point with max derivation
+                for intermediate_point in list(filter(lambda p: last_pkt[0] < p[0] < pkt[0], pkts_step_1)):
 
-        if diff > 15 or max_diff > 100 or point[0] - pkt_A[0] > 1.5:
+                    derivation = abs(calc_secant_elevation(b, m, intermediate_point) - intermediate_point[1].elevation)
+                    if max_drv <= derivation:
+                        pkts_step_2.append(intermediate_point)
+                        max_drv = derivation
+                        b, m = calc_secant_line(intermediate_point, pkt)
+                        last_pkt = pkt
 
-            new_index = int(old_index + 2.0 / 3.0 * (i - old_index))
-            new_point = way_points_walk_table[new_index]
+                pkts_step_2.append(pkt)
+                last_pkt = pkt
 
-            if new_point[0] - pkt_A[0] > 0.25:
-                final_way_points_walk_table.append(new_point)
+    last_point = pkts_step_1[len(pkts_step_1) - 1]
 
-            else:
-                new_index = int(old_index + 1.0 / 2.0 * (i - old_index))
-                new_point = way_points_walk_table[new_index]
-                final_way_points_walk_table.remove(pkt_A)
-                final_way_points_walk_table.append(new_point)
-
-            old_index = new_index
-
-    final_way_points_walk_table.append(way_points_walk_table[len(way_points_walk_table) - 1])
-
-    temp_points = deepcopy(final_way_points_walk_table)
+    if last_pkt != last_point:
+        pkts_step_2.append(last_point)
 
     # (3) Step three, drop points on a secant line.
+    pkts_step_3 = copy(pkts_step_2)
+
     pkt_A = None
     pkt_B = None
     pkt_dropped = True
     drv_limit = 0
     dropped_points = []
 
-    while len(final_way_points_walk_table) > walk_point_limit:
+    while len(pkts_step_3) > walk_point_limit:
 
         # Increase drv_limit if no points as been dropped in the last pass
         if not pkt_dropped:
             drv_limit += 1
         pkt_dropped = False
 
-        for pkt_C in final_way_points_walk_table:
+        for pkt_C in pkts_step_3:
+
+            # after moving point B we skip one iteration
+            if pkt_B == pkt_C:
+                continue
 
             if pkt_A is not None and pkt_B is not None:
 
@@ -164,16 +171,15 @@ def select_waypoints(raw_gpx_data: gpxpy.gpx, walk_point_limit=21):
                             break
 
                     if pkt_D is not None:  # Replace B with point D
-                        index = final_way_points_walk_table.index(pkt_B)
-                        final_way_points_walk_table.insert(index, pkt_D)
-                        final_way_points_walk_table.remove(pkt_B)
+                        pkts_step_3.remove(pkt_B)
+                        index = next(x for x, val in enumerate(pkts_step_3) if val[0] > pkt_D[0])
+                        pkts_step_3.insert(index, pkt_D)
                         dropped_points.append(pkt_B)
-                        pkt_B = pkt_D
 
                     else:  # remove point B
                         pkt_dropped = True
 
-                        final_way_points_walk_table.remove(pkt_B)
+                        pkts_step_3.remove(pkt_B)
                         dropped_points.append(pkt_B)
 
                         pkt_B = pkt_A
@@ -184,7 +190,7 @@ def select_waypoints(raw_gpx_data: gpxpy.gpx, walk_point_limit=21):
         pkt_A = None
         pkt_B = None
 
-    return total_distance, temp_points, final_way_points_walk_table
+    return total_distance, pkts_step_2, pkts_step_3
 
 
 def calc_secant_elevation(b, m, pkt_B):
@@ -195,8 +201,8 @@ def calc_secant_line(pkt_A, pkt_C):
     x1, y1 = pkt_A[0] * 1000, pkt_A[1].elevation
     x2, y2 = pkt_C[0] * 1000, pkt_C[1].elevation
 
-    m = (y1 - y2) / (x1 - x2)
-    b = (x1 * y2 - x2 * y1) / (x1 - x2)
+    m = (y1 - y2) / (x1 - x2) if (x1 - x2) != 0 else 0
+    b = (x1 * y2 - x2 * y1) / (x1 - x2) if (x1 - x2) != 0 else y1
 
     return b, m
 
