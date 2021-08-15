@@ -21,6 +21,15 @@ def add_to_database(file, db, typeIndex, name, x, y):
 
 
 def find_name(coord, dist):
+    """
+        See also https://api3.geo.admin.ch/api/faq/index.html#which-layers-have-a-tooltip
+        fair use limit 20 Request per minute
+        (see https://www.geo.admin.ch/de/geo-dienstleistungen/geodienste/terms-of-use.html)
+
+        Therefore this process should be done locally.
+
+    """
+
     flurname_list = [swiss_name
                      for swiss_name in database if
                      abs(swiss_name.x - coord[0]) < dist * 4 and

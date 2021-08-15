@@ -1,9 +1,10 @@
+import gpxpy
 import numpy as np
 
 from python_program.transformation import GPSConverter
 
 
-def calc_perimeter(raw_gpx_data):
+def calc_perimeter(raw_gpx_data: gpxpy.gpx):
     min_latitude = None
     max_latitude = None
     min_longitude = None
