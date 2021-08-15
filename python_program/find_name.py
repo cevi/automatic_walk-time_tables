@@ -56,8 +56,6 @@ def find_name(coord, dist):
         1 if swiss_name.object_type in ['Lokalname swisstopo', 'Flurname swisstopo', 'Tal', 'Grat',
                                         'Graben'] else 0.95))
 
-    print(list(map(lambda place: place.name + ' ' + str(place.x) + ' ' + str(place.y), flurname_list)))
-
     if len(flurname_list) == 0:
         return ''
 
