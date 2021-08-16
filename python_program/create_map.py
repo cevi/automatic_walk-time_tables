@@ -6,8 +6,8 @@ import grequests
 import numpy as np
 from PIL import Image, ImageDraw
 
+from python_program.coord_transformation import GPSConverter
 from python_program.gpx_utils import calc_perimeter
-from python_program.transformation import GPSConverter
 
 TILE_SIZES = [64000, 25600, 12800, 5120, 2560, 1280, 640, 512, 384, 256, 128, 64, 25.6]
 """ Tile width m, see https://api3.geo.admin.ch/services/sdiservices.html#wmts """
@@ -24,6 +24,7 @@ TILE_MATRIX_SET: str = '2056'
 
 def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
                       way_points: [],
+                      file_name: str,
                       layer: str = 'ch.swisstopo.pixelkarte-farbe',
                       tile_format_ext: str = 'jpeg'):
     """
@@ -101,7 +102,7 @@ def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
         for segment in track.segments:
             for point in segment.points:
                 wgs84_point = [point.latitude, point.longitude, point.elevation]
-                img_x, img_y = calc_img_cood(card_snippet_as_image.size, lv03_min, pixels_per_meter, wgs84_point)
+                img_x, img_y = calc_img_coord(card_snippet_as_image.size, lv03_min, pixels_per_meter, wgs84_point)
 
                 if old_coords is not None:
                     draw.line((old_coords, (img_x, img_y)), fill=(255, 165, 0), width=5)
@@ -110,19 +111,19 @@ def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
 
     for point in way_points:
         wgs84_point = [point[1].latitude, point[1].longitude, point[1].elevation]
-        img_x, img_y = calc_img_cood(card_snippet_as_image.size, lv03_min, pixels_per_meter, wgs84_point)
+        img_x, img_y = calc_img_coord(card_snippet_as_image.size, lv03_min, pixels_per_meter, wgs84_point)
 
-        pkt_rad = 18
+        pkt_rad = 10
         circle_coords = (img_x - pkt_rad, img_y - pkt_rad, img_x + pkt_rad, img_y + pkt_rad)
 
         draw.ellipse(circle_coords, outline=(255, 0, 0), width=5)
 
     # saves the image as '.jpg'
-    card_snippet_as_image.save('imgs/map.png')
+    card_snippet_as_image.save('output/' + file_name + '_map.png')
     card_snippet_as_image.show()
 
 
-def calc_img_cood(image_size, lv03_min, pixels_per_meter, wgs84_point):
+def calc_img_coord(image_size, lv03_min, pixels_per_meter, wgs84_point):
     converter = GPSConverter()
 
     lv03_point = np.round(converter.WGS84toLV03(wgs84_point[0], wgs84_point[1], wgs84_point[2]))

@@ -35,6 +35,8 @@ def find_name(coord, dist):
                      abs(swiss_name.x - coord[0]) < dist * 4 and
                      abs(swiss_name.y - coord[1]) < dist * 4]
 
+    # print(list(map(lambda x: x.name, flurname_list)))
+
     # Suche nach der min. Distanz, dabei werden gewisse Objekte bevorzugt:
     # Turm, Haupthuegel, Huegel, Pass, Strassenpass, Alpiner Gipfel: 2.5
     # Kapelle: 2
@@ -45,24 +47,24 @@ def find_name(coord, dist):
 
     flurname_list.sort(key=lambda swiss_name:
     math.sqrt((abs(swiss_name.x - coord[0]) ** 2 + abs(swiss_name.y - coord[1]) ** 2)) / (
-        2 if swiss_name.object_type in ['Haupthuegel', 'Huegel', 'Pass', 'Strassenpass', 'Alpiner Gipfel', 'Gipfel',
-                                        'Gletscher'] else
+        2 if swiss_name.object_type in ['Haltestelle Bahn', 'Huegel', 'Pass', 'Strassenpass', 'Alpiner Gipfel',
+                                        'Gipfel',
+                                        ] else
         1.25 if swiss_name.object_type in ['Kapelle', 'Turm', 'Schwimmbadareal', 'Campingplatzareal', 'Golfplatzareal',
                                            'Zooareal', 'Freizeitanlagenareal', 'Abwasserreinigungsareal', 'Friedhof',
-                                           'Spitalareal', 'Quartierteil', 'Ort', 'See', 'Bach'] else
+                                           'Spitalareal', 'Quartierteil', 'Ort', 'See', 'Bach',
+                                           'Lokalname swisstopo'] else
         1.15 if swiss_name.object_type in ['Haltestelle Bus', 'Haltestelle Schiff', 'Uebrige Bahnen',
-                                           'Haltestelle Bahn'] else
+                                           'Haupthuegel'] else
         1.05 if swiss_name.object_type in ['Gebaeude', 'Offenes Gebaeude', 'Schul- und Hochschulareal'] else
-        1 if swiss_name.object_type in ['Lokalname swisstopo', 'Flurname swisstopo', 'Tal', 'Grat',
-                                        'Graben'] else 0.95))
+        1 if swiss_name.object_type in ['Flurname swisstopo', 'Tal', 'Grat', 'Graben', 'Gletscher'] else 0.95))
 
     if len(flurname_list) == 0:
         return ''
 
     return ('bei/m ' if sqrt(
         abs(flurname_list[0].x - coord[0]) ** 2 + abs(flurname_list[0].y - coord[1]) ** 2) > dist else '') + \
-           flurname_list[
-               0].name
+           flurname_list[0].name
 
 
 ########################################################################################################################

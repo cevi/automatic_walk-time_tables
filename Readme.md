@@ -31,8 +31,8 @@ Weitere Funktionalitäten sind in Planung und können gerne auch per Enhancement
 
 **Wichtig:** Die manuelle Planung bleibt ein grundlegender Bestandteil der Vorbereitung auf eine Wanderung. Dieses
 Projekt zielt lediglich auf die Beschleunigung mechanische, sich wiederholender Prozesse wie die Erstellung einer
-Marschzeittabelle auf der Grundlage einer bestehenden Route. Dabei wird das sorgfältige Planen und
-Durchdenken einer Aktivität in keinerlei Hinsicht ersetzt!
+Marschzeittabelle auf der Grundlage einer bestehenden Route. Dabei wird das sorgfältige Planen und Durchdenken einer
+Aktivität in keinerlei Hinsicht ersetzt!
 
 ## Glossar
 
@@ -40,6 +40,7 @@ Begriff | Erklärung
 -------- | -------- |
 J+S   | Jugend+Sport: Ist das Sportförder-Programm des Bundes für Kinder und Jugendsport in der Schweiz. Es unterstützt  Sportkurse und Lager in rund 70 Sportarten und Disziplinen. |
 Marschzeittabelle | Tabelle zum Abschätzen der Marschzeit einer Wanderung. Enthält oft auch Angaben zu Pausen und ein Höhenprofil. J+S empfehlt für jede Wanderung eine Marschzeittabelle zu erstellen. |
+SchweizMobil | Ermöglicht das Planen von Wanderungen und Velo-Touren der digitalen Landeskarte. Die magnetischen Wege beschleunigen den Prozess des Einzeichnens einer Route.
 
 # Generating J+S-Walk-Time-Tables
 
