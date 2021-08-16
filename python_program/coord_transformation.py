@@ -28,18 +28,22 @@
 # Aaron Schmocker [aaron@duckpond.ch]
 # vim: tabstop=4 shiftwidth=4 softtabstop=4 expandtab
 
-# Source: http://www.swisstopo.admin.ch/internet/swisstopo/en/home/topics/survey/sys/refsys/projections.html (see PDFs under "Documentation")
+# Source: http://www.swisstopo.admin.ch/internet/swisstopo/en/home/topics/survey/sys/refsys/projections.html
+# (see PDFs under "Documentation")
 # Updated 9 dec 2014
-# Please validate your results with NAVREF on-line service: http://www.swisstopo.admin.ch/internet/swisstopo/en/home/apps/calc/navref.html (difference ~ 1-2m)
+
+# Please validate your results with NAVREF on-line service:
+# http://www.swisstopo.admin.ch/internet/swisstopo/en/home/apps/calc/navref.html (difference ~ 1-2m)
 
 import math
 
 
 class GPSConverter(object):
-    '''
+
+    """
     GPS Converter class which is able to perform convertions between the
     CH1903 and WGS84 system.
-    '''
+    """
 
     # Convert CH y/x/h to WGS height
     def CHtoWGSheight(self, y, x, h):
