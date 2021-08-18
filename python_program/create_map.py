@@ -73,14 +73,14 @@ def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
 
     print('URL of a sample tile: ' + urls[0])
 
-    # Request images in parallel
-    rs = (grequests.get(u) for u in urls)
-    results = grequests.map(rs)
-
     # Since swisstopo services are free, we must guarantee to use the service fairly
     # See https://www.geo.admin.ch/de/geo-dienstleistungen/geodienste/terms-of-use.html
     if len(urls) > 300:
         raise Exception('Fair use limit exceeded!')
+
+    # Request images in parallel
+    rs = (grequests.get(u) for u in urls)
+    results = grequests.map(rs)
 
     index = 0
     for i in range(0, x_count):
