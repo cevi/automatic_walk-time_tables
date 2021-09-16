@@ -75,6 +75,7 @@ def create_walk_table(time_stamp, speed, way_points, total_distance, file_name: 
     print()
     print('Distanz Höhe           Zeit   Uhrzeit     Ort (Koordinaten und Namen)')
 
+    sheet['B3'] = time_stamp.strftime('%d.%m.%Y')
     sheet['N3'] = speed
     sheet['K8'] = time_stamp.strftime('%H:%M')
 
