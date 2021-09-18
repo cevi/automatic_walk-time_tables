@@ -10,7 +10,8 @@ Velo-Tour zu automatisieren und zu beschleunigen.
 Heute gibt es bereits verschiedenste Online-Tool, die J+S-Leiter*innen und Wanderfreudigen das Planen einer Wanderung
 erleichtern. Ich selber verwende meistens die kostenpflichtige Online-Karte von SchweizMobil. SchweizMobil ist Dank den
 magnetischen Wegen (d.h. die eingezeichnete Route folgt automatisch dem Wanderweg/der Strasse) und der Zeitberechnung (
-gemäss der Formel der Schweizer Wanderwege) bereits eine grosse Hilfe beim Planen.
+gemäss der Formel der Schweizer Wanderwege) bereits eine grosse Hilfe beim Planen. Ebenfalls geeignet ist die offizielle 
+App des Bundesamts für Landestopografie swisstopo.
 
 Ist man mit einer grösseren Gruppe unterwegs (so zum Beispiel in einem J+S-Lager), ist eine ausführliche Planung
 unumgänglich. Doch genau in diesen Szenarien stossen die existierenden Tools an ihr Grenzen. Dieses Projekt setzt genau
@@ -51,8 +52,8 @@ tour. There are already some tools that provide valuable support for planning. N
 planning a hike with larger groups, such as in a J+S-camp.
 
 In a first step, my goal is to automate the generation of a walk-time table (using the Excel template from Jugend+Sport)
-. The walk-table is generated based on an existing route exported from SchweizMobil (resp. based on an arbitrary
-GPX-file). A python script then generates an Excel file and a map of the route for further manually planing by the
+. The walk-table is generated based on an existing route exported from SchweizMobil or from the swisstopo app (resp. based on 
+an arbitrary GPX-file). A python script then generates an Excel file and a map of the route for further manually planing by the
 J+S-ladder.
 
 **Important:** Manual planning remains a fundamental part of preparing for a hike. This project only aims to speed up
