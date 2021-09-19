@@ -1,7 +1,7 @@
 import gpxpy
 import numpy as np
 
-from python_program.coord_transformation import GPSConverter
+from . import coord_transformation
 
 
 def calc_perimeter(raw_gpx_data: gpxpy.gpx):
@@ -27,7 +27,7 @@ def calc_perimeter(raw_gpx_data: gpxpy.gpx):
                     max_longitude = point.longitude
 
         # convert Coordinates to LV03
-        converter = GPSConverter()
+        converter = coord_transformation.GPSConverter()
         lv03_min = np.round(converter.WGS84toLV03(min_latitude, min_longitude, 400))
         lv03_max = np.round(converter.WGS84toLV03(max_latitude, max_longitude, 400))
 

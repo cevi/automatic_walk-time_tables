@@ -3,14 +3,15 @@ from datetime import timedelta
 from typing import Tuple, List
 
 import gpxpy
+import os
 import numpy as np
 import openpyxl
 from gpxpy.gpx import GPXTrackPoint
 from matplotlib import pyplot as plt
 
-from python_program.find_swisstopo_name import find_name
-from python_program.find_walk_table_points import prepare_for_plot
-from python_program.coord_transformation import GPSConverter
+from . import find_swisstopo_name
+from . import find_walk_table_points
+from . import coord_transformation 
 
 
 def plot_elevation_profile(raw_data_points: gpxpy.gpx,
@@ -27,7 +28,7 @@ def plot_elevation_profile(raw_data_points: gpxpy.gpx,
     """
 
     # plot heights of exported data from SchweizMobil
-    distances, heights = prepare_for_plot(raw_data_points)
+    distances, heights = find_walk_table_points.prepare_for_plot(raw_data_points)
     plt.plot(distances, heights, label='Wanderweg')
 
     # resize plot area
@@ -48,6 +49,10 @@ def plot_elevation_profile(raw_data_points: gpxpy.gpx,
 
     # Grid
     plt.grid(color='gray', linestyle='dashed', linewidth=0.5)
+
+    # Check if output directory exists, if not, create it.
+    if(not os.path.exists('output')):
+        os.mkdir('output')
 
     # show the plot and save image
     plt.savefig('output/' + file_name + '_elevation_profile.png', dpi=750)
@@ -70,6 +75,7 @@ def create_walk_table(time_stamp, speed, way_points, total_distance, file_name: 
     print()
     print('Distanz Höhe           Zeit   Uhrzeit     Ort (Koordinaten und Namen)')
 
+    sheet['B3'] = time_stamp.strftime('%d.%m.%Y')
     sheet['N3'] = speed
     sheet['K8'] = time_stamp.strftime('%H:%M')
 
@@ -77,7 +83,7 @@ def create_walk_table(time_stamp, speed, way_points, total_distance, file_name: 
     for i, point in enumerate(way_points):
 
         # convert Coordinates to LV03
-        converter = GPSConverter()
+        converter = coord_transformation.GPSConverter()
         wgs84 = [point[1].latitude, point[1].longitude, point[1].elevation]
         lv03 = converter.WGS84toLV03(wgs84[0], wgs84[1], wgs84[2])
         lv03 = np.round(lv03)
@@ -91,7 +97,7 @@ def create_walk_table(time_stamp, speed, way_points, total_distance, file_name: 
         time_stamp = time_stamp + timedelta(hours=deltaTime)
 
         # print in§fos
-        name_of_point = find_name((lv03[0] + 2_000_000, lv03[1] + 1_000_000), 50)
+        name_of_point = find_swisstopo_name.find_name((lv03[0] + 2_000_000, lv03[1] + 1_000_000), 50)
         print(
             round(abs((oldPoint[0] if oldPoint is not None else 0.0) - point[0]), 1), 'km ',
             int(lv03[2]), 'm ü. M.  ',
@@ -112,6 +118,10 @@ def create_walk_table(time_stamp, speed, way_points, total_distance, file_name: 
     print('=== === === === === === === === === === === === === === === === === === ===')
     print()
     print()
+
+    # Check if output directory exists, if not, create it.
+    if(not os.path.exists('output')):
+        os.mkdir('output')
 
     xfile.save('output/' + file_name + '_Marschzeittabelle.xlsx')
 

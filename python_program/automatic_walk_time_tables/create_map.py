@@ -4,10 +4,11 @@ from io import BytesIO
 import gpxpy
 import grequests
 import numpy as np
+import os
 from PIL import Image, ImageDraw
 
-from python_program.coord_transformation import GPSConverter
-from python_program.gpx_utils import calc_perimeter
+from . import coord_transformation
+from . import gpx_utils
 
 TILE_SIZES = [64000, 25600, 12800, 5120, 2560, 1280, 640, 512, 384, 256, 128, 64, 25.6]
 """ Tile width m, see https://api3.geo.admin.ch/services/sdiservices.html#wmts """
@@ -38,7 +39,7 @@ def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
 
     """
 
-    lv03_min, lv03_max = calc_perimeter(raw_gpx_data)
+    lv03_min, lv03_max = gpx_utils.calc_perimeter(raw_gpx_data)
 
     # zoom level of the map snippets (a value form 0 to 12)
     zoom_level = 0
@@ -118,13 +119,17 @@ def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
 
         draw.ellipse(circle_coords, outline=(255, 0, 0), width=5)
 
+    # Check if output directory exists, if not, create it.
+    if(not os.path.exists('output')):
+        os.mkdir('output')
+
     # saves the image as '.jpg'
     card_snippet_as_image.save('output/' + file_name + '_map.png')
     card_snippet_as_image.show()
 
 
 def calc_img_coord(image_size, lv03_min, pixels_per_meter, wgs84_point):
-    converter = GPSConverter()
+    converter = coord_transformation.GPSConverter()
 
     lv03_point = np.round(converter.WGS84toLV03(wgs84_point[0], wgs84_point[1], wgs84_point[2]))
     # calc the coords in respect to the image pixels

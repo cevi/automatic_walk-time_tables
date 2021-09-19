@@ -2,9 +2,9 @@ from datetime import datetime
 
 import gpxpy.gpx
 
-from find_walk_table_points import select_waypoints
-from python_program.create_map import plot_route_on_map
-from python_program.walk_table import plot_elevation_profile, create_walk_table
+from automatic_walk_time_tables.find_walk_table_points import select_waypoints
+from automatic_walk_time_tables.create_map import plot_route_on_map
+from automatic_walk_time_tables.walk_table import plot_elevation_profile, create_walk_table
 
 
 def generate_automated_walk_table(departure_date, gpx_file_path, velocity):
@@ -24,10 +24,10 @@ def generate_automated_walk_table(departure_date, gpx_file_path, velocity):
 
 if __name__ == "__main__":
     # defines the departure time of the hike
-    DEPARTURE_TIME = datetime(year=2021, month=8, day=16, hour=10, minute=00)
+    DEPARTURE_TIME = datetime(year=2021, month=8, day=16, hour=9, minute=00)
 
     # Path to the GPX-File with the pre-planed route
-    GPX_FILE_PATH = './testWalks/wanderweg_823.gpx'
+    GPX_FILE_PATH = './GPX/CHANGE_ME.gpx'
 
     # Velocity , walk-speed in km/h
     VELOCITY = 3.75
