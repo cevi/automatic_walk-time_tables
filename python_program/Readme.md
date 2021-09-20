@@ -9,6 +9,7 @@ Note: the script is only tested with GPX-files exported form SchweizMobil and fo
 should work with arbitrary GPX-files.
 
 ## Settings: Supported command-line args
+
 All arguments are optional (or have a default value). However, the arguments allow choosing various settings.
 
 Name | arguments | Description
@@ -18,6 +19,7 @@ Name | arguments | Description
 `--velocity` | `Float` | Speed in km/h on which the calculation is based, default 3.75 km/h.
 `--map-scaling` | `Integer` | Scaling of the created map (e.g. 10000 for scaling of 1:10'000), if not specified the scaling will be automatically chosen.
 `--open-images` | None | If this flag is set, the created images will be shown (i.g. the map and elevation plot will be opened after its creation). For this feature a desktop environment is needed.
+`--departure-time` | ISO-timestamp | Departure date in ISO-format, i.g. 2011-11-04T00:05:23. Default 2021-08-16T09:00:00.
 
 ## About swisstopo Services
 
