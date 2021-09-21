@@ -37,7 +37,7 @@ if __name__ == "__main__":
     parser.add_argument('--map-scaling', type=int,
                         help='Integer. Scaling of the created map (e.g. 10000 for scaling of 1:10\'000), if not '
                              'specified the scaling will be automatically chosen.')
-    parser.add_argument('--open_figure', default=False, action='store_true',
+    parser.add_argument('--open-figure', default=False, action='store_true',
                         help='If this flag is set, the created images will be shown (i.g. the map and elevation plot '
                              'will be opened after its creation). For this feature a desktop environment is needed.')
     parser.add_argument('--departure-time', type=lambda s: datetime.fromisoformat(s),
