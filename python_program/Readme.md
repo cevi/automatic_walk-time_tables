@@ -5,7 +5,7 @@ run ```main.py``` to launch the script. The produced files get saved in the ```.
 the ```main.py``` you can specify the ```DEPARTURE_TIME```, ```GPX_FILE_PATH```, and ```VELOCITY``` as command-line
 arguments, see table bellow.
 
-Note: the script is only tested with GPX-files exported form SchweizMobil and form the official swisstopo app, but it
+Note: the script is only tested with GPX-files exported form SchweizMobil and from the official swisstopo app, but it
 should work with arbitrary GPX-files.
 
 ## Settings: Supported command-line args
