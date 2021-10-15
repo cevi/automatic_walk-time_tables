@@ -1,10 +1,25 @@
-# How to run it?
+# How to run the script?
 
 Make sure you have installed python 3 and all requirements listed in the requirements.txt file. Now you can
-run ```main.py``` to launch the script. The produced files get saved in the ./output directory.
+run ```main.py``` to launch the script. The produced files get saved in the ```./output``` directory. In
+the ```main.py``` you can specify the ```DEPARTURE_TIME```, ```GPX_FILE_PATH```, and ```VELOCITY``` as command-line
+arguments, see table bellow.
 
-In the ```main.py``` you can specify the ```DEPARTURE_TIME```, ```GPX_FILE_PATH```, and ```VELOCITY```. Note: the script
-is only tested with GPX-files exported form SchweizMobil, but it should work with arbitrary GPX-files.
+Note: the script is only tested with GPX-files exported form SchweizMobil and from the official swisstopo app, but it
+should work with arbitrary GPX-files.
+
+## Settings: Supported command-line args
+
+All arguments are optional (or have a default value). However, the arguments allow choosing various settings.
+
+Name | arguments | Description
+--- | --- | ---
+|  |
+`--gpx-file-name` | `String` | Name and path to the GPX file, if not specified ```./GPX/Default_Route.gpx```  will be used as default value.
+`--velocity` | `Float` | Speed in km/h on which the calculation is based, default 3.75 km/h.
+`--map-scaling` | `Integer` | Scaling of the created map (e.g. 10000 for scaling of 1:10'000), if not specified the scaling will be automatically chosen.
+`--open-images` | None | If this flag is set, the created images will be shown (i.g. the map and elevation plot will be opened after its creation). For this feature a desktop environment is needed.
+`--departure-time` | ISO-timestamp | Departure date in ISO-format, i.g. 2011-11-04T00:05:23. Default 2021-08-16T09:00:00.
 
 ## About swisstopo Services
 
