@@ -1,23 +1,24 @@
 import math
+import os
 from datetime import timedelta
 from typing import Tuple, List
 
 import gpxpy
-import os
 import numpy as np
 import openpyxl
 from gpxpy.gpx import GPXTrackPoint
 from matplotlib import pyplot as plt
 
+from . import coord_transformation
 from . import find_swisstopo_name
 from . import find_walk_table_points
-from . import coord_transformation 
 
 
 def plot_elevation_profile(raw_data_points: gpxpy.gpx,
                            way_points: List[Tuple[int, GPXTrackPoint]],
                            temp_points: List[Tuple[int, GPXTrackPoint]],
-                           file_name: str):
+                           file_name: str,
+                           open_figure: bool):
     """
 
     Plots the elevation profile of the path contained in the GPX-file. In addition the
@@ -51,12 +52,14 @@ def plot_elevation_profile(raw_data_points: gpxpy.gpx,
     plt.grid(color='gray', linestyle='dashed', linewidth=0.5)
 
     # Check if output directory exists, if not, create it.
-    if(not os.path.exists('output')):
+    if (not os.path.exists('output')):
         os.mkdir('output')
 
     # show the plot and save image
     plt.savefig('output/' + file_name + '_elevation_profile.png', dpi=750)
-    plt.show()
+
+    if open_figure:
+        plt.show()
 
 
 def create_walk_table(time_stamp, speed, way_points, total_distance, file_name: str):
@@ -120,7 +123,7 @@ def create_walk_table(time_stamp, speed, way_points, total_distance, file_name: 
     print()
 
     # Check if output directory exists, if not, create it.
-    if(not os.path.exists('output')):
+    if (not os.path.exists('output')):
         os.mkdir('output')
 
     xfile.save('output/' + file_name + '_Marschzeittabelle.xlsx')

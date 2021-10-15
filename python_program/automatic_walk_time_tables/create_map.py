@@ -1,10 +1,10 @@
 import math
+import os
 from io import BytesIO
 
 import gpxpy
 import grequests
 import numpy as np
-import os
 from PIL import Image, ImageDraw
 
 from . import coord_transformation
@@ -26,6 +26,8 @@ TILE_MATRIX_SET: str = '2056'
 def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
                       way_points: [],
                       file_name: str,
+                      open_figure: bool,
+                      map_scaling: int,
                       layer: str = 'ch.swisstopo.pixelkarte-farbe',
                       tile_format_ext: str = 'jpeg'):
     """
@@ -38,6 +40,10 @@ def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
     layer : Map layer, see https://wmts.geo.admin.ch/EPSG/2056/1.0.0/WMTSCapabilities.xml for options
 
     """
+
+    # Todo: Implement user defined scaling!
+    if map_scaling is not None:
+        print('User defined map scaling will be ignored!')
 
     lv03_min, lv03_max = gpx_utils.calc_perimeter(raw_gpx_data)
 
@@ -120,12 +126,14 @@ def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
         draw.ellipse(circle_coords, outline=(255, 0, 0), width=5)
 
     # Check if output directory exists, if not, create it.
-    if(not os.path.exists('output')):
+    if (not os.path.exists('output')):
         os.mkdir('output')
 
     # saves the image as '.jpg'
     card_snippet_as_image.save('output/' + file_name + '_map.png')
-    card_snippet_as_image.show()
+
+    if open_figure:
+        card_snippet_as_image.show()
 
 
 def calc_img_coord(image_size, lv03_min, pixels_per_meter, wgs84_point):
