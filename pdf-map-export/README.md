@@ -17,3 +17,4 @@ Copy `query.json` to input field and print a PDF
 ## Some notes about the query
 
 The query uses  "projection": "EPSG:2056", i.g. it uses the LV95 coordinate format. Do not modify the "matrices" attribute!
+
