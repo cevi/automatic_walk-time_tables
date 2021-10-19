@@ -4,15 +4,155 @@
     "attributes": {
         "map": {
           "center": [
-            2631750,
-            1189000
+            2732093,
+            1198227
           ],
           "scale": 25000,
-          "dpi": 254,
+          "dpi": 400,
           "pdfA": true,
           "projection": "EPSG:2056",
           "rotation": 0,
           "layers": [
+            {
+            "geoJson": {
+              "type": "FeatureCollection",
+              "features": [
+                {
+                  "type": "Feature",
+                  "geometry": {
+                    "type": "LineString",
+                    "coordinates": [
+                        [
+                            2732093,
+                            1198227
+                        ],
+                        [
+                            2732200,
+                            1198226
+                        ],
+                        [
+                          2732600,
+                          1198026
+                        ],
+                        [
+                          2732200,
+                          1199226
+                      ]
+                    ]
+                  },
+                  "properties": {
+                    "_ngeo_style": "1,2"
+                  },
+                  "id": 7772936
+                }
+              ]
+            },
+            "opacity": 1,
+            "style": {
+              "version": 2,
+              "[_ngeo_style = '1']": {
+                "symbolizers": [
+                  {
+                    "type": "line",
+                    "strokeColor": "#ffffff",
+                    "strokeOpacity": 0.01,
+                    "strokeWidth": 2.5
+                  }
+                ]
+              },
+              "[_ngeo_style = '2']": {
+                "symbolizers": [
+                  {
+                    "type": "line",
+                    "strokeColor": "#e30613",
+                    "strokeOpacity": 0.5,
+                    "strokeWidth": 2.5
+                  }
+                ]
+              },
+              "[_ngeo_style = '1,2']": {
+                "symbolizers": [
+                  {
+                    "type": "line",
+                    "strokeColor": "#ffffff",
+                    "strokeOpacity": 0.01,
+                    "strokeWidth": 2.5
+                  },
+                  {
+                    "type": "line",
+                    "strokeColor": "#e30613",
+                    "strokeOpacity": 0.5,
+                    "strokeWidth": 2.5
+                  }
+                ]
+              }
+            },
+            "type": "geojson",
+            "name": "selected track"
+          },
+            {
+              "type": "grid",
+              "gridType": "LINES",
+              "numberOfLines": [5, 5],
+              "renderAsSvg": true,
+              "haloColor": "#CCFFCC",
+              "labelColor": "black",
+              "labelFormat": "%1.0f %s",
+              "indent": 10,
+              "haloRadius": 4,
+              "font": {
+                "name": [
+                  "Liberation Sans",
+                  "Helvetica",
+                  "Nimbus Sans L",
+                  "Liberation Sans",
+                  "FreeSans",
+                  "Sans-serif"
+                ],
+                "size": 8,
+                "style": "BOLD"
+              }
+            },
+            {
+              "geoJson": {
+                "type": "FeatureCollection",
+                "features": [
+                  {
+                    "type": "Feature",
+                    "geometry": {
+                      "type": "Point",
+                      "coordinates":  [
+                        2732393,
+                        1198227
+                      ]
+                    },
+                    "properties": {
+                      "_ngeo_style": "1"
+                    },
+                    "id": 1596274
+                  }
+                ]
+              },
+              "opacity": 1,
+              "style": {
+                "version": 2,
+                "[_ngeo_style = '1']": {
+                  "symbolizers": [
+                    {
+                      "type": "point",
+                      "externalGraphic": "https://www.ref-kirche-zurzach.ch/wp-content/uploads/2018/10/cevi.png",
+                      "graphicOpacity": 1,
+                      "graphicWidth": 20,
+                      "graphicXOffset": 0,
+                      "graphicYOffset": -35,
+                      "rotation": 0
+                    }
+                  ]
+                }
+              },
+              "type": "geojson",
+              "name": "selected track pois"
+            },
             {
               "baseURL": "https://wmts100.geo.admin.ch/1.0.0/{Layer}/{style}/{Time}/{TileMatrixSet}/{TileMatrix}/{TileCol}/{TileRow}.jpeg",
               "dimensions": [
@@ -459,7 +599,7 @@
                 }
               ],
               "matrixSet": "2056",
-              "opacity": 1,
+              "opacity": 0.85,
               "requestEncoding": "REST",
               "style": "default",
               "type": "WMTS",
