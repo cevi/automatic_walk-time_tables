@@ -1,15 +1,17 @@
-from copy import copy
-from typing import List, Tuple
-
 import geopy.distance
 import gpxpy
+from copy import copy
 from gpxpy.gpx import GPXTrackPoint
+from typing import List, Tuple
 
 
 def select_waypoints(raw_gpx_data: gpxpy.gpx, walk_point_limit=21):
     """
 
     Algorithm that selects suitable points for the Marschzeittabelle.
+
+    Some parts are inspired by the Ramer–Douglas–Peucker algorithm. Especially
+    the third step, which reduces the number of points.
 
     raw_gpx_data : raw gpx data from imported GPX-File
     walk_point_limit : max number of points in the walk-time table, default 21
