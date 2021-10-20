@@ -1,4 +1,4 @@
-import argparse, os
+import argparse
 from datetime import datetime
 
 import gpxpy.gpx
