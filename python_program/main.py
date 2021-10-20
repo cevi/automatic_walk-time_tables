@@ -6,6 +6,7 @@ import gpxpy.gpx
 from automatic_walk_time_tables.create_map import plot_route_on_map
 from automatic_walk_time_tables.find_walk_table_points import select_waypoints
 from automatic_walk_time_tables.walk_table import plot_elevation_profile, create_walk_table
+from automatic_walk_time_tables.map_numbers import find_map_numbers
 
 def generate_automated_walk_table(departure_date, gpx_file_path, velocity, open_figure: bool, map_scaling: int, creator_name: str):
     # Open GPX-File with the way-points
@@ -15,10 +16,12 @@ def generate_automated_walk_table(departure_date, gpx_file_path, velocity, open_
     # get Meta-Data
     name = raw_gpx_data.name
 
+    map_numbers = find_map_numbers(raw_gpx_data)
+
     # calc Points for walk table
     total_distance, temp_points, way_points = select_waypoints(raw_gpx_data)
     plot_elevation_profile(raw_gpx_data, way_points, temp_points, file_name=name, open_figure=open_figure)
-    create_walk_table(departure_date, velocity, way_points, total_distance, file_name=name, creator_name=creator_name)
+    create_walk_table(departure_date, velocity, way_points, total_distance, file_name=name, creator_name=creator_name, map_numbers=map_numbers)
     plot_route_on_map(raw_gpx_data, way_points, file_name=name, open_figure=open_figure, map_scaling=map_scaling)
 
 

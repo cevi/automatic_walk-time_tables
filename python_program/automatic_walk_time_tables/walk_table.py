@@ -62,7 +62,7 @@ def plot_elevation_profile(raw_data_points: gpxpy.gpx,
         plt.show()
 
 
-def create_walk_table(time_stamp, speed, way_points, total_distance, file_name: str, creator_name: str):
+def create_walk_table(time_stamp, speed, way_points, total_distance, file_name: str, creator_name: str, map_numbers: str):
     """
 
     Saves the Excel file as .output/Marschzeittabelle_{{file_name}}.xlsx'
@@ -78,6 +78,7 @@ def create_walk_table(time_stamp, speed, way_points, total_distance, file_name: 
     print()
     print('Distanz Höhe           Zeit   Uhrzeit     Ort (Koordinaten und Namen)')
     
+    sheet['A6'] = map_numbers
     sheet['B2'] = file_name
     sheet['B3'] = time_stamp.strftime('%d.%m.%Y')
     sheet['B4'] = creator_name
@@ -101,7 +102,7 @@ def create_walk_table(time_stamp, speed, way_points, total_distance, file_name: 
 
         time_stamp = time_stamp + timedelta(hours=deltaTime)
 
-        # print in§fos
+        # print infos
         name_of_point = find_swisstopo_name.find_name((lv03[0] + 2_000_000, lv03[1] + 1_000_000), 50)
         print(
             round(abs((oldPoint[0] if oldPoint is not None else 0.0) - point[0]), 1), 'km ',
