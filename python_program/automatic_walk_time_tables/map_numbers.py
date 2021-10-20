@@ -2,13 +2,12 @@ from typing import List
 
 import grequests
 import json
-import numpy as np
 import gpxpy
 
 from . import coord_transformation
 
 
-def is_in_bbox(bbox : List[float], coord_lv03):
+def is_in_bbox(bbox : List[float], coord_lv03 : List[float]) -> bool:
     """ 
     Checks if a given GPX point in LV03 is inside a bounding box (given in LV95 coordinates).
     """
@@ -17,25 +16,25 @@ def is_in_bbox(bbox : List[float], coord_lv03):
     lv95y = coord_lv03[1] + 1000000
     return bbox[0] < lv95x < bbox[2] and bbox[1] < lv95y < bbox[3]
 
-def get_lv95(gpx_point):
+def get_lv95(gpx_point : gpxpy.gpx.GPXTrackPoint) -> List[float]:
     """ 
     Converts a GPX point into a LV95 point.
     """
     converter = coord_transformation.GPSConverter()
     wgs84_point = [gpx_point.latitude, gpx_point.longitude, gpx_point.elevation]
-    lv03_point = np.round(converter.WGS84toLV03(wgs84_point[0], wgs84_point[1], wgs84_point[2]))
+    lv03_point = converter.WGS84toLV03(wgs84_point[0], wgs84_point[1], wgs84_point[2])
     lv95x = lv03_point[0] + 2000000
     lv95y = lv03_point[1] + 1000000
     return lv95x, lv95y
 
-def sort_maps(s):
+def sort_maps(s: str) -> int:
     """
     Carves out the LK number and returns it as an integer
     This can be used to sort a list of map names.
     """
     return int(s.split("(")[1].split(")")[0].split("LK ")[1])
 
-def find_map_numbers(raw_gpx_data : gpxpy.gpx):
+def find_map_numbers(raw_gpx_data : gpxpy.gpx) -> str:
     """
     Gets the Landeskarten-numbers around the start point of the tour. Then checks for each point, if it is inside one of the maps.
     If so, the card will be added and finally all cards are returned as a string sorted by number ascending.
@@ -64,7 +63,7 @@ def find_map_numbers(raw_gpx_data : gpxpy.gpx):
         for segment in track.segments:
             for point in segment.points:
                 wgs84_point = [point.latitude, point.longitude, point.elevation]
-                lv03_point = np.round(converter.WGS84toLV03(wgs84_point[0], wgs84_point[1], wgs84_point[2]))
+                lv03_point = converter.WGS84toLV03(wgs84_point[0], wgs84_point[1], wgs84_point[2])
                 
                 for name,bbox in all_maps:
                     if(is_in_bbox(bbox, lv03_point)):
