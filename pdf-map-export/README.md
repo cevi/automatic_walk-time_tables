@@ -4,7 +4,7 @@
 
 ## 1) Run docker:
 
-`docker run  --name=mapfish-print-test  --mount type=bind,source=./pdf-map-export,target=/usr/local/tomcat/webapps/ROOT/print-apps/swisstopo  --publish=8080:8080  camptocamp/mapfish_print`
+`docker run  --name=mapfish-print-test  --mount type=bind,source=/mnt/d/Projekte/Marschzeittabelle/pdf-map-export,target=/usr/local/tomcat/webapps/ROOT/print-apps/swisstopo  --publish=8080:8080  camptocamp/mapfish_print`
 
 
 

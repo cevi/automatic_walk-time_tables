@@ -3,7 +3,7 @@ from datetime import datetime
 
 import gpxpy.gpx
 
-from automatic_walk_time_tables.create_map import plot_route_on_map
+from python_program.automatic_walk_time_tables.map_downloader.create_map import plot_route_on_map
 from automatic_walk_time_tables.find_walk_table_points import select_waypoints
 from automatic_walk_time_tables.walk_table import plot_elevation_profile, create_walk_table
 from automatic_walk_time_tables.map_numbers import find_map_numbers
@@ -36,7 +36,7 @@ if __name__ == "__main__":
                              'default value.', default='./GPX/Default_Route.gpx')
     parser.add_argument('--velocity', type=float, default=3.75,
                         help='Float. Speed in km/h on which the calculation is based, default 3.75 km/h.')
-    parser.add_argument('--map-scaling', type=int,
+    parser.add_argument('--map-scaling', type=int, default=25_000,
                         help='Integer. Scaling of the created map (e.g. 10000 for scaling of 1:10\'000), if not '
                              'specified the scaling will be automatically chosen.')
     parser.add_argument('--open-figure', default=False, action='store_true',
