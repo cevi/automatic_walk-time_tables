@@ -1,16 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Created with Jaspersoft Studio version 6.17.0.final using JasperReports Library version 6.17.0-6d93193241dd8cc42629e188b94f9e0bc5722efd  -->
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="report" pageWidth="842" pageHeight="595" orientation="Landscape" columnWidth="814" leftMargin="14" rightMargin="14" topMargin="14" bottomMargin="14" uuid="9a3e59f5-6675-48cf-ad74-9c42b5a5b290">
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="report" pageWidth="842" pageHeight="595" orientation="Landscape" columnWidth="814" leftMargin="14" rightMargin="14" topMargin="14" bottomMargin="14" uuid="9a3e59f5-6675-48cf-ad74-9c42b5a5b290">
 	<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.HorizontalRowLayout"/>
 	<property name="com.jaspersoft.studio.unit." value="pixel"/>
 	<parameter name="mapSubReport" class="java.lang.String"/>
 	<parameter name="scalebarSubReport" class="java.lang.String"/>
-
 	<title>
 		<band height="567" splitType="Stretch">
 			<subreport>
-				<reportElement x="1" y="0" width="813" height="566" backcolor="#FFFFFF" uuid="fa145068-76a5-4834-98ed-ce65b1976b3d">
+				<reportElement x="1" y="0" width="813" height="566" backcolor="#B1F2BE" uuid="fa145068-76a5-4834-98ed-ce65b1976b3d">
 					<property name="local_mesure_unitwidth" value="pixel"/>
 					<property name="local_mesure_unitheight" value="pixel"/>
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
@@ -18,20 +16,35 @@ xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://ja
 				</reportElement>
 				<subreportExpression><![CDATA[$P{mapSubReport}]]></subreportExpression>
 			</subreport>
+			<rectangle>
+				<reportElement x="600" y="518" width="210" height="45" forecolor="#FFFFFF" uuid="c9901651-0788-428f-b7a3-0f1623195781">
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+			</rectangle>
 			<subreport>
-				<reportElement x="0" y="240" width="230" height="40" uuid="fa145068-76a5-4834-98ed-ce65b1976b3d"/>
+				<reportElement x="605" y="523" width="200" height="25" uuid="fa145068-76a5-4834-98ed-ce65b1976b3d">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+				</reportElement>
 				<subreportExpression><![CDATA[$P{scalebarSubReport}]]></subreportExpression>
 			</subreport>
 			<staticText>
-				<reportElement x="730" y="550" width="84" height="16" uuid="a03c1801-86f0-4389-9fc7-3a5e6f7a30dc"/>
-				<textElement textAlignment="Center" verticalAlignment="Bottom">
-					<font fontName="SansSerif" size="12"/>
+				<reportElement x="605" y="545" width="200" height="16" uuid="a03c1801-86f0-4389-9fc7-3a5e6f7a30dc">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="9"/>
 				</textElement>
-				<text><![CDATA[© swisstopo]]></text>
+				<text><![CDATA[https://disclaimer.admin.ch © swisstopo]]></text>
 			</staticText>
-			<image>
-				<reportElement x="564" y="500" width="250" height="60" uuid="27e1f678-4479-4220-ab68-3c240b8b2499"/>
-				<imageExpression><![CDATA["https://www.cevi.ch/files/cevi/images/logo-cevi.svg"]]></imageExpression>
+			<image evaluationTime="Report">
+				<reportElement x="10" y="10" width="280" height="39" uuid="e7375b56-57f5-4abb-8f88-45734b26ed1b"/>
+				<imageExpression><![CDATA["cevi_logo.svg"]]></imageExpression>
 			</image>
 		</band>
 	</title>

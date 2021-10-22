@@ -1,16 +1,26 @@
 templates:
+
   #===========================================================================
   A4 landscape: !template
   #===========================================================================
+
     reportTemplate: report.jrxml
     attributes:
+
       map: !map
         maxDpi: 400
         width: 813
         height: 566
+
       scalebar: !scalebar
-        width: 230
-        height: 40
+        width: 200
+        height: 25
+        default:
+          fontSize: 8
+          renderAsSvg: True
+          unit: m
+          type: line
+
     processors:
     - !reportBuilder # compile all reports in current directory
       directory: '.'
