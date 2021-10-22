@@ -25,25 +25,53 @@ def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
     way_points : selected way points of the  walk-time table
     tile_format_ext : Format of the tile, allowed values jpeg or png, default jpeg
     layer : Map layer, see https://wmts.geo.admin.ch/EPSG/2056/1.0.0/WMTSCapabilities.xml for options
+    print_api_base_url : host of the mapfish instance, default localhost
+    print_api_port : port for accessing mapfish, default 8080
+    print_api_protocol : protocol used for accessing mapfish, default http
 
     """
 
-    with open(str(Path(__file__).resolve().parent) + '/matrices.json') as json_file:
+    query_json = create_mapfish_query(layer, map_scaling, raw_gpx_data)
+
+    base_url = "{}://{}:{}".format(print_api_protocol, print_api_base_url, print_api_port)
+    url = '{}/print/default/report.pdf'.format(base_url)
+    response_obj = requests.post(url, data=json.dumps(query_json))
+
+    if response_obj.status_code != 200:
+        raise Exception('Can not fetch map. Status Code: {}'.format(response_obj.status_code))
+
+    response_json = json.loads(response_obj.content)
+
+    pdf_status = requests.get(base_url + response_json['statusURL'])
+    while pdf_status.status_code == 200 and json.loads(pdf_status.content)['status'] == 'running':
+        time.sleep(0.5)
+        pdf_status = requests.get(base_url + response_json['statusURL'])
+        print(json.loads(pdf_status.content)['status'])
+
+    if response_obj.status_code != 200 and json.loads(pdf_status.content)['status'] != 'finished':
+        raise Exception('Can not fetch map. Status Code: {}'.format(response_obj.status_code))
+
+    fetched_pdf = requests.get(base_url + response_json['downloadURL'])
+
+    if response_obj.status_code != 200:
+        raise Exception('Can not fetch map. Status Code: {}'.format(response_obj.status_code))
+
+    with open('output/{}_map.pdf'.format(file_name), 'wb') as f:
+        f.write(fetched_pdf.content)
+
+
+def create_mapfish_query(layer, map_scaling, raw_gpx_data):
+    """
+
+    Returns the JSON-Object used for querying
+
+    """
+
+    path_coordinates = get_path_coordinates_as_list(raw_gpx_data)
+
+    # load the default map matrices, used to inform mapfish about the available map scales and tile size
+    with open(str(Path(__file__).resolve().parent) + '/default_map_matrices.json') as json_file:
         default_matrices = json.load(json_file)
-
-    converter = coord_transformation.GPSConverter()
-
-    path_coordinates = []
-
-    for track in raw_gpx_data.tracks:
-        for segment in track.segments:
-            for point in segment.points:
-                wgs84_point = [point.latitude, point.longitude, point.elevation]
-                lv03_point = converter.WGS84toLV03(wgs84_point[0], wgs84_point[1], wgs84_point[2])
-
-                path_coordinates.append([lv03_point[0] + 2_000_000, lv03_point[1] + 1_000_000])
-
-    print(path_coordinates[0])
 
     query_json = {
         "layout": "A4 landscape",
@@ -116,29 +144,16 @@ def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
             }
         }
     }
+    return query_json
 
-    base_url = "{}://{}:{}".format(print_api_protocol, print_api_base_url, print_api_port)
-    url = '{}/print/default/report.pdf'.format(base_url)
-    response_obj = requests.post(url, data=json.dumps(query_json))
 
-    if response_obj.status_code != 200:
-        raise Exception('Can not fetch map. Status Code: {}'.format(response_obj.status_code))
-
-    response_json = json.loads(response_obj.content)
-
-    pdf_status = requests.get(base_url + response_json['statusURL'])
-    while pdf_status.status_code == 200 and json.loads(pdf_status.content)['status'] == 'running':
-        time.sleep(0.5)
-        pdf_status = requests.get(base_url + response_json['statusURL'])
-        print(json.loads(pdf_status.content)['status'])
-
-    if response_obj.status_code != 200 and json.loads(pdf_status.content)['status'] != 'finished':
-        raise Exception('Can not fetch map. Status Code: {}'.format(response_obj.status_code))
-
-    fetched_pdf = requests.get(base_url + response_json['downloadURL'])
-
-    if response_obj.status_code != 200:
-        raise Exception('Can not fetch map. Status Code: {}'.format(response_obj.status_code))
-
-    with open('output/{}_map.pdf'.format(file_name), 'wb') as f:
-        f.write(fetched_pdf.content)
+def get_path_coordinates_as_list(raw_gpx_data):
+    path_coordinates = []
+    converter = coord_transformation.GPSConverter()
+    for track in raw_gpx_data.tracks:
+        for segment in track.segments:
+            for point in segment.points:
+                wgs84_point = [point.latitude, point.longitude, point.elevation]
+                lv03_point = converter.WGS84toLV03(wgs84_point[0], wgs84_point[1], wgs84_point[2])
+                path_coordinates.append([lv03_point[0] + 2_000_000, lv03_point[1] + 1_000_000])
+    return path_coordinates

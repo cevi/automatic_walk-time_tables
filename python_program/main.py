@@ -3,12 +3,14 @@ from datetime import datetime
 
 import gpxpy.gpx
 
-from python_program.automatic_walk_time_tables.map_downloader.create_map import plot_route_on_map
 from automatic_walk_time_tables.find_walk_table_points import select_waypoints
-from automatic_walk_time_tables.walk_table import plot_elevation_profile, create_walk_table
 from automatic_walk_time_tables.map_numbers import find_map_numbers
+from automatic_walk_time_tables.walk_table import plot_elevation_profile, create_walk_table
+from python_program.automatic_walk_time_tables.map_downloader.create_map import plot_route_on_map
 
-def generate_automated_walk_table(departure_date, gpx_file_path, velocity, open_figure: bool, map_scaling: int, creator_name: str):
+
+def generate_automated_walk_table(departure_date, gpx_file_path, velocity, open_figure: bool, map_scaling: int,
+                                  creator_name: str):
     # Open GPX-File with the way-points
     gpx_file = open(gpx_file_path, 'r')
     raw_gpx_data = gpxpy.parse(gpx_file)
@@ -21,7 +23,8 @@ def generate_automated_walk_table(departure_date, gpx_file_path, velocity, open_
     # calc Points for walk table
     total_distance, temp_points, way_points = select_waypoints(raw_gpx_data)
     plot_elevation_profile(raw_gpx_data, way_points, temp_points, file_name=name, open_figure=open_figure)
-    create_walk_table(departure_date, velocity, way_points, total_distance, file_name=name, creator_name=creator_name, map_numbers=map_numbers)
+    create_walk_table(departure_date, velocity, way_points, total_distance, file_name=name, creator_name=creator_name,
+                      map_numbers=map_numbers)
     plot_route_on_map(raw_gpx_data, way_points, file_name=name, open_figure=open_figure, map_scaling=map_scaling)
 
 
@@ -45,7 +48,8 @@ if __name__ == "__main__":
     parser.add_argument('--departure-time', type=lambda s: datetime.fromisoformat(s),
                         default=datetime(year=2021, month=8, day=16, hour=9, minute=00),
                         help='Departure date in ISO-format, i.g. 2011-11-04T00:05:23. Default 2021-08-16T09:00:00.')
-    parser.add_argument('--creator-name', type=str, help='Name of you, the creator of this route. If not specified, it will be empty.', default='')
+    parser.add_argument('--creator-name', type=str,
+                        help='Name of you, the creator of this route. If not specified, it will be empty.', default='')
 
     args = parser.parse_args()
 
