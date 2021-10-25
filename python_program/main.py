@@ -6,7 +6,7 @@ import gpxpy.gpx
 from automatic_walk_time_tables.find_walk_table_points import select_waypoints
 from automatic_walk_time_tables.map_numbers import find_map_numbers
 from automatic_walk_time_tables.walk_table import plot_elevation_profile, create_walk_table
-from python_program.automatic_walk_time_tables.map_downloader.create_map import plot_route_on_map
+from automatic_walk_time_tables.map_downloader.create_map import plot_route_on_map
 
 
 def generate_automated_walk_table(departure_date, gpx_file_path, velocity, open_figure: bool, map_scaling: int,
