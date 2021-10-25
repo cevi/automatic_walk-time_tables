@@ -8,12 +8,12 @@ from matplotlib.patches import Rectangle
 from pathlib import Path
 from pyclustering.cluster.kmeans import kmeans, kmeans_visualizer
 from pyclustering.utils.metric import type_metric, distance_metric
+from typing import List, Tuple
 
 from .. import coord_transformation
 
-
 def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
-                      way_points: [],
+                      way_points: List[Tuple[int, gpxpy.gpx.GPXTrackPoint]],
                       file_name: str,
                       open_figure: bool,
                       map_scaling: int,
@@ -25,7 +25,7 @@ def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
 
     Creates a map of the route and marking the selected way points on it.
 
-    raw_gpx_data : raw data form imported GPX file
+    raw_gpx_data : raw data from imported GPX file
     way_points : selected way points of the  walk-time table
     tile_format_ext : Format of the tile, allowed values jpeg or png, default jpeg
     layer : Map layer, see https://wmts.geo.admin.ch/EPSG/2056/1.0.0/WMTSCapabilities.xml for options
@@ -35,7 +35,13 @@ def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
 
     """
 
-    map_centers = create_map_centers(map_scaling, raw_gpx_data)
+    # Subsample the tracks with the Ramer-Douglas-Peucker algorithm.
+    subsampled_gpx_data = raw_gpx_data.clone()
+    for track in subsampled_gpx_data.tracks:
+        track.simplify()
+
+
+    map_centers = create_map_centers(map_scaling, subsampled_gpx_data)
 
 
     if len(map_centers) > 10:
@@ -44,7 +50,7 @@ def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
 
     for index, map_center in enumerate(map_centers):
 
-        query_json = create_mapfish_query(layer, map_scaling, raw_gpx_data, map_center)
+        query_json = create_mapfish_query(layer, map_scaling, subsampled_gpx_data, map_center)
 
         base_url = "{}://{}:{}".format(print_api_protocol, print_api_base_url, print_api_port)
         url = '{}/print/default/report.pdf'.format(base_url)
@@ -176,7 +182,7 @@ def GetSpacedElements(array, numElems=4):
     return list(np.array(array)[indices])
 
 
-def create_map_centers(map_scaling: int, raw_gpx_data: gpxpy.gpx) -> []:
+def create_map_centers(map_scaling: int, raw_gpx_data: gpxpy.gpx) -> List[np.array]:
     """
 
     Calculates the map centers based on the approach discussed here:
