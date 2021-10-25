@@ -56,10 +56,14 @@ def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
         response_json = json.loads(response_obj.content)
 
         pdf_status = requests.get(base_url + response_json['statusURL'])
+        loop_idx = 0
         while pdf_status.status_code == 200 and json.loads(pdf_status.content)['status'] == 'running':
             time.sleep(0.5)
             pdf_status = requests.get(base_url + response_json['statusURL'])
-            print(json.loads(pdf_status.content)['status'])
+            print(f"Waiting for PDF {index+1} out of {len(map_centers)}. ({loop_idx * 0.5}s)", end="\r")
+            loop_idx += 1
+        print()
+        print(f"Received PDF {index+1} out of {len(map_centers)}.")
 
         if response_obj.status_code != 200 and json.loads(pdf_status.content)['status'] != 'finished':
             raise Exception('Can not fetch map. Status Code: {}'.format(response_obj.status_code))
