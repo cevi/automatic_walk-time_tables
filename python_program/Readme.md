@@ -17,8 +17,8 @@ Name | arguments | Description
 |  |
 `--gpx-file-name` | `String` | Name and path to the GPX file, if not specified ```./GPX/Default_Route.gpx```  will be used as default value.
 `--velocity` | `Float` | Speed in km/h on which the calculation is based, default 3.75 km/h.
-`--map-scaling` | `Integer` | Scaling of the created map (e.g. 10000 for scaling of 1:10'000), if not specified the scaling will be automatically chosen.
-`--open-images` | None | If this flag is set, the created images will be shown (i.g. the map and elevation plot will be opened after its creation). For this feature a desktop environment is needed.
+`--map-scaling` | `Integer` | Scaling of the created map (e.g. 10000 for scaling of 1:10'000). If not specified, the scaling will be automatically chosen such that the path can be printed onto a single A4 paper. The scaling gets chosen out of a list of common map scaling: 1:10'000, 1:25'000, 1:50'000, 1:100'000, or 1:200'000.
+`--open-images` | None | If this flag is set, the created images will be shown (i.g. elevation plot will be opened after its creation). For this feature a desktop environment is needed.
 `--departure-time` | ISO-timestamp | Departure date in ISO-format, i.g. 2011-11-04T00:05:23. Default 2021-08-16T09:00:00.
 `--creator-name` | `String` | The name of the creator of this walk-table. Default is just an empty string.
 

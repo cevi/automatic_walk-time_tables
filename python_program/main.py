@@ -39,7 +39,7 @@ if __name__ == "__main__":
                              'default value.', default='./GPX/Default_Route.gpx')
     parser.add_argument('--velocity', type=float, default=3.75,
                         help='Float. Speed in km/h on which the calculation is based, default 3.75 km/h.')
-    parser.add_argument('--map-scaling', type=int, default=25_000,
+    parser.add_argument('--map-scaling', type=int,
                         help='Integer. Scaling of the created map (e.g. 10000 for scaling of 1:10\'000), if not '
                              'specified the scaling will be automatically chosen.')
     parser.add_argument('--open-figure', default=False, action='store_true',

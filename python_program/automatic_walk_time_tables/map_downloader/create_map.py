@@ -1,16 +1,58 @@
-import gpxpy
 import json
-import matplotlib.pyplot as plt
-import numpy as np
-import requests
 import time
-from matplotlib.patches import Rectangle
 from pathlib import Path
-from pyclustering.cluster.kmeans import kmeans, kmeans_visualizer
-from pyclustering.utils.metric import type_metric, distance_metric
 from typing import List, Tuple
 
+import gpxpy
+import numpy as np
+import requests
+from pyclustering.cluster.kmeans import kmeans
+from pyclustering.utils.metric import type_metric, distance_metric
+
 from .. import coord_transformation
+
+A4_HEIGHT_FACTOR = 4.5 / 25.0
+"""
+Used to calculate the size of the map printed on A4 at certain scale:
+`A4_HEIGHT_FACTOR * map_scale` gives you the number of km displayed on one A4 paper.
+"""
+
+A4_WIDTH_FACTOR = 6.5 / 25.0
+"""
+Used to calculate the size of the map printed on A4 at certain scale:
+`A4_WIDTH_FACTOR * map_scale` gives you the number of km displayed on one A4 paper.
+"""
+
+
+def auto_select_map_scaling(gpx_data: gpxpy.gpx) -> int:
+    """
+
+    Automatically selects a suitable map scaling such that the path can be printed
+    onto a single A4 paper. While keeping the scaling is as small as possible. The
+    scaling gets chosen out of a list of common map scaling: 1:10'000, 1:25'000,
+    1:50'000, 1:100'000, or 1:200'000.
+
+    gpx_data: the GPX data containing the route information
+
+    """
+
+    converter = coord_transformation.GPSConverter()
+    bounds = gpx_data.get_bounds()
+
+    upper_right = converter.WGS84toLV03(bounds.max_latitude, bounds.max_longitude, 0)
+    lower_left = converter.WGS84toLV03(bounds.min_latitude, bounds.min_longitude, 0)
+
+    # List of most common map scales
+    common_map_scales = [10_000, 25_000, 50_000, 100_000, 200_000]
+
+    for map_scale in common_map_scales:
+        if A4_HEIGHT_FACTOR * map_scale >= upper_right[1] - lower_left[1] and \
+                A4_WIDTH_FACTOR * map_scale >= lower_left[1] - upper_right[0]:
+            break
+
+    print(f'Map scaling automatically set to 1:{map_scale}')
+    return map_scale
+
 
 def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
                       way_points: List[Tuple[int, gpxpy.gpx.GPXTrackPoint]],
@@ -40,9 +82,10 @@ def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
     for track in subsampled_gpx_data.tracks:
         track.simplify()
 
+    if map_scaling is None:
+        map_scaling = auto_select_map_scaling(subsampled_gpx_data)
 
     map_centers = create_map_centers(map_scaling, subsampled_gpx_data)
-
 
     if len(map_centers) > 10:
         raise Exception("You should respect the faire use limit!")
@@ -66,10 +109,10 @@ def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
         while pdf_status.status_code == 200 and json.loads(pdf_status.content)['status'] == 'running':
             time.sleep(0.5)
             pdf_status = requests.get(base_url + response_json['statusURL'])
-            print(f"Waiting for PDF {index+1} out of {len(map_centers)}. ({loop_idx * 0.5}s)", end="\r")
+            print(f"Waiting for PDF {index + 1} out of {len(map_centers)}. ({loop_idx * 0.5}s)", end="\r")
             loop_idx += 1
         print()
-        print(f"Received PDF {index+1} out of {len(map_centers)}.")
+        print(f"Received PDF {index + 1} out of {len(map_centers)}.")
 
         if response_obj.status_code != 200 and json.loads(pdf_status.content)['status'] != 'finished':
             raise Exception('Can not fetch map. Status Code: {}'.format(response_obj.status_code))
@@ -168,12 +211,10 @@ def create_mapfish_query(layer, map_scaling, raw_gpx_data, center):
         }
     }
 
-
     return query_json
 
 
 def GetSpacedElements(array, numElems=4):
-
     """
     Get numElems of an array, that are equally spaced based on index (not value).
     """
@@ -192,8 +233,8 @@ def create_map_centers(map_scaling: int, raw_gpx_data: gpxpy.gpx) -> List[np.arr
 
     points = get_path_coordinates_as_list(raw_gpx_data)
 
-    w = 6.5 / 25.0 * map_scaling
-    h = 4.5 / 25.0 * map_scaling
+    w = A4_WIDTH_FACTOR * map_scaling
+    h = A4_HEIGHT_FACTOR * map_scaling
     n = 0
     n_points = 200
 
