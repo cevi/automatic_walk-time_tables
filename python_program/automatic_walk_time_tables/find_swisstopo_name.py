@@ -1,6 +1,8 @@
 import csv
-import math
-from math import sqrt
+import time
+from builtins import int
+
+from rtree.index import Index as RTreeIndex
 
 
 class SwissName:
@@ -12,15 +14,17 @@ class SwissName:
         self.y = int(y)
 
 
-def add_to_database(file, db, typeIndex, name, x, y):
+def add_to_database(file, index, typeIndex, name, x, y):
     with open(file, encoding="utf8") as file_data:
         reader = csv.reader(file_data, delimiter=';')
         next(reader)
+
         for r in reader:
-            db.append(SwissName(r[name], r[typeIndex], r[x], r[y]))
+            index.insert(0, (int(r[x]), int(r[y]), int(r[x]), int(r[y])),
+                         obj=SwissName(r[name], r[typeIndex], r[x], r[y]))
 
 
-def find_name(coord, dist):
+def find_name(coord):
     """
         See also https://api3.geo.admin.ch/api/faq/index.html#which-layers-have-a-tooltip
         fair use limit 20 Request per minute
@@ -30,41 +34,8 @@ def find_name(coord, dist):
 
     """
 
-    flurname_list = [swiss_name
-                     for swiss_name in database if
-                     abs(swiss_name.x - coord[0]) < dist * 4 and
-                     abs(swiss_name.y - coord[1]) < dist * 4]
-
-    # print(list(map(lambda x: x.name, flurname_list)))
-
-    # Suche nach der min. Distanz, dabei werden gewisse Objekte bevorzugt:
-    # Turm, Haupthuegel, Huegel, Pass, Strassenpass, Alpiner Gipfel: 2.5
-    # Kapelle: 2
-    # Haltestelle Bus: 1.5
-    # Gebaeude/ Offenes Gebaeude: 1.25
-    # lokalname swisstopo: 1.2
-    # Flurname swisstopo: 0.9
-
-    flurname_list.sort(key=lambda swiss_name:
-    math.sqrt((abs(swiss_name.x - coord[0]) ** 2 + abs(swiss_name.y - coord[1]) ** 2)) / (
-        2 if swiss_name.object_type in ['Haltestelle Bahn', 'Huegel', 'Pass', 'Strassenpass', 'Alpiner Gipfel',
-                                        'Gipfel',
-                                        ] else
-        1.25 if swiss_name.object_type in ['Kapelle', 'Turm', 'Schwimmbadareal', 'Campingplatzareal', 'Golfplatzareal',
-                                           'Zooareal', 'Freizeitanlagenareal', 'Abwasserreinigungsareal', 'Friedhof',
-                                           'Spitalareal', 'Quartierteil', 'Ort', 'See', 'Bach',
-                                           'Lokalname swisstopo'] else
-        1.15 if swiss_name.object_type in ['Haltestelle Bus', 'Haltestelle Schiff', 'Uebrige Bahnen',
-                                           'Haupthuegel'] else
-        1.05 if swiss_name.object_type in ['Gebaeude', 'Offenes Gebaeude', 'Schul- und Hochschulareal'] else
-        1 if swiss_name.object_type in ['Flurname swisstopo', 'Tal', 'Grat', 'Graben', 'Gletscher'] else 0.95))
-
-    if len(flurname_list) == 0:
-        return ''
-
-    return ('bei/m ' if sqrt(
-        abs(flurname_list[0].x - coord[0]) ** 2 + abs(flurname_list[0].y - coord[1]) ** 2) > dist else '') + \
-           flurname_list[0].name
+    list_of_points = list(index.nearest((coord[0], coord[1], coord[0], coord[1]), 1, objects=True))
+    return list_of_points[0].object.name
 
 
 ########################################################################################################################
@@ -73,13 +44,27 @@ def find_name(coord, dist):
 
 # loads the data form the three CSV files into the "database"
 
-database = []
+print('Start loading Swissname index file...')
+start = time.time()
 
-# Linien (Verkehrsbauten, Sportanlagen, Fliessgewässern ...)
-add_to_database('./res/swissNAMES3D_LIN.csv', database, 1, 5, 10, 11)
+index = RTreeIndex('./res/swissname_data_index')
 
-# Punkte (Topografische Namen, Flur- und Lokalnamen, Gebäudenamen ...)
-add_to_database('./res/swissNAMES3D_PKT.csv', database, 1, 6, 11, 12)
+if index.get_size() > 0:
+    print('Index of size {} found.'.format(index.get_size()))
 
-# Polygone (Siedlungsnamen, Seenamen, Geländenamen ..)
-add_to_database('./res/swissNAMES3D_PLY.csv', database, 1, 5, 10, 11)
+else:
+    print('No index found. New index is generated, this might take a few minutes.')
+
+    # Linien (Verkehrsbauten, Sportanlagen, Fliessgewässern ...)
+    add_to_database('./res/swissNAMES3D_LIN.csv', index, 1, 5, 10, 11)
+
+    # Punkte (Topografische Namen, Flur- und Lokalnamen, Gebäudenamen ...)
+    add_to_database('./res/swissNAMES3D_PKT.csv', index, 1, 6, 11, 12)
+
+    # Polygone (Siedlungsnamen, Seenamen, Geländenamen ..)
+    add_to_database('./res/swissNAMES3D_PLY.csv', index, 1, 5, 10, 11)
+
+    index.flush()
+
+end = time.time()
+print('Index loaded ({}s)'.format(str(end - start)))

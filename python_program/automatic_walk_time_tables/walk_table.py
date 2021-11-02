@@ -105,7 +105,7 @@ def create_walk_table(time_stamp, speed, way_points, total_distance, file_name: 
         time_stamp = time_stamp + timedelta(hours=deltaTime)
 
         # print infos
-        name_of_point = find_swisstopo_name.find_name((lv03[0] + 2_000_000, lv03[1] + 1_000_000), 50)
+        name_of_point = find_swisstopo_name.find_name((lv03[0] + 2_000_000, lv03[1] + 1_000_000))
         name_of_points.append(name_of_point)
         print(
             round(abs((oldPoint[0] if oldPoint is not None else 0.0) - point[0]), 1), 'km ',
