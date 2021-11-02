@@ -57,8 +57,8 @@ def auto_select_map_scaling(gpx_data: gpxpy.gpx) -> int:
 def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
                       way_points: List[Tuple[int, gpxpy.gpx.GPXTrackPoint]],
                       file_name: str,
-                      open_figure: bool,
                       map_scaling: int,
+                      name_of_points: List[str],
                       layer: str = 'ch.swisstopo.pixelkarte-farbe',
                       print_api_base_url: str = 'localhost',
                       print_api_port: int = 8080,
@@ -77,15 +77,14 @@ def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
 
     """
 
-    # Subsample the tracks with the Ramer-Douglas-Peucker algorithm.
+    if map_scaling is None:
+        map_scaling = auto_select_map_scaling(raw_gpx_data)
+
     subsampled_gpx_data = raw_gpx_data.clone()
     for track in subsampled_gpx_data.tracks:
         track.simplify()
 
-    if map_scaling is None:
-        map_scaling = auto_select_map_scaling(subsampled_gpx_data)
-
-    map_centers = create_map_centers(map_scaling, subsampled_gpx_data)
+    map_centers = create_map_centers(map_scaling, raw_gpx_data)
 
     if len(map_centers) > 10:
         raise Exception("You should respect the faire use limit!")
@@ -93,7 +92,7 @@ def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
 
     for index, map_center in enumerate(map_centers):
 
-        query_json = create_mapfish_query(layer, map_scaling, subsampled_gpx_data, map_center)
+        query_json = create_mapfish_query(layer, map_scaling, raw_gpx_data, map_center, way_points, name_of_points)
 
         base_url = "{}://{}:{}".format(print_api_protocol, print_api_base_url, print_api_port)
         url = '{}/print/default/report.pdf'.format(base_url)
@@ -126,7 +125,9 @@ def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
             f.write(fetched_pdf.content)
 
 
-def create_mapfish_query(layer, map_scaling, raw_gpx_data, center):
+def create_mapfish_query(layer, map_scaling, raw_gpx_data, center,
+                         way_points: List[Tuple[int, gpxpy.gpx.GPXTrackPoint]],
+                         name_of_points):
     """
 
     Returns the JSON-Object used for querying
@@ -139,6 +140,132 @@ def create_mapfish_query(layer, map_scaling, raw_gpx_data, center):
     with open(str(Path(__file__).resolve().parent) + '/default_map_matrices.json') as json_file:
         default_matrices = json.load(json_file)
 
+    path_layer = {
+        "geoJson": {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "LineString",
+                        "coordinates": path_coordinates
+                    },
+                    "properties": {
+                        "_ngeo_style": "1,2"
+                    },
+                    "id": 7772936
+                }
+            ]
+        },
+        "opacity": 1,
+        "style": {
+            "version": 2,
+            "[_ngeo_style = '1,2']": {
+                "symbolizers": [
+                    {
+                        "type": "line",
+                        "strokeColor": "#E88615",
+                        "strokeOpacity": 0.5,
+                        "strokeWidth": 2.5
+                    },
+                    {
+                        "type": "line",
+                        "strokeColor": "#E88615",
+                        "strokeOpacity": 0.75,
+                        "strokeWidth": .5
+                    }
+                ]
+            }
+        },
+        "type": "geojson",
+        "name": "selected track"
+    }
+    map_layer = {
+        "baseURL": "https://wmts100.geo.admin.ch/1.0.0/{Layer}/{style}/{Time}/{TileMatrixSet}/{TileMatrix}/{TileCol}/{TileRow}.jpeg",
+        "dimensions": ["Time"],
+        "dimensionParams": {"Time": "current"},
+        "name": layer,
+        "imageFormat": "image/jpeg",
+        "layer": layer,
+        "matrixSet": "2056",
+        "opacity": 0.85,
+        "requestEncoding": "REST",
+        "matrices": default_matrices,
+        "style": "default",
+        "type": "WMTS",
+        "version": "1.0.0"
+    }
+
+    point_layers = []
+    for i, point in enumerate(way_points):
+        converter = coord_transformation.GPSConverter()
+        wgs84 = [point[1].latitude, point[1].longitude, point[1].elevation]
+        lv03 = converter.WGS84toLV03(wgs84[0], wgs84[1], wgs84[2])
+        lv03 = np.round(lv03)
+
+        point_layer = {
+            "geoJson": {
+                "type": "FeatureCollection",
+                "features": [
+                    {
+                        "type": "Feature",
+                        "geometry": {
+                            "type": "Point",
+                            "coordinates": [lv03[0] + 2_000_000, lv03[1] + 1_000_000]
+                        },
+                        "properties": {
+                            "_ngeo_style": "1"
+                        },
+                        "id": 1596274
+                    }
+                ]
+            },
+            "opacity": 1,
+            "style": {
+                "version": 2,
+                "[_ngeo_style = '1']": {
+                    "symbolizers": [
+                        {
+                            "type": "point",
+                            "fillColor": "#FF0000",
+                            "fillOpacity": 0,
+                            "rotation": "30",
+
+                            "graphicName": "circle",
+                            "graphicOpacity": 0.4,
+                            "pointRadius": 5,
+
+                            "strokeColor": "#e30613",
+                            "strokeOpacity": 1,
+                            "strokeWidth": 2,
+                            "strokeLinecap": "round",
+                            "strokeLinejoin": "round",
+                        },
+                        {
+                            "type": "text",
+                            "fontColor": "#e30613",
+                            "fontFamily": "sans-serif",
+                            "fontSize": "8px",
+                            "fontStyle": "normal",
+                            "haloColor": "#ffffff",
+                            "haloOpacity": "0.5",
+                            "haloRadius": ".5",
+                            "label": name_of_points[i],
+                            "fillColor": "#FF0000",
+                            "fillOpacity": 0,
+                            "labelAlign": "cm",
+                            "labelRotation": "0",
+                            "labelXOffset": "0",
+                            "labelYOffset": "-12"
+                        }
+                    ]
+                }
+            },
+            "type": "geojson",
+            "name": "selected track pois"
+        }
+        point_layers.append(point_layer)
+
     query_json = {
         "layout": "A4 landscape",
         "outputFormat": "pdf",
@@ -150,63 +277,7 @@ def create_mapfish_query(layer, map_scaling, raw_gpx_data, center):
                 "pdfA": True,
                 "projection": "EPSG:2056",
                 "rotation": 0,
-                "layers": [
-                    {
-                        "geoJson": {
-                            "type": "FeatureCollection",
-                            "features": [
-                                {
-                                    "type": "Feature",
-                                    "geometry": {
-                                        "type": "LineString",
-                                        "coordinates": path_coordinates
-                                    },
-                                    "properties": {
-                                        "_ngeo_style": "1,2"
-                                    },
-                                    "id": 7772936
-                                }
-                            ]
-                        },
-                        "opacity": 1,
-                        "style": {
-                            "version": 2,
-                            "[_ngeo_style = '1,2']": {
-                                "symbolizers": [
-                                    {
-                                        "type": "line",
-                                        "strokeColor": "#e30613",
-                                        "strokeOpacity": 0.5,
-                                        "strokeWidth": 2.5
-                                    },
-                                    {
-                                        "type": "line",
-                                        "strokeColor": "#e30613",
-                                        "strokeOpacity": 0.75,
-                                        "strokeWidth": .5
-                                    }
-                                ]
-                            }
-                        },
-                        "type": "geojson",
-                        "name": "selected track"
-                    },
-                    {
-                        "baseURL": "https://wmts100.geo.admin.ch/1.0.0/{Layer}/{style}/{Time}/{TileMatrixSet}/{TileMatrix}/{TileCol}/{TileRow}.jpeg",
-                        "dimensions": ["Time"],
-                        "dimensionParams": {"Time": "current"},
-                        "name": layer,
-                        "imageFormat": "image/jpeg",
-                        "layer": layer,
-                        "matrixSet": "2056",
-                        "opacity": 0.85,
-                        "requestEncoding": "REST",
-                        "matrices": default_matrices,
-                        "style": "default",
-                        "type": "WMTS",
-                        "version": "1.0.0"
-                    }
-                ]
+                "layers": point_layers + [path_layer, map_layer]
             }
         }
     }

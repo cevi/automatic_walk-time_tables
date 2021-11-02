@@ -23,9 +23,9 @@ def generate_automated_walk_table(departure_date, gpx_file_path, velocity, open_
     # calc Points for walk table
     total_distance, temp_points, way_points = select_waypoints(raw_gpx_data)
     plot_elevation_profile(raw_gpx_data, way_points, temp_points, file_name=name, open_figure=open_figure)
-    create_walk_table(departure_date, velocity, way_points, total_distance, file_name=name, creator_name=creator_name,
+    name_of_points = create_walk_table(departure_date, velocity, way_points, total_distance, file_name=name, creator_name=creator_name,
                       map_numbers=map_numbers)
-    plot_route_on_map(raw_gpx_data, way_points, file_name=name, open_figure=open_figure, map_scaling=map_scaling)
+    plot_route_on_map(raw_gpx_data, way_points, file_name=name, map_scaling=map_scaling, name_of_points=name_of_points)
 
 
 if __name__ == "__main__":

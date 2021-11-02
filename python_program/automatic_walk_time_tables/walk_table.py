@@ -85,6 +85,8 @@ def create_walk_table(time_stamp, speed, way_points, total_distance, file_name: 
     sheet['N3'] = speed
     sheet['K8'] = time_stamp.strftime('%H:%M')
 
+    name_of_points = []
+
     # get Infos points
     for i, point in enumerate(way_points):
 
@@ -104,6 +106,7 @@ def create_walk_table(time_stamp, speed, way_points, total_distance, file_name: 
 
         # print infos
         name_of_point = find_swisstopo_name.find_name((lv03[0] + 2_000_000, lv03[1] + 1_000_000), 50)
+        name_of_points.append(name_of_point)
         print(
             round(abs((oldPoint[0] if oldPoint is not None else 0.0) - point[0]), 1), 'km ',
             int(lv03[2]), 'm ü. M.  ',
@@ -130,6 +133,7 @@ def create_walk_table(time_stamp, speed, way_points, total_distance, file_name: 
         os.mkdir('output')
 
     xfile.save('output/' + file_name + '_Marschzeittabelle.xlsx')
+    return name_of_points
 
 
 def calcTime(delta_height, delta_dist, speed):
