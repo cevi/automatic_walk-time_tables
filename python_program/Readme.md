@@ -1,14 +1,33 @@
-# How to run the script?
+## How to run the script?
 
-Make sure you have installed python 3 and all requirements listed in the requirements.txt file. Now you can
-run ```main.py``` to launch the script. The produced files get saved in the ```./output``` directory. In
-the ```main.py``` you can specify the ```DEPARTURE_TIME```, ```GPX_FILE_PATH```, and ```VELOCITY``` as command-line
-arguments, see table bellow.
+As of version 1.4.0, the script is divided into two main components:
 
-Note: the script is only tested with GPX-files exported form SchweizMobil and from the official swisstopo app, but it
-should work with arbitrary GPX-files.
+- A python script executed directly by the end user (entry-point `./main.py`)
+- A docker container running a MapFish instance used to create PDF-map exports via a web api (see `../pdf_map_export`
+  folder).
 
-## Settings: Supported command-line args
+## Prerequisites
+
+1) Make sure you have installed python 3 and all requirements listed in
+   the `./automatic_walk_time_tables/requirements.txt` file. You can use the following command to install the
+   dependencies:
+
+       pip3 install -r ./automatic_walk_time_tables/requirements.txt
+
+2) In order to create PDF-map exports, you need to set up a docker container. Please follow
+   the [instructions](../pdf_map_export/README.md) inside the `../pdf_map_export` folder.
+
+## Launch the script
+
+You can launch the script by calling:
+
+    main.py --gpx-file-name <file_name>
+
+Where the `gpx-file-name` flag specifies the path to your GPX file. Once the script has terminated, the produced files (
+Excel, PDFs...) are stored in the ```./output``` directory. Note: the script is only tested with GPX-files exported form
+SchweizMobil and from the official swisstopo app, but it should work with arbitrary GPX-files.
+
+### Additional Settings: Supported command-line args
 
 All arguments are optional (or have a default value). However, the arguments allow choosing various settings.
 
