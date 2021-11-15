@@ -125,7 +125,7 @@ def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
             f.write(fetched_pdf.content)
 
 
-def create_mapfish_query(layer, map_scaling, raw_gpx_data, center,
+def create_mapfish_query(layer, map_scaling, raw_gpx_data: gpxpy.gpx, center,
                          way_points: List[Tuple[int, gpxpy.gpx.GPXTrackPoint]],
                          name_of_points):
     """
@@ -350,7 +350,7 @@ def create_map_centers(map_scaling: int, raw_gpx_data: gpxpy.gpx) -> List[np.arr
     return final_centers
 
 
-def get_path_coordinates_as_list(raw_gpx_data):
+def get_path_coordinates_as_list(raw_gpx_data: gpxpy.gpx):
     path_coordinates = []
     converter = coord_transformation.GPSConverter()
     for track in raw_gpx_data.tracks:

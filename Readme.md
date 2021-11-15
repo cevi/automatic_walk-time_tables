@@ -8,10 +8,15 @@ Ziel dieses Projektes ist es, den Prozess rund um das Erstellen einer J+S-Marsch
 Velo-Tour zu automatisieren und zu beschleunigen.
 
 Heute gibt es bereits verschiedenste Online-Tool, die J+S-Leiter*innen und Wanderfreudigen das Planen einer Wanderung
-erleichtern. Ich selber verwende meistens die kostenpflichtige Online-Karte von SchweizMobil. SchweizMobil ist Dank den
-magnetischen Wegen (d.h. die eingezeichnete Route folgt automatisch dem Wanderweg/der Strasse) und der Zeitberechnung (
-gemäss der Formel der Schweizer Wanderwege) bereits eine grosse Hilfe beim Planen. Ebenfalls geeignet ist die offizielle 
-App des Bundesamts für Landestopografie swisstopo.
+erleichtern:
+
+- Die kostenpflichtige Online-Karte von SchweizMobil. SchweizMobil ist Dank den magnetischen Wegen (d.h. die
+eingezeichnete Route folgt automatisch dem Wanderweg/der Strasse) und der Zeitberechnung (gemäss der Formel der 
+Schweizer Wanderwege) bereits eine grosse Hilfe beim Planen.
+
+- Für mobile Endgeräte, eignet sich ebenfalls die offizielle App des Bundesamts für Landestopografie swisstopo.
+Analog zur SchweizMobil, bietet auch die swisstopo App eine Funktion zur Routenplanung mit magnetischen Wegen.
+
 
 Ist man mit einer grösseren Gruppe unterwegs (so zum Beispiel in einem J+S-Lager), ist eine ausführliche Planung
 unumgänglich. Doch genau in diesen Szenarien stossen die existierenden Tools an ihr Grenzen. Dieses Projekt setzt genau
