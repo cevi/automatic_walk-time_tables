@@ -45,9 +45,9 @@ def generate_automated_walk_table(args: argparse.Namespace):
 def str2bool(v):
     if isinstance(v, bool):
         return v
-    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+    if v.lower() in ('yes', 'true', 't', 'y', '1', 'j', 'ja'):
         return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+    elif v.lower() in ('no', 'false', 'f', 'n', '0', 'nein'):
         return False
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
