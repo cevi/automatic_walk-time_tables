@@ -1,0 +1,629 @@
+{
+  "layout": "A4 landscape",
+  "outputFormat": "pdf",
+  "attributes": {
+    "map": {
+      "center": [
+        2732093,
+        1198227
+      ],
+      "scale": 25000,
+      "dpi": 400,
+      "pdfA": true,
+      "projection": "EPSG:2056",
+      "rotation": 0,
+      "layers": [
+        {
+          "geoJson": {
+            "type": "FeatureCollection",
+            "features": [
+              {
+                "type": "Feature",
+                "geometry": {
+                  "type": "LineString",
+                  "coordinates": [
+                    [
+                      2732093,
+                      1198227
+                    ],
+                    [
+                      2732200,
+                      1198226
+                    ],
+                    [
+                      2732600,
+                      1198026
+                    ],
+                    [
+                      2732200,
+                      1199226
+                    ]
+                  ]
+                },
+                "properties": {
+                  "_ngeo_style": "1,2"
+                },
+                "id": 7772936
+              }
+            ]
+          },
+          "opacity": 1,
+          "style": {
+            "version": 2,
+            "[_ngeo_style = '1']": {
+              "symbolizers": [
+                {
+                  "type": "line",
+                  "strokeColor": "#ffffff",
+                  "strokeOpacity": 0.01,
+                  "strokeWidth": 2.5
+                }
+              ]
+            },
+            "[_ngeo_style = '2']": {
+              "symbolizers": [
+                {
+                  "type": "line",
+                  "strokeColor": "#e30613",
+                  "strokeOpacity": 0.5,
+                  "strokeWidth": 2.5
+                }
+              ]
+            },
+            "[_ngeo_style = '1,2']": {
+              "symbolizers": [
+                {
+                  "type": "line",
+                  "strokeColor": "#ffffff",
+                  "strokeOpacity": 0.01,
+                  "strokeWidth": 2.5
+                },
+                {
+                  "type": "line",
+                  "strokeColor": "#e30613",
+                  "strokeOpacity": 0.5,
+                  "strokeWidth": 2.5
+                }
+              ]
+            }
+          },
+          "type": "geojson",
+          "name": "selected track"
+        },
+        {
+          "type": "grid",
+          "origin": [
+            2700000,
+            1200000
+          ],
+          "spacing": [
+            1000,
+            1000
+          ],
+          "renderAsSvg": true,
+          "gridColor": "#FFFFFF",
+          "rotateLabels": false,
+          "labelColor": "black",
+          "valueFormat": "###,###",
+          "formatGroupingSeparator": " ",
+          "font": {
+            "name": [
+              "Liberation Sans",
+              "Helvetica",
+              "Nimbus Sans L",
+              "Liberation Sans",
+              "FreeSans",
+              "Sans-serif"
+            ],
+            "size": 6
+          },
+          "style": {
+            "version": 2,
+            "*": {
+              "symbolizers": [
+                {
+                  "type": "line",
+                  "strokeWidth": 0.1,
+                  "strokeOpacity": 0.5,
+                  "strokeColor": "gray"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "geoJson": {
+            "type": "FeatureCollection",
+            "features": [
+              {
+                "type": "Feature",
+                "geometry": {
+                  "type": "Point",
+                  "coordinates": [
+                    2732393,
+                    1198227
+                  ]
+                },
+                "properties": {
+                  "_ngeo_style": "1"
+                },
+                "id": 1596274
+              }
+            ]
+          },
+          "opacity": 1,
+          "style": {
+            "version": 2,
+            "[_ngeo_style = '1']": {
+              "symbolizers": [
+                {
+                  "type": "point",
+                  "externalGraphic": "https://www.ref-kirche-zurzach.ch/wp-content/uploads/2018/10/cevi.png",
+                  "graphicOpacity": 1,
+                  "graphicWidth": 20,
+                  "graphicXOffset": 0,
+                  "graphicYOffset": -35,
+                  "rotation": 0
+                }
+              ]
+            }
+          },
+          "type": "geojson",
+          "name": "selected track pois"
+        },
+        {
+          "baseURL": "https://wmts100.geo.admin.ch/1.0.0/{Layer}/{style}/{Time}/{TileMatrixSet}/{TileMatrix}/{TileCol}/{TileRow}.jpeg",
+          "dimensions": [
+            "Time"
+          ],
+          "dimensionParams": {
+            "Time": "current"
+          },
+          "name": "pixelkarte-farbe",
+          "imageFormat": "image/jpeg",
+          "layer": "ch.swisstopo.pixelkarte-farbe",
+          "matrices": [
+            {
+              "identifier": "0",
+              "scaleDenominator": 14285714.285714287,
+              "tileSize": [
+                256,
+                256
+              ],
+              "topLeftCorner": [
+                2420000,
+                1350000
+              ],
+              "matrixSize": [
+                0,
+                0
+              ]
+            },
+            {
+              "identifier": "1",
+              "scaleDenominator": 13392857.142857144,
+              "tileSize": [
+                256,
+                256
+              ],
+              "topLeftCorner": [
+                2420000,
+                1350000
+              ],
+              "matrixSize": [
+                0,
+                0
+              ]
+            },
+            {
+              "identifier": "2",
+              "scaleDenominator": 12500000.000000002,
+              "tileSize": [
+                256,
+                256
+              ],
+              "topLeftCorner": [
+                2420000,
+                1350000
+              ],
+              "matrixSize": [
+                0,
+                0
+              ]
+            },
+            {
+              "identifier": "3",
+              "scaleDenominator": 11607142.857142858,
+              "tileSize": [
+                256,
+                256
+              ],
+              "topLeftCorner": [
+                2420000,
+                1350000
+              ],
+              "matrixSize": [
+                0,
+                0
+              ]
+            },
+            {
+              "identifier": "4",
+              "scaleDenominator": 10714285.714285715,
+              "tileSize": [
+                256,
+                256
+              ],
+              "topLeftCorner": [
+                2420000,
+                1350000
+              ],
+              "matrixSize": [
+                0,
+                0
+              ]
+            },
+            {
+              "identifier": "5",
+              "scaleDenominator": 9821428.571428573,
+              "tileSize": [
+                256,
+                256
+              ],
+              "topLeftCorner": [
+                2420000,
+                1350000
+              ],
+              "matrixSize": [
+                0,
+                0
+              ]
+            },
+            {
+              "identifier": "6",
+              "scaleDenominator": 8928571.42857143,
+              "tileSize": [
+                256,
+                256
+              ],
+              "topLeftCorner": [
+                2420000,
+                1350000
+              ],
+              "matrixSize": [
+                0,
+                0
+              ]
+            },
+            {
+              "identifier": "7",
+              "scaleDenominator": 8035714.285714286,
+              "tileSize": [
+                256,
+                256
+              ],
+              "topLeftCorner": [
+                2420000,
+                1350000
+              ],
+              "matrixSize": [
+                0,
+                0
+              ]
+            },
+            {
+              "identifier": "8",
+              "scaleDenominator": 7142857.142857144,
+              "tileSize": [
+                256,
+                256
+              ],
+              "topLeftCorner": [
+                2420000,
+                1350000
+              ],
+              "matrixSize": [
+                0,
+                0
+              ]
+            },
+            {
+              "identifier": "9",
+              "scaleDenominator": 6250000.000000001,
+              "tileSize": [
+                256,
+                256
+              ],
+              "topLeftCorner": [
+                2420000,
+                1350000
+              ],
+              "matrixSize": [
+                1,
+                0
+              ]
+            },
+            {
+              "identifier": "10",
+              "scaleDenominator": 5357142.857142857,
+              "tileSize": [
+                256,
+                256
+              ],
+              "topLeftCorner": [
+                2420000,
+                1350000
+              ],
+              "matrixSize": [
+                1,
+                0
+              ]
+            },
+            {
+              "identifier": "11",
+              "scaleDenominator": 4464285.714285715,
+              "tileSize": [
+                256,
+                256
+              ],
+              "topLeftCorner": [
+                2420000,
+                1350000
+              ],
+              "matrixSize": [
+                1,
+                0
+              ]
+            },
+            {
+              "identifier": "12",
+              "scaleDenominator": 3571428.571428572,
+              "tileSize": [
+                256,
+                256
+              ],
+              "topLeftCorner": [
+                2420000,
+                1350000
+              ],
+              "matrixSize": [
+                1,
+                1
+              ]
+            },
+            {
+              "identifier": "13",
+              "scaleDenominator": 2678571.4285714286,
+              "tileSize": [
+                256,
+                256
+              ],
+              "topLeftCorner": [
+                2420000,
+                1350000
+              ],
+              "matrixSize": [
+                2,
+                1
+              ]
+            },
+            {
+              "identifier": "14",
+              "scaleDenominator": 2321428.571428572,
+              "tileSize": [
+                256,
+                256
+              ],
+              "topLeftCorner": [
+                2420000,
+                1350000
+              ],
+              "matrixSize": [
+                2,
+                1
+              ]
+            },
+            {
+              "identifier": "15",
+              "scaleDenominator": 1785714.285714286,
+              "tileSize": [
+                256,
+                256
+              ],
+              "topLeftCorner": [
+                2420000,
+                1350000
+              ],
+              "matrixSize": [
+                3,
+                2
+              ]
+            },
+            {
+              "identifier": "16",
+              "scaleDenominator": 892857.142857143,
+              "tileSize": [
+                256,
+                256
+              ],
+              "topLeftCorner": [
+                2420000,
+                1350000
+              ],
+              "matrixSize": [
+                7,
+                4
+              ]
+            },
+            {
+              "identifier": "17",
+              "scaleDenominator": 357142.85714285716,
+              "tileSize": [
+                256,
+                256
+              ],
+              "topLeftCorner": [
+                2420000,
+                1350000
+              ],
+              "matrixSize": [
+                18,
+                12
+              ]
+            },
+            {
+              "identifier": "18",
+              "scaleDenominator": 178571.42857142858,
+              "tileSize": [
+                256,
+                256
+              ],
+              "topLeftCorner": [
+                2420000,
+                1350000
+              ],
+              "matrixSize": [
+                37,
+                24
+              ]
+            },
+            {
+              "identifier": "19",
+              "scaleDenominator": 71428.57142857143,
+              "tileSize": [
+                256,
+                256
+              ],
+              "topLeftCorner": [
+                2420000,
+                1350000
+              ],
+              "matrixSize": [
+                93,
+                62
+              ]
+            },
+            {
+              "identifier": "20",
+              "scaleDenominator": 35714.28571428572,
+              "tileSize": [
+                256,
+                256
+              ],
+              "topLeftCorner": [
+                2420000,
+                1350000
+              ],
+              "matrixSize": [
+                187,
+                124
+              ]
+            },
+            {
+              "identifier": "21",
+              "scaleDenominator": 17857.14285714286,
+              "tileSize": [
+                256,
+                256
+              ],
+              "topLeftCorner": [
+                2420000,
+                1350000
+              ],
+              "matrixSize": [
+                374,
+                249
+              ]
+            },
+            {
+              "identifier": "22",
+              "scaleDenominator": 8928.57142857143,
+              "tileSize": [
+                256,
+                256
+              ],
+              "topLeftCorner": [
+                2420000,
+                1350000
+              ],
+              "matrixSize": [
+                749,
+                499
+              ]
+            },
+            {
+              "identifier": "23",
+              "scaleDenominator": 7142.857142857143,
+              "tileSize": [
+                256,
+                256
+              ],
+              "topLeftCorner": [
+                2420000,
+                1350000
+              ],
+              "matrixSize": [
+                937,
+                624
+              ]
+            },
+            {
+              "identifier": "24",
+              "scaleDenominator": 5357.142857142858,
+              "tileSize": [
+                256,
+                256
+              ],
+              "topLeftCorner": [
+                2420000,
+                1350000
+              ],
+              "matrixSize": [
+                1249,
+                833
+              ]
+            },
+            {
+              "identifier": "25",
+              "scaleDenominator": 3571.4285714285716,
+              "tileSize": [
+                256,
+                256
+              ],
+              "topLeftCorner": [
+                2420000,
+                1350000
+              ],
+              "matrixSize": [
+                1874,
+                1249
+              ]
+            },
+            {
+              "identifier": "26",
+              "scaleDenominator": 1785.7142857142858,
+              "tileSize": [
+                256,
+                256
+              ],
+              "topLeftCorner": [
+                2420000,
+                1350000
+              ],
+              "matrixSize": [
+                3749,
+                2499
+              ]
+            }
+          ],
+          "matrixSet": "2056",
+          "opacity": 0.85,
+          "requestEncoding": "REST",
+          "style": "default",
+          "type": "WMTS",
+          "version": "1.0.0"
+        }
+      ]
+    }
+  }
+}

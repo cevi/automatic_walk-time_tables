@@ -2,7 +2,7 @@ import json
 from typing import List
 
 import gpxpy
-import grequests
+import requests
 
 from . import coord_transformation
 
@@ -51,14 +51,12 @@ def find_map_numbers(raw_gpx_data: gpxpy.gpx) -> str:
     # This means 1 request, which is below the fair use limit.
     url = base_url + f"geometry={start_point[0]},{start_point[1]}&imageDisplay=1283,937,96&mapExtent=2400000,1000000,2900000,1300000"
 
-    r = (grequests.get(url),)
-    results = grequests.map(r)
+    result = requests.get(url)
 
     all_maps = []
-    for result in results:
-        data = json.loads(result.content)
-        for map in data["results"]:
-            all_maps.append([map["properties"]["name_de"], map["bbox"]])
+    data = json.loads(result.content)
+    for map in data["results"]:
+        all_maps.append([map["properties"]["name_de"], map["bbox"]])
 
     converter = coord_transformation.GPSConverter()
     needed_maps = set()
