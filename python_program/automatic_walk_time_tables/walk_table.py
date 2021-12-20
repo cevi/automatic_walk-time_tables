@@ -6,6 +6,7 @@ from typing import Tuple, List
 import gpxpy
 import numpy as np
 import openpyxl
+import logging
 from gpxpy.gpx import GPXTrackPoint
 from matplotlib import pyplot as plt
 
@@ -58,7 +59,10 @@ def plot_elevation_profile(raw_data_points: gpxpy.gpx,
     # show the plot and save image
     plt.savefig('output/' + file_name + '_elevation_profile.png', dpi=750)
 
+    logging.info("Elevation profile plot saved as " + file_name + '_elevation_profile.png')
+
     if open_figure:
+        logging.info("Opening figure as specified by the user.")
         plt.show()
 
 
@@ -74,9 +78,8 @@ def create_walk_table(time_stamp, speed, way_points, total_distance, file_name: 
     oldPoint = None
     time = 0
 
-    print('                                          Geschwindigkeit: ', speed, 'km/h')
-    print()
-    print('Distanz Höhe           Zeit   Uhrzeit     Ort (Koordinaten und Namen)')
+    logging.info('                                          Geschwindigkeit: '+ str(speed) + 'km/h\n')
+    logging.info('Distanz Höhe           Zeit   Uhrzeit     Ort (Koordinaten und Namen)')
     
     sheet['A6'] = map_numbers
     sheet['B2'] = file_name
@@ -107,12 +110,12 @@ def create_walk_table(time_stamp, speed, way_points, total_distance, file_name: 
         # print infos
         name_of_point = find_swisstopo_name.find_name((lv03[0] + 2_000_000, lv03[1] + 1_000_000), 50)
         name_of_points.append(name_of_point)
-        print(
-            round(abs((oldPoint[0] if oldPoint is not None else 0.0) - point[0]), 1), 'km ',
-            int(lv03[2]), 'm ü. M.  ',
-            round(deltaTime, 1), 'h ',
-            time_stamp.strftime('%H:%M'), 'Uhr  ',
-            (int(lv03[0]), int(lv03[1])), name_of_point)
+        logging.info(
+            str(round(abs((oldPoint[0] if oldPoint is not None else 0.0) - point[0]), 1)) + 'km '+
+            str(int(lv03[2])) + 'm ü. M. ' +
+            str(round(deltaTime, 1)) + 'h '+
+            time_stamp.strftime('%H:%M')+ 'Uhr ' +
+            str((int(lv03[0]), int(lv03[1]))) + " " + name_of_point)
 
         sheet['A' + str(8 + i)] = str(name_of_point) + ' (' + str(
             int(lv03[0])) + ', ' + str(int(lv03[1])) + ')'
@@ -122,17 +125,18 @@ def create_walk_table(time_stamp, speed, way_points, total_distance, file_name: 
 
         oldPoint = point
 
-    print('--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---')
-    print(round(total_distance, 1), 'km', '', round(time, 1), 'h')
-    print('=== === === === === === === === === === === === === === === === === === ===')
-    print()
-    print()
+    logging.info('--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---')
+    logging.info(str(round(total_distance, 1)) + 'km ' + str(round(time, 1)) + 'h')
+    logging.info('=== === === === === === === === === === === === === === === === === === ===')
 
     # Check if output directory exists, if not, create it.
     if (not os.path.exists('output')):
         os.mkdir('output')
 
     xfile.save('output/' + file_name + '_Marschzeittabelle.xlsx')
+
+    logging.info("Marschzeittabelle saved as " + file_name + '_Marschzeittabelle.xlsx')
+    
     return name_of_points
 
 

@@ -6,6 +6,8 @@ from typing import List, Tuple
 import gpxpy
 import numpy as np
 import requests
+import os
+import logging
 from pyclustering.cluster.kmeans import kmeans
 from pyclustering.utils.metric import type_metric, distance_metric
 
@@ -50,7 +52,7 @@ def auto_select_map_scaling(gpx_data: gpxpy.gpx) -> int:
                 A4_WIDTH_FACTOR * map_scale >= lower_left[1] - upper_right[0]:
             break
 
-    print(f'Map scaling automatically set to 1:{map_scale}')
+    logging.info(f'Map scaling automatically set to 1:{map_scale}')
     return map_scale
 
 
@@ -96,6 +98,9 @@ def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
 
         base_url = "{}://{}:{}".format(print_api_protocol, print_api_base_url, print_api_port)
         url = '{}/print/default/report.pdf'.format(base_url)
+
+        logging.info("Posting to mapfish: " + url)
+
         response_obj = requests.post(url, data=json.dumps(query_json))
 
         if response_obj.status_code != 200:
@@ -108,10 +113,10 @@ def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
         while pdf_status.status_code == 200 and json.loads(pdf_status.content)['status'] == 'running':
             time.sleep(0.5)
             pdf_status = requests.get(base_url + response_json['statusURL'])
-            print(f"Waiting for PDF {index + 1} out of {len(map_centers)}. ({loop_idx * 0.5}s)", end="\r")
+            logging.info(f"Waiting for PDF {index + 1} out of {len(map_centers)}. ({loop_idx * 0.5}s)")
             loop_idx += 1
-        print()
-        print(f"Received PDF {index + 1} out of {len(map_centers)}.")
+
+        logging.info(f"Received PDF {index + 1} out of {len(map_centers)}.")
 
         if response_obj.status_code != 200 and json.loads(pdf_status.content)['status'] != 'finished':
             raise Exception('Can not fetch map. Status Code: {}'.format(response_obj.status_code))
@@ -121,8 +126,14 @@ def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
         if response_obj.status_code != 200:
             raise Exception('Can not fetch map. Status Code: {}'.format(response_obj.status_code))
 
+        # Check if output directory exists, if not, create it.
+        if (not os.path.exists('output')):
+            os.mkdir('output')
+
         with open('output/{}_{}_map.pdf'.format(file_name, index), 'wb') as f:
             f.write(fetched_pdf.content)
+        
+        logging.info("Saved map to output/{}_{}_map.pdf".format(file_name, index))
 
 
 def create_mapfish_query(layer, map_scaling, raw_gpx_data: gpxpy.gpx, center,

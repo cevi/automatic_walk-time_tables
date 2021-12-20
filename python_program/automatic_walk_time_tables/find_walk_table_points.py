@@ -3,7 +3,7 @@ import gpxpy
 from copy import copy
 from gpxpy.gpx import GPXTrackPoint
 from typing import List, Tuple
-
+import logging
 
 def select_waypoints(raw_gpx_data: gpxpy.gpx, walk_point_limit=21):
     """
@@ -25,8 +25,17 @@ def select_waypoints(raw_gpx_data: gpxpy.gpx, walk_point_limit=21):
     """
 
     total_distance, pts_step_1 = preselection_step(raw_gpx_data)
+
+    logging.info("Preselection returned %d points", len(pts_step_1))
+
     pts_step_2 = remove_unnecessary_points(pts_step_1)
+
+    logging.info("Remove unnecessary points returned %d points", len(pts_step_2))
+
     pts_step_3 = reduce_number_of_points(pts_step_2, walk_point_limit)
+
+    logging.info("Reduce number of points returned %d points", len(pts_step_3))
+    logging.info("Total distance: %f km", total_distance)
 
     return total_distance, pts_step_2, pts_step_3
 

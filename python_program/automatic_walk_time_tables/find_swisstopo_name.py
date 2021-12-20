@@ -1,7 +1,7 @@
 import csv
 import math
 from math import sqrt
-
+import logging
 
 class SwissName:
 
@@ -13,11 +13,13 @@ class SwissName:
 
 
 def add_to_database(file, db, typeIndex, name, x, y):
+    logging.info("Adding file %s with name %s to database.", file, name)
     with open(file, encoding="utf8") as file_data:
         reader = csv.reader(file_data, delimiter=';')
         next(reader)
         for r in reader:
             db.append(SwissName(r[name], r[typeIndex], r[x], r[y]))
+    logging.info("Database has " + str(len(db)) + " entries.")
 
 
 def find_name(coord, dist):
