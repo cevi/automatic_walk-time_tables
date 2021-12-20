@@ -1,0 +1,12 @@
+<h1>J+S-Marschzeittabellen automatisiert generieren</h1>
+
+<ng-container *ngIf="!pending">
+<input type="file" id="uploader"
+       id="uploader" accept=".gpx">
+
+<button (click)="download_map()">Genereieren lassen</button>
+</ng-container>
+
+<ng-container *ngIf="showDownloadLink">
+  <a href="http://localhost:5000/download/output">Download Data</a>
+</ng-container>

@@ -60,7 +60,7 @@ def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
                       map_scaling: int,
                       name_of_points: List[str],
                       layer: str = 'ch.swisstopo.pixelkarte-farbe',
-                      print_api_base_url: str = 'localhost',
+                      print_api_base_url: str = 'mapfish',
                       print_api_port: int = 8080,
                       print_api_protocol: str = 'http'):
     """

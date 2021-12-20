@@ -1,0 +1,46 @@
+import {Component} from '@angular/core';
+
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.scss']
+})
+export class AppComponent {
+  title = 'automatic-walk-time-tables';
+  pending = false;
+  showDownloadLink = false;
+
+  download_map() {
+
+    this.showDownloadLink = false;
+    this.pending = true;
+    const uploaderElement = (document.getElementById('uploader') as HTMLInputElement);
+
+    if (uploaderElement === null)
+      return;
+
+    // @ts-ignore
+    let gpx_file: File = uploaderElement.files[0];
+    let formData = new FormData();
+
+    formData.append("file", gpx_file);
+
+    const url = "http://localhost:5000/create?--velocity=5"
+    fetch(url, {
+      mode: 'no-cors',
+      method: "POST",
+      body: formData
+    })
+      .then(() => this.download_data())
+      .catch(console.log)
+
+  }
+
+  download_data() {
+
+    this.pending = false;
+    this.showDownloadLink = true;
+
+  }
+
+}

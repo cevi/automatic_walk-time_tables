@@ -53,12 +53,11 @@ def str2bool(v):
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
 
-if __name__ == "__main__":
-    # Initialize parser
+def create_arg_parser():
+
     parser = argparse.ArgumentParser(
         description='Automatically creates a walk-time table from an exported track from Swisstopo-App, '
                     'SchweizMobil, or form an arbitrary GPX-file')
-
     # Adding arguments
     parser.add_argument('-gfn', '--gpx-file-name', type=str, metavar='<file_path>', required=True,
                         help='Name and path to the GPX file default value.')
@@ -72,7 +71,6 @@ if __name__ == "__main__":
                         help='Departure date in ISO-format, i.g. 2011-11-04T00:05:23. Default 2021-08-16T09:00:00.')
     parser.add_argument('-n', '--creator-name', type=str, metavar='<name>',
                         help='Name of you, the creator of this route. If not specified, it will be empty.', default='')
-
     # Enabling / Disabling Features
     parser.add_argument('--create-map-pdfs', default=True, type=str2bool,
                         help='Enable/Disable export as PDF. Require a running MapFish docker container. Enabled as default (True).')
@@ -85,4 +83,12 @@ if __name__ == "__main__":
                              'will be opened after its creation). For this feature a desktop environment is needed. '
                              'Disabled as default (False).')
 
-    generate_automated_walk_table(parser.parse_args())
+    return parser
+
+
+if __name__ == "__main__":
+
+    print("Start main")
+    # Initialize parser
+    arg_parser = create_arg_parser()
+    generate_automated_walk_table(arg_parser.parse_args())
