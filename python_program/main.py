@@ -17,7 +17,7 @@ from datetime import datetime
 
 import gpxpy.gpx
 
-from automatic_walk_time_tables.find_walk_table_points import select_waypoints
+from automatic_walk_time_tables.find_walk_table_points import WalkTablePointFinder
 from automatic_walk_time_tables.map_downloader.create_map import MapCreator
 from automatic_walk_time_tables.map_numbers import find_map_numbers
 from automatic_walk_time_tables.walk_table import plot_elevation_profile, create_walk_table
@@ -35,6 +35,8 @@ class AutomatedWalkTableGenerator:
         self.logger.debug("Reading %s", self.args.gpx_file_name)
         self.raw_gpx_data = gpxpy.parse(gpx_file)
 
+        self.walktable_point_finder = WalkTablePointFinder(self.raw_gpx_data)
+
     def run(self):
         name = self.raw_gpx_data.name
         map_numbers = find_map_numbers(self.raw_gpx_data) # map numbers and their names as a single string
@@ -45,7 +47,7 @@ class AutomatedWalkTableGenerator:
         if self.args.create_excel or self.args.create_map_pdfs or self.args.create_elevation_profile:
 
             # calc Points for walk table
-            total_distance, temp_points, way_points = select_waypoints(self.raw_gpx_data)
+            total_distance, temp_points, way_points = self.walktable_point_finder.select_waypoints()
 
             if self.args.create_elevation_profile:
                 self.logger.debug('Boolean indicates that we should create the elevation profile.')
