@@ -73,7 +73,10 @@ def str2bool(v):
         return False
     else:
         logger.error('Boolean value expected.')
-        raise argparse.ArgumentTypeError('Boolean value expected.')
+        if(logger.getEffectiveLevel() == logging.DEBUG):
+            raise argparse.ArgumentTypeError('Boolean value expected.')
+        else:
+            exit(1)
 
 
 if __name__ == "__main__":

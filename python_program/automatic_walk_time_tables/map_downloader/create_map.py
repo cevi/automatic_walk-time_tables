@@ -97,8 +97,10 @@ def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
 
     if len(map_centers) > 10:
         logging.error(f'Too many map centers (exceeding faire use limit).')
-        raise Exception("You should respect the faire use limit!")
-        return
+        if(logger.getEffectiveLevel() == logging.DEBUG):
+            raise Exception("You should respect the faire use limit!")
+        else:
+            exit(1)
 
     for index, map_center in enumerate(map_centers):
 
@@ -109,11 +111,21 @@ def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
 
         logger.debug("Posting to mapfish: " + url)
 
-        response_obj = requests.post(url, data=json.dumps(query_json))
+        try:
+            response_obj = requests.post(url, data=json.dumps(query_json))
+        except requests.exceptions.ConnectionError:
+            logger.error("Could not connect to mapfish server. Is the server running?")
+            if(logger.getEffectiveLevel() == logging.DEBUG):
+                raise Exception("Could not connect to mapfish server. Is the server running?")
+            else:
+                exit(1)
 
         if response_obj.status_code != 200:
             logging.error("Error while posting to mapfish: " + str(response_obj.status_code))
-            raise Exception('Can not fetch map. Status Code: {}'.format(response_obj.status_code))
+            if(logger.getEffectiveLevel() == logging.DEBUG):
+                raise Exception('Can not fetch map. Status Code: {}'.format(response_obj.status_code))
+            else:
+                exit(1)
 
         response_json = json.loads(response_obj.content)
 
@@ -129,13 +141,19 @@ def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
 
         if response_obj.status_code != 200 and json.loads(pdf_status.content)['status'] != 'finished':
             logging.error("Can not fetch the map: " + str(response_obj.status_code))
-            raise Exception('Can not fetch map. Status Code: {}'.format(response_obj.status_code))
+            if(logger.getEffectiveLevel() == logging.DEBUG):
+                raise Exception('Can not fetch map. Status Code: {}'.format(response_obj.status_code))
+            else:
+                exit(1)
 
         fetched_pdf = requests.get(base_url + response_json['downloadURL'])
 
         if response_obj.status_code != 200:
             logging.error("Error fetching the map: " + str(response_obj.status_code))
-            raise Exception('Can not fetch map. Status Code: {}'.format(response_obj.status_code))
+            if(logger.getEffectiveLevel() == logging.DEBUG):
+                raise Exception('Can not fetch map. Status Code: {}'.format(response_obj.status_code))
+            else:
+                exit(1)
 
         # Check if output directory exists, if not, create it.
         if (not os.path.exists('output')):
