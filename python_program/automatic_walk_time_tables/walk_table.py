@@ -30,6 +30,9 @@ def plot_elevation_profile(raw_data_points: gpxpy.gpx,
 
     """
 
+    # clear the plot
+    plt.clf()
+
     # plot heights of exported data from SchweizMobil
     distances, heights = find_walk_table_points.prepare_for_plot(raw_data_points)
     plt.plot(distances, heights, label='Wanderweg')
