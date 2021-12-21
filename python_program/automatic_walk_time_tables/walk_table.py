@@ -13,13 +13,8 @@ from . import coord_transformation
 from . import find_swisstopo_name
 from . import find_walk_table_points
 
-# Set up logging
-from . import log_helper
 import logging
 logger = logging.getLogger(__name__)
-handler = logging.StreamHandler()
-handler.setFormatter(log_helper.Formatter())
-logger.addHandler(handler)
 
 def plot_elevation_profile(raw_data_points: gpxpy.gpx,
                            way_points: List[Tuple[int, GPXTrackPoint]],

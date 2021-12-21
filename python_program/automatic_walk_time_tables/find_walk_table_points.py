@@ -4,13 +4,8 @@ from copy import copy
 from gpxpy.gpx import GPXTrackPoint
 from typing import List, Tuple
 
-# Set up logging
-from . import log_helper
 import logging
 logger = logging.getLogger(__name__)
-handler = logging.StreamHandler()
-handler.setFormatter(log_helper.Formatter())
-logger.addHandler(handler)
 
 def select_waypoints(raw_gpx_data: gpxpy.gpx, walk_point_limit=21):
     """

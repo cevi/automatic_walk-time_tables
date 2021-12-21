@@ -12,13 +12,8 @@ from pyclustering.utils.metric import type_metric, distance_metric
 
 from .. import coord_transformation
 
-# Set up logging
-from .. import log_helper
 import logging
 logger = logging.getLogger(__name__)
-handler = logging.StreamHandler()
-handler.setFormatter(log_helper.Formatter())
-logger.addHandler(handler)
 
 A4_HEIGHT_FACTOR = 4.5 / 25.0
 """

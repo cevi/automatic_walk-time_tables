@@ -4,11 +4,12 @@ import logging
 
 # Change this line to enable debug log messages:
 logging.root.setLevel(logging.INFO)
+# Set up the root handler
+root_handler = logging.StreamHandler()
+root_handler.setFormatter(Formatter())
+logging.root.addHandler(root_handler)
 
 logger = logging.getLogger(__name__)
-handler = logging.StreamHandler()
-handler.setFormatter(Formatter())
-logger.addHandler(handler)
 
 import argparse
 

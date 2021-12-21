@@ -6,13 +6,8 @@ import requests
 
 from . import coord_transformation
 
-# Set up logging
-from . import log_helper
 import logging
 logger = logging.getLogger(__name__)
-handler = logging.StreamHandler()
-handler.setFormatter(log_helper.Formatter())
-logger.addHandler(handler)
 
 def is_in_bbox(bbox: List[float], coord_lv03: List[float]) -> bool:
     """ 

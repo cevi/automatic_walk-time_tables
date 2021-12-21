@@ -2,13 +2,8 @@ import csv
 import math
 from math import sqrt
 
-# Set up logging
-from . import log_helper
 import logging
 logger = logging.getLogger(__name__)
-handler = logging.StreamHandler()
-handler.setFormatter(log_helper.Formatter())
-logger.addHandler(handler)
 
 class SwissName:
     def __init__(self, name, object_type, x, y):
