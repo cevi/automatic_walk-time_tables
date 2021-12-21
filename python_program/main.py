@@ -1,4 +1,18 @@
+# Set up logging
+from automatic_walk_time_tables.log_helper import Formatter
+import logging
+
+# Change this line to enable debug log messages:
+logging.root.setLevel(logging.INFO)
+# Set up the root handler
+root_handler = logging.StreamHandler()
+root_handler.setFormatter(Formatter())
+logging.root.addHandler(root_handler)
+
+logger = logging.getLogger(__name__)
+
 import argparse
+
 from datetime import datetime
 
 import gpxpy.gpx
@@ -8,17 +22,26 @@ from automatic_walk_time_tables.map_downloader.create_map import plot_route_on_m
 from automatic_walk_time_tables.map_numbers import find_map_numbers
 from automatic_walk_time_tables.walk_table import plot_elevation_profile, create_walk_table
 
-
 def generate_automated_walk_table(args: argparse.Namespace):
+   
     # Open GPX-File with the way-points
     gpx_file = open(args.gpx_file_name, 'r')
+
+    logger.debug("Reading %s", args.gpx_file_name)
+
+    # print all args and their options to logger.info
+    logger.debug("Arguments:")
+    for arg in vars(args):
+        logger.debug("  %s: %s", arg, getattr(args, arg))
+
     raw_gpx_data = gpxpy.parse(gpx_file)
 
     # get Meta-Data
     name = raw_gpx_data.name
-    map_numbers = find_map_numbers(raw_gpx_data)
+    map_numbers = find_map_numbers(raw_gpx_data) # map numbers and their names as a single string
 
-    print(args)
+    logger.debug("GPX Name: %s", name)
+    logger.debug("Map Numbers: %s", map_numbers)
 
     if args.create_excel or args.create_map_pdfs or args.create_elevation_profile:
 
@@ -26,18 +49,18 @@ def generate_automated_walk_table(args: argparse.Namespace):
         total_distance, temp_points, way_points = select_waypoints(raw_gpx_data)
 
         if args.create_elevation_profile:
-            print('Create elevation profile.')
+            logger.debug('Boolean indicates that we should create the elevation profile.')
             plot_elevation_profile(raw_gpx_data, way_points, temp_points, file_name=name, open_figure=args.open_figure)
 
         if args.create_excel:
-            print('Create walk-time table as Excel file')
+            logger.debug('Boolean indicates that we shoudl create walk-time table as Excel file')
             name_of_points = create_walk_table(args.departure_time, args.velocity, way_points, total_distance,
                                                file_name=name, creator_name=args.creator_name, map_numbers=map_numbers)
         else:
             name_of_points = [''] * len(way_points)
 
         if args.create_map_pdfs:
-            print('Create map PDFs')
+            logger.debug('Boolean indicates that we should create map PDFs.')
             plot_route_on_map(raw_gpx_data, way_points, file_name=name, map_scaling=args.map_scaling,
                               name_of_points=name_of_points)
 
@@ -50,7 +73,11 @@ def str2bool(v):
     elif v.lower() in ('no', 'false', 'f', 'n', '0', 'nein'):
         return False
     else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
+        logger.error('Boolean value expected.')
+        if(logger.getEffectiveLevel() == logging.DEBUG):
+            raise argparse.ArgumentTypeError('Boolean value expected.')
+        else:
+            exit(1)
 
 
 if __name__ == "__main__":
@@ -84,5 +111,5 @@ if __name__ == "__main__":
                         help='If this flag is set, the created images will be shown (i.g. the map and elevation plot '
                              'will be opened after its creation). For this feature a desktop environment is needed. '
                              'Disabled as default (False).')
-
+    
     generate_automated_walk_table(parser.parse_args())
