@@ -44,6 +44,7 @@ Name | arguments | Description
 `-s` `--map-scaling` | `Integer` | Scaling of the created map (e.g. 10000 for scaling of 1:10'000). If not specified, the scaling will be automatically chosen such that the path can be printed onto a single A4 paper. The scaling gets chosen out of a list of common map scaling: 1:10'000, 1:25'000, 1:50'000, 1:100'000, or 1:200'000.
 `-t` `--departure-time` | ISO-timestamp | Departure date in ISO-format, i.g. 2011-11-04T00:05:23. Default 2021-08-16T09:00:00.
 `-n` `--creator-name` | `String` | The name of the creator of this walk-table. Default is just an empty string.
+`--output_directory` | `String` | Subdirectory in the output folder for storing the created files. Should be empty or ending with "/"
 
 ### Enable/Disable Features
 

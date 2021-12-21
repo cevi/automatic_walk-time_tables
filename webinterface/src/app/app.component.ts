@@ -9,6 +9,7 @@ export class AppComponent {
   title = 'automatic-walk-time-tables';
   pending = false;
   showDownloadLink = false;
+  download_id: string = '';
 
   download_map() {
 
@@ -27,11 +28,21 @@ export class AppComponent {
 
     const url = "http://localhost:5000/create?--velocity=5"
     fetch(url, {
-      mode: 'no-cors',
       method: "POST",
+      headers: {
+        Accept: 'text/plain',
+      },
       body: formData
     })
-      .then(() => this.download_data())
+      .then(response => response.text())
+      .then((resp: any) => {
+        console.log(resp)
+        const response = JSON.parse(resp)
+        console.log(response['download_id'])
+        this.download_id = response['download_id'];
+        this.download_data()
+
+      })
       .catch(console.log)
 
   }

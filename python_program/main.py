@@ -15,7 +15,7 @@ def generate_automated_walk_table(args: argparse.Namespace):
     raw_gpx_data = gpxpy.parse(gpx_file)
 
     # get Meta-Data
-    name = raw_gpx_data.name
+    name = args.output_directory + raw_gpx_data.name
     map_numbers = find_map_numbers(raw_gpx_data)
 
     print(args)
@@ -82,13 +82,14 @@ def create_arg_parser():
                         help='If this flag is set, the created images will be shown (i.g. the map and elevation plot '
                              'will be opened after its creation). For this feature a desktop environment is needed. '
                              'Disabled as default (False).')
+    parser.add_argument('--output_directory', default='', type=str,
+                            help='Subdirectory in the output folder for storing the created files. Should be empty or ending with "/"')
 
     return parser
 
 
 if __name__ == "__main__":
 
-    print("Start main")
     # Initialize parser
     arg_parser = create_arg_parser()
     generate_automated_walk_table(arg_parser.parse_args())

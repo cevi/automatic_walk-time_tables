@@ -1,17 +1,20 @@
 import functools
 import io
+import json
 import os
 import pathlib
+import uuid
 import zipfile
 
 import flask
 from flask import Flask, request, flash, redirect
+from flask_cors import CORS
 
 from main import generate_automated_walk_table, create_arg_parser
 
 app = Flask(__name__)
+cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
-UPLOAD_FOLDER = '/testWalks'
 ALLOWED_EXTENSIONS = set(['gpx'])
 
 
@@ -21,7 +24,8 @@ def allowed_file(filename):
 
 @app.route('/create', methods=['POST'])
 def create_map():
-    download_id = 'random-id'
+    download_id = str(uuid.uuid4().hex)
+    os.mkdir('./output/' + download_id)
 
     if 'file' not in request.files:
         flash('No file part')
@@ -29,7 +33,7 @@ def create_map():
 
     file = request.files['file']
 
-    file_name = 'testWalks/' + download_id + 'default_file.gpx'
+    file_name = './testWalks/' + download_id + '.gpx'
 
     if file and allowed_file(file.filename):
         file.save(file_name)
@@ -40,15 +44,23 @@ def create_map():
     args = list(functools.reduce(lambda x, y: x + y, args_as_dict.items()))
     args = list(filter(lambda x: x != '', args))
 
-    args = parser.parse_args(['-gfn', file_name] + args)
+    args = parser.parse_args(['-gfn', file_name, '--output_directory', download_id + '/'] + args)
     generate_automated_walk_table(args)
 
-    return "success"
+    # Remove GPX file from upload directory
+    os.remove(file_name)
+
+    response = app.response_class(
+        response=json.dumps({'status': 'success', 'download_id': str(download_id)}),
+        status=200,
+        mimetype='application/json')
+
+    return response
 
 
 @app.route('/download/<download_id>')
 def request_zip(download_id):
-    base_path = pathlib.Path('./output/')
+    base_path = pathlib.Path('./output/' + download_id + '/')
 
     # Return Zip with data
     data = io.BytesIO()
