@@ -7,11 +7,18 @@ import gpxpy
 import numpy as np
 import requests
 import os
-import logging
 from pyclustering.cluster.kmeans import kmeans
 from pyclustering.utils.metric import type_metric, distance_metric
 
 from .. import coord_transformation
+
+# Set up logging
+from .. import log_helper
+import logging
+logger = logging.getLogger(__name__)
+handler = logging.StreamHandler()
+handler.setFormatter(log_helper.Formatter())
+logger.addHandler(handler)
 
 A4_HEIGHT_FACTOR = 4.5 / 25.0
 """
@@ -52,7 +59,7 @@ def auto_select_map_scaling(gpx_data: gpxpy.gpx) -> int:
                 A4_WIDTH_FACTOR * map_scale >= lower_left[1] - upper_right[0]:
             break
 
-    logging.info(f'Map scaling automatically set to 1:{map_scale}')
+    logger.info(f'Map scaling automatically set to 1:{map_scale}')
     return map_scale
 
 
@@ -89,6 +96,7 @@ def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
     map_centers = create_map_centers(map_scaling, raw_gpx_data)
 
     if len(map_centers) > 10:
+        logging.error(f'Too many map centers (exceeding faire use limit).')
         raise Exception("You should respect the faire use limit!")
         return
 
@@ -99,11 +107,12 @@ def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
         base_url = "{}://{}:{}".format(print_api_protocol, print_api_base_url, print_api_port)
         url = '{}/print/default/report.pdf'.format(base_url)
 
-        logging.info("Posting to mapfish: " + url)
+        logger.debug("Posting to mapfish: " + url)
 
         response_obj = requests.post(url, data=json.dumps(query_json))
 
         if response_obj.status_code != 200:
+            logging.error("Error while posting to mapfish: " + str(response_obj.status_code))
             raise Exception('Can not fetch map. Status Code: {}'.format(response_obj.status_code))
 
         response_json = json.loads(response_obj.content)
@@ -113,17 +122,19 @@ def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
         while pdf_status.status_code == 200 and json.loads(pdf_status.content)['status'] == 'running':
             time.sleep(0.5)
             pdf_status = requests.get(base_url + response_json['statusURL'])
-            logging.info(f"Waiting for PDF {index + 1} out of {len(map_centers)}. ({loop_idx * 0.5}s)")
+            logger.debug(f"Waiting for PDF {index + 1} out of {len(map_centers)}. ({loop_idx * 0.5}s)")
             loop_idx += 1
 
-        logging.info(f"Received PDF {index + 1} out of {len(map_centers)}.")
+        logger.info(f"Received PDF {index + 1} out of {len(map_centers)}.")
 
         if response_obj.status_code != 200 and json.loads(pdf_status.content)['status'] != 'finished':
+            logging.error("Can not fetch the map: " + str(response_obj.status_code))
             raise Exception('Can not fetch map. Status Code: {}'.format(response_obj.status_code))
 
         fetched_pdf = requests.get(base_url + response_json['downloadURL'])
 
         if response_obj.status_code != 200:
+            logging.error("Error fetching the map: " + str(response_obj.status_code))
             raise Exception('Can not fetch map. Status Code: {}'.format(response_obj.status_code))
 
         # Check if output directory exists, if not, create it.
@@ -133,7 +144,7 @@ def plot_route_on_map(raw_gpx_data: gpxpy.gpx,
         with open('output/{}_{}_map.pdf'.format(file_name, index), 'wb') as f:
             f.write(fetched_pdf.content)
         
-        logging.info("Saved map to output/{}_{}_map.pdf".format(file_name, index))
+        logger.info("Saved map to output/{}_{}_map.pdf".format(file_name, index))
 
 
 def create_mapfish_query(layer, map_scaling, raw_gpx_data: gpxpy.gpx, center,
@@ -339,6 +350,8 @@ def create_map_centers(map_scaling: int, raw_gpx_data: gpxpy.gpx) -> List[np.arr
         kmeans_instance.process()
         clusters = kmeans_instance.get_clusters()
         final_centers = kmeans_instance.get_centers()
+
+        logger.debug("Number of clusters: {}".format(len(clusters)))
 
         path_covered = True
 

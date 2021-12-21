@@ -1,26 +1,30 @@
 import csv
 import math
 from math import sqrt
+
+# Set up logging
+from . import log_helper
 import logging
+logger = logging.getLogger(__name__)
+handler = logging.StreamHandler()
+handler.setFormatter(log_helper.Formatter())
+logger.addHandler(handler)
 
 class SwissName:
-
     def __init__(self, name, object_type, x, y):
         self.name = name
         self.object_type = object_type
         self.x = int(x)
         self.y = int(y)
 
-
 def add_to_database(file, db, typeIndex, name, x, y):
-    logging.info("Adding file %s with name %s to database.", file, name)
+    logger.debug("Adding file %s with name %s to database.", file, name)
     with open(file, encoding="utf8") as file_data:
         reader = csv.reader(file_data, delimiter=';')
         next(reader)
         for r in reader:
             db.append(SwissName(r[name], r[typeIndex], r[x], r[y]))
-    logging.info("Database has " + str(len(db)) + " entries.")
-
+    logger.debug("Database has " + str(len(db)) + " entries.")
 
 def find_name(coord, dist):
     """

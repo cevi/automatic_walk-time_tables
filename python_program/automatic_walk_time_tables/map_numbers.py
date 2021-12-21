@@ -3,10 +3,16 @@ from typing import List
 
 import gpxpy
 import requests
-import logging
 
 from . import coord_transformation
 
+# Set up logging
+from . import log_helper
+import logging
+logger = logging.getLogger(__name__)
+handler = logging.StreamHandler()
+handler.setFormatter(log_helper.Formatter())
+logger.addHandler(handler)
 
 def is_in_bbox(bbox: List[float], coord_lv03: List[float]) -> bool:
     """ 
@@ -52,7 +58,7 @@ def find_map_numbers(raw_gpx_data: gpxpy.gpx) -> str:
     # This means 1 request, which is below the fair use limit.
     url = base_url + f"geometry={start_point[0]},{start_point[1]}&imageDisplay=1283,937,96&mapExtent=2400000,1000000,2900000,1300000"
 
-    logging.info("Fetching " + url)
+    logger.debug("Fetching " + url)
     result = requests.get(url)
 
     all_maps = []

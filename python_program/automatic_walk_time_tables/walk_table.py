@@ -6,7 +6,6 @@ from typing import Tuple, List
 import gpxpy
 import numpy as np
 import openpyxl
-import logging
 from gpxpy.gpx import GPXTrackPoint
 from matplotlib import pyplot as plt
 
@@ -14,6 +13,13 @@ from . import coord_transformation
 from . import find_swisstopo_name
 from . import find_walk_table_points
 
+# Set up logging
+from . import log_helper
+import logging
+logger = logging.getLogger(__name__)
+handler = logging.StreamHandler()
+handler.setFormatter(log_helper.Formatter())
+logger.addHandler(handler)
 
 def plot_elevation_profile(raw_data_points: gpxpy.gpx,
                            way_points: List[Tuple[int, GPXTrackPoint]],
@@ -59,10 +65,10 @@ def plot_elevation_profile(raw_data_points: gpxpy.gpx,
     # show the plot and save image
     plt.savefig('output/' + file_name + '_elevation_profile.png', dpi=750)
 
-    logging.info("Elevation profile plot saved as " + file_name + '_elevation_profile.png')
+    logger.info("Elevation profile plot saved as " + file_name + '_elevation_profile.png')
 
     if open_figure:
-        logging.info("Opening figure as specified by the user.")
+        logger.debug("Opening figure as specified by the user.")
         plt.show()
 
 
@@ -78,8 +84,8 @@ def create_walk_table(time_stamp, speed, way_points, total_distance, file_name: 
     oldPoint = None
     time = 0
 
-    logging.info('                                          Geschwindigkeit: '+ str(speed) + 'km/h\n')
-    logging.info('Distanz Höhe           Zeit   Uhrzeit     Ort (Koordinaten und Namen)')
+    logger.debug('                                          Geschwindigkeit: '+ str(speed) + 'km/h\n')
+    logger.debug('Distanz Höhe           Zeit   Uhrzeit     Ort (Koordinaten und Namen)')
     
     sheet['A6'] = map_numbers
     sheet['B2'] = file_name
@@ -110,7 +116,7 @@ def create_walk_table(time_stamp, speed, way_points, total_distance, file_name: 
         # print infos
         name_of_point = find_swisstopo_name.find_name((lv03[0] + 2_000_000, lv03[1] + 1_000_000), 50)
         name_of_points.append(name_of_point)
-        logging.info(
+        logger.debug(
             str(round(abs((oldPoint[0] if oldPoint is not None else 0.0) - point[0]), 1)) + 'km '+
             str(int(lv03[2])) + 'm ü. M. ' +
             str(round(deltaTime, 1)) + 'h '+
@@ -125,9 +131,9 @@ def create_walk_table(time_stamp, speed, way_points, total_distance, file_name: 
 
         oldPoint = point
 
-    logging.info('--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---')
-    logging.info(str(round(total_distance, 1)) + 'km ' + str(round(time, 1)) + 'h')
-    logging.info('=== === === === === === === === === === === === === === === === === === ===')
+    logger.debug('--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---')
+    logger.debug(str(round(total_distance, 1)) + 'km ' + str(round(time, 1)) + 'h')
+    logger.debug('=== === === === === === === === === === === === === === === === === === ===')
 
     # Check if output directory exists, if not, create it.
     if (not os.path.exists('output')):
@@ -135,7 +141,7 @@ def create_walk_table(time_stamp, speed, way_points, total_distance, file_name: 
 
     xfile.save('output/' + file_name + '_Marschzeittabelle.xlsx')
 
-    logging.info("Marschzeittabelle saved as " + file_name + '_Marschzeittabelle.xlsx')
+    logger.info("Marschzeittabelle saved as " + file_name + '_Marschzeittabelle.xlsx')
     
     return name_of_points
 
