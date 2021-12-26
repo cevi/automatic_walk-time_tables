@@ -1,12 +1,34 @@
-<h1>J+S-Marschzeittabellen automatisiert generieren</h1>
+<app-display-map>
 
-<ng-container *ngIf="!pending">
-<input type="file" id="uploader"
-       id="uploader" accept=".gpx">
 
-<button (click)="download_map()">Genereieren lassen</button>
-</ng-container>
 
-<ng-container *ngIf="showDownloadLink">
-  <a href="http://localhost:5000/download/{{download_id}}">Download Data</a>
-</ng-container>
+  <div class="buttons">
+
+    <h2>J+S-Marschzeittabellen automatisiert generieren</h2>
+
+    <ng-container *ngIf="!pending else loading">
+      <input type="file" id="uploader"
+             id="uploader" accept=".gpx">
+
+      <button id="export-button" (click)="download_map()">Genereieren lassen</button>
+    </ng-container>
+
+    <ng-template #loading>
+      Marschzeittabelle wird erstellt, wir bitten um Geduld.
+    </ng-template>
+
+
+    <ng-container *ngIf="showDownloadLink">
+      <br/>
+      <a href="http://localhost:5000/download/{{download_id}}">Download Data</a>
+    </ng-container>
+
+  </div>
+
+
+</app-display-map>
+
+
+<app-footer></app-footer>
+
+
