@@ -10,9 +10,11 @@ import os
 from pyclustering.cluster.kmeans import kmeans
 from pyclustering.utils.metric import type_metric, distance_metric
 
-from .. import coord_transformation
 
 import logging
+
+from automatic_walk_time_tables.geo_processing import coord_transformation
+
 
 def GetSpacedElements(array, numElems=4):
         """

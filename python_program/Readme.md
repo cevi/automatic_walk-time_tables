@@ -32,27 +32,28 @@ SchweizMobil and from the official swisstopo app, but it should work with arbitr
 
 All arguments are optional (or have a default value). However, the arguments allow choosing various settings.
 
-Name | arguments | Description
---- | --- | ------------ 
-`-gfn` `--gpx-file-name` | `String` | Name and path to the GPX file default value. Required Argument.
+| Name                     | arguments | Description                                                     |
+|--------------------------|-----------|-----------------------------------------------------------------|
+| `-gfn` `--gpx-file-name` | `String`  | Name and path to the GPX file default value. Required Argument. |
 
 ### Optional Arguments
 
-Name | arguments | Description
---- | --- | ------------ 
-`-v` `--velocity` | `Float` | Speed in km/h on which the calculation is based, default 3.75 km/h.
-`-s` `--map-scaling` | `Integer` | Scaling of the created map (e.g. 10000 for scaling of 1:10'000). If not specified, the scaling will be automatically chosen such that the path can be printed onto a single A4 paper. The scaling gets chosen out of a list of common map scaling: 1:10'000, 1:25'000, 1:50'000, 1:100'000, or 1:200'000.
-`-t` `--departure-time` | ISO-timestamp | Departure date in ISO-format, i.g. 2011-11-04T00:05:23. Default 2021-08-16T09:00:00.
-`-n` `--creator-name` | `String` | The name of the creator of this walk-table. Default is just an empty string.
+| Name                    | arguments      | Description                                                                                                                                                                                                                                                                                               |
+|-------------------------|----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `-v` `--velocity`       | `Float`        | Speed in km/h on which the calculation is based, default 3.75 km/h.                                                                                                                                                                                                                                       |
+| `-s` `--map-scaling`    | `Integer`      | Scaling of the created map (e.g. 10000 for scaling of 1:10'000). If not specified, the scaling will be automatically chosen such that the path can be printed onto a single A4 paper. The scaling gets chosen out of a list of common map scaling: 1:10'000, 1:25'000, 1:50'000, 1:100'000, or 1:200'000. |
+| `-t` `--departure-time` | ISO-timestamp  | Departure date in ISO-format, i.g. 2011-11-04T00:05:23. Default 2021-08-16T09:00:00.                                                                                                                                                                                                                      |
+| `-n` `--creator-name`   | `String`       | The name of the creator of this walk-table. Default is just an empty string.                                                                                                                                                                                                                              |
+| `--log-level`           | `Integer`      | Log Level (see https://docs.python.org/3/library/logging.html#levels). Default: WARNING                                                                                                                                                                                                                   |
 
 ### Enable/Disable Features
 
-Name | arguments | Description
---- | --- | ------------ 
-`--create-map-pdfs` | Boolean | Enable/Disable export as PDF. Require a running MapFish docker container. Enabled as default (True).
-`--create-excel` | Boolean | Enable/Disable creation of the walk-time table as excel. Enabled as default (True).
-`--create-elevation-profile` | Boolean | Enable/Disable creation of the elevation profile as PNG. Enabled as default (True).
-`--open-images` | None | If this flag is set, the created images will be shown (i.g. elevation plot will be opened after its creation). For this feature a desktop environment is needed.
+| Name                         | arguments | Description                                                                                                                                                      |
+|------------------------------|-----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `--create-map-pdfs`          | Boolean   | Enable/Disable export as PDF. Require a running MapFish docker container. Enabled as default (True).                                                             |
+| `--create-excel`             | Boolean   | Enable/Disable creation of the walk-time table as excel. Enabled as default (True).                                                                              |
+| `--create-elevation-profile` | Boolean   | Enable/Disable creation of the elevation profile as PNG. Enabled as default (True).                                                                              |
+| `--open-images`              | None      | If this flag is set, the created images will be shown (i.g. elevation plot will be opened after its creation). For this feature a desktop environment is needed. |
 
 ## About swisstopo Services
 

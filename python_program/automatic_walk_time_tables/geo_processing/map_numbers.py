@@ -1,13 +1,14 @@
 import json
+import logging
 from typing import List
 
 import gpxpy
 import requests
 
-from . import coord_transformation
+from automatic_walk_time_tables.geo_processing import coord_transformation
 
-import logging
 logger = logging.getLogger(__name__)
+
 
 def is_in_bbox(bbox: List[float], coord_lv03: List[float]) -> bool:
     """ 
