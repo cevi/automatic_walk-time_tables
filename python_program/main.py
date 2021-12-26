@@ -1,5 +1,3 @@
-import logging
-
 from arg_parser import create_parser
 from log_helper import setup_recursive_logger
 
