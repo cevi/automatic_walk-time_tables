@@ -64,6 +64,7 @@ class MapCreator:
 
         """
 
+
         converter = coord_transformation.GPSConverter()
         bounds = self.raw_gpx_data.get_bounds()
 

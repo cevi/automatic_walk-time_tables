@@ -1,0 +1,23 @@
+
+version: "3.9"
+
+services:
+
+  mapfish:
+    build: pdf_map_export/.
+    ports:
+      - "8080:8080"
+
+  backend:
+    build: python_program/.
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mapfish
+
+  webinterface:
+    build: webinterface/.
+    ports:
+      - "80:80"
+    depends_on:
+      - backend

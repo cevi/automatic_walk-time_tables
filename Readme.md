@@ -22,6 +22,8 @@ Ist man mit einer grösseren Gruppe unterwegs (so zum Beispiel in einem J+S-Lage
 unumgänglich. Doch genau in diesen Szenarien stossen die existierenden Tools an ihr Grenzen. Dieses Projekt setzt genau
 an diesem Punkt an und ermöglicht eine detailliertere Routen-Planung.
 
+Jetzt gleich loslegen: [Get Started](/GetStarted.md).
+
 ## Grenzen existierender Tools
 
 Die Berechnung der Wanderzeit gemäss der Formel der Schweizer Wanderwege (wie sie von SchweizMobil verwendet wird)  mag

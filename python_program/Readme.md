@@ -45,6 +45,8 @@ All arguments are optional (or have a default value). However, the arguments all
 | `-t` `--departure-time` | ISO-timestamp  | Departure date in ISO-format, i.g. 2011-11-04T00:05:23. Default 2021-08-16T09:00:00.                                                                                                                                                                                                                      |
 | `-n` `--creator-name`   | `String`       | The name of the creator of this walk-table. Default is just an empty string.                                                                                                                                                                                                                              |
 | `--log-level`           | `Integer`      | Log Level (see https://docs.python.org/3/library/logging.html#levels). Default: WARNING                                                                                                                                                                                                                   |
+| `--output_directory`    | `String`       | Subdirectory in the output folder for storing the created files. Should be empty or ending with "/"                                                                                                                                                                                                       |
+
 
 ### Enable/Disable Features
 
