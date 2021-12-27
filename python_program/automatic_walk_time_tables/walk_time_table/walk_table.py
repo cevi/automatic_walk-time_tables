@@ -60,7 +60,7 @@ def plot_elevation_profile(raw_data_points: gpxpy.gpx,
         os.mkdir('output')
 
     # show the plot and save image
-    plt.savefig('output/' + file_name + '_elevation_profile.png', dpi=750)
+    plt.savefig(file_name + '_elevation_profile.png', dpi=750)
 
     logger.info("Elevation profile plot saved as " + file_name + '_elevation_profile.png')
 
@@ -137,7 +137,7 @@ def create_walk_table(time_stamp, speed, way_points, total_distance, file_name: 
     if (not os.path.exists('output')):
         os.mkdir('output')
 
-    xfile.save('output/' + file_name + '_Marschzeittabelle.xlsx')
+    xfile.save(file_name + '_Marschzeittabelle.xlsx')
 
     logger.info("Marschzeittabelle saved as " + file_name + '_Marschzeittabelle.xlsx')
 
