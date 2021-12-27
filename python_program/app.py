@@ -7,10 +7,10 @@ import uuid
 import zipfile
 
 import flask
-from flask import Flask, request, flash, redirect
+from flask import Flask, request
 from flask_cors import CORS
 
-from main import generate_automated_walk_table, create_arg_parser
+from arg_parser import create_parser
 
 app = Flask(__name__)
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
@@ -50,16 +50,21 @@ def create_map():
             response=json.dumps({'status': 'error', 'message': 'Your file is not valid.'}),
             status=500,
             mimetype='application/json')
-        return response 
+        return response
 
-    parser = create_arg_parser()
+    parser = create_parser()
 
     args_as_dict = request.args.to_dict(flat=True)
     args = list(functools.reduce(lambda x, y: x + y, args_as_dict.items()))
     args = list(filter(lambda x: x != '', args))
 
     args = parser.parse_args(['-gfn', file_name, '--output_directory', download_id + '/'] + args)
-    generate_automated_walk_table(args)
+
+    # AutomatedWalkTableGenerator should be imported only after setting the logger!
+    from automatic_walk_time_tables.automatic_walk_time_table_generator import AutomatedWalkTableGenerator
+
+    generator = AutomatedWalkTableGenerator(args)
+    generator.run()
 
     # Remove GPX file from upload directory
     os.remove(file_name)
