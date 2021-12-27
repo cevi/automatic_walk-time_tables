@@ -33,8 +33,11 @@ def create_map():
     pathlib.Path(input_directory).mkdir(parents=True, exist_ok=True)
 
     if 'file' not in request.files:
-        flash('No file part')
-        return redirect(request.url)
+        response = app.response_class(
+            response=json.dumps({'status': 'error', 'message': 'No file submitted.'}),
+            status=500,
+            mimetype='application/json')
+        return response
 
     file = request.files['file']
 
@@ -42,6 +45,12 @@ def create_map():
 
     if file and allowed_file(file.filename):
         file.save(file_name)
+    else:
+        response = app.response_class(
+            response=json.dumps({'status': 'error', 'message': 'Your file is not valid.'}),
+            status=500,
+            mimetype='application/json')
+        return response 
 
     parser = create_arg_parser()
 
@@ -55,6 +64,7 @@ def create_map():
     # Remove GPX file from upload directory
     os.remove(file_name)
 
+    # Send the download link to the user
     response = app.response_class(
         response=json.dumps({'status': 'success', 'download_id': str(download_id)}),
         status=200,
@@ -71,7 +81,7 @@ def request_zip(download_id):
     data = io.BytesIO()
     with zipfile.ZipFile(data, mode='w') as z:
         for f_name in base_path.iterdir():
-            # get only filename from f_name
+            # get only filename from f_name to write the file into the root of the zip
             only_name = str(f_name.name)
             z.write(f_name, only_name)
     data.seek(0)
