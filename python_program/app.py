@@ -25,7 +25,12 @@ def allowed_file(filename):
 @app.route('/create', methods=['POST'])
 def create_map():
     download_id = str(uuid.uuid4().hex)
-    os.mkdir('./output/' + download_id)
+
+    # check if output and input folders exist, if not, create them
+    output_directory = 'output/' + download_id + '/'
+    input_directory = 'input/' + download_id + '/'
+    pathlib.Path(output_directory).mkdir(parents=True, exist_ok=True)
+    pathlib.Path(input_directory).mkdir(parents=True, exist_ok=True)
 
     if 'file' not in request.files:
         flash('No file part')
@@ -33,7 +38,7 @@ def create_map():
 
     file = request.files['file']
 
-    file_name = './testWalks/' + download_id + '.gpx'
+    file_name = './input/' + download_id + 'upload.gpx'
 
     if file and allowed_file(file.filename):
         file.save(file_name)
@@ -66,7 +71,9 @@ def request_zip(download_id):
     data = io.BytesIO()
     with zipfile.ZipFile(data, mode='w') as z:
         for f_name in base_path.iterdir():
-            z.write(f_name)
+            # get only filename from f_name
+            only_name = str(f_name.name)
+            z.write(f_name, only_name)
     data.seek(0)
 
     return flask.send_file(
