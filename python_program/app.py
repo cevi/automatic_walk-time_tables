@@ -41,7 +41,7 @@ def create_map():
 
     file = request.files['file']
 
-    file_name = './input/' + download_id + 'upload.gpx'
+    file_name = './input/' + download_id + '/upload.gpx'
 
     if file and allowed_file(file.filename):
         file.save(file_name)
@@ -58,7 +58,7 @@ def create_map():
     args = list(functools.reduce(lambda x, y: x + y, args_as_dict.items()))
     args = list(filter(lambda x: x != '', args))
 
-    args = parser.parse_args(['-gfn', file_name, '--output_directory', download_id + '/'] + args)
+    args = parser.parse_args(['-gfn', file_name, '--output_directory', output_directory] + args)
 
     # AutomatedWalkTableGenerator should be imported only after setting the logger!
     from automatic_walk_time_tables.automatic_walk_time_table_generator import AutomatedWalkTableGenerator

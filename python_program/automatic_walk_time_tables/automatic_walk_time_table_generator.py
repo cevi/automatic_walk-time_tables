@@ -23,8 +23,10 @@ class AutomatedWalkTableGenerator:
         self.logger.debug("Reading %s", self.args.gpx_file_name)
         self.raw_gpx_data = gpxpy.parse(gpx_file)
 
+        self.output_directory = args.output_directory
+
     def run(self):
-        name = self.raw_gpx_data.name
+        name = self.output_directory + self.raw_gpx_data.name
         map_numbers = find_map_numbers(self.raw_gpx_data)  # map numbers and their names as a single string
 
         self.logger.debug("GPX Name: %s", name)
