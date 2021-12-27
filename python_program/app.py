@@ -5,12 +5,17 @@ import os
 import pathlib
 import uuid
 import zipfile
+import logging
 
 import flask
 from flask import Flask, request
 from flask_cors import CORS
 
 from arg_parser import create_parser
+from log_helper import setup_recursive_logger
+
+setup_recursive_logger(logging.DEBUG)
+from automatic_walk_time_tables.automatic_walk_time_table_generator import AutomatedWalkTableGenerator
 
 app = Flask(__name__)
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
@@ -61,7 +66,7 @@ def create_map():
     args = parser.parse_args(['-gfn', file_name, '--output_directory', download_id + '/'] + args)
 
     # AutomatedWalkTableGenerator should be imported only after setting the logger!
-    from automatic_walk_time_tables.automatic_walk_time_table_generator import AutomatedWalkTableGenerator
+    
 
     generator = AutomatedWalkTableGenerator(args)
     generator.run()

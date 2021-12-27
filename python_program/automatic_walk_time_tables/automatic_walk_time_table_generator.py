@@ -53,4 +53,4 @@ class AutomatedWalkTableGenerator:
                 self.logger.debug('Boolean indicates that we should create map PDFs.')
                 map_creator = MapCreator(self.raw_gpx_data)
                 map_creator.plot_route_on_map(way_points, file_name=name, map_scaling=self.args.map_scaling,
-                                              name_of_points=name_of_points)
+                                              name_of_points=name_of_points, print_api_base_url="mapfish")
