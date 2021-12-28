@@ -9,7 +9,7 @@ export class AppComponent {
   title = 'automatic-walk-time-tables';
   pending = false;
   showDownloadLink = false;
-  download_id: string = '';
+  uuid: string = '';
 
   download_map() {
 
@@ -38,28 +38,29 @@ export class AppComponent {
       .then((resp: any) => {
 
         const response = JSON.parse(resp)
-        console.log(response['download_id'])
-        this.download_id = response['download_id'];
+        this.uuid = response['uuid'];
+        console.log(this.uuid)
+
         this.download_data()
 
-        AppComponent.get_status_updates(this.download_id)
+        AppComponent.get_status_updates(this.uuid)
 
       })
       .catch(console.log)
 
   }
 
-  static get_status_updates(download_id: string) {
+  static get_status_updates(uuid: string) {
 
     console.log('Request a status update.')
 
     const baseURL = "http://localhost:5000/status/"
 
-    fetch(baseURL + download_id)
+    fetch(baseURL + uuid)
       .then(response => response.json())
       .then(res => {
         console.log(res);
-        setTimeout(() => this.get_status_updates(download_id), 500)
+        setTimeout(() => this.get_status_updates(uuid), 500)
       });
 
   }

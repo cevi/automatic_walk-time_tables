@@ -5,7 +5,7 @@ import json
 import logging
 import os
 import pathlib
-import uuid
+import uuid as uuid_factory
 import zipfile
 from threading import Thread
 
@@ -15,12 +15,12 @@ from flask_cors import CORS
 
 from arg_parser import create_parser
 from log_helper import setup_recursive_logger
-from status_handler import StatusHandler, StatusLogger
+from status_handler import ExportStateHandler, ExportStateLogger
 
-statusHandler = StatusHandler()
-statusLogger = StatusLogger(statusHandler)
+stateHandler = ExportStateHandler()
+stateLogger = ExportStateLogger(stateHandler)
+setup_recursive_logger(logging.DEBUG, stateLogger)
 
-setup_recursive_logger(logging.DEBUG, statusLogger)
 from automatic_walk_time_tables.automatic_walk_time_table_generator import AutomatedWalkTableGenerator
 
 logger = logging.getLogger(__name__)
@@ -28,26 +28,24 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
-ALLOWED_EXTENSIONS = set(['gpx'])
-
 
 def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ['gpx']
 
 
 @app.route('/create', methods=['POST'])
 def create_map():
-    download_id = str(uuid.uuid4().hex)
-    logger.debug('New request to with create_map(). Will be served with UID={}.'.format(download_id))
+    uuid = str(uuid_factory.uuid4().hex)
+    logger.debug('New request to with create_map(). Will be served with UUID={}.'.format(uuid))
 
     # check if output and input folders exist, if not, create them
-    output_directory = 'output/' + download_id + '/'
-    input_directory = 'input/' + download_id + '/'
+    output_directory = 'output/' + uuid + '/'
+    input_directory = 'input/' + uuid + '/'
     pathlib.Path(output_directory).mkdir(parents=True, exist_ok=True)
     pathlib.Path(input_directory).mkdir(parents=True, exist_ok=True)
 
     if 'file' not in request.files:
-        logger.error('[UID={}]: No GPX file provided with the POST request.'.format(download_id))
+        logger.error('[UUID={}]: No GPX file provided with the POST request.'.format(uuid))
 
         response = app.response_class(
             response=json.dumps({'status': 'error', 'message': 'No file submitted.'}),
@@ -57,11 +55,11 @@ def create_map():
 
     file = request.files['file']
 
-    file_name = './input/' + download_id + '/upload.gpx'
+    file_name = './input/' + uuid + '/upload.gpx'
 
     if file and allowed_file(file.filename):
         file.save(file_name)
-        logger.error('[UID={}]: Invalid file extension in filename \"{}\".'.format(download_id, file.filename))
+        logger.error('[UUID={}]: Invalid file extension in filename \"{}\".'.format(uuid, file.filename))
 
     else:
         response = app.response_class(
@@ -70,7 +68,7 @@ def create_map():
             mimetype='application/json')
         return response
 
-    logger.log(StatusLogger.LOG_AS_STATUS, 'Preparing for export.', {'uid': download_id})
+    logger.log(ExportStateLogger.REQUESTABLE, 'Preparing for export.', {'uuid': uuid, 'status': 'running'})
 
     parser = create_parser()
     args_as_dict = request.args.to_dict(flat=True)
@@ -78,43 +76,44 @@ def create_map():
     args = list(filter(lambda x: x != '', args))
     args = parser.parse_args(['-gfn', file_name, '--output_directory', output_directory] + args)
 
-    thread = Thread(target=create_export, kwargs={'download_id': download_id, 'args': args})
+    thread = Thread(target=create_export, kwargs={'uuid': uuid, 'args': args})
     thread.start()
 
     # Send the download link to the user
     response = app.response_class(
-        response=json.dumps({'status': 'success', 'download_id': str(download_id)}),
+        response=json.dumps({'status': 'success', 'uuid': str(uuid)}),
         status=200,
         mimetype='application/json')
 
     return response
 
 
-def create_export(download_id: str, args: argparse.Namespace):
-    logger.debug('[UID={}]: Successfully created a new thread for exporting.'.format(download_id))
-    logger.log(StatusLogger.LOG_AS_STATUS, 'Export started.', {'uid': download_id})
+def create_export(uuid: str, args: argparse.Namespace):
+    logger.debug('[UUID={}]: Successfully created a new thread for exporting.'.format(uuid))
+    logger.log(ExportStateLogger.REQUESTABLE, 'Export started.', {'uuid': uuid, 'status': 'running'})
 
     generator = AutomatedWalkTableGenerator(args)
     generator.run()
 
-    logger.log(StatusLogger.LOG_AS_STATUS, 'Export successfully finished.', {'uid': download_id})
+    logger.log(ExportStateLogger.REQUESTABLE, 'Export successfully finished.',
+               {'uuid': uuid, 'status': 'finished'})
 
     # Remove GPX file from upload directory
     os.remove(args.gpx_file_name)
 
 
-@app.route('/status/<download_id>')
-def return_status(download_id):
+@app.route('/status/<uuid>')
+def return_status(uuid):
     response = app.response_class(
-        response=json.dumps(statusHandler.get_status(download_id)),
-        status=500,
+        response=json.dumps(stateHandler.get_status(uuid)),
+        status=200,
         mimetype='application/json')
     return response
 
 
-@app.route('/download/<download_id>')
-def request_zip(download_id):
-    base_path = pathlib.Path('./output/' + download_id + '/')
+@app.route('/download/<uuid>')
+def request_zip(uuid):
+    base_path = pathlib.Path('./output/' + uuid + '/')
 
     # Return Zip with data
     data = io.BytesIO()
