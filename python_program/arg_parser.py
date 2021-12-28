@@ -33,9 +33,11 @@ def create_parser():
     parser.add_argument('-n', '--creator-name', type=str, metavar='<name>',
                         help='Name of you, the creator of this route. If not specified, it will be empty.', default='')
     parser.add_argument('--output_directory', default='', type=str,
-                            help='Subdirectory in the output folder for storing the created files. Should be empty or ending with "/"')
+                        help='Subdirectory in the output folder for storing the created files. Should be empty or ending with "/"')
     parser.add_argument('--log-level', type=int, metavar='<log-level>', default=30,
                         help='Log Level (see https://docs.python.org/3/library/logging.html#levels). Default: WARNING.')
+    parser.add_argument('--print-api-base-url', type=str, default='http://localhost:8080/',
+                        help='Base URL of the mapfish server used for creating PDF exports. Default: localhost')
 
     # Enabling / Disabling Features
     parser.add_argument('--create-map-pdfs', default=True, type=str2bool,

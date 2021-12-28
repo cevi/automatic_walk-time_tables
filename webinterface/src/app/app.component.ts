@@ -1,4 +1,6 @@
 import {Component} from '@angular/core';
+import {environment} from "../environments/environment";
+
 
 @Component({
   selector: 'app-root',
@@ -6,10 +8,16 @@ import {Component} from '@angular/core';
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent {
+
+
+  static baseURL = environment.API_URL;
+
+
   title = 'automatic-walk-time-tables';
   pending = false;
   showDownloadLink = false;
   uuid: string = '';
+
 
   download_map() {
 
@@ -26,7 +34,7 @@ export class AppComponent {
 
     formData.append("file", gpx_file);
 
-    const url = "http://localhost:5000/create?--velocity=5"
+    const url = AppComponent.baseURL + "create?--velocity=5"
     fetch(url, {
       method: "POST",
       headers: {
@@ -54,7 +62,7 @@ export class AppComponent {
 
     console.log('Request a status update.')
 
-    const baseURL = "http://localhost:5000/status/"
+    const baseURL = AppComponent.baseURL + "status/"
 
     fetch(baseURL + uuid)
       .then(response => response.json())

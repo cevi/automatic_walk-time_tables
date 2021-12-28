@@ -72,7 +72,8 @@ def create_map():
     args_as_dict = request.args.to_dict(flat=True)
     args = list(functools.reduce(lambda x, y: x + y, args_as_dict.items()))
     args = list(filter(lambda x: x != '', args))
-    args = parser.parse_args(['-gfn', file_name, '--output_directory', output_directory] + args)
+    args = parser.parse_args(['-gfn', file_name, '--output_directory', output_directory, '--print-api-base-url',
+                              os.environ['PRINT_API_BASE_URL']] + args)
 
     thread = Thread(target=create_export, kwargs={'uuid': uuid, 'args': args})
     thread.start()

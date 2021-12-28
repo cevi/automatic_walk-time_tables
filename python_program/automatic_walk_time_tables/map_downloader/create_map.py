@@ -177,7 +177,7 @@ class MapCreator:
             with open('{}_{}_map.pdf'.format(file_name, index), 'wb') as f:
                 f.write(fetched_pdf.content)
 
-            self.logger.info("Saved map to output/{}_{}_map.pdf".format(file_name, index))
+            self.logger.info("Saved map to {}_{}_map.pdf".format(file_name, index))
 
     def create_mapfish_query(self, layer, map_scaling, center,
                              way_points: List[Tuple[int, gpxpy.gpx.GPXTrackPoint]],
