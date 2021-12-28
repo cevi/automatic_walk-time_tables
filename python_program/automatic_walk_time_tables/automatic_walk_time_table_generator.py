@@ -23,8 +23,10 @@ class AutomatedWalkTableGenerator:
         self.logger.debug("Reading %s", self.args.gpx_file_name)
         self.raw_gpx_data = gpxpy.parse(gpx_file)
 
+        self.output_directory = args.output_directory
+
     def run(self):
-        name = self.raw_gpx_data.name
+        name = self.output_directory + self.raw_gpx_data.name
         map_numbers = find_map_numbers(self.raw_gpx_data)  # map numbers and their names as a single string
 
         self.logger.debug("GPX Name: %s", name)
@@ -52,5 +54,8 @@ class AutomatedWalkTableGenerator:
             if self.args.create_map_pdfs:
                 self.logger.debug('Boolean indicates that we should create map PDFs.')
                 map_creator = MapCreator(self.raw_gpx_data)
-                map_creator.plot_route_on_map(way_points, file_name=name, map_scaling=self.args.map_scaling,
-                                              name_of_points=name_of_points)
+                map_creator.plot_route_on_map(way_points,
+                                              file_name=name,
+                                              map_scaling=self.args.map_scaling,
+                                              name_of_points=name_of_points,
+                                              print_api_base_url=self.args.print_api_base_url)

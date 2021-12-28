@@ -1,4 +1,6 @@
 import json
+import logging
+import os
 import time
 from pathlib import Path
 from typing import List, Tuple
@@ -6,23 +8,20 @@ from typing import List, Tuple
 import gpxpy
 import numpy as np
 import requests
-import os
 from pyclustering.cluster.kmeans import kmeans
 from pyclustering.utils.metric import type_metric, distance_metric
-
-
-import logging
 
 from automatic_walk_time_tables.geo_processing import coord_transformation
 
 
 def GetSpacedElements(array, numElems=4):
-        """
-        Get numElems of an array, that are equally spaced based on index (not value).
-        """
+    """
+    Get numElems of an array, that are equally spaced based on index (not value).
+    """
 
-        indices = np.round(np.linspace(0, len(array) - 1, numElems)).astype(int)
-        return list(np.array(array)[indices])
+    indices = np.round(np.linspace(0, len(array) - 1, numElems)).astype(int)
+    return list(np.array(array)[indices])
+
 
 def get_path_coordinates_as_list(raw_gpx_data: gpxpy.gpx):
     path_coordinates = []
@@ -34,6 +33,7 @@ def get_path_coordinates_as_list(raw_gpx_data: gpxpy.gpx):
                 lv03_point = converter.WGS84toLV03(wgs84_point[0], wgs84_point[1], wgs84_point[2])
                 path_coordinates.append([lv03_point[0] + 2_000_000, lv03_point[1] + 1_000_000])
     return path_coordinates
+
 
 class MapCreator:
     A4_HEIGHT_FACTOR = 4.5 / 25.0
@@ -52,8 +52,6 @@ class MapCreator:
         self.logger = logging.getLogger(__name__)
         self.raw_gpx_data = raw_gpx_data
 
-
-
     def auto_select_map_scaling(self) -> int:
         """
 
@@ -63,7 +61,6 @@ class MapCreator:
         1:50'000, 1:100'000, or 1:200'000.
 
         """
-
 
         converter = coord_transformation.GPSConverter()
         bounds = self.raw_gpx_data.get_bounds()
@@ -82,16 +79,15 @@ class MapCreator:
         self.logger.info(f'Map scaling automatically set to 1:{map_scale}')
         return map_scale
 
-
     def plot_route_on_map(self,
-                        way_points: List[Tuple[int, gpxpy.gpx.GPXTrackPoint]],
-                        file_name: str,
-                        map_scaling: int,
-                        name_of_points: List[str],
-                        layer: str = 'ch.swisstopo.pixelkarte-farbe',
-                        print_api_base_url: str = 'localhost',
-                        print_api_port: int = 8080,
-                        print_api_protocol: str = 'http'):
+                          way_points: List[Tuple[int, gpxpy.gpx.GPXTrackPoint]],
+                          file_name: str,
+                          map_scaling: int,
+                          name_of_points: List[str],
+                          layer: str = 'ch.swisstopo.pixelkarte-farbe',
+                          print_api_base_url: str = 'localhost',
+                          print_api_port: int = 8080,
+                          print_api_protocol: str = 'http'):
         """
 
         Creates a map of the route and marking the selected way points on it.
@@ -116,7 +112,7 @@ class MapCreator:
 
         if len(map_centers) > 10:
             logging.error(f'Too many map centers (exceeding faire use limit).')
-            if(self.logger.getEffectiveLevel() == logging.DEBUG):
+            if (self.logger.getEffectiveLevel() == logging.DEBUG):
                 raise Exception("You should respect the faire use limit!")
             else:
                 exit(1)
@@ -134,14 +130,14 @@ class MapCreator:
                 response_obj = requests.post(url, data=json.dumps(query_json))
             except requests.exceptions.ConnectionError:
                 self.logger.error("Could not connect to mapfish server. Is the server running?")
-                if(self.logger.getEffectiveLevel() == logging.DEBUG):
+                if (self.logger.getEffectiveLevel() == logging.DEBUG):
                     raise Exception("Could not connect to mapfish server. Is the server running?")
                 else:
                     exit(1)
 
             if response_obj.status_code != 200:
                 logging.error("Error while posting to mapfish: " + str(response_obj.status_code))
-                if(self.logger.getEffectiveLevel() == logging.DEBUG):
+                if (self.logger.getEffectiveLevel() == logging.DEBUG):
                     raise Exception('Can not fetch map. Status Code: {}'.format(response_obj.status_code))
                 else:
                     exit(1)
@@ -160,7 +156,7 @@ class MapCreator:
 
             if response_obj.status_code != 200 and json.loads(pdf_status.content)['status'] != 'finished':
                 logging.error("Can not fetch the map: " + str(response_obj.status_code))
-                if(self.logger.getEffectiveLevel() == logging.DEBUG):
+                if (self.logger.getEffectiveLevel() == logging.DEBUG):
                     raise Exception('Can not fetch map. Status Code: {}'.format(response_obj.status_code))
                 else:
                     exit(1)
@@ -169,7 +165,7 @@ class MapCreator:
 
             if response_obj.status_code != 200:
                 logging.error("Error fetching the map: " + str(response_obj.status_code))
-                if(self.logger.getEffectiveLevel() == logging.DEBUG):
+                if (self.logger.getEffectiveLevel() == logging.DEBUG):
                     raise Exception('Can not fetch map. Status Code: {}'.format(response_obj.status_code))
                 else:
                     exit(1)
@@ -178,15 +174,14 @@ class MapCreator:
             if (not os.path.exists('output')):
                 os.mkdir('output')
 
-            with open('output/{}_{}_map.pdf'.format(file_name, index), 'wb') as f:
+            with open('{}_{}_map.pdf'.format(file_name, index), 'wb') as f:
                 f.write(fetched_pdf.content)
-            
-            self.logger.info("Saved map to output/{}_{}_map.pdf".format(file_name, index))
 
+            self.logger.info("Saved map to {}_{}_map.pdf".format(file_name, index))
 
     def create_mapfish_query(self, layer, map_scaling, center,
-                            way_points: List[Tuple[int, gpxpy.gpx.GPXTrackPoint]],
-                            name_of_points):
+                             way_points: List[Tuple[int, gpxpy.gpx.GPXTrackPoint]],
+                             name_of_points):
         """
 
         Returns the JSON-Object used for querying
@@ -366,7 +361,7 @@ class MapCreator:
             points_for_clustering = GetSpacedElements(points, n_points)
 
             user_function = lambda point1, point2: max(abs(point1[0] - point2[0]) / (w / 2),
-                                                    abs(point1[1] - point2[1]) / (h / 2))
+                                                       abs(point1[1] - point2[1]) / (h / 2))
             metric = distance_metric(type_metric.USER_DEFINED, func=user_function)
 
             # create K-Means algorithm with specific distance metric
@@ -399,6 +394,3 @@ class MapCreator:
                 path_covered = True
 
         return final_centers
-
-
-    

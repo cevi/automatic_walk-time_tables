@@ -1,4 +1,6 @@
 import {Component} from '@angular/core';
+import {environment} from "../environments/environment";
+
 
 @Component({
   selector: 'app-root',
@@ -6,10 +8,16 @@ import {Component} from '@angular/core';
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent {
+
+
+  static baseURL = environment.API_URL;
+
+
   title = 'automatic-walk-time-tables';
   pending = false;
   showDownloadLink = false;
-  download_id: string = '';
+  uuid: string = '';
+
 
   download_map() {
 
@@ -26,7 +34,7 @@ export class AppComponent {
 
     formData.append("file", gpx_file);
 
-    const url = "http://localhost:5000/create?--velocity=5"
+    const url = AppComponent.baseURL + "create?--velocity=5"
     fetch(url, {
       method: "POST",
       headers: {
@@ -36,14 +44,36 @@ export class AppComponent {
     })
       .then(response => response.text())
       .then((resp: any) => {
-        console.log(resp)
+
         const response = JSON.parse(resp)
-        console.log(response['download_id'])
-        this.download_id = response['download_id'];
+        this.uuid = response['uuid'];
+        console.log(this.uuid)
+
         this.download_data()
+
+        AppComponent.get_status_updates(this.uuid)
 
       })
       .catch(console.log)
+
+  }
+
+  static get_status_updates(uuid: string) {
+
+    console.log('Request a status update.')
+
+    const baseURL = AppComponent.baseURL + "status/"
+
+    fetch(baseURL + uuid)
+      .then(response => response.json())
+      .then(res => {
+        console.log(res);
+
+        if (['error', 'finished'].includes(res.status))
+          return;
+
+        setTimeout(() => this.get_status_updates(uuid), 500)
+      });
 
   }
 

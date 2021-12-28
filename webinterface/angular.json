@@ -57,6 +57,20 @@
               ],
               "outputHashing": "all"
             },
+            "prod_backend": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.prod_backend.ts"
+                }
+              ],
+              "buildOptimizer": false,
+              "optimization": false,
+              "vendorChunk": true,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "namedChunks": true
+            },
             "development": {
               "buildOptimizer": false,
               "optimization": false,
@@ -73,6 +87,9 @@
           "configurations": {
             "production": {
               "browserTarget": "automatic-walk-time-tables:build:production"
+            },
+            "prod_backend": {
+              "browserTarget": "automatic-walk-time-tables:build:prod_backend"
             },
             "development": {
               "browserTarget": "automatic-walk-time-tables:build:development"

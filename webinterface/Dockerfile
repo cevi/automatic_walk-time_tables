@@ -1,3 +1,4 @@
+
 # Stage 1: Compile and Build angular codebase
 # Use official node image as the base image
 FROM node:14 as build
@@ -9,19 +10,21 @@ WORKDIR /usr/local/app
 COPY package*.json ./
 
 # Install all the dependencies from package-lock.json
-RUN npm install
+RUN npm ci
 
 # Add the source code to app
 COPY ./ /usr/local/app/
 
+ARG configuration=development
+
 # Generate the build of the application
-RUN npm run build
+RUN npm run build -- --configuration $configuration
 
 # Stage 2: Serve app with nginx server
 # Use official nginx image as the base image
 FROM nginx:latest
 
-# Copy the build output to replace the default nginx contents.
+# Copy the build output txo replace the default nginx contents.
 COPY --from=build /usr/local/app/dist/automatic-walk-time-tables /usr/share/nginx/html
 
 # Expose port 80
