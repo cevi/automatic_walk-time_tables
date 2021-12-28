@@ -36,14 +36,31 @@ export class AppComponent {
     })
       .then(response => response.text())
       .then((resp: any) => {
-        console.log(resp)
+
         const response = JSON.parse(resp)
         console.log(response['download_id'])
         this.download_id = response['download_id'];
         this.download_data()
 
+        AppComponent.get_status_updates(this.download_id)
+
       })
       .catch(console.log)
+
+  }
+
+  static get_status_updates(download_id: string) {
+
+    console.log('Request a status update.')
+
+    const baseURL = "http://localhost:5000/status/"
+
+    fetch(baseURL + download_id)
+      .then(response => response.json())
+      .then(res => {
+        console.log(res);
+        setTimeout(() => this.get_status_updates(download_id), 500)
+      });
 
   }
 

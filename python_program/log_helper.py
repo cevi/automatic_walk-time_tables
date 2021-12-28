@@ -11,7 +11,7 @@ class Formatter(logging.Formatter):
         return super().format(record)
 
 
-def setup_recursive_logger(level: int):
+def setup_recursive_logger(level: int, additionalLogger: logging.StreamHandler):
     default_handler = logging.StreamHandler()
 
     class RecursiveLogger(logging.getLoggerClass()):
@@ -24,5 +24,8 @@ def setup_recursive_logger(level: int):
             # Add Custom Handler
             default_handler.setFormatter(Formatter())
             self.addHandler(default_handler)
+
+            additionalLogger.setFormatter(Formatter())
+            self.addHandler(additionalLogger)
 
     logging.setLoggerClass(RecursiveLogger)
