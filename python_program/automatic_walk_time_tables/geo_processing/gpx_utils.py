@@ -1,7 +1,7 @@
 import gpxpy
 import numpy as np
 
-from . import coord_transformation
+from automatic_walk_time_tables.geo_processing import coord_transformation
 
 
 def calc_perimeter(raw_gpx_data: gpxpy.gpx):

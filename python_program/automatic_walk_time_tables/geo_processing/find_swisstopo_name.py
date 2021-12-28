@@ -1,12 +1,12 @@
 import csv
-import time
-from builtins import int
+import logging
+import math
+from math import sqrt
 
-from rtree.index import Index as RTreeIndex
+logger = logging.getLogger(__name__)
 
 
 class SwissName:
-
     def __init__(self, name, object_type, x, y):
         self.name = name
         self.object_type = object_type

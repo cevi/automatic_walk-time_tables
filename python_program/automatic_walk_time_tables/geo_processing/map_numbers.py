@@ -1,10 +1,13 @@
 import json
+import logging
 from typing import List
 
 import gpxpy
 import requests
 
-from . import coord_transformation
+from automatic_walk_time_tables.geo_processing import coord_transformation
+
+logger = logging.getLogger(__name__)
 
 
 def is_in_bbox(bbox: List[float], coord_lv03: List[float]) -> bool:
@@ -51,6 +54,7 @@ def find_map_numbers(raw_gpx_data: gpxpy.gpx) -> str:
     # This means 1 request, which is below the fair use limit.
     url = base_url + f"geometry={start_point[0]},{start_point[1]}&imageDisplay=1283,937,96&mapExtent=2400000,1000000,2900000,1300000"
 
+    logger.debug("Fetching " + url)
     result = requests.get(url)
 
     all_maps = []

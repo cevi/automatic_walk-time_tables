@@ -1,55 +1,57 @@
+import logging
+from copy import copy
+from typing import List, Tuple
+
 import geopy.distance
 import gpxpy
-from copy import copy
 from gpxpy.gpx import GPXTrackPoint
-from typing import List, Tuple
+
+logger = logging.getLogger(__name__)
 
 
 def select_waypoints(raw_gpx_data: gpxpy.gpx, walk_point_limit=21):
     """
-
     Algorithm that selects suitable points for the Marschzeittabelle.
-
     Some parts are inspired by the Ramer–Douglas–Peucker algorithm. Especially
     the third step, which reduces the number of points.
-
     raw_gpx_data : raw gpx data from imported GPX-File
     walk_point_limit : max number of points in the walk-time table, default 21
-
     -------------------------------------------------------------------------
-
     The aim is to choose points that are as evenly distributed as possible
     and that cover the topology of the path as well as possible. The process
     is done in three steps: preselection, remove_unnecessary_points, reduce_number_of_points.
-
     """
 
     total_distance, pts_step_1 = preselection_step(raw_gpx_data)
+
+    logger.debug("Preselection returned %d points", len(pts_step_1))
+
     pts_step_2 = remove_unnecessary_points(pts_step_1)
+
+    logger.debug("Remove unnecessary points returned %d points", len(pts_step_2))
+
     pts_step_3 = reduce_number_of_points(pts_step_2, walk_point_limit)
+
+    logger.debug("Reduce number of points returned %d points", len(pts_step_3))
+    logger.debug("Total distance: %f km", total_distance)
 
     return total_distance, pts_step_2, pts_step_3
 
 
 def reduce_number_of_points(pts_step_2: List[Tuple[int, GPXTrackPoint]], walk_point_limit: int):
     """
-
     Final selection: Iteratively reduce the number of points to the maximum specified in walk_point_limit. To
     achieve this we iteratively increase a maximum derivation (drv_limit) value until we have dropped enough points.
-
     For this purpose, three preselected, adjacent points (A, B, and B) are used to construct a secant line
     (a straight line between A and C). Point B is now tested against the drv_limit. If C has a derivation
     bigger than the limit, C gets dropped or moved to a new location, i.g. if the distance between point C and a
     point on secant line at the same location is bigger than drv_limit, C gets dropped or moved.
-
     Point B gets moved if and only if after the removal of point B a previously dropped point D is now further way
     from the secant line than the drv_limit. In this case be gets dropped and D gets added again, thus be gets
     replaced with point D in ths case. In all other cases B gets dropped.
-
     Once we've checked that. Points A, B, and C are shifted. If B gets dropped, A remains the same.
     This process is repeated until we have reached the walk_point_limit. If no point gets dropped during a pass
     through the selected points, we increase drv_limit by 2 meters and try again.
-
     """
 
     pts_step_3: List[Tuple[int, GPXTrackPoint]] = copy(pts_step_2)
@@ -112,9 +114,8 @@ def reduce_number_of_points(pts_step_2: List[Tuple[int, GPXTrackPoint]], walk_po
     return pts_step_3
 
 
-def remove_unnecessary_points(pts_step_1: []):
+def remove_unnecessary_points(pts_step_1: List[Tuple[int, GPXTrackPoint]]):
     """
-
     Now we loop through the preselected points and tighten the selection criteria.
     Into the list pts_step_2 we include points according to the following rules:
         - first or last point of a track segment
@@ -123,13 +124,11 @@ def remove_unnecessary_points(pts_step_1: []):
           the distance between A and C is at least 250 meters).
         - a point (called point C) that is at least 1'500 meters apart form the the last point (called C, i.g. the
           distance between A and C is at least 1'500 meters).
-
     After we selected a point C, we loop through all points B out of pts_step_1 that lie between point A and C.
     Now we construct a secant line (a straight line between A and C). A point B is now tested against the drv_limit.
     If B has a derivation bigger than the limit, B gets also included into the list pts_step_2, i.g. if the
     distance between point B and a point on secant line at the same location is bigger than drv_limit, C gets
     added.
-
     """
 
     drv_limit = 20
@@ -177,16 +176,13 @@ def get_coordinates(last_pt: GPXTrackPoint):
 
 def preselection_step(raw_gpx_data: gpxpy.gpx):
     """
-
         Preselection: Select all points form the tracking file according which satisfies one of the following criteria.
         This guarantees that all important points are considered. We call the set of selected points pts_step_1.
-
         Preselection criteria:
         - first or last point of a track segment
         - significant local extremum in track elevation
         - significant changes in elevation based on the approximated slope
         - distance to last selected point bigger than 250 meters
-
     """
 
     cumulated_distance = 0.0
@@ -240,12 +236,9 @@ def preselection_step(raw_gpx_data: gpxpy.gpx):
 
 def calc_secant_elevation(m: float, b: float, pt_B: Tuple[int, GPXTrackPoint]):
     """
-
     Calculates the elevation of a point on the secant line defined by m and b. The point on the
     secant line is chosen such that location matches the location of pkr_B.
-
     elevation = m * loc_of_pt_B + b
-
     """
 
     # pt_B[0] returns the location of point B in km
@@ -254,10 +247,8 @@ def calc_secant_elevation(m: float, b: float, pt_B: Tuple[int, GPXTrackPoint]):
 
 def calc_secant_line(pt_A: Tuple[int, GPXTrackPoint], pt_C: Tuple[int, GPXTrackPoint]):
     """
-
     Constructs a secant line through points A and C, i.g. a linear function passing through point A and C.
     Returns the slope and the intersect of a linear function through A and C.
-
     """
 
     # the locations of pt_A and pt_C given in km.
@@ -278,7 +269,6 @@ def prepare_for_plot(gpx: gpxpy.gpx):
     Prepares a gpx file for plotting.
     Returns two list, one with the elevation of all points in the gpx file and one with the associated,
     accumulated distance form the starting point.
-
     """
 
     coord: Tuple[float, float] = None
