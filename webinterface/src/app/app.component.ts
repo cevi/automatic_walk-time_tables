@@ -60,6 +60,10 @@ export class AppComponent {
       .then(response => response.json())
       .then(res => {
         console.log(res);
+
+        if (['error', 'finished'].includes(res.status))
+          return;
+
         setTimeout(() => this.get_status_updates(uuid), 500)
       });
 

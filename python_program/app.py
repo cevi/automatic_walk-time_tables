@@ -19,7 +19,7 @@ from status_handler import ExportStateHandler, ExportStateLogger
 
 stateHandler = ExportStateHandler()
 stateLogger = ExportStateLogger(stateHandler)
-setup_recursive_logger(logging.DEBUG, stateLogger)
+setup_recursive_logger(logging.INFO, stateLogger)
 
 from automatic_walk_time_tables.automatic_walk_time_table_generator import AutomatedWalkTableGenerator
 
@@ -36,7 +36,7 @@ def allowed_file(filename):
 @app.route('/create', methods=['POST'])
 def create_map():
     uuid = str(uuid_factory.uuid4().hex)
-    logger.debug('New request to with create_map(). Will be served with UUID={}.'.format(uuid))
+    logger.debug('New request to with create_map().', {'uuid': uuid})
 
     # check if output and input folders exist, if not, create them
     output_directory = 'output/' + uuid + '/'
@@ -45,12 +45,11 @@ def create_map():
     pathlib.Path(input_directory).mkdir(parents=True, exist_ok=True)
 
     if 'file' not in request.files:
-        logger.error('[UUID={}]: No GPX file provided with the POST request.'.format(uuid))
+        logger.error('No GPX file provided with the POST request.'.format(uuid), {'uuid': uuid})
 
         response = app.response_class(
             response=json.dumps({'status': 'error', 'message': 'No file submitted.'}),
-            status=500,
-            mimetype='application/json')
+            status=500, mimetype='application/json')
         return response
 
     file = request.files['file']
@@ -59,13 +58,12 @@ def create_map():
 
     if file and allowed_file(file.filename):
         file.save(file_name)
-        logger.error('[UUID={}]: Invalid file extension in filename \"{}\".'.format(uuid, file.filename))
 
     else:
+        logger.error('Invalid file extension in filename \"{}\".'.format(file.filename), {'uuid': uuid})
         response = app.response_class(
             response=json.dumps({'status': 'error', 'message': 'Your file is not valid.'}),
-            status=500,
-            mimetype='application/json')
+            status=500, mimetype='application/json')
         return response
 
     logger.log(ExportStateLogger.REQUESTABLE, 'Preparing for export.', {'uuid': uuid, 'status': 'running'})
@@ -81,15 +79,13 @@ def create_map():
 
     # Send the download link to the user
     response = app.response_class(
-        response=json.dumps({'status': 'success', 'uuid': str(uuid)}),
-        status=200,
-        mimetype='application/json')
+        response=json.dumps({'status': 'submitted', 'uuid': str(uuid)}),
+        status=200, mimetype='application/json')
 
     return response
 
 
 def create_export(uuid: str, args: argparse.Namespace):
-    logger.debug('[UUID={}]: Successfully created a new thread for exporting.'.format(uuid))
     logger.log(ExportStateLogger.REQUESTABLE, 'Export started.', {'uuid': uuid, 'status': 'running'})
 
     generator = AutomatedWalkTableGenerator(args)
@@ -106,8 +102,7 @@ def create_export(uuid: str, args: argparse.Namespace):
 def return_status(uuid):
     response = app.response_class(
         response=json.dumps(stateHandler.get_status(uuid)),
-        status=200,
-        mimetype='application/json')
+        status=200, mimetype='application/json')
     return response
 
 
