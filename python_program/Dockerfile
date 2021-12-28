@@ -2,6 +2,10 @@ FROM python:latest
 
 WORKDIR /app
 
+# Needed for RTree pip package
+RUN apt update
+RUN apt -y install libspatialindex-dev
+
 # Install requirements
 COPY ./automatic_walk_time_tables/requirements.txt /app/automatic_walk_time_tables/
 RUN pip install --no-cache-dir -r automatic_walk_time_tables/requirements.txt
