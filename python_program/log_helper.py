@@ -24,7 +24,7 @@ class StateFormatter(logging.Formatter):
         return super().format(record)
 
 
-def setup_recursive_logger(level: int, state_logger: logging.StreamHandler):
+def setup_recursive_logger(level: int, state_logger: logging.StreamHandler = None):
     default_handler = logging.StreamHandler()
 
     class RecursiveLogger(logging.getLoggerClass()):
@@ -38,7 +38,8 @@ def setup_recursive_logger(level: int, state_logger: logging.StreamHandler):
             default_handler.setFormatter(Formatter())
             self.addHandler(default_handler)
 
-            state_logger.setFormatter(StateFormatter())
-            self.addHandler(state_logger)
+            if state_logger is not None:
+                state_logger.setFormatter(StateFormatter())
+                self.addHandler(state_logger)
 
     logging.setLoggerClass(RecursiveLogger)
