@@ -14,7 +14,7 @@ $ docker-compose up [--build]
 
 ### Productive Hosting
 
-Adding the environment file `prod.env` you build the docker containers for a productive environment.
+Adding the environment file `prod.env` will build the docker containers for a productive environment.
 
 ```bash
 $ docker-compose --env-file prod.env up --build
@@ -22,7 +22,7 @@ $ docker-compose --env-file prod.env up --build
 
 Production builds will use the production URLs instead of localhost. Production URLs are defined in config files:
 - for the angular webinterface: in `./webinterface/src/environments`
-- for the flask server in directly in `./python_program/Dockerfile`
+- for the flask server directly in `./python_program/Dockerfile`
 
 ## Frontend / Webinterface
 
