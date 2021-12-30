@@ -1,6 +1,7 @@
 import {Component, OnInit} from '@angular/core';
 import {environment} from "../environments/environment";
 import {MapAnimatorService} from "./services/map-animator.service";
+import {FormBuilder, FormControl, FormGroup} from "@angular/forms";
 
 
 @Component({
@@ -17,12 +18,22 @@ export class AppComponent implements OnInit {
   uuid: string = '';
   status_message: string = '';
   status: string = '';
+  options: FormGroup;
 
-  constructor(private mapAnimator: MapAnimatorService) {
+  constructor(private mapAnimator: MapAnimatorService, fb: FormBuilder) {
+
+    this.options = fb.group({
+      'velocity': new FormControl(4.5),
+      'map-scaling': new FormControl(15_000),
+      'departure-time': new FormControl((new Date()).toISOString().substring(0, 16)),
+      'creator-name': new FormControl(''),
+      'create-map-pdfs': new FormControl(true),
+      'create-excel': new FormControl(true)
+    });
+
   }
 
   ngOnInit(): void {
-
   }
 
 
@@ -44,7 +55,12 @@ export class AppComponent implements OnInit {
 
     formData.append("file", gpx_file);
 
-    const url = AppComponent.baseURL + "create?--velocity=5"
+    let url = AppComponent.baseURL + 'create?';
+
+    for (const option in this.options.controls) {
+      url += '&--' + option + '=' +   this.options.controls[option].value
+    }
+
     fetch(url, {
       method: "POST",
       headers: {

@@ -6,14 +6,78 @@
     <h2>J+S-Marschzeittabellen automatisiert generieren</h2>
 
     <ng-container *ngIf="!pending else pendingText">
-      <input type="file" id="uploader" id="uploader" accept=".gpx">
 
-      <button id="export-button" (click)="download_map()">Generieren lassen</button>
+      <form [formGroup]="options">
+
+        <mat-stepper orientation="vertical">
+
+          <mat-step>
+            <p>
+              Diese Webseite automatisiert das Generieren einer Marschzeittabelle (anhand der Excel-Vorlage
+              von Jugend+Sport). Eine aus SchweizMobil oder der Swisstopo-App exportierte Route dient dabei als
+              Grundlage.
+            </p>
+            <ng-template matStepLabel>Route Hochladen</ng-template>
+            <input type="file" id="uploader" accept=".gpx">
+          </mat-step>
+
+          <mat-step>
+            <ng-template matStepLabel>Einstellungen zur Karte</ng-template>
+
+            <mat-slide-toggle formControlName="create-map-pdfs">Karte als PDF beifügen</mat-slide-toggle>
+
+            <div class="slider">
+              <label>Kartenmassstab: 1:{{scale.value}}</label>
+              <mat-slider #scale min="10000" max="100000" step="5000"
+                          (change)="options.controls['map-scaling'].setValue($event.value)"
+                          [value]="options.controls['map-scaling'].value"></mat-slider>
+            </div>
+          </mat-step>
+
+          <mat-step>
+            <ng-template matStepLabel>Einstellungen zur Marschzeittabelle</ng-template>
+
+            <mat-slide-toggle formControlName="create-excel">Marschzeittabelle als Excel beifügen</mat-slide-toggle>
+
+            <div class="slider">
+              <label>Geschwindigkeit: {{velocity.value}} km/h</label>
+              <mat-slider #velocity min="0.5" max="20" step="0.25"
+                          (change)="options.controls['velocity'].setValue($event.value)"
+                          [value]="options.controls['velocity'].value"
+              ></mat-slider>
+            </div>
+
+            <mat-form-field appearance="fill">
+              <mat-label>Dein Name</mat-label>
+              <input matInput type="text" formControlName="creator-name">
+            </mat-form-field>
+
+            <br>
+
+            <mat-form-field appearance="fill">
+              <mat-label>Abmarsch Zeit</mat-label>
+              <input matInput type="datetime-local" formControlName="departure-time">
+            </mat-form-field>
+
+          </mat-step>
+
+
+          <mat-step>
+            <ng-template matStepLabel>Marschzeittabelle Erstellen</ng-template>
+            <button mat-stroked-button color="primary" id="export-button" (click)="download_map()">
+              Generieren lassen
+            </button>
+          </mat-step>
+
+        </mat-stepper>
+
+      </form>
     </ng-container>
 
     <ng-template #pendingText>
+      <mat-progress-bar mode="query"></mat-progress-bar>
       <p> Marschzeittabelle wird erstellt, wir bitten um Geduld.</p>
-      <p> <b>Status:</b> {{status}} <br> <b>Message:</b> {{status_message}} </p>
+      <p><b>Status:</b> {{status}} <br> <b>Message:</b> {{status_message}} </p>
     </ng-template>
 
   </div>

@@ -2,8 +2,6 @@
 
   display: grid;
   justify-content: center;
-  text-align: center;
-
 
 
 }
@@ -12,5 +10,25 @@
 #export-button {
 
   margin-top: 25px;
+
+}
+
+.slider {
+
+  margin: 10px 0 0;
+  display: grid;
+  grid-template-columns: 220px auto;
+
+}
+
+.mat-stepper-vertical {
+  background-color: transparent;
+}
+
+
+
+.slider label {
+
+  line-height: 45px;
 
 }
