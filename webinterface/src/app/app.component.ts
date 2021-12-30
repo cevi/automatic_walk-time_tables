@@ -39,6 +39,9 @@ export class AppComponent implements OnInit {
 
   download_map() {
 
+    this.status_message = '';
+    this.status = '';
+
     this.pending = true;
     const uploaderElement = (document.getElementById('uploader') as HTMLInputElement);
 
