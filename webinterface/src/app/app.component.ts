@@ -58,6 +58,10 @@ export class AppComponent implements OnInit {
     let url = AppComponent.baseURL + 'create?';
 
     for (const option in this.options.controls) {
+
+      if (option === 'creator-name' && !this.options.controls['creator-name'].value.length )
+        continue;
+
       url += '&--' + option + '=' +   this.options.controls[option].value
     }
 
