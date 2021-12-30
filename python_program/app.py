@@ -66,7 +66,7 @@ def create_map():
             status=500, mimetype='application/json')
         return response
 
-    logger.log(ExportStateLogger.REQUESTABLE, 'Preparing for export.', {'uuid': uuid, 'status': 'running'})
+    logger.log(ExportStateLogger.REQUESTABLE, 'Export wird vorbereitet.', {'uuid': uuid, 'status': 'running'})
 
     parser = create_parser()
     args_as_dict = request.args.to_dict(flat=True)
@@ -87,12 +87,12 @@ def create_map():
 
 
 def create_export(uuid: str, args: argparse.Namespace):
-    logger.log(ExportStateLogger.REQUESTABLE, 'Export started.', {'uuid': uuid, 'status': 'running'})
+    logger.log(ExportStateLogger.REQUESTABLE, 'Der Export wurde gestartet.', {'uuid': uuid, 'status': 'running'})
 
-    generator = AutomatedWalkTableGenerator(args)
+    generator = AutomatedWalkTableGenerator(args, uuid)
     generator.run()
 
-    logger.log(ExportStateLogger.REQUESTABLE, 'Export successfully finished.',
+    logger.log(ExportStateLogger.REQUESTABLE, 'Der Export ist abgeschlossen, die Daten können heruntergeladen werden.',
                {'uuid': uuid, 'status': 'finished'})
 
     # Remove GPX file from upload directory

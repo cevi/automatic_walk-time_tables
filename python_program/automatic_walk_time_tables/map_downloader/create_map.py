@@ -12,6 +12,7 @@ from pyclustering.cluster.kmeans import kmeans
 from pyclustering.utils.metric import type_metric, distance_metric
 
 from automatic_walk_time_tables.geo_processing import coord_transformation
+from status_handler import ExportStateLogger
 
 
 def GetSpacedElements(array, numElems=4):
@@ -48,9 +49,10 @@ class MapCreator:
     `A4_WIDTH_FACTOR * map_scale` gives you the number of km displayed on one A4 paper.
     """
 
-    def __init__(self, raw_gpx_data: gpxpy.gpx):
+    def __init__(self, raw_gpx_data: gpxpy.gpx, uuid: str):
         self.logger = logging.getLogger(__name__)
         self.raw_gpx_data = raw_gpx_data
+        self.uuid = uuid
 
     def auto_select_map_scaling(self) -> int:
         """
@@ -153,6 +155,9 @@ class MapCreator:
                 loop_idx += 1
 
             self.logger.info(f"Received PDF {index + 1} out of {len(map_centers)}.")
+            self.logger.log(ExportStateLogger.REQUESTABLE,
+                            f"Karte {index + 1} von insgesamt {len(map_centers)} wurde erstellt.",
+                            {'uuid': self.uuid, 'status': 'running'})
 
             if response_obj.status_code != 200 and json.loads(pdf_status.content)['status'] != 'finished':
                 logging.error("Can not fetch the map: " + str(response_obj.status_code))

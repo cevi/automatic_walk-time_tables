@@ -7,13 +7,15 @@ from automatic_walk_time_tables.geo_processing.find_walk_table_points import sel
 from automatic_walk_time_tables.geo_processing.map_numbers import find_map_numbers
 from automatic_walk_time_tables.map_downloader.create_map import MapCreator
 from automatic_walk_time_tables.walk_time_table.walk_table import plot_elevation_profile, create_walk_table
+from status_handler import ExportStateLogger
 
 
 class AutomatedWalkTableGenerator:
 
-    def __init__(self, args: argparse.Namespace):
+    def __init__(self, args: argparse.Namespace, uuid: str = ''):
 
         self.args = args
+        self.uuid = uuid
         self.logger = logging.getLogger(__name__)
 
         for arg in vars(self.args):
@@ -41,6 +43,8 @@ class AutomatedWalkTableGenerator:
                 self.logger.debug('Boolean indicates that we should create the elevation profile.')
                 plot_elevation_profile(self.raw_gpx_data, way_points, temp_points, file_name=name,
                                        open_figure=self.args.open_figure)
+                self.logger.log(ExportStateLogger.REQUESTABLE, 'Höhenprofil wurde erstellt.',
+                                {'uuid': self.uuid, 'status': 'running'})
 
             if self.args.create_excel:
                 self.logger.debug('Boolean indicates that we should create walk-time table as Excel file')
@@ -48,12 +52,15 @@ class AutomatedWalkTableGenerator:
                                                    total_distance,
                                                    file_name=name, creator_name=self.args.creator_name,
                                                    map_numbers=map_numbers)
+                self.logger.log(ExportStateLogger.REQUESTABLE, 'Marschzeittabelle wurde erstellt.',
+                                {'uuid': self.uuid, 'status': 'running'})
+
             else:
                 name_of_points = [''] * len(way_points)
 
             if self.args.create_map_pdfs:
                 self.logger.debug('Boolean indicates that we should create map PDFs.')
-                map_creator = MapCreator(self.raw_gpx_data)
+                map_creator = MapCreator(self.raw_gpx_data, self.uuid)
                 map_creator.plot_route_on_map(way_points,
                                               file_name=name,
                                               map_scaling=self.args.map_scaling,
