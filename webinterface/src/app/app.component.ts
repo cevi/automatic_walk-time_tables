@@ -24,7 +24,7 @@ export class AppComponent implements OnInit {
 
     this.options = fb.group({
       'velocity': new FormControl(4.5),
-      'map-scaling': new FormControl(15_000),
+      'map-scaling': new FormControl(25_000),
       'departure-time': new FormControl((new Date()).toISOString().substring(0, 16)),
       'creator-name': new FormControl(''),
       'create-map-pdfs': new FormControl(true),
