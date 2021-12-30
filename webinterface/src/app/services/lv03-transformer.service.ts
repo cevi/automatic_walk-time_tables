@@ -1,19 +1,16 @@
 import {Injectable} from '@angular/core';
+import {LV95_Coordinates} from "../helpers/coordinates";
 
 @Injectable({
   providedIn: 'root'
 })
 export class LV03TransformerService {
 
-  constructor() {
-  }
-
-
-  WGStoCH(lat: string, lng: string) {
-    return [
-      this.WGStoCHy(lat, lng),
-      this.WGStoCHx(lat, lng)
-    ]
+  WGStoCH(lat: number, lng: number): LV95_Coordinates{
+    return {
+      'x': 2_000_000 +this.WGStoCHy(lat.toString(), lng.toString()),
+      'y': 1_000_000 +this.WGStoCHx(lat.toString(), lng.toString())
+    }
   }
 
 
@@ -43,7 +40,7 @@ export class LV03TransformerService {
 // Convert WGS lat/lng (° dec) to CH y
   WGStoCHy(lat: string, lng: string) {
     // Convert decimal degrees to sexagesimal seconds
-    let lat_number =  this.DECtoSEX(lat);
+    let lat_number = this.DECtoSEX(lat);
     let lng_number = this.DECtoSEX(lng);
 
     // Auxiliary values (% Bern)
