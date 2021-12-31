@@ -85,7 +85,7 @@ export class AppComponent implements OnInit {
         this.get_status_updates()
 
       })
-      .catch(console.log)
+      .catch(err => this.log_network_error(err));
 
   }
 
@@ -102,21 +102,33 @@ export class AppComponent implements OnInit {
         this.status = res.status;
         this.status_message = res.message;
 
-        if (['error', 'finished'].includes(res.status)) {
+        if ('finished' == res.status) {
           this.download_data()
           return;
         }
 
-        setTimeout(() => this.get_status_updates(), 500)
-      });
+        if('error' == res.status){
+          return;
+        }
 
+        setTimeout(() => this.get_status_updates(), 500)
+      })
+      .catch(err => this.log_network_error(err))
+
+
+  }
+
+  private log_network_error(err: Error) {
+    this.status = 'error';
+    this.status_message = 'Ein Netzwerk-Fehler ist aufgetreten, bitte versuche es erneut.'
+    console.error(err);
   }
 
   download_data() {
 
     this.pending = false;
     window.location.href = "http://localhost:5000/download/" + this.uuid;
-    this.snackBar.open('Dateien wurden erfolgreich erstellt und heruntergeladen.', '',{
+    this.snackBar.open('Dateien wurden erfolgreich erstellt und heruntergeladen.', '', {
       duration: 5000
     });
 
