@@ -2,6 +2,7 @@ import {Component, OnInit} from '@angular/core';
 import {environment} from "../environments/environment";
 import {MapAnimatorService} from "./services/map-animator.service";
 import {FormBuilder, FormControl, FormGroup} from "@angular/forms";
+import {MatSnackBar} from "@angular/material/snack-bar";
 
 
 @Component({
@@ -13,14 +14,15 @@ export class AppComponent implements OnInit {
 
   static baseURL = environment.API_URL;
 
-  title = 'automatic-walk-time-tables';
   pending = false;
   uuid: string = '';
   status_message: string = '';
   status: string = '';
   options: FormGroup;
+  gpx_uploaded: boolean = false;
+  private gpx_file: File | undefined = undefined;
 
-  constructor(private mapAnimator: MapAnimatorService, fb: FormBuilder) {
+  constructor(private mapAnimator: MapAnimatorService, fb: FormBuilder, private snackBar: MatSnackBar) {
 
     this.options = fb.group({
       'velocity': new FormControl(4.5),
@@ -39,33 +41,31 @@ export class AppComponent implements OnInit {
 
   download_map() {
 
+    if (!this.gpx_uploaded || !this.gpx_file)
+      return
+
+
     this.status_message = '';
     this.status = '';
+    this.gpx_uploaded = false;
 
     this.pending = true;
-    const uploaderElement = (document.getElementById('uploader') as HTMLInputElement);
-
-    if (uploaderElement === null)
-      return;
-
-    // @ts-ignore
-    let gpx_file: File = uploaderElement.files[0];
 
     // Start Animation
-    this.mapAnimator.add_gpx_file(gpx_file);
+    this.mapAnimator.add_gpx_file(this.gpx_file);
 
     let formData = new FormData();
 
-    formData.append("file", gpx_file);
+    formData.append("file", this.gpx_file);
 
     let url = AppComponent.baseURL + 'create?';
 
     for (const option in this.options.controls) {
 
-      if (option === 'creator-name' && !this.options.controls['creator-name'].value.length )
+      if (option === 'creator-name' && !this.options.controls['creator-name'].value.length)
         continue;
 
-      url += '&--' + option + '=' +   this.options.controls[option].value
+      url += '&--' + option + '=' + this.options.controls[option].value
     }
 
     fetch(url, {
@@ -116,8 +116,24 @@ export class AppComponent implements OnInit {
 
     this.pending = false;
     window.location.href = "http://localhost:5000/download/" + this.uuid;
+    this.snackBar.open('Dateien wurden erfolgreich erstellt und heruntergeladen.', '',{
+      duration: 5000
+    });
+
 
   }
 
 
+  new_gpx_uploaded() {
+    this.gpx_uploaded = true;
+
+    const uploaderElement = (document.getElementById('uploader') as HTMLInputElement);
+
+    if (uploaderElement === null)
+      return;
+
+    // @ts-ignore
+    this.gpx_file = uploaderElement.files[0];
+
+  }
 }

@@ -11,7 +11,7 @@
 
         <mat-stepper orientation="vertical">
 
-          <mat-step>
+          <mat-step [hasError]="!gpx_uploaded" errorMessage="GPX Datei fehlt!">
 
             <ng-template matStepLabel>Route Hochladen</ng-template>
 
@@ -21,10 +21,10 @@
                 von Jugend+Sport). Eine aus SchweizMobil oder der Swisstopo-App exportierte Route dient dabei als
                 Grundlage.
               </p>
-              <input type="file" id="uploader" accept=".gpx">
+              <input type="file" id="uploader" accept=".gpx" (input)="new_gpx_uploaded()">
             </div>
 
-            <button mat-stroked-button color="primary" matStepperNext>Weiter</button>
+            <button mat-stroked-button color="primary" matStepperNext [disabled]="!gpx_uploaded">Weiter</button>
 
           </mat-step>
 
@@ -83,7 +83,7 @@
             <div class="content-block">
 
               <p>Nun sind wir bereit deine Marschzeittabelle zu erstellen:</p>
-              <button mat-stroked-button color="primary" id="export-button" (click)="download_map()">
+              <button mat-stroked-button color="primary" [disabled]="!gpx_uploaded" id="export-button" (click)="download_map()">
                 Generieren lassen
               </button>
             </div>
@@ -98,7 +98,7 @@
     <ng-template #pendingText>
       <mat-progress-bar mode="query"></mat-progress-bar>
       <p> Marschzeittabelle wird erstellt, wir bitten um Geduld.</p>
-      <p><b>Status:</b> {{status}} <br> <b>Message:</b> {{status_message}} </p>
+      <p><b>Status: </b>{{status_message}} <i> ({{status}})</i></p>
     </ng-template>
 
   </div>
