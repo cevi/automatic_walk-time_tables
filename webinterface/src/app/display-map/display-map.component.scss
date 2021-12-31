@@ -17,6 +17,7 @@
   opacity: 1;
 }
 
+
 .content {
 
   margin: 180px auto auto;
@@ -24,5 +25,16 @@
   background-color: #ffffffa0;
   padding: 50px 50px;
   max-width: 700px;
+  overflow: auto;
 
+}
+
+@media (max-height: 1000px) {
+  .content {
+    margin: 20px auto 20px auto;
+    max-height: calc(100% - 140px);
+  }
+  #logo{
+    display: none;
+  }
 }
