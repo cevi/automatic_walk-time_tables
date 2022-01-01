@@ -3,7 +3,7 @@ import {Tile} from "../helpers/tile";
 import {Canvas_Coordinates, LV95_Coordinates} from "../helpers/coordinates";
 import {MapCreator} from "../helpers/map-creator";
 import {MapAnimatorService} from "../services/map-animator.service";
-import {Subscription} from "rxjs";
+import {combineLatest, Subscription} from "rxjs";
 
 
 @Component({
@@ -32,18 +32,22 @@ export class DisplayMapComponent implements OnInit {
     this.draw_map(this.LV95_map_center).then();
 
     // Redraw Canvas on Changes to Path
-    this.mapAnimator.map_center.subscribe(map_center => this.draw_map(map_center));
+
+    combineLatest([this.mapAnimator.map_center, this.mapAnimator.bbox])
+      .subscribe(([map_center, bbox]) => this.draw_map(map_center, bbox));
 
   }
 
 
-  private async draw_map(map_center: LV95_Coordinates) {
+  private async draw_map(map_center: LV95_Coordinates, bbox?: [LV95_Coordinates, LV95_Coordinates]) {
 
     this.path_subscription?.unsubscribe();
     this.LV95_map_center = map_center;
 
     const {canvas, ctx} = this.setup_canvas();
     const canvas_size: Canvas_Coordinates = {'x': canvas.width, 'y': canvas.height};
+
+    if (bbox) this.calc_zoom_level(canvas_size, bbox);
 
     // The base tile is the map tile which contains the LV95_map_center
     let map_creator = new MapCreator(
@@ -114,4 +118,26 @@ export class DisplayMapComponent implements OnInit {
     return {canvas, ctx};
   }
 
+  private calc_zoom_level(
+    canvas_size: Canvas_Coordinates,
+    [min_values, max_values]: [LV95_Coordinates, LV95_Coordinates]) {
+
+    const delta_x = max_values.x - min_values.x;
+    const delta_y = max_values.y - min_values.y;
+
+    const tiles_x = Math.floor(canvas_size.x / Tile.TILE_RENDER_SIZE);
+    const tiles_y = Math.floor(canvas_size.y / Tile.TILE_RENDER_SIZE);
+
+    this.zoom_level = 8;
+
+    while (this.zoom_level > 0) {
+      if (delta_x <= tiles_x * Tile.TILE_SIZES[this.zoom_level] &&
+        delta_y <= tiles_y * Tile.TILE_SIZES[this.zoom_level]) break;
+      this.zoom_level--;
+    }
+
+    console.log(this.zoom_level)
+
+
+  }
 }
