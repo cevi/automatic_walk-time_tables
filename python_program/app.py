@@ -40,6 +40,7 @@ def create_map():
 
     # check if output and input folders exist, if not, create them
     input_directory = 'input/' + uuid + '/'
+    output_directory = 'output/' + uuid + '/'
     pathlib.Path(input_directory).mkdir(parents=True, exist_ok=True)
 
     if 'file' not in request.files:
