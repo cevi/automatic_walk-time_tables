@@ -68,8 +68,7 @@ $ python3 main.py --gpx-file-name <file_name>
 ```
 
 Where the `gpx-file-name` flag specifies the path to your GPX file. Once the script has terminated, the produced files (
-Excel, PDFs...) are stored in the ```./output``` directory. Note: the script is only tested with GPX-files exported form
-SchweizMobil and from the official swisstopo app, but it should work with arbitrary GPX-files.
+Excel, PDFs...) are stored in the directory specified with the argument `--output_directory`; default is `./output/`. Note: the script is only tested with GPX-files exported form SchweizMobil and from the official swisstopo app, but it should work with arbitrary GPX-files.
 
 ## About swisstopo Services
 

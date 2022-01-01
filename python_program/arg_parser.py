@@ -32,7 +32,7 @@ def create_parser():
                         help='Departure date in ISO-format, i.g. 2011-11-04T00:05:23. Default 2021-08-16T09:00:00.')
     parser.add_argument('-n', '--creator-name', type=str, metavar='<name>',
                         help='Name of you, the creator of this route. If not specified, it will be empty.', default='')
-    parser.add_argument('--output_directory', default='', type=str,
+    parser.add_argument('--output_directory', default='./output/', type=str,
                         help='Subdirectory in the output folder for storing the created files. Should be empty or ending with "/"')
     parser.add_argument('--log-level', type=int, metavar='<log-level>', default=30,
                         help='Log Level (see https://docs.python.org/3/library/logging.html#levels). Default: WARNING.')

@@ -39,9 +39,7 @@ def create_map():
     logger.debug('New request to with create_map().', {'uuid': uuid})
 
     # check if output and input folders exist, if not, create them
-    output_directory = 'output/' + uuid + '/'
     input_directory = 'input/' + uuid + '/'
-    pathlib.Path(output_directory).mkdir(parents=True, exist_ok=True)
     pathlib.Path(input_directory).mkdir(parents=True, exist_ok=True)
 
     if 'file' not in request.files:

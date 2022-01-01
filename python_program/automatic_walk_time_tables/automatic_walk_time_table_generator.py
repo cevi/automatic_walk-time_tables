@@ -1,5 +1,6 @@
 import argparse
 import logging
+import pathlib
 
 import gpxpy
 
@@ -26,6 +27,7 @@ class AutomatedWalkTableGenerator:
         self.raw_gpx_data = gpxpy.parse(gpx_file)
 
         self.output_directory = args.output_directory
+        pathlib.Path(self.output_directory).mkdir(parents=True, exist_ok=True)
 
     def run(self):
         name = self.output_directory + self.raw_gpx_data.name
