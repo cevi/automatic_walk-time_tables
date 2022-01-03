@@ -127,7 +127,7 @@ export class AppComponent implements OnInit {
   download_data() {
 
     this.pending = false;
-    window.location.href = "http://localhost:5000/download/" + this.uuid;
+    window.location.href = AppComponent.baseURL + 'download/' + this.uuid;
     this.snackBar.open('Dateien wurden erfolgreich erstellt und heruntergeladen.', '', {
       duration: 5000
     });
