@@ -18,6 +18,7 @@ class AutomatedWalkTableGenerator:
         self.args = args
         self.uuid = uuid
         self.logger = logging.getLogger(__name__)
+        self.successful = False
 
         for arg in vars(self.args):
             self.logger.debug("  %s: %s", arg, getattr(self.args, arg))
@@ -30,7 +31,8 @@ class AutomatedWalkTableGenerator:
         pathlib.Path(self.output_directory).mkdir(parents=True, exist_ok=True)
 
     def run(self):
-        name = self.output_directory + self.raw_gpx_data.name
+        gpx_rout_name = self.raw_gpx_data.name
+        name = self.output_directory + 'Route' if gpx_rout_name is None else self.output_directory + gpx_rout_name
         map_numbers = find_map_numbers(self.raw_gpx_data)  # map numbers and their names as a single string
 
         self.logger.debug("GPX Name: %s", name)
@@ -68,3 +70,6 @@ class AutomatedWalkTableGenerator:
                                               map_scaling=self.args.map_scaling,
                                               name_of_points=name_of_points,
                                               print_api_base_url=self.args.print_api_base_url)
+
+        # Export successfully completed
+        self.successful = True

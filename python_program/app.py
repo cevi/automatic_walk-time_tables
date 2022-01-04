@@ -88,14 +88,25 @@ def create_map():
 def create_export(uuid: str, args: argparse.Namespace):
     logger.log(ExportStateLogger.REQUESTABLE, 'Der Export wurde gestartet.', {'uuid': uuid, 'status': 'running'})
 
-    generator = AutomatedWalkTableGenerator(args, uuid)
-    generator.run()
+    generator = None
 
-    logger.log(ExportStateLogger.REQUESTABLE, 'Der Export ist abgeschlossen, die Daten können heruntergeladen werden.',
+    try:
+        generator = AutomatedWalkTableGenerator(args, uuid)
+        generator.run()
+
+    finally:
+
+        if not generator or not generator.successful:
+            logger.log(ExportStateLogger.REQUESTABLE,
+                       'Der Export ist fehlgeschlagen. Ein unbekannter Fehler ist aufgetreten!',
+                       {'uuid': uuid, 'status': 'error'})
+
+        # Remove GPX file from upload directory
+        os.remove(args.gpx_file_name)
+
+    logger.log(ExportStateLogger.REQUESTABLE,
+               'Der Export ist abgeschlossen, die Daten können heruntergeladen werden.',
                {'uuid': uuid, 'status': 'finished'})
-
-    # Remove GPX file from upload directory
-    os.remove(args.gpx_file_name)
 
 
 @app.route('/status/<uuid>')
