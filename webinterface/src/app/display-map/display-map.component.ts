@@ -69,6 +69,10 @@ export class DisplayMapComponent implements OnInit {
     const promises = tiles.map(t => t.load_tile());
     await Promise.all(promises);
 
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = "#ffffff"
+    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
     ctx.globalAlpha = 0.2;
     tiles.forEach(t => {
       if (t.image)
