@@ -7,6 +7,7 @@ import os
 import pathlib
 import uuid as uuid_factory
 import zipfile
+import shutil
 from threading import Thread
 
 import flask
@@ -103,6 +104,7 @@ def create_export(uuid: str, args: argparse.Namespace):
 
         # Remove GPX file from upload directory
         os.remove(args.gpx_file_name)
+        os.rmdir('./input/' + uuid)
 
     logger.log(ExportStateLogger.REQUESTABLE,
                'Der Export ist abgeschlossen, die Daten können heruntergeladen werden.',
@@ -130,12 +132,18 @@ def request_zip(uuid):
             z.write(f_name, only_name)
     data.seek(0)
 
-    return flask.send_file(
-        data,
-        mimetype='application/zip',
-        as_attachment=True,
-        attachment_filename='Download.zip'
-    )
+    # delete and return files
+    try:
+        shutil.rmtree(base_path)
+    except OSError as e:
+        logger.error("Cannot delete files in folder %s : %s" % (base_path, e.strerror))
+    finally:
+        return flask.send_file(
+            data,
+            mimetype='application/zip',
+            as_attachment=True,
+            attachment_filename='Download.zip'
+        )
 
 
 if __name__ == "__main__":
