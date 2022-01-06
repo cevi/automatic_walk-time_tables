@@ -5,9 +5,9 @@ import json
 import logging
 import os
 import pathlib
+import shutil
 import uuid as uuid_factory
 import zipfile
-import shutil
 from threading import Thread
 
 import flask
@@ -121,7 +121,12 @@ def return_status(uuid):
 
 @app.route('/download/<uuid>')
 def request_zip(uuid):
+    # Check if export is completed and still present in the 'output' folder
     base_path = pathlib.Path('./output/' + uuid + '/')
+    state = stateHandler.get_status(uuid)
+
+    if (state and state != 'finished') or not os.path.exists(base_path):
+        return "Die angefragten Daten sind nicht (mehr) verfügbar."
 
     # Return Zip with data
     data = io.BytesIO()
@@ -134,6 +139,7 @@ def request_zip(uuid):
 
     # delete and return files
     try:
+        stateHandler.remove_status(uuid)
         shutil.rmtree(base_path)
     except OSError as e:
         logger.error("Cannot delete files in folder %s : %s" % (base_path, e.strerror))
