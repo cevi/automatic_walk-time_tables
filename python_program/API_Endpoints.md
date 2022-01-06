@@ -4,7 +4,7 @@
 
 ### /create [POST]
 - Should contain the GPX as `file` in the request.
-- Additional parameters (see [README.md](README.md) are accepted the same way as they are passed to the python script.)
+- Additional parameters (see [README.md](README.md) are accepted the same way as they are passed to the python script).
 - Returns a JSON with the following fields:
     - `status`: `submitted` or `error`
     - `uuid`: uuid of the created walk-table (only if `status`=`submitted`)
