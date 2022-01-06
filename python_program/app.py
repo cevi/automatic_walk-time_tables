@@ -125,7 +125,6 @@ def request_zip(uuid):
     base_path = pathlib.Path('./output/' + uuid + '/')
     state = stateHandler.get_status(uuid)
 
-    if (state and state != 'finished') or not os.path.exists(base_path):
         return "Die angefragten Daten sind nicht (mehr) verfügbar."
 
     # Return Zip with data
