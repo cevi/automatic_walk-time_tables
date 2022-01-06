@@ -53,7 +53,7 @@ class AutomatedWalkTableGenerator:
             if self.args.create_excel:
                 self.logger.debug('Boolean indicates that we should create walk-time table as Excel file')
                 name_of_points = create_walk_table(self.args.departure_time, self.args.velocity, way_points,
-                                                   total_distance,
+                                                   total_distance, route_name=gpx_rout_name,
                                                    file_name=name, creator_name=self.args.creator_name,
                                                    map_numbers=map_numbers)
                 self.logger.log(ExportStateLogger.REQUESTABLE, 'Marschzeittabelle wurde erstellt.',

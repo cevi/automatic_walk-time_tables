@@ -69,7 +69,7 @@ def plot_elevation_profile(raw_data_points: gpxpy.gpx,
         plt.show()
 
 
-def create_walk_table(time_stamp, speed, way_points, total_distance, file_name: str, creator_name: str,
+def create_walk_table(time_stamp, speed, way_points, total_distance, file_name: str, route_name: str, creator_name: str,
                       map_numbers: str):
     """
 
@@ -86,7 +86,7 @@ def create_walk_table(time_stamp, speed, way_points, total_distance, file_name: 
     logger.debug('Distanz Höhe           Zeit   Uhrzeit     Ort (Koordinaten und Namen)')
 
     sheet['A6'] = map_numbers
-    sheet['B2'] = file_name
+    sheet['B2'] = route_name
     sheet['B3'] = time_stamp.strftime('%d.%m.%Y')
     sheet['B4'] = creator_name
     sheet['N3'] = speed
