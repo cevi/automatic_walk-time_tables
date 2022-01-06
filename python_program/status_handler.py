@@ -28,7 +28,7 @@ class ExportStateHandler:
         self.lock.acquire()
         try:
             if type(uuid) is not str or len(uuid) == 0:
-                raise Exception("Invalid user id")
+                raise Exception("Invalid uuid")
             self.states[uuid] = {'status': status, 'message': msg, 'last_change': time.time()}
         finally:
             self.lock.release()
@@ -42,7 +42,7 @@ class ExportStateHandler:
         self.lock.acquire()
         try:
             if type(uuid) is not str or len(uuid) == 0:
-                raise Exception("Invalid user id")
+                raise Exception("Invalid uuid")
             if uuid not in self.states.keys():
                 return None
             return self.states[uuid]
@@ -58,7 +58,7 @@ class ExportStateHandler:
         self.lock.acquire()
         try:
             if type(uuid) is not str or len(uuid) == 0:
-                raise Exception("Invalid user id")
+                raise Exception("Invalid uuid")
             if uuid not in self.states.keys():
                 return
             del self.states[uuid]
