@@ -1,9 +1,9 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, OnDestroy, OnInit} from '@angular/core';
 import {Tile} from "../helpers/tile";
 import {Canvas_Coordinates, LV95_Coordinates} from "../helpers/coordinates";
 import {MapCreator} from "../helpers/map-creator";
 import {MapAnimatorService} from "../services/map-animator.service";
-import {combineLatest, Subscription} from "rxjs";
+import {BehaviorSubject, combineLatest, Subscription} from "rxjs";
 
 
 @Component({
@@ -14,51 +14,48 @@ import {combineLatest, Subscription} from "rxjs";
     {provide: Window, useValue: window}
   ]
 })
-export class DisplayMapComponent implements OnInit {
+export class DisplayMapComponent implements OnInit, OnDestroy {
 
-  LV95_map_center: LV95_Coordinates
-  zoom_level: number;
   path_subscription: Subscription | undefined;
+  map_subscription: Subscription | undefined;
 
   constructor(private window: Window, private mapAnimator: MapAnimatorService) {
-
-    this.LV95_map_center = {'x': 2721902.0, 'y': 1217236.6}
-    this.zoom_level = 6;
-
   }
 
   ngOnInit(): void {
 
-    this.draw_map(this.LV95_map_center).then();
+    const resizeEvent = new BehaviorSubject(undefined);
+    window.addEventListener('resize', () => resizeEvent.next(undefined))
 
-    // Redraw Canvas on Changes to Path
-
-    combineLatest([this.mapAnimator.map_center, this.mapAnimator.bbox])
-      .subscribe(([map_center, bbox]) => this.draw_map(map_center, bbox));
+    this.map_subscription = combineLatest([this.mapAnimator.map_center$, this.mapAnimator.bbox$, resizeEvent])
+      .subscribe(([map_center, bbox, _]) => this.draw_map(map_center, bbox));
 
   }
 
+  ngOnDestroy(): void {
+    this.path_subscription?.unsubscribe();
+    this.map_subscription?.unsubscribe();
+  }
 
-  private async draw_map(map_center: LV95_Coordinates, bbox?: [LV95_Coordinates, LV95_Coordinates]) {
+  private async draw_map(map_center: LV95_Coordinates, bbox: [LV95_Coordinates, LV95_Coordinates]) {
 
     this.path_subscription?.unsubscribe();
-    this.LV95_map_center = map_center;
 
     const {canvas, ctx} = this.setup_canvas();
     const canvas_size: Canvas_Coordinates = {'x': canvas.width, 'y': canvas.height};
 
-    if (bbox) this.calc_zoom_level(canvas_size, bbox);
+    const zoom_level = this.calc_zoom_level(canvas_size, bbox);
 
     // The base tile is the map tile which contains the LV95_map_center
     let map_creator = new MapCreator(
-      this.LV95_map_center,
-      this.zoom_level,
+      map_center,
+      zoom_level,
       canvas_size,
       'ch.swisstopo.pixelkarte-farbe');
 
     await this.draw_background_map(map_creator, ctx);
 
-    this.path_subscription = this.mapAnimator.path.subscribe(path => this.draw_route(ctx, path, map_creator));
+    this.path_subscription = this.mapAnimator.path$.subscribe(path => this.draw_route(ctx, path, map_creator));
 
   }
 
@@ -132,15 +129,15 @@ export class DisplayMapComponent implements OnInit {
     const tiles_x = Math.floor(canvas_size.x / Tile.TILE_RENDER_SIZE);
     const tiles_y = Math.floor(canvas_size.y / Tile.TILE_RENDER_SIZE);
 
-    this.zoom_level = 8;
+    let zoom_level = 8;
 
-    while (this.zoom_level > 0) {
-      if (delta_x <= tiles_x * Tile.TILE_SIZES[this.zoom_level] &&
-        delta_y <= tiles_y * Tile.TILE_SIZES[this.zoom_level]) break;
-      this.zoom_level--;
+    while (zoom_level > 0) {
+      if (delta_x <= tiles_x * Tile.TILE_SIZES[zoom_level] &&
+        delta_y <= tiles_y * Tile.TILE_SIZES[zoom_level]) break;
+      zoom_level--;
     }
 
-    console.log(this.zoom_level)
+    return zoom_level
 
 
   }

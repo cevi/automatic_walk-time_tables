@@ -3,37 +3,35 @@ import {LV95_Coordinates} from "../helpers/coordinates";
 import * as gpxParser from "gpxparser";
 import {Point} from "gpxparser";
 import {LV03TransformerService} from "./lv03-transformer.service";
-import {Observable, Subscriber} from "rxjs";
+import {BehaviorSubject, Observable, Subject} from "rxjs";
 
 @Injectable({
   providedIn: 'root'
 })
 export class MapAnimatorService {
 
-  private path_Observer: Subscriber<LV95_Coordinates[]> | undefined
-  path: Observable<LV95_Coordinates[]>;
-
-  private map_center_Observer: Subscriber<LV95_Coordinates> | undefined
-  map_center: Observable<LV95_Coordinates>;
-
-  private bbox_Observer: Subscriber<[LV95_Coordinates, LV95_Coordinates]> | undefined
-  bbox: Observable<[LV95_Coordinates, LV95_Coordinates]>;
-
+  private readonly _path$: Subject<LV95_Coordinates[]>;
+  private readonly _map_center$: BehaviorSubject<LV95_Coordinates>;
+  private readonly _bbox$: BehaviorSubject<[LV95_Coordinates, LV95_Coordinates]>;
 
   constructor(private transformer: LV03TransformerService) {
 
-    this.path = new Observable<LV95_Coordinates[]>(sub => {
-      this.path_Observer = sub;
-    });
+    this._path$ = new Subject<LV95_Coordinates[]>();
+    this._map_center$ = new BehaviorSubject<LV95_Coordinates>({x: 2721902.0, y: 1217236.6})
+    this._bbox$ = new BehaviorSubject<[LV95_Coordinates, LV95_Coordinates]>([{x: 100, y: 100}, {x: 100, y: 100}]);
 
-    this.map_center = new Observable<LV95_Coordinates>(sub => {
-      this.map_center_Observer = sub;
-    });
+  }
 
-    this.bbox = new Observable<[LV95_Coordinates, LV95_Coordinates]>(sub => {
-      this.bbox_Observer = sub;
-    });
+  get path$(): Observable<LV95_Coordinates[]> {
+    return this._path$;
+  }
 
+  get map_center$(): Observable<LV95_Coordinates> {
+    return this._map_center$;
+  }
+
+  get bbox$(): Observable<[LV95_Coordinates, LV95_Coordinates]> {
+    return this._bbox$;
   }
 
   add_gpx_file(gpx_file: File) {
@@ -64,7 +62,7 @@ export class MapAnimatorService {
 
         const sec: { lat: number; lon: number; } = points[i];
         path.push(this.transformer.WGStoCH(sec.lat, sec.lon))
-        this.path_Observer?.next(path);
+        this._path$?.next(path);
 
         await timer(delay * (gpx.tracks[0].distance.cumul[i] - gpx.tracks[0].distance.cumul[i - 1]));
 
@@ -91,12 +89,12 @@ export class MapAnimatorService {
 
     });
 
-    this.bbox_Observer?.next([
+    this._bbox$?.next([
       this.transformer.WGStoCH(x_min, y_min),
       this.transformer.WGStoCH(x_max, y_max)
     ]);
 
-    this.map_center_Observer?.next(this.transformer.WGStoCH((x_max + x_min) / 2, (y_max + y_min) / 2));
+    this._map_center$?.next(this.transformer.WGStoCH((x_max + x_min) / 2, (y_max + y_min) / 2));
 
 
   }
