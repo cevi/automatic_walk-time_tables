@@ -4,7 +4,7 @@
 
 ### /create [POST]
 - Should contain the GPX as `file` in the request.
-- Additional parameters (see [README.md](README.md) are accepted the same way as they are passed to the python script).
+- Additional parameters (see [Readme.md](Readme.md) are accepted the same way as they are passed to the python script).
 - Returns a JSON with the following fields:
     - `status`: `submitted` or `error`
     - `uuid`: uuid of the created walk-table (only if `status`=`submitted`)
@@ -15,7 +15,7 @@ Example:
 [HOST]/create?--velocity=4.5&--create-excel=false
 ```
 Possible response:
-```
+```JSON
 {
     "status": "submitted",
     "uuid": "[uuid]",
@@ -31,4 +31,4 @@ Possible response:
 If the status is `finished`, the file can be downloaded via the `/download/[uuid]` endpoint.
 
 ### /download/[uuid] [GET]
-Returns a ZIP folder containing the files created by the generator.
+Returns a ZIP folder containing the files created by the generator or a string with an error message.
