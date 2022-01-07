@@ -14,11 +14,16 @@
 }
 
 .slider {
-
-  margin: 10px 0 0;
+  margin: 25px 0 0;
   display: grid;
-  grid-template-columns: 220px auto;
 
+}
+
+@media (min-width: 600px) {
+  .slider{
+    grid-template-columns: 220px auto;
+    margin-top: 10px;
+  }
 }
 
 .mat-stepper-vertical {

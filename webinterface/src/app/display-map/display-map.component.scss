@@ -29,12 +29,24 @@
 
 }
 
-@media (max-height: 1000px) {
+#logo_small {
+  display: none;
+}
+
+@media (max-height: 1000px), (max-width: 750px) {
   .content {
-    margin: 20px auto 20px auto;
+    margin: 45px auto 20px auto;
     max-height: calc(100% - 140px);
   }
   #logo{
     display: none;
   }
+  #logo_small {
+    display: block;
+    width: 150px;
+    position: absolute;
+    top: 10px;
+    left: 10px;
+  }
 }
+
