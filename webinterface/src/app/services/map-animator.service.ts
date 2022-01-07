@@ -17,8 +17,8 @@ export class MapAnimatorService {
   constructor(private transformer: LV03TransformerService) {
 
     this._path$ = new Subject<LV95_Coordinates[]>();
-    this._map_center$ = new BehaviorSubject<LV95_Coordinates>({x: 2721902.0, y: 1217236.6})
-    this._bbox$ = new BehaviorSubject<[LV95_Coordinates, LV95_Coordinates]>([{x: 100, y: 100}, {x: 100, y: 100}]);
+    this._map_center$ = new BehaviorSubject<LV95_Coordinates>({x: 2719675, y: 1216320})
+    this._bbox$ = new BehaviorSubject<[LV95_Coordinates, LV95_Coordinates]>([{x: 2718500, y: 1216000}, {x: 2720000, y: 1217000}]);
 
   }
 
