@@ -14,7 +14,7 @@ erleichtern:
   eingezeichnete Route folgt automatisch dem Wanderweg/der Strasse) und der Zeitberechnung (gemäss der Formel der
   Schweizer Wanderwege) bereits eine grosse Hilfe beim Planen.
 
-- Für mobile Endgeräte, eignet sich ebenfalls die offizielle App des Bundesamts für Landestopografie swisstopo. Analog
+- Für mobile Endgeräte eignet sich ebenfalls die offizielle App des Bundesamts für Landestopografie swisstopo. Analog
   zur SchweizMobil, bietet auch die swisstopo App eine Funktion zur Routenplanung mit magnetischen Wegen.
 
 Ist man mit einer grösseren Gruppe unterwegs (so zum Beispiel in einem J+S-Lager), ist eine ausführliche Planung
