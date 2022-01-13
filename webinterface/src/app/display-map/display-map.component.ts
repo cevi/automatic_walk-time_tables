@@ -39,7 +39,6 @@ export class DisplayMapComponent implements OnInit, OnDestroy {
 
   private async draw_map(map_center: LV95_Coordinates, bbox: [LV95_Coordinates, LV95_Coordinates]) {
 
-    this.path_subscription?.unsubscribe();
 
     const {canvas, ctx} = this.setup_canvas();
     const canvas_size: Canvas_Coordinates = {'x': canvas.width, 'y': canvas.height};
@@ -55,6 +54,7 @@ export class DisplayMapComponent implements OnInit, OnDestroy {
 
     await this.draw_background_map(map_creator, ctx);
 
+    this.path_subscription?.unsubscribe();
     this.path_subscription = this.mapAnimator.path$.subscribe(path => this.draw_route(ctx, path, map_creator));
 
   }
