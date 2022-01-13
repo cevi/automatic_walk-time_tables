@@ -45,8 +45,8 @@ export class AppComponent implements OnInit {
       return
 
 
-    this.status_message = '';
-    this.status = '';
+    this.status_message = 'Der Export wurde gestartet, wir bitten um etwas Geduld.';
+    this.status = 'unknown';
     this.gpx_uploaded = false;
 
     this.pending = true;
