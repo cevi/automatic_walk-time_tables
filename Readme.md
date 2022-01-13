@@ -2,7 +2,7 @@
 
 # J+S-Marschzeittabellen automatisiert generieren
 
-_Englisch version below (including local setup and dev info)_
+_English version below (including local setup and dev info)_
 
 Ziel dieses Projektes ist es, den Prozess rund um das Erstellen einer J+S-Marschzeittabelle für eine Wanderung oder
 Velo-Tour zu automatisieren und zu beschleunigen.
