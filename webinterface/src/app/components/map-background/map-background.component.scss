@@ -29,6 +29,10 @@
 
 }
 
+::ng-deep .content h1, ::ng-deep .content h2 {
+  text-align: center;
+}
+
 #logo_small {
   display: none;
 }
@@ -38,7 +42,7 @@
     margin: 45px auto 20px auto;
     max-height: calc(100% - 140px);
   }
-  #logo{
+  #logo {
     display: none;
   }
   #logo_small {
