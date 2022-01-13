@@ -1,5 +1,4 @@
 gpxpy==1.4.2
-Pillow==8.3.2
 numpy==1.21.1
 geopy==2.2.0
 openpyxl==3.0.7
