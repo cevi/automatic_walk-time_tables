@@ -11,6 +11,7 @@ import requests
 from pyclustering.cluster.kmeans import kmeans
 from pyclustering.utils.metric import type_metric, distance_metric
 
+from automatic_walk_time_tables.generator_status import GeneratorStatus
 from automatic_walk_time_tables.geo_processing import coord_transformation
 from status_handler import ExportStateLogger
 
@@ -115,7 +116,7 @@ class MapCreator:
         if len(map_centers) > 10:
             self.logger.log(ExportStateLogger.REQUESTABLE,
                             f"Eine Anfrage würde {len(map_centers)} PDFs generieren, wir haben die Anzahl aber auf 10 beschränkt. Bitte vergrössere deinen Kartenmassstab und probiere es erneut.",
-                            {'uuid': self.uuid, 'status': 'error'})
+                            {'uuid': self.uuid, 'status': GeneratorStatus.ERROR})
             logging.error(f'Too many map centers (exceeding faire use limit).')
             if (self.logger.getEffectiveLevel() == logging.DEBUG):
                 raise Exception("You should respect the faire use limit!")
@@ -160,7 +161,7 @@ class MapCreator:
             self.logger.info(f"Received PDF {index + 1} out of {len(map_centers)}.")
             self.logger.log(ExportStateLogger.REQUESTABLE,
                             f"Karte {index + 1} von insgesamt {len(map_centers)} wurde erstellt.",
-                            {'uuid': self.uuid, 'status': 'running'})
+                            {'uuid': self.uuid, 'status': GeneratorStatus.RUNNING})
 
             if response_obj.status_code != 200 and json.loads(pdf_status.content)['status'] != 'finished':
                 logging.error("Can not fetch the map: " + str(response_obj.status_code))

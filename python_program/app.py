@@ -15,6 +15,7 @@ from flask import Flask, request
 from flask_cors import CORS
 
 from arg_parser import create_parser
+from automatic_walk_time_tables.generator_status import GeneratorStatus
 from log_helper import setup_recursive_logger
 from status_handler import ExportStateHandler, ExportStateLogger
 
@@ -66,7 +67,8 @@ def create_map():
             status=500, mimetype='application/json')
         return response
 
-    logger.log(ExportStateLogger.REQUESTABLE, 'Export wird vorbereitet.', {'uuid': uuid, 'status': 'running'})
+    logger.log(ExportStateLogger.REQUESTABLE, 'Export wird vorbereitet.',
+               {'uuid': uuid, 'status': GeneratorStatus.RUNNING})
 
     parser = create_parser()
     args_as_dict = request.args.to_dict(flat=True)
@@ -87,7 +89,8 @@ def create_map():
 
 
 def create_export(uuid: str, args: argparse.Namespace):
-    logger.log(ExportStateLogger.REQUESTABLE, 'Der Export wurde gestartet.', {'uuid': uuid, 'status': 'running'})
+    logger.log(ExportStateLogger.REQUESTABLE, 'Der Export wurde gestartet.',
+               {'uuid': uuid, 'status': GeneratorStatus.RUNNING})
 
     generator = None
 
@@ -97,18 +100,16 @@ def create_export(uuid: str, args: argparse.Namespace):
 
     finally:
 
-        if not generator or not generator.successful:
+        export_state = stateHandler.get_status(uuid)['status']
+
+        if not generator or export_state == GeneratorStatus.RUNNING:
             logger.log(ExportStateLogger.REQUESTABLE,
                        'Der Export ist fehlgeschlagen. Ein unbekannter Fehler ist aufgetreten!',
-                       {'uuid': uuid, 'status': 'error'})
+                       {'uuid': uuid, 'status': GeneratorStatus.ERROR})
 
         # Remove GPX file from upload directory
         os.remove(args.gpx_file_name)
         os.rmdir('./input/' + uuid)
-
-    logger.log(ExportStateLogger.REQUESTABLE,
-               'Der Export ist abgeschlossen, die Daten können heruntergeladen werden.',
-               {'uuid': uuid, 'status': 'finished'})
 
 
 @app.route('/status/<uuid>')

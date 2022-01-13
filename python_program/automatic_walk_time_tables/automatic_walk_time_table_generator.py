@@ -4,6 +4,7 @@ import pathlib
 
 import gpxpy
 
+from automatic_walk_time_tables.generator_status import GeneratorStatus
 from automatic_walk_time_tables.geo_processing.find_walk_table_points import select_waypoints
 from automatic_walk_time_tables.geo_processing.map_numbers import find_map_numbers
 from automatic_walk_time_tables.map_downloader.create_map import MapCreator
@@ -18,7 +19,6 @@ class AutomatedWalkTableGenerator:
         self.args = args
         self.uuid = uuid
         self.logger = logging.getLogger(__name__)
-        self.successful = False
 
         for arg in vars(self.args):
             self.logger.debug("  %s: %s", arg, getattr(self.args, arg))
@@ -48,7 +48,7 @@ class AutomatedWalkTableGenerator:
                 plot_elevation_profile(self.raw_gpx_data, way_points, temp_points, file_name=name,
                                        open_figure=self.args.open_figure)
                 self.logger.log(ExportStateLogger.REQUESTABLE, 'Höhenprofil wurde erstellt.',
-                                {'uuid': self.uuid, 'status': 'running'})
+                                {'uuid': self.uuid, 'status': GeneratorStatus.RUNNING})
 
             if self.args.create_excel:
                 self.logger.debug('Boolean indicates that we should create walk-time table as Excel file')
@@ -57,7 +57,7 @@ class AutomatedWalkTableGenerator:
                                                    file_name=name, creator_name=self.args.creator_name,
                                                    map_numbers=map_numbers)
                 self.logger.log(ExportStateLogger.REQUESTABLE, 'Marschzeittabelle wurde erstellt.',
-                                {'uuid': self.uuid, 'status': 'running'})
+                                {'uuid': self.uuid, 'status': GeneratorStatus.RUNNING})
 
             else:
                 name_of_points = [''] * len(way_points)
@@ -72,4 +72,6 @@ class AutomatedWalkTableGenerator:
                                               print_api_base_url=self.args.print_api_base_url)
 
         # Export successfully completed
-        self.successful = True
+        self.logger.log(ExportStateLogger.REQUESTABLE,
+                        'Export abgeschlossen, die Daten können heruntergeladen werden.',
+                        {'uuid': self.uuid, 'status': GeneratorStatus.SUCCESS})
