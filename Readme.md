@@ -56,7 +56,7 @@ tour. There are already some tools that provide valuable support for planning. N
 planning a hike with larger groups, such as in a J+S-camp.
 
 In a first step, my goal is to automate the generation of a walk-time table (using the Excel template from Jugend+Sport)
-. The walk-table is generated based on an existing route exported from SchweizMobil or from the swisstopo app (resp.
+. The walk-table is generated based on an GPX file (for example exported from SchweizMobil or from the swisstopo app
 based on an arbitrary GPX-file). A python script then generates an Excel file and a map of the route for further
 manually planing by the J+S-ladder.
 
