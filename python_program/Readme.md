@@ -1,7 +1,7 @@
 # Automatic Walk-Time Tables
 
 This is the main component of the application. A script implemented in python which creates a walk-time table from a GPX
-file. The script can be run in two configurations: as a web-API inside a docker container, or as a standalone python3
+file. The script can be run in two configurations: as a web-API (for example inside a docker container), or as a standalone python3
 script.
 
 ## Run it as a web-API using Docker
