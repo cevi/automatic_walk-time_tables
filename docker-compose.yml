@@ -19,8 +19,8 @@ services:
     build:
       context: webinterface/.
       args:
-        # By default, we build in productive mode. You can change the build mode by specifying $ANGULAR_CONFIGURATION.
-        - configuration=${ANGULAR_CONFIGURATION:-production}
+        # By default, we build in development mode. You can change the build mode by specifying $ANGULAR_CONFIGURATION.
+        - configuration=${ANGULAR_CONFIGURATION:-development}
     ports:
       - "80:80"
     depends_on:
