@@ -170,6 +170,9 @@ class MapCreator:
                 else:
                     exit(1)
 
+            # Wait for the PDF to be ready
+            time.sleep(0.5)
+
             fetched_pdf = requests.get(base_url + response_json['downloadURL'])
 
             if response_obj.status_code != 200:
