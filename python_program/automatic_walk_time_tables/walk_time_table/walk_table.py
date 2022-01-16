@@ -1,7 +1,7 @@
 import logging
-import math
 import os
 from datetime import timedelta
+from math import log
 from typing import Tuple, List
 
 import gpxpy
@@ -37,7 +37,7 @@ def plot_elevation_profile(raw_data_points: gpxpy.gpx,
     plt.plot(distances, heights, label='Wanderweg')
 
     # resize plot area
-    additional_space = math.log(max(heights) - min(heights)) * 25
+    additional_space = log(max(heights) - min(heights)) * 25
     plt.ylim(ymax=max(heights) + additional_space, ymin=min(heights) - additional_space)
 
     # add way_points to plot

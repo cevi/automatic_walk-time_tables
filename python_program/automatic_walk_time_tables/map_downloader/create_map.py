@@ -152,23 +152,31 @@ class MapCreator:
 
             pdf_status = requests.get(base_url + response_json['statusURL'])
             loop_idx = 0
-            while pdf_status.status_code == 200 and json.loads(pdf_status.content)['status'] == 'running':
+            while pdf_status.status_code == 200 and not json.loads(pdf_status.content)['done']:
                 time.sleep(0.5)
                 pdf_status = requests.get(base_url + response_json['statusURL'])
                 self.logger.debug(f"Waiting for PDF {index + 1} out of {len(map_centers)}. ({loop_idx * 0.5}s)")
                 loop_idx += 1
+                self.logger.info(
+                    f"PDF Status: {json.loads(pdf_status.content)['done']}: {json.loads(pdf_status.content)['status']}")
+
+            self.logger.info(
+                    f"PDF Status: {json.loads(pdf_status.content)['done']}: {json.loads(pdf_status.content)['status']}")
 
             self.logger.info(f"Received PDF {index + 1} out of {len(map_centers)}.")
             self.logger.log(ExportStateLogger.REQUESTABLE,
                             f"Karte {index + 1} von insgesamt {len(map_centers)} wurde erstellt.",
                             {'uuid': self.uuid, 'status': GeneratorStatus.RUNNING})
 
-            if response_obj.status_code != 200 and json.loads(pdf_status.content)['status'] != 'finished':
+            if pdf_status.status_code != 200 or json.loads(pdf_status.content)['status'] != 'finished':
                 logging.error("Can not fetch the map: " + str(response_obj.status_code))
                 if (self.logger.getEffectiveLevel() == logging.DEBUG):
                     raise Exception('Can not fetch map. Status Code: {}'.format(response_obj.status_code))
                 else:
                     exit(1)
+
+            # Wait for the PDF to be ready
+            time.sleep(0.5)
 
             fetched_pdf = requests.get(base_url + response_json['downloadURL'])
 

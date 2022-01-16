@@ -10,8 +10,7 @@ import uuid as uuid_factory
 import zipfile
 from threading import Thread
 
-import flask
-from flask import Flask, request
+from flask import Flask, request, send_file
 from flask_cors import CORS
 
 from arg_parser import create_parser
@@ -145,7 +144,7 @@ def request_zip(uuid):
     except OSError as e:
         logger.error("Cannot delete files in folder %s : %s" % (base_path, e.strerror))
     finally:
-        return flask.send_file(
+        return send_file(
             data,
             mimetype='application/zip',
             as_attachment=True,

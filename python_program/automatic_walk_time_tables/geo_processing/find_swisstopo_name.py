@@ -1,6 +1,5 @@
 import csv
 import logging
-import math
 from math import sqrt
 
 logger = logging.getLogger(__name__)
@@ -50,7 +49,7 @@ def find_name(coord, dist):
     # Flurname swisstopo: 0.9
 
     flurname_list.sort(key=lambda swiss_name:
-    math.sqrt((abs(swiss_name.x - coord[0]) ** 2 + abs(swiss_name.y - coord[1]) ** 2)) / (
+    sqrt((abs(swiss_name.x - coord[0]) ** 2 + abs(swiss_name.y - coord[1]) ** 2)) / (
         2 if swiss_name.object_type in ['Haltestelle Bahn', 'Huegel', 'Pass', 'Strassenpass', 'Alpiner Gipfel',
                                         'Gipfel',
                                         ] else
