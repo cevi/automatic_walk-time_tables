@@ -153,7 +153,7 @@ class MapCreator:
             pdf_status = requests.get(base_url + response_json['statusURL'])
             loop_idx = 0
             while pdf_status.status_code == 200 and not json.loads(pdf_status.content)['done']:
-                time.sleep(0.05)
+                time.sleep(0.5)
                 pdf_status = requests.get(base_url + response_json['statusURL'])
                 self.logger.debug(f"Waiting for PDF {index + 1} out of {len(map_centers)}. ({loop_idx * 0.5}s)")
                 loop_idx += 1
