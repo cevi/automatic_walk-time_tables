@@ -1,0 +1,122 @@
+<app-display-map>
+
+
+  <div class="buttons">
+
+    <h2>J+S-Marschzeittabellen automatisiert generieren</h2>
+
+    <ng-container *ngIf="!pending else pendingText">
+
+      <form [formGroup]="options">
+
+        <mat-stepper orientation="vertical">
+
+          <mat-step [hasError]="!gpx_uploaded" errorMessage="GPX Datei fehlt!">
+
+            <ng-template matStepLabel>Route Hochladen</ng-template>
+
+            <div class="content-block">
+              <p>
+                Diese Webseite automatisiert das Generieren einer Marschzeittabelle (anhand der Excel-Vorlage
+                von Jugend+Sport). Eine aus SchweizMobil oder der Swisstopo-App exportierte Route dient dabei als
+                Grundlage.
+              </p>
+              <input type="file" id="uploader" accept=".gpx" (input)="new_gpx_uploaded()">
+            </div>
+
+            <button mat-stroked-button color="primary" matStepperNext [disabled]="!gpx_uploaded">Weiter</button>
+
+          </mat-step>
+
+          <mat-step>
+            <ng-template matStepLabel>Einstellungen zur Karte</ng-template>
+
+            <div class="content-block">
+              <mat-slide-toggle formControlName="create-map-pdfs">Karte als PDF beifügen</mat-slide-toggle>
+              <div class="slider">
+                <label>Kartenmassstab: 1:{{scale.value}}</label>
+                <mat-slider #scale min="10000" max="100000" step="5000"
+                            (change)="options.controls['map-scaling'].setValue($event.value)"
+                            [value]="options.controls['map-scaling'].value"></mat-slider>
+              </div>
+            </div>
+
+            <button mat-stroked-button color="primary" matStepperNext>Weiter</button>
+
+          </mat-step>
+
+          <mat-step>
+
+            <ng-template matStepLabel>Einstellungen zur Marschzeittabelle</ng-template>
+
+            <div class="content-block">
+              <mat-slide-toggle formControlName="create-excel">Marschzeittabelle als Excel beifügen</mat-slide-toggle>
+
+              <div class="slider">
+                <label>Geschwindigkeit: {{velocity.value}} km/h</label>
+                <mat-slider #velocity min="0.5" max="20" step="0.25"
+                            (change)="options.controls['velocity'].setValue($event.value)"
+                            [value]="options.controls['velocity'].value"
+                ></mat-slider>
+              </div>
+
+              <mat-form-field appearance="fill" class="full-width">
+                <mat-label>Dein Name</mat-label>
+                <input matInput type="text" formControlName="creator-name">
+              </mat-form-field>
+
+              <br>
+
+              <mat-form-field appearance="fill" class="full-width">
+                <mat-label>Abmarsch Zeit</mat-label>
+                <input matInput type="datetime-local" formControlName="departure-time">
+              </mat-form-field>
+            </div>
+
+            <button mat-stroked-button color="primary" matStepperNext>Weiter</button>
+
+          </mat-step>
+
+
+          <mat-step>
+            <ng-template matStepLabel>Marschzeittabelle Erstellen</ng-template>
+            <div class="content-block">
+
+              <p>Nun sind wir bereit deine Marschzeittabelle zu erstellen:</p>
+              <button mat-stroked-button color="primary" [disabled]="!gpx_uploaded" id="export-button"
+                      (click)="download_map()">
+                Generieren lassen
+              </button>
+            </div>
+
+          </mat-step>
+
+        </mat-stepper>
+
+      </form>
+    </ng-container>
+
+    <ng-template #pendingText>
+      <ng-container *ngIf="status != 'error' else onerror">
+        <mat-progress-bar mode="query"></mat-progress-bar>
+      </ng-container>
+      <ng-template #onerror>
+        <mat-progress-bar  mode="buffer" value="80" color="warn"></mat-progress-bar>
+      </ng-template>
+
+    <p> Marschzeittabelle wird erstellt, wir bitten um Geduld.</p>
+    <p [ngClass]="{'error_message': status == 'error'}"><b>Status: </b>{{status_message}} <i> ({{status}})</i></p>
+
+    <ng-container *ngIf="status == 'error'">
+      <button mat-stroked-button color="warn" (click)="this.pending = false">Neuer Versuch starten</button>
+    </ng-container>
+
+    </ng-template>
+
+  </div>
+
+
+</app-display-map>
+
+
+<app-footer></app-footer>

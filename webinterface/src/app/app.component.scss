@@ -1,0 +1,54 @@
+h2       {
+  text-align: center;
+}
+
+.buttons {
+
+  display: grid;
+  justify-content: center;
+
+
+}
+
+
+#export-button {
+
+  margin-top: 25px;
+
+}
+
+.slider {
+  margin: 25px 0 0;
+  display: grid;
+
+}
+
+@media (min-width: 600px) {
+  .slider{
+    grid-template-columns: 220px auto;
+    margin-top: 10px;
+  }
+}
+
+.mat-stepper-vertical {
+  background-color: transparent;
+}
+
+
+.slider label {
+
+  line-height: 45px;
+
+}
+
+.content-block {
+  margin-bottom: 20px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.error_message {
+  color: red
+}

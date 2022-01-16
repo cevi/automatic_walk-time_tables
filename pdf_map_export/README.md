@@ -1,10 +1,7 @@
-# Docker Container running MapFish
-As of version 1.4.0, the script is divided into two main components:
-
-- A python script executed directly by the end user (entry-point `../python_program/main.py`)
-- A docker container running a MapFish instance used to create PDF-map exports via a web api.
+# PDF Export using MapFish 3
 
 ## Run MapFish inside a Local Docker Container:
+
 MapFish is an open-source tool to create reports containing maps. This script uses MapFish to create the PDF-map
 exports. We relay on the default `camptocamp/mapfish_print` docker container, which we customized by adding our own
 ```config.yaml``` and ```report.jrxml```.
@@ -16,8 +13,8 @@ $ docker build . -t cevi/walktable_mapfish:latest
 $ docker run --publish=8080:8080  cevi/walktable_mapfish:latest
 ```
 
-
 ## Test your MapFish Instance
+
 You can test if the container is running properly by opening [http://localhost:8080](http://localhost:8080/). Now you
 can copy-past the content of the `test_query.json` file and click on `Create And Get Print`. If the test PDF gets
 created properly, your installation was successfully.

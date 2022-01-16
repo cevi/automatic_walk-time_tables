@@ -1,9 +1,9 @@
 import csv
-import math
+import logging
 from math import sqrt
 
-import logging
 logger = logging.getLogger(__name__)
+
 
 class SwissName:
     def __init__(self, name, object_type, x, y):
@@ -11,6 +11,7 @@ class SwissName:
         self.object_type = object_type
         self.x = int(x)
         self.y = int(y)
+
 
 def add_to_database(file, db, typeIndex, name, x, y):
     logger.debug("Adding file %s with name %s to database.", file, name)
@@ -20,6 +21,7 @@ def add_to_database(file, db, typeIndex, name, x, y):
         for r in reader:
             db.append(SwissName(r[name], r[typeIndex], r[x], r[y]))
     logger.debug("Database has " + str(len(db)) + " entries.")
+
 
 def find_name(coord, dist):
     """
@@ -47,7 +49,7 @@ def find_name(coord, dist):
     # Flurname swisstopo: 0.9
 
     flurname_list.sort(key=lambda swiss_name:
-    math.sqrt((abs(swiss_name.x - coord[0]) ** 2 + abs(swiss_name.y - coord[1]) ** 2)) / (
+    sqrt((abs(swiss_name.x - coord[0]) ** 2 + abs(swiss_name.y - coord[1]) ** 2)) / (
         2 if swiss_name.object_type in ['Haltestelle Bahn', 'Huegel', 'Pass', 'Strassenpass', 'Alpiner Gipfel',
                                         'Gipfel',
                                         ] else
