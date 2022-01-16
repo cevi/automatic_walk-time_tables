@@ -1,11 +1,10 @@
-#map-canvas{
+#map-canvas {
   width: 100%;
   height: 100%;
   position: absolute;
   top: 0;
   left: 0;
   overflow: hidden;
-  opacity: 0.2;
   z-index: -10;
 }
 
@@ -18,8 +17,36 @@
   opacity: 1;
 }
 
+
 .content {
 
-  margin: 180px 25px 25px;
+  margin: 180px auto auto;
+
+  background-color: #ffffffa0;
+  padding: 50px 50px;
+  max-width: 700px;
+  overflow: auto;
 
 }
+
+#logo_small {
+  display: none;
+}
+
+@media (max-height: 1000px), (max-width: 750px) {
+  .content {
+    margin: 45px auto 20px auto;
+    max-height: calc(100% - 140px);
+  }
+  #logo{
+    display: none;
+  }
+  #logo_small {
+    display: block;
+    width: 150px;
+    position: absolute;
+    top: 10px;
+    left: 10px;
+  }
+}
+

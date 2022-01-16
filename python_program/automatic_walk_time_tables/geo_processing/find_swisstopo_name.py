@@ -35,10 +35,8 @@ def find_name(coord):
         Therefore this process should be done locally.
 
     """
-
     list_of_points = list(index.nearest((coord[0], coord[1], coord[0], coord[1]), 1, objects=True))
     return list_of_points[0].object.name
-
 
 ########################################################################################################################
 ########################################################################################################################

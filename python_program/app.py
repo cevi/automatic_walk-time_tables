@@ -5,15 +5,16 @@ import json
 import logging
 import os
 import pathlib
+import shutil
 import uuid as uuid_factory
 import zipfile
 from threading import Thread
 
-import flask
-from flask import Flask, request
+from flask import Flask, request, send_file
 from flask_cors import CORS
 
 from arg_parser import create_parser
+from automatic_walk_time_tables.generator_status import GeneratorStatus
 from log_helper import setup_recursive_logger
 from status_handler import ExportStateHandler, ExportStateLogger
 
@@ -39,9 +40,8 @@ def create_map():
     logger.debug('New request to with create_map().', {'uuid': uuid})
 
     # check if output and input folders exist, if not, create them
-    output_directory = 'output/' + uuid + '/'
     input_directory = 'input/' + uuid + '/'
-    pathlib.Path(output_directory).mkdir(parents=True, exist_ok=True)
+    output_directory = 'output/' + uuid + '/'
     pathlib.Path(input_directory).mkdir(parents=True, exist_ok=True)
 
     if 'file' not in request.files:
@@ -66,7 +66,8 @@ def create_map():
             status=500, mimetype='application/json')
         return response
 
-    logger.log(ExportStateLogger.REQUESTABLE, 'Preparing for export.', {'uuid': uuid, 'status': 'running'})
+    logger.log(ExportStateLogger.REQUESTABLE, 'Export wird vorbereitet.',
+               {'uuid': uuid, 'status': GeneratorStatus.RUNNING})
 
     parser = create_parser()
     args_as_dict = request.args.to_dict(flat=True)
@@ -87,16 +88,27 @@ def create_map():
 
 
 def create_export(uuid: str, args: argparse.Namespace):
-    logger.log(ExportStateLogger.REQUESTABLE, 'Export started.', {'uuid': uuid, 'status': 'running'})
+    logger.log(ExportStateLogger.REQUESTABLE, 'Der Export wurde gestartet.',
+               {'uuid': uuid, 'status': GeneratorStatus.RUNNING})
 
-    generator = AutomatedWalkTableGenerator(args)
-    generator.run()
+    generator = None
 
-    logger.log(ExportStateLogger.REQUESTABLE, 'Export successfully finished.',
-               {'uuid': uuid, 'status': 'finished'})
+    try:
+        generator = AutomatedWalkTableGenerator(args, uuid)
+        generator.run()
 
-    # Remove GPX file from upload directory
-    os.remove(args.gpx_file_name)
+    finally:
+
+        export_state = stateHandler.get_status(uuid)['status']
+
+        if not generator or export_state == GeneratorStatus.RUNNING:
+            logger.log(ExportStateLogger.REQUESTABLE,
+                       'Der Export ist fehlgeschlagen. Ein unbekannter Fehler ist aufgetreten!',
+                       {'uuid': uuid, 'status': GeneratorStatus.ERROR})
+
+        # Remove GPX file from upload directory
+        os.remove(args.gpx_file_name)
+        os.rmdir('./input/' + uuid)
 
 
 @app.route('/status/<uuid>')
@@ -109,7 +121,12 @@ def return_status(uuid):
 
 @app.route('/download/<uuid>')
 def request_zip(uuid):
+    # Check if export is completed and still present in the 'output' folder
     base_path = pathlib.Path('./output/' + uuid + '/')
+    state = stateHandler.get_status(uuid)
+
+    if (state and state['status'] != 'finished') or not os.path.exists(base_path):
+        return "Die angefragten Daten sind nicht (mehr) verfügbar."
 
     # Return Zip with data
     data = io.BytesIO()
@@ -120,12 +137,19 @@ def request_zip(uuid):
             z.write(f_name, only_name)
     data.seek(0)
 
-    return flask.send_file(
-        data,
-        mimetype='application/zip',
-        as_attachment=True,
-        attachment_filename='Download.zip'
-    )
+    # delete and return files
+    try:
+        stateHandler.remove_status(uuid)
+        shutil.rmtree(base_path)
+    except OSError as e:
+        logger.error("Cannot delete files in folder %s : %s" % (base_path, e.strerror))
+    finally:
+        return send_file(
+            data,
+            mimetype='application/zip',
+            as_attachment=True,
+            attachment_filename='Download.zip'
+        )
 
 
 if __name__ == "__main__":

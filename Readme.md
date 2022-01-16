@@ -2,7 +2,7 @@
 
 # J+S-Marschzeittabellen automatisiert generieren
 
-_Englisch version below (including local setup and dev info)_
+_English version below (including local setup and dev info)_
 
 Ziel dieses Projektes ist es, den Prozess rund um das Erstellen einer J+S-Marschzeittabelle für eine Wanderung oder
 Velo-Tour zu automatisieren und zu beschleunigen.
@@ -14,8 +14,8 @@ erleichtern:
   eingezeichnete Route folgt automatisch dem Wanderweg/der Strasse) und der Zeitberechnung (gemäss der Formel der
   Schweizer Wanderwege) bereits eine grosse Hilfe beim Planen.
 
-- Für mobile Endgeräte, eignet sich ebenfalls die offizielle App des Bundesamts für Landestopografie swisstopo. Analog
-  zur SchweizMobil, bietet auch die swisstopo App eine Funktion zur Routenplanung mit magnetischen Wegen.
+- Für mobile Endgeräte eignet sich ebenfalls die offizielle App des Bundesamts für Landestopografie swisstopo. Analog
+  zur App SchweizMobil, bietet auch die swisstopo App eine Funktion zur Routenplanung mit magnetischen Wegen.
 
 Ist man mit einer grösseren Gruppe unterwegs (so zum Beispiel in einem J+S-Lager), ist eine ausführliche Planung
 unumgänglich. Doch genau in diesen Szenarien stossen die existierenden Tools an ihr Grenzen. Dieses Projekt setzt genau
@@ -56,9 +56,9 @@ tour. There are already some tools that provide valuable support for planning. N
 planning a hike with larger groups, such as in a J+S-camp.
 
 In a first step, my goal is to automate the generation of a walk-time table (using the Excel template from Jugend+Sport)
-. The walk-table is generated based on an existing route exported from SchweizMobil or from the swisstopo app (resp.
-based on an arbitrary GPX-file). A python script then generates an Excel file and a map of the route for further
-manually planing by the J+S-ladder.
+. The walk-table is generated based on an GPX file (for example exported from SchweizMobil or from the swisstopo app
+). A python script then generates an Excel file and a map of the route for further
+manually planning by the J+S-leader.
 
 **Important:** Manual planning remains a fundamental part of preparing for a hike. This project only aims to speed up
 mechanical, repetitive processes like creating a walk-time table based on an existing route. This programm is no

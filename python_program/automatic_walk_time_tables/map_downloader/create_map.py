@@ -11,7 +11,9 @@ import requests
 from pyclustering.cluster.kmeans import kmeans
 from pyclustering.utils.metric import type_metric, distance_metric
 
+from automatic_walk_time_tables.generator_status import GeneratorStatus
 from automatic_walk_time_tables.geo_processing import coord_transformation
+from status_handler import ExportStateLogger
 
 
 def GetSpacedElements(array, numElems=4):
@@ -48,9 +50,10 @@ class MapCreator:
     `A4_WIDTH_FACTOR * map_scale` gives you the number of km displayed on one A4 paper.
     """
 
-    def __init__(self, raw_gpx_data: gpxpy.gpx):
+    def __init__(self, raw_gpx_data: gpxpy.gpx, uuid: str):
         self.logger = logging.getLogger(__name__)
         self.raw_gpx_data = raw_gpx_data
+        self.uuid = uuid
 
     def auto_select_map_scaling(self) -> int:
         """
@@ -111,6 +114,9 @@ class MapCreator:
         map_centers = self.create_map_centers(map_scaling)
 
         if len(map_centers) > 10:
+            self.logger.log(ExportStateLogger.REQUESTABLE,
+                            f"Eine Anfrage würde {len(map_centers)} PDFs generieren, wir haben die Anzahl aber auf 10 beschränkt. Bitte vergrössere deinen Kartenmassstab und probiere es erneut.",
+                            {'uuid': self.uuid, 'status': GeneratorStatus.ERROR})
             logging.error(f'Too many map centers (exceeding faire use limit).')
             if (self.logger.getEffectiveLevel() == logging.DEBUG):
                 raise Exception("You should respect the faire use limit!")
@@ -146,20 +152,31 @@ class MapCreator:
 
             pdf_status = requests.get(base_url + response_json['statusURL'])
             loop_idx = 0
-            while pdf_status.status_code == 200 and json.loads(pdf_status.content)['status'] == 'running':
+            while pdf_status.status_code == 200 and not json.loads(pdf_status.content)['done']:
                 time.sleep(0.5)
                 pdf_status = requests.get(base_url + response_json['statusURL'])
                 self.logger.debug(f"Waiting for PDF {index + 1} out of {len(map_centers)}. ({loop_idx * 0.5}s)")
                 loop_idx += 1
+                self.logger.info(
+                    f"PDF Status: {json.loads(pdf_status.content)['done']}: {json.loads(pdf_status.content)['status']}")
+
+            self.logger.info(
+                    f"PDF Status: {json.loads(pdf_status.content)['done']}: {json.loads(pdf_status.content)['status']}")
 
             self.logger.info(f"Received PDF {index + 1} out of {len(map_centers)}.")
+            self.logger.log(ExportStateLogger.REQUESTABLE,
+                            f"Karte {index + 1} von insgesamt {len(map_centers)} wurde erstellt.",
+                            {'uuid': self.uuid, 'status': GeneratorStatus.RUNNING})
 
-            if response_obj.status_code != 200 and json.loads(pdf_status.content)['status'] != 'finished':
+            if pdf_status.status_code != 200 or json.loads(pdf_status.content)['status'] != 'finished':
                 logging.error("Can not fetch the map: " + str(response_obj.status_code))
                 if (self.logger.getEffectiveLevel() == logging.DEBUG):
                     raise Exception('Can not fetch map. Status Code: {}'.format(response_obj.status_code))
                 else:
                     exit(1)
+
+            # Wait for the PDF to be ready
+            time.sleep(0.5)
 
             fetched_pdf = requests.get(base_url + response_json['downloadURL'])
 

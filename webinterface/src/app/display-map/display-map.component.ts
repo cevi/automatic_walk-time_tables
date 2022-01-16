@@ -1,4 +1,10 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, OnDestroy, OnInit} from '@angular/core';
+import {Tile} from "../helpers/tile";
+import {Canvas_Coordinates, LV95_Coordinates} from "../helpers/coordinates";
+import {MapCreator} from "../helpers/map-creator";
+import {MapAnimatorService} from "../services/map-animator.service";
+import {BehaviorSubject, combineLatest, Subscription} from "rxjs";
+
 
 @Component({
   selector: 'app-display-map',
@@ -8,60 +14,130 @@ import {Component, OnInit} from '@angular/core';
     {provide: Window, useValue: window}
   ]
 })
-export class DisplayMapComponent implements OnInit {
+export class DisplayMapComponent implements OnInit, OnDestroy {
 
-  TILE_SIZES = [64000, 25600, 12800, 5120, 2560, 1280, 640, 512, 384, 256, 128, 64, 25.6]
-  ZOOM_LEVELS = [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28]
+  path_subscription: Subscription | undefined;
+  map_subscription: Subscription | undefined;
 
-
-  constructor(private window: Window) {
+  constructor(private window: Window, private mapAnimator: MapAnimatorService) {
   }
 
   ngOnInit(): void {
-    this.load_map();
 
-    this.window.addEventListener('resize', () => this.load_map())
+    const resizeEvent = new BehaviorSubject(undefined);
+    window.addEventListener('resize', () => resizeEvent.next(undefined))
+
+    this.map_subscription = combineLatest([this.mapAnimator.map_center$, this.mapAnimator.bbox$, resizeEvent])
+      .subscribe(([map_center, bbox, _]) => this.draw_map(map_center, bbox));
 
   }
 
-  private load_map() {
+  ngOnDestroy(): void {
+    this.path_subscription?.unsubscribe();
+    this.map_subscription?.unsubscribe();
+  }
 
-    const zoom_level = 6;
+  private async draw_map(map_center: LV95_Coordinates, bbox: [LV95_Coordinates, LV95_Coordinates]) {
 
-    const base_url = 'https://wmts100.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/2056/' +
-      (this.ZOOM_LEVELS)[zoom_level] + '/';
 
-    let x_tile = 466;
-    const y_tile = 210;
+    const {canvas, ctx} = this.setup_canvas();
+    const canvas_size: Canvas_Coordinates = {'x': canvas.width, 'y': canvas.height};
 
+    const zoom_level = this.calc_zoom_level(canvas_size, bbox);
+
+    // The base tile is the map tile which contains the LV95_map_center
+    let map_creator = new MapCreator(
+      map_center,
+      zoom_level,
+      canvas_size,
+      'ch.swisstopo.pixelkarte-farbe');
+
+    await this.draw_background_map(map_creator, ctx);
+
+    this.path_subscription?.unsubscribe();
+    this.path_subscription = this.mapAnimator.path$.subscribe(path => this.draw_route(ctx, path, map_creator));
+
+  }
+
+  private async draw_background_map(map_creator: MapCreator, ctx: CanvasRenderingContext2D) {
+
+    // Download all Tiles
+    const tiles = map_creator.get_all_tiles();
+    const promises = tiles.map(t => t.load_tile());
+    await Promise.all(promises);
+
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = "#ffffff"
+    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+    ctx.globalAlpha = 0.2;
+    tiles.forEach(t => {
+      if (t.image)
+        ctx.drawImage(t.image, t.canvas_position.x, t.canvas_position.y, Tile.TILE_RENDER_SIZE, Tile.TILE_RENDER_SIZE);
+    });
+
+  }
+
+  private draw_route(ctx: CanvasRenderingContext2D, path: LV95_Coordinates[], map_creator: MapCreator) {
+
+    ctx.strokeStyle = "#AFA5FF"
+    ctx.lineWidth = 3
+    ctx.globalAlpha = 1;
+    ctx.beginPath();
+
+    let isFirst = 1;
+
+    path.forEach(coord => {
+      const point = map_creator.to_canvas_coordinates(coord);
+
+      if (isFirst) {
+        isFirst = 0;
+        ctx.moveTo(point.x, point.y)
+      } else {
+        ctx.lineTo(point.x, point.y)
+      }
+    });
+    ctx.stroke();
+
+  }
+
+
+  private setup_canvas() {
     const canvas = document.getElementById('map-canvas') as HTMLCanvasElement;
     const ctx = canvas.getContext('2d');
+
+    if (!ctx)
+      throw new Error('Canvas is Null!');
 
     const pageWidth = this.window.innerWidth;
     const pageHeight = this.window.innerHeight;
 
-    const maxY = Math.ceil(pageHeight / 256);
-    const maxX = Math.ceil(pageWidth / 256);
+    const x_tiles_count = Math.ceil(pageWidth / Tile.TILE_RENDER_SIZE);
+    const y_tiles_count = Math.ceil(pageHeight / Tile.TILE_RENDER_SIZE);
+    canvas.width = x_tiles_count * Tile.TILE_RENDER_SIZE;
+    canvas.height = y_tiles_count * Tile.TILE_RENDER_SIZE;
+    return {canvas, ctx};
+  }
 
-    canvas.width = maxX * 256;
-    canvas.height = maxY * 256;
+  private calc_zoom_level(
+    canvas_size: Canvas_Coordinates,
+    [min_values, max_values]: [LV95_Coordinates, LV95_Coordinates]) {
 
-    x_tile -= Math.floor(maxX / 2) - 2;
+    const delta_x = max_values.x - min_values.x;
+    const delta_y = max_values.y - min_values.y;
 
-    for (let i = 0; i < maxX; i++) {
-      for (let j = 0; j < maxY; j++) {
+    const tiles_x = Math.floor(canvas_size.x / Tile.TILE_RENDER_SIZE);
+    const tiles_y = Math.floor(canvas_size.y / Tile.TILE_RENDER_SIZE);
 
-        const url = base_url + (x_tile + i) + '/' + (y_tile - j) + '.jpeg'
-        let image = new Image(256, 256);
-        image.onload = function () {
+    let zoom_level = 8;
 
-          ctx?.drawImage(image, i * 256, (maxY - 1 - j) * 256, 256, 256);
-        }
-        image.src = url;
-
-      }
+    while (zoom_level > 0) {
+      if (delta_x <= tiles_x * Tile.TILE_SIZES[zoom_level] &&
+        delta_y <= tiles_y * Tile.TILE_SIZES[zoom_level]) break;
+      zoom_level--;
     }
 
+    return zoom_level
 
 
   }
