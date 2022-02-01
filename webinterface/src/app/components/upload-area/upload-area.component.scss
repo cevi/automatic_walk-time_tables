@@ -1,0 +1,42 @@
+.upload-area {
+
+  position: relative;
+  display: grid;
+  justify-content: center;
+  height: 150px;
+  padding: 10px 0;
+  border: 1px dotted rgba(0,0,0,.12);
+
+  .action-description, .small-font, .icon {
+    display: block;
+    color: rgba(0,0,0,.65);
+    text-align: center;
+    width: 100%;
+  }
+
+  .icon {
+    font-size: 34px;
+    margin: 12px 0;
+  }
+
+  .action-description {
+    font-size: 16px;
+  }
+
+  .small-font {
+    font-size: 10px;
+  }
+
+  #uploader {
+    position: absolute;
+    height: 170px;
+    width: 100%;
+    opacity: 0;
+  }
+
+  .select-file {
+    width: 200px;
+  }
+
+}
+

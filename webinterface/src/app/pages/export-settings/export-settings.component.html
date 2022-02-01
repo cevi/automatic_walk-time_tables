@@ -1,5 +1,8 @@
 <h2>J+S-Marschzeittabellen automatisiert generieren</h2>
 
+<button mat-stroked-button color="primary" class="help-button" routerLink="guide"> So funktioniert es!
+</button>
+
 <form [formGroup]="options">
 
   <mat-stepper orientation="vertical">
@@ -10,17 +13,16 @@
 
       <div class="content-block">
         <p>
-          Diese Webseite automatisiert das Generieren einer Marschzeittabelle (anhand der Excel-Vorlage
-          von Jugend+Sport). Eine aus SchweizMobil oder der Swisstopo-App exportierte Route dient dabei als
-          Grundlage. Die Route muss im GPX-File-Format exportiert werden.
+          Lade eine GPX-Datei hoch. Diese kannst du aus SchweizMobil oder der Swisstopo-App exportieren.
         </p>
 
+        <app-upload-area *ngIf="!gpx_uploaded" class="upload-area" (file_uploaded)="new_gpx_uploaded($event)"></app-upload-area>
+        <app-download *ngIf="gpx_uploaded && gpx_file"  [name]="gpx_file?.name" [changeDate]="gpx_file?.lastModified"></app-download>
 
-        <input type="file" id="uploader" accept=".gpx" (input)="new_gpx_uploaded()">
       </div>
 
-      <button mat-stroked-button color="primary" class="help-button" routerLink="guide"> Wie erstelle ich eine GPX-Datei? </button>
-
+      <button mat-stroked-button color="primary" *ngIf="!gpx_uploaded" routerLink="guide"> Wie erhalte ich eine GPX-Datei? </button>
+      <button mat-stroked-button color="warn" *ngIf="gpx_uploaded" (click)="delete_gpx_file()"> Datei löschen </button>
       <button mat-stroked-button color="primary" matStepperNext [disabled]="!gpx_uploaded">Weiter</button>
 
     </mat-step>

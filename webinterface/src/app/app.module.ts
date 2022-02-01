@@ -18,6 +18,9 @@ import { ExportSettingsComponent } from './pages/export-settings/export-settings
 import { UserGuideComponent } from './pages/user-guide/user-guide.component';
 import { DownloadPendingComponent } from './pages/download-pending/download-pending.component';
 import { DownloadDataComponent } from './pages/download-data/download-data.component';
+import { UploadAreaComponent } from './components/upload-area/upload-area.component';
+import {MatIconModule} from "@angular/material/icon";
+import {DownloadModule} from "./modules/download-module/download.module";
 
 @NgModule({
   declarations: [
@@ -27,7 +30,8 @@ import { DownloadDataComponent } from './pages/download-data/download-data.compo
     ExportSettingsComponent,
     UserGuideComponent,
     DownloadPendingComponent,
-    DownloadDataComponent
+    DownloadDataComponent,
+    UploadAreaComponent
   ],
   imports: [
     BrowserModule,
@@ -40,7 +44,9 @@ import { DownloadDataComponent } from './pages/download-data/download-data.compo
     MatSliderModule,
     MatStepperModule,
     ReactiveFormsModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    MatIconModule,
+    DownloadModule
   ],
   providers: [],
   bootstrap: [AppComponent]

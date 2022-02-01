@@ -1,0 +1,10 @@
+<div class="upload-area">
+
+  <mat-icon class="icon">upload</mat-icon>
+  <span class="action-description"> Drag-and-Drop GPX Datei </span>
+  <span class="small-font"> oder </span>
+
+  <button mat-stroked-button color="primary" class="select-file" > GPX-Datei auswählen </button>
+  <input type="file" id="uploader" accept=".gpx" (input)="file_added($event)">
+
+</div>
