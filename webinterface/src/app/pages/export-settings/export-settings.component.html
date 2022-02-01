@@ -21,7 +21,7 @@
 
       </div>
 
-      <button mat-stroked-button color="primary" *ngIf="!gpx_uploaded" routerLink="guide"> Wie erhalte ich eine GPX-Datei? </button>
+      <button mat-stroked-button color="primary" *ngIf="!gpx_uploaded" routerLink="guide" fragment="get-gpx-file"> Wie erhalte ich eine GPX-Datei? </button>
       <button mat-stroked-button color="warn" *ngIf="gpx_uploaded" (click)="delete_gpx_file()"> Datei löschen </button>
       <button mat-stroked-button color="primary" matStepperNext [disabled]="!gpx_uploaded">Weiter</button>
 
