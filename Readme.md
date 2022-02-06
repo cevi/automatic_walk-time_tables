@@ -24,8 +24,8 @@ an diesem Punkt an und ermöglicht eine detailliertere Routen-Planung.
 ## Grenzen existierender Tools
 
 Die Berechnung der Wanderzeit gemäss der Formel der Schweizer Wanderwege (wie sie von SchweizMobil verwendet wird)  mag
-für einen durchschnittlichen Wanderer eine geeignete approximation an die tatsächliche Marschzeit sein. Doch wer mit
-einer Gruppe unterwegs ist, die wohl möglich noch mit viel Gepäck trägt, möchte die Marschgeschwindigkeit manuell
+für einen durchschnittlichen Wanderer eine geeignete Approximation an die tatsächliche Marschzeit sein. Doch wer mit
+einer Gruppe unterwegs ist, die wohl möglich noch viel Gepäck trägt, möchte die Marschgeschwindigkeit manuell
 anpassen (siehe auch J+S-Broschüre Berg).
 
 ## Umfang dieses Projektes

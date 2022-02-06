@@ -1,0 +1,73 @@
+<h1>J+S-Marschzeittabellen automatisiert generieren</h1>
+
+<button mat-stroked-button color="primary" class="back-button" routerLink=".."> Marschzeittabellen generieren lassen </button>
+
+<h2>
+  Motivation
+</h2>
+
+<p>
+  Ziel dieses Projektes ist es, den Prozess rund um das Erstellen einer J+S-Marschzeittabelle für eine Wanderung oder
+  Velo-Tour zu automatisieren und zu beschleunigen. Heute gibt es bereits verschiedenste Online-Tool, die
+  J+S-Leiter*innen und Wanderfreudigen das Planen einer Wanderung
+  erleichtern:
+</p>
+
+<ul>
+
+  <li>
+    Die kostenpflichtige Online-Karte von SchweizMobil. SchweizMobil ist Dank den magnetischen Wegen (d.h. die
+    eingezeichnete Route folgt automatisch dem Wanderweg/der Strasse) und der Zeitberechnung (gemäss der Formel der
+    Schweizer Wanderwege) bereits eine grosse Hilfe beim Planen.
+  </li>
+
+  <li>
+    Für mobile Endgeräte eignet sich ebenfalls die offizielle App des Bundesamts für Landestopografie swisstopo. Analog
+    zur App SchweizMobil, bietet auch die swisstopo App eine Funktion zur Routenplanung mit magnetischen Wegen.
+  </li>
+</ul>
+
+<p>
+  Ist man mit einer grösseren Gruppe unterwegs (so zum Beispiel in einem J+S-Lager), ist eine ausführliche Planung
+  unumgänglich. Doch genau in diesen Szenarien stossen die existierenden Tools an ihr Grenzen. Dieses Projekt setzt
+  genau an diesem Punkt an und ermöglicht eine detailliertere Routen-Planung.
+</p>
+
+
+<h2>
+  Grenzen existierender Tools
+</h2>
+
+<p>
+  Die Berechnung der Wanderzeit gemäss der Formel der Schweizer Wanderwege (wie sie von SchweizMobil verwendet wird)
+  mag für einen durchschnittlichen Wanderer eine geeignete Approximation an die tatsächliche Marschzeit sein. Doch wer
+  mit einer Gruppe unterwegs ist, die wohl möglich noch viel Gepäck trägt, möchte die Marschgeschwindigkeit manuell
+  anpassen (siehe auch J+S-Broschüre Berg).
+</p>
+
+
+<h2>
+  Was macht diese Webseite?
+</h2>
+
+<p>
+  Diese Webseite generiert einer Marschzeittabelle (anhand der Excel-Vorlage von Jugend+Sport) automatisch aus einer
+  GPX-Datei. Zusätzlich wird ein Höhenprofil als Bild sowie die Kartenausschnitte mit der eingezeichneten Route als PDF
+  erstellt.
+</p>
+
+<h2 id="get-gpx-file">
+  Woher erhalte ich eine GPX-Datei?
+</h2>
+<p>
+  Hierfür gibt es viele Möglichkeiten. Du kannst eine GPX-Datei über die Export-Funktion von SchweizMobil (<a
+  href="https://www.schweizmobilplus.ch/schweizmobilplus/so-funktionierts.html#GPS_herunterladen">Anleitung: GPS-Track exportieren</a>)
+  oder der Swisstop-App erstellen. Alternativ eignen sich auch diverse Tracking-Apps als Datengrundlage, viele dieser
+  Apps erlauben das Exportieren einer Route als GPX-Datei.
+</p>
+<p>
+  Wichtig ist dabei stets, dass die Höhenangaben mit in der Datei gespeichert sind. So ist es beispielsweise nicht
+  möglich KML-Datein, wie sie von <a href="https://map.geo.admin.ch">map.geo.admin.ch</a> heruntergeladen werden können
+  in ein GPX-File zu konvertieren und dieses dann hier zu verwenden. Denn die KML-Datei enthält nicht zwingen
+  Höhenangaben.
+</p>

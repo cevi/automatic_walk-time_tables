@@ -20,13 +20,19 @@
 
 .content {
 
-  margin: 180px auto auto;
+  margin: 180px auto 50px auto;
 
   background-color: #ffffffa0;
   padding: 50px 50px;
   max-width: 700px;
   overflow: auto;
 
+  max-height: calc(100vh - 330px);
+
+}
+
+::ng-deep .content h1, ::ng-deep .content h2 {
+  text-align: center;
 }
 
 #logo_small {
@@ -38,7 +44,7 @@
     margin: 45px auto 20px auto;
     max-height: calc(100% - 140px);
   }
-  #logo{
+  #logo {
     display: none;
   }
   #logo_small {
