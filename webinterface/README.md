@@ -25,7 +25,7 @@ For development, you can run the following commands.
 
 1) Install node version 14, e.g. by using the [Node Version Manager](https://github.com/nvm-sh/nvm).
 
-2) Launch the application by running the following command.
+2) Launch the application by running the following command inside the `./webinterface` directory.
 
    ```bash
    $ npm install # install dependencies
