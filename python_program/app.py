@@ -31,7 +31,11 @@ cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
 
 def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ['gpx']
+
+    if '.' not in filename:
+        return False
+
+    return filename.rsplit('.', 1).pop().lower() in ('gpx', 'kml')
 
 
 @app.route('/create', methods=['POST'])
