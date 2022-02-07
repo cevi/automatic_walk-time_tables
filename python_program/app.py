@@ -30,12 +30,16 @@ app = Flask(__name__)
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
 
+def get_file_ending(filename):
+    return filename.rsplit('.', 1).pop().lower()
+
+
 def allowed_file(filename):
 
     if '.' not in filename:
         return False
 
-    return filename.rsplit('.', 1).pop().lower() in ('gpx', 'kml')
+    return get_file_ending(filename) in ('gpx', 'kml')
 
 
 @app.route('/create', methods=['POST'])
@@ -49,7 +53,7 @@ def create_map():
     pathlib.Path(input_directory).mkdir(parents=True, exist_ok=True)
 
     if 'file' not in request.files:
-        logger.error('No GPX file provided with the POST request.'.format(uuid), {'uuid': uuid})
+        logger.error('No GPX/KML file provided with the POST request.'.format(uuid), {'uuid': uuid})
 
         response = app.response_class(
             response=json.dumps({'status': 'error', 'message': 'No file submitted.'}),
@@ -58,17 +62,17 @@ def create_map():
 
     file = request.files['file']
 
-    file_name = './input/' + uuid + '/upload.gpx'
-
-    if file and allowed_file(file.filename):
-        file.save(file_name)
-
-    else:
+    # Check if a valid file is provided
+    if not file or not allowed_file(file.filename):
         logger.error('Invalid file extension in filename \"{}\".'.format(file.filename), {'uuid': uuid})
         response = app.response_class(
             response=json.dumps({'status': 'error', 'message': 'Your file is not valid.'}),
             status=500, mimetype='application/json')
         return response
+
+    file_ending = get_file_ending(file.filename)
+    file_name = './input/' + uuid + '/upload.' + file_ending
+    file.save(file_name)
 
     logger.log(ExportStateLogger.REQUESTABLE, 'Export wird vorbereitet.',
                {'uuid': uuid, 'status': GeneratorStatus.RUNNING})

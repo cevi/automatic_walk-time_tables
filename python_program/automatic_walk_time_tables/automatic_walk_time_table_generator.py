@@ -25,6 +25,11 @@ class AutomatedWalkTableGenerator:
 
         gpx_file = open(self.args.gpx_file_name, 'r')
         self.logger.debug("Reading %s", self.args.gpx_file_name)
+
+        raise Exception('Functionality not yet implemented!')
+
+        # TODO: Parse GPX file or KML file
+        # TODO: Store them in a new Route Object instead of the raw GPX file format!
         self.raw_gpx_data = gpxpy.parse(gpx_file)
 
         self.output_directory = args.output_directory
