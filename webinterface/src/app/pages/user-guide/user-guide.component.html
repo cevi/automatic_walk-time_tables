@@ -1,6 +1,7 @@
 <h1>J+S-Marschzeittabellen automatisiert generieren</h1>
 
-<button mat-stroked-button color="primary" class="back-button" routerLink=".."> Marschzeittabellen generieren lassen </button>
+<button mat-stroked-button color="primary" class="back-button" routerLink=".."> Marschzeittabellen generieren lassen
+</button>
 
 <h2>
   Motivation
@@ -52,7 +53,7 @@
 
 <p>
   Diese Webseite generiert einer Marschzeittabelle (anhand der Excel-Vorlage von Jugend+Sport) automatisch aus einer
-  GPX-Datei. Zusätzlich wird ein Höhenprofil als Bild sowie die Kartenausschnitte mit der eingezeichneten Route als PDF
+  GPX-Datei oder KML-Datei. Zusätzlich wird ein Höhenprofil als Bild sowie die Kartenausschnitte mit der eingezeichneten Route als PDF
   erstellt.
 </p>
 
@@ -61,13 +62,16 @@
 </h2>
 <p>
   Hierfür gibt es viele Möglichkeiten. Du kannst eine GPX-Datei über die Export-Funktion von SchweizMobil (<a
-  href="https://www.schweizmobilplus.ch/schweizmobilplus/so-funktionierts.html#GPS_herunterladen">Anleitung: GPS-Track exportieren</a>)
-  oder der Swisstop-App erstellen. Alternativ eignen sich auch diverse Tracking-Apps als Datengrundlage, viele dieser
-  Apps erlauben das Exportieren einer Route als GPX-Datei.
+  href="https://www.schweizmobilplus.ch/schweizmobilplus/so-funktionierts.html#GPS_herunterladen">Anleitung: GPS-Track
+  exportieren</a>) oder der Swisstop-App erstellen. Alternativ eignen sich auch diverse Tracking-Apps als
+  Datengrundlage, viele dieser Apps erlauben das Exportieren einer Route als GPX-Datei.
 </p>
+
+<h2 id="get-kml-file">
+  Woher erhalte ich eine KML-Datei?
+</h2>
+
 <p>
-  Wichtig ist dabei stets, dass die Höhenangaben mit in der Datei gespeichert sind. So ist es beispielsweise nicht
-  möglich KML-Datein, wie sie von <a href="https://map.geo.admin.ch">map.geo.admin.ch</a> heruntergeladen werden können
-  in ein GPX-File zu konvertieren und dieses dann hier zu verwenden. Denn die KML-Datei enthält nicht zwingen
-  Höhenangaben.
+  Zur Zeit unterstützen wir ebenfalls die Verwendung von KML-Dateien. KML-Dateien können beispielsweise direkt vom
+  Kartenviewer von Swisstopo heruntergeladen werden (<a href="https://map.geo.admin.ch">map.geo.admin.ch</a>).
 </p>

@@ -17,7 +17,11 @@ export class DownloadComponent implements OnInit {
 
   ngOnInit() {
 
-    this.docTypeClass = 'gpxIcon';
+    if (this.name?.includes('.gpx')) {
+      this.docTypeClass = 'gpxIcon';
+    } else if (this.name?.includes('.kml')) {
+      this.docTypeClass = 'kmlIcon';
+    }
 
   }
 
