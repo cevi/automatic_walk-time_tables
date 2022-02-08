@@ -1,6 +1,6 @@
 import logging
 
-from status_handler import ExportStateLogger
+from server_logging.status_handler import ExportStateLogger
 
 
 class Formatter(logging.Formatter):

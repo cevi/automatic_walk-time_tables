@@ -36,7 +36,7 @@ a graphical user interface. More info can be found here: [Webinterface](webinter
 *Source in `./python_program`*
 
 The backend is used by the webinterface, it's an API wrapping a python script, which generates the walk-time table form
-an GPX file. More info can be found here: [Automatic Walk-Time Generator](python_program/Readme.md). The documentation
+an GPX- or KML-file. More info can be found here: [Automatic Walk-Time Generator](python_program/Readme.md). The documentation
 of the API can be found here: [API Endpoints](python_program/API_Endpoints.md).
 
 ## MapFish PDF Creator

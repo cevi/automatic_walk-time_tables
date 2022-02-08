@@ -13,15 +13,15 @@ def str2bool(v):
         return False
 
 
-def create_parser():
+def get_parser():
     # Initialize parser
     parser = argparse.ArgumentParser(
         description='Automatically creates a walk-time table from an exported track from Swisstopo-App, '
                     'SchweizMobil, or form an arbitrary GPX-file')
 
     # Adding arguments
-    parser.add_argument('-gfn', '--gpx-file-name', type=str, metavar='<file_path>', required=True,
-                        help='Name and path to the GPX file default value.')
+    parser.add_argument('-fn', '--file-name', type=str, metavar='<file_path>', required=True,
+                        help='Name and path to the route file (e.g. GPX or KML file).')
     parser.add_argument('-v', '--velocity', type=float, default=3.75, metavar='<speed>',
                         help='Float. Speed in km/h on which the calculation is based, default 3.75 km/h.')
     parser.add_argument('-s', '--map-scaling', type=int, metavar='<scale>',

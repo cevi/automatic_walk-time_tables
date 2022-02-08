@@ -13,7 +13,7 @@ from pyclustering.utils.metric import type_metric, distance_metric
 
 from automatic_walk_time_tables.generator_status import GeneratorStatus
 from automatic_walk_time_tables.geo_processing import coord_transformation
-from status_handler import ExportStateLogger
+from server_logging.status_handler import ExportStateLogger
 
 
 def GetSpacedElements(array, numElems=4):

@@ -13,16 +13,16 @@ from threading import Thread
 from flask import Flask, request, send_file
 from flask_cors import CORS
 
-from arg_parser import create_parser
+from automatic_walk_time_tables.arg_parser import get_parser
 from automatic_walk_time_tables.generator_status import GeneratorStatus
-from log_helper import setup_recursive_logger
-from status_handler import ExportStateHandler, ExportStateLogger
+from server_logging.log_helper import setup_recursive_logger
+from server_logging.status_handler import ExportStateHandler, ExportStateLogger
 
 stateHandler = ExportStateHandler()
 stateLogger = ExportStateLogger(stateHandler)
 setup_recursive_logger(logging.INFO, stateLogger)
 
-from automatic_walk_time_tables.automatic_walk_time_table_generator import AutomatedWalkTableGenerator
+from automatic_walk_time_tables.generator import AutomatedWalkTableGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -30,12 +30,35 @@ app = Flask(__name__)
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
 
+def create_export(uuid: str, args: argparse.Namespace):
+    logger.log(ExportStateLogger.REQUESTABLE, 'Der Export wurde gestartet.',
+               {'uuid': uuid, 'status': GeneratorStatus.RUNNING})
+
+    generator = None
+
+    try:
+        generator = AutomatedWalkTableGenerator(args, uuid)
+        generator.run()
+
+    finally:
+
+        export_state = stateHandler.get_status(uuid)['status']
+
+        if not generator or export_state == GeneratorStatus.RUNNING:
+            logger.log(ExportStateLogger.REQUESTABLE,
+                       'Der Export ist fehlgeschlagen. Ein unbekannter Fehler ist aufgetreten!',
+                       {'uuid': uuid, 'status': GeneratorStatus.ERROR})
+
+        # Remove GPX file from upload directory
+        os.remove(args.file_name)
+        os.rmdir('./input/' + uuid)
+
+
 def get_file_ending(filename):
     return filename.rsplit('.', 1).pop().lower()
 
 
 def allowed_file(filename):
-
     if '.' not in filename:
         return False
 
@@ -77,11 +100,11 @@ def create_map():
     logger.log(ExportStateLogger.REQUESTABLE, 'Export wird vorbereitet.',
                {'uuid': uuid, 'status': GeneratorStatus.RUNNING})
 
-    parser = create_parser()
+    parser = get_parser()
     args_as_dict = request.args.to_dict(flat=True)
     args = list(functools.reduce(lambda x, y: x + y, args_as_dict.items()))
     args = list(filter(lambda x: x != '', args))
-    args = parser.parse_args(['-gfn', file_name, '--output_directory', output_directory, '--print-api-base-url',
+    args = parser.parse_args(['-fn', file_name, '--output_directory', output_directory, '--print-api-base-url',
                               os.environ['PRINT_API_BASE_URL']] + args)
 
     thread = Thread(target=create_export, kwargs={'uuid': uuid, 'args': args})
@@ -93,30 +116,6 @@ def create_map():
         status=200, mimetype='application/json')
 
     return response
-
-
-def create_export(uuid: str, args: argparse.Namespace):
-    logger.log(ExportStateLogger.REQUESTABLE, 'Der Export wurde gestartet.',
-               {'uuid': uuid, 'status': GeneratorStatus.RUNNING})
-
-    generator = None
-
-    try:
-        generator = AutomatedWalkTableGenerator(args, uuid)
-        generator.run()
-
-    finally:
-
-        export_state = stateHandler.get_status(uuid)['status']
-
-        if not generator or export_state == GeneratorStatus.RUNNING:
-            logger.log(ExportStateLogger.REQUESTABLE,
-                       'Der Export ist fehlgeschlagen. Ein unbekannter Fehler ist aufgetreten!',
-                       {'uuid': uuid, 'status': GeneratorStatus.ERROR})
-
-        # Remove GPX file from upload directory
-        os.remove(args.gpx_file_name)
-        os.rmdir('./input/' + uuid)
 
 
 @app.route('/status/<uuid>')

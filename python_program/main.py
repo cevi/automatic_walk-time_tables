@@ -1,5 +1,6 @@
-from arg_parser import create_parser
-from log_helper import setup_recursive_logger
+from automatic_walk_time_tables import arg_parser
+from automatic_walk_time_tables.arg_parser import ArgNamespace
+from server_logging.log_helper import setup_recursive_logger
 
 if __name__ == "__main__":
     parser = create_parser()
@@ -9,7 +10,7 @@ if __name__ == "__main__":
     setup_recursive_logger(args.log_level)
 
     # AutomatedWalkTableGenerator should be imported only after setting the logger!
-    from automatic_walk_time_tables.automatic_walk_time_table_generator import AutomatedWalkTableGenerator
+    from automatic_walk_time_tables.generator import AutomatedWalkTableGenerator
 
     generator = AutomatedWalkTableGenerator(args)
     generator.run()

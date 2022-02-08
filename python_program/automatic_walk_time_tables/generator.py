@@ -9,7 +9,7 @@ from automatic_walk_time_tables.geo_processing.find_walk_table_points import sel
 from automatic_walk_time_tables.geo_processing.map_numbers import find_map_numbers
 from automatic_walk_time_tables.map_downloader.create_map import MapCreator
 from automatic_walk_time_tables.walk_time_table.walk_table import plot_elevation_profile, create_walk_table
-from status_handler import ExportStateLogger
+from server_logging.status_handler import ExportStateLogger
 
 
 class AutomatedWalkTableGenerator:
@@ -23,14 +23,14 @@ class AutomatedWalkTableGenerator:
         for arg in vars(self.args):
             self.logger.debug("  %s: %s", arg, getattr(self.args, arg))
 
-        gpx_file = open(self.args.gpx_file_name, 'r')
-        self.logger.debug("Reading %s", self.args.gpx_file_name)
+        route_file = open(self.args.file_name, 'r')
+        self.logger.debug("Reading %s", self.args.file_name)
 
         raise Exception('Functionality not yet implemented!')
 
         # TODO: Parse GPX file or KML file
         # TODO: Store them in a new Route Object instead of the raw GPX file format!
-        self.raw_gpx_data = gpxpy.parse(gpx_file)
+        self.raw_gpx_data = gpxpy.parse(route_file)
 
         self.output_directory = args.output_directory
         pathlib.Path(self.output_directory).mkdir(parents=True, exist_ok=True)
