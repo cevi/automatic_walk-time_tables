@@ -2,35 +2,20 @@ import json
 import logging
 from typing import List
 
-import gpxpy
 import requests
 
+from automatic_walk_time_tables.utils import path, point
 from automatic_walk_time_tables.geo_processing import coord_transformation
 
 logger = logging.getLogger(__name__)
 
 
-def is_in_bbox(bbox: List[float], coord_lv03: List[float]) -> bool:
+def is_in_bbox(bbox: List[float], point : point.Point_LV03) -> bool:
     """ 
-    Checks if a given GPX point in LV03 is inside a bounding box (given in LV95 coordinates).
+    Checks if a given GPX point in LV03 is inside a bounding box (given in LV03 coordinates).
     """
-    # attention: bbox is in lv95, so add 2'000'000 to x and 1'000'000 to y.
-    lv95x = coord_lv03[0] + 2000000
-    lv95y = coord_lv03[1] + 1000000
-    return bbox[0] < lv95x < bbox[2] and bbox[1] < lv95y < bbox[3]
 
-
-def get_lv95(gpx_point: gpxpy.gpx.GPXTrackPoint) -> List[float]:
-    """ 
-    Converts a GPX point into a LV95 point.
-    """
-    converter = coord_transformation.GPSConverter()
-    wgs84_point = [gpx_point.latitude, gpx_point.longitude, gpx_point.elevation]
-    lv03_point = converter.WGS84toLV03(wgs84_point[0], wgs84_point[1], wgs84_point[2])
-    lv95x = lv03_point[0] + 2000000
-    lv95y = lv03_point[1] + 1000000
-    return lv95x, lv95y
-
+    return bbox[0] < point.lat < bbox[2] and bbox[1] < point.lon < bbox[3]
 
 def sort_maps(s: str) -> int:
     """
@@ -40,19 +25,19 @@ def sort_maps(s: str) -> int:
     return int(s.split("(")[1].split(")")[0].split("LK ")[1])
 
 
-def find_map_numbers(raw_gpx_data: gpxpy.gpx) -> str:
+def find_map_numbers(path : path.Path) -> str:
     """
     Gets the Landeskarten-numbers around the start point of the tour. Then checks for each point, if it is inside one of the maps.
     If so, the card will be added and finally all cards are returned as a string sorted by number ascending.
     """
-    base_url = "https://api3.geo.admin.ch/rest/services/all/MapServer/identify?geometryFormat=geojson&geometryType=esriGeometryPoint&lang=de&layers=all:ch.swisstopo.geologie-geologischer_atlas.metadata&limit=50&returnGeometry=true&sr=2056&tolerance=100&"
+    base_url = "https://api3.geo.admin.ch/rest/services/all/MapServer/identify?geometryFormat=geojson&geometryType=esriGeometryPoint&lang=de&layers=all:ch.swisstopo.geologie-geologischer_atlas.metadata&limit=50&returnGeometry=true&tolerance=100&"
 
     # get lv95 coordinates for the start point
-    start_point = get_lv95(raw_gpx_data.tracks[0].segments[0].points[0])
+    start_point : point.Point_LV03 = path.points[0].to_LV03()
 
     # Now we get all Landeskarte numbers from the API for the maps around start and end.
     # This means 1 request, which is below the fair use limit.
-    url = base_url + f"geometry={start_point[0]},{start_point[1]}&imageDisplay=1283,937,96&mapExtent=2400000,1000000,2900000,1300000"
+    url = base_url + f"geometry={start_point.lat},{start_point.lon}&imageDisplay=1283,937,96&mapExtent=400000,000000,900000,300000" # extent in LV03
 
     logger.debug("Fetching " + url)
     result = requests.get(url)
@@ -64,16 +49,12 @@ def find_map_numbers(raw_gpx_data: gpxpy.gpx) -> str:
 
     converter = coord_transformation.GPSConverter()
     needed_maps = set()
-    for track in raw_gpx_data.tracks:
-        for segment in track.segments:
-            for point in segment.points:
-                wgs84_point = [point.latitude, point.longitude, point.elevation]
-                lv03_point = converter.WGS84toLV03(wgs84_point[0], wgs84_point[1], wgs84_point[2])
 
-                for name, bbox in all_maps:
-                    if is_in_bbox(bbox, lv03_point):
-                        needed_maps.add(name)
-                        break
+    for p in path.points:
+        for name, bbox in all_maps:
+            if is_in_bbox(bbox, p):
+                needed_maps.add(name)
+                break
 
     maps_list = list(needed_maps)
     return ",".join(sorted(maps_list, key=sort_maps))

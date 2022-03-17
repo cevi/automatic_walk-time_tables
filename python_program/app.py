@@ -49,7 +49,7 @@ def create_export(uuid: str, args: argparse.Namespace):
                        'Der Export ist fehlgeschlagen. Ein unbekannter Fehler ist aufgetreten!',
                        {'uuid': uuid, 'status': GeneratorStatus.ERROR})
 
-        # Remove GPX file from upload directory
+        # Remove uploaded file from upload directory
         os.remove(args.file_name)
         os.rmdir('./input/' + uuid)
 

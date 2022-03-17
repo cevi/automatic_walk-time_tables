@@ -5,14 +5,15 @@ import time
 from pathlib import Path
 from typing import List, Tuple
 
-import gpxpy
 import numpy as np
 import requests
 from pyclustering.cluster.kmeans import kmeans
 from pyclustering.utils.metric import type_metric, distance_metric
 
+from automatic_walk_time_tables.geo_processing import gpx_utils
 from automatic_walk_time_tables.generator_status import GeneratorStatus
 from automatic_walk_time_tables.geo_processing import coord_transformation
+from automatic_walk_time_tables.utils import path, point
 from server_logging.status_handler import ExportStateLogger
 
 
@@ -23,19 +24,6 @@ def GetSpacedElements(array, numElems=4):
 
     indices = np.round(np.linspace(0, len(array) - 1, numElems)).astype(int)
     return list(np.array(array)[indices])
-
-
-def get_path_coordinates_as_list(raw_gpx_data: gpxpy.gpx):
-    path_coordinates = []
-    converter = coord_transformation.GPSConverter()
-    for track in raw_gpx_data.tracks:
-        for segment in track.segments:
-            for point in segment.points:
-                wgs84_point = [point.latitude, point.longitude, point.elevation]
-                lv03_point = converter.WGS84toLV03(wgs84_point[0], wgs84_point[1], wgs84_point[2])
-                path_coordinates.append([lv03_point[0] + 2_000_000, lv03_point[1] + 1_000_000])
-    return path_coordinates
-
 
 class MapCreator:
     A4_HEIGHT_FACTOR = 4.5 / 25.0
@@ -50,9 +38,9 @@ class MapCreator:
     `A4_WIDTH_FACTOR * map_scale` gives you the number of km displayed on one A4 paper.
     """
 
-    def __init__(self, raw_gpx_data: gpxpy.gpx, uuid: str):
+    def __init__(self, path : path.Path, uuid: str):
         self.logger = logging.getLogger(__name__)
-        self.raw_gpx_data = raw_gpx_data
+        self.path = path
         self.uuid = uuid
 
     def auto_select_map_scaling(self) -> int:
@@ -65,25 +53,21 @@ class MapCreator:
 
         """
 
-        converter = coord_transformation.GPSConverter()
-        bounds = self.raw_gpx_data.get_bounds()
-
-        upper_right = converter.WGS84toLV03(bounds.max_latitude, bounds.max_longitude, 0)
-        lower_left = converter.WGS84toLV03(bounds.min_latitude, bounds.min_longitude, 0)
+        lower_left, upper_right = gpx_utils.calc_perimeter(self.path)
 
         # List of most common map scales
         common_map_scales = [10_000, 25_000, 50_000, 100_000, 200_000]
 
         for map_scale in common_map_scales:
-            if self.A4_HEIGHT_FACTOR * map_scale >= upper_right[1] - lower_left[1] and \
-                    self.A4_WIDTH_FACTOR * map_scale >= lower_left[1] - upper_right[0]:
+            if self.A4_HEIGHT_FACTOR * map_scale >= upper_right.lon - lower_left.lon and \
+                    self.A4_WIDTH_FACTOR * map_scale >= lower_left.lon - upper_right.lan:
                 break
 
         self.logger.info(f'Map scaling automatically set to 1:{map_scale}')
         return map_scale
 
     def plot_route_on_map(self,
-                          way_points: List[Tuple[int, gpxpy.gpx.GPXTrackPoint]],
+                          way_points: List[Tuple[float, point.Point]],
                           file_name: str,
                           map_scaling: int,
                           name_of_points: List[str],
@@ -106,10 +90,6 @@ class MapCreator:
 
         if map_scaling is None:
             map_scaling = self.auto_select_map_scaling()
-
-        subsampled_gpx_data = self.raw_gpx_data.clone()
-        for track in subsampled_gpx_data.tracks:
-            track.simplify()
 
         map_centers = self.create_map_centers(map_scaling)
 
@@ -197,7 +177,7 @@ class MapCreator:
             self.logger.info("Saved map to {}_{}_map.pdf".format(file_name, index))
 
     def create_mapfish_query(self, layer, map_scaling, center,
-                             way_points: List[Tuple[int, gpxpy.gpx.GPXTrackPoint]],
+                             way_points: List[Tuple[float, point.Point]],
                              name_of_points):
         """
 
@@ -205,7 +185,10 @@ class MapCreator:
 
         """
 
-        path_coordinates = get_path_coordinates_as_list(self.raw_gpx_data)
+        path_coordinates = []
+        for pt in self.path.points:
+            pt_lv03 : point.Point_LV03 = pt.to_LV03() # TODO: can we use LV03 here somehow?
+            path_coordinates.append([pt_lv03.lat + 2_000_000, pt_lv03.lon + 1_000_000]) # convert to LV95
 
         # load the default map matrices, used to inform mapfish about the available map scales and tile size
         with open(str(Path(__file__).resolve().parent) + '/default_map_matrices.json') as json_file:
@@ -269,10 +252,9 @@ class MapCreator:
 
         point_layers = []
         for i, point in enumerate(way_points):
-            converter = coord_transformation.GPSConverter()
-            wgs84 = [point[1].latitude, point[1].longitude, point[1].elevation]
-            lv03 = converter.WGS84toLV03(wgs84[0], wgs84[1], wgs84[2])
-            lv03 = np.round(lv03)
+            lv03 = point[1].to_LV03()
+
+            # TODO: currently, we convert to LV95, is there a way to stick to LV03 also for mapfish?
 
             point_layer = {
                 "geoJson": {
@@ -282,7 +264,7 @@ class MapCreator:
                             "type": "Feature",
                             "geometry": {
                                 "type": "Point",
-                                "coordinates": [lv03[0] + 2_000_000, lv03[1] + 1_000_000]
+                                "coordinates": [lv03.lat + 2_000_000, lv03.lon + 1_000_000]
                             },
                             "properties": {
                                 "_ngeo_style": "1"
@@ -321,7 +303,7 @@ class MapCreator:
                                 "haloColor": "#ffffff",
                                 "haloOpacity": "0.5",
                                 "haloRadius": ".5",
-                                "label": name_of_points[i],
+                                "label": name_of_points[i], # TODO: read point name from point
                                 "fillColor": "#FF0000",
                                 "fillOpacity": 0,
                                 "labelAlign": "cm",
@@ -363,19 +345,21 @@ class MapCreator:
 
         """
 
-        points = get_path_coordinates_as_list(self.raw_gpx_data)
-
         w = self.A4_WIDTH_FACTOR * map_scaling
         h = self.A4_HEIGHT_FACTOR * map_scaling
-        n = 0
+        n = 0 # number of A4 pages
         n_points = 200
 
         path_covered = False
 
-        while not path_covered:
+        points_as_array = []
+        for pt in self.path.points:
+            pt03 = pt.to_LV03()
+            points_as_array.append([pt03.lat + 2_000_000, pt03.lon + 1_000_000]) # TODO: can we use LV03?
 
+        while not path_covered:
             n = n + 1
-            points_for_clustering = GetSpacedElements(points, n_points)
+            points_for_clustering = GetSpacedElements(points_as_array, n_points)
 
             user_function = lambda point1, point2: max(abs(point1[0] - point2[0]) / (w / 2),
                                                        abs(point1[1] - point2[1]) / (h / 2))
@@ -394,7 +378,7 @@ class MapCreator:
 
             path_covered = True
 
-            for i, pkt in enumerate(points):
+            for pkt in points_as_array:
 
                 point_covered = False
                 for center in final_centers:
@@ -409,5 +393,4 @@ class MapCreator:
 
             if n >= 25:
                 path_covered = True
-
         return final_centers

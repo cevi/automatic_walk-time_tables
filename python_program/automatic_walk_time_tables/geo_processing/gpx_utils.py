@@ -1,34 +1,27 @@
-import gpxpy
-import numpy as np
 
-from automatic_walk_time_tables.geo_processing import coord_transformation
+# TODO: merge together with GPX parser?
 
+from automatic_walk_time_tables.utils import path, point
+from typing import Tuple
 
-def calc_perimeter(raw_gpx_data: gpxpy.gpx):
+def calc_perimeter(path : path.Path) -> Tuple[point.Point_LV03, point.Point_LV03] :
     min_latitude = None
     max_latitude = None
     min_longitude = None
     max_longitude = None
 
-    for track in raw_gpx_data.tracks:
-        for segment in track.segments:
-            for point in segment.points:
+    for pt in path.points:
+        p = pt.to_LV03()
+        if min_latitude is None or p.lat < min_latitude:
+            min_latitude = p.lat
 
-                if min_latitude is None or point.latitude < min_latitude:
-                    min_latitude = point.latitude
+        if max_latitude is None or p.lat > max_latitude:
+            max_latitude = p.lat
 
-                if max_latitude is None or point.latitude > max_latitude:
-                    max_latitude = point.latitude
+        if min_longitude is None or p.lon < min_longitude:
+            min_longitude = p.lon
 
-                if min_longitude is None or point.longitude < min_longitude:
-                    min_longitude = point.longitude
+        if max_longitude is None or p.lon > max_longitude:
+            max_longitude = p.lon
 
-                if max_longitude is None or point.longitude > max_longitude:
-                    max_longitude = point.longitude
-
-        # convert Coordinates to LV03
-        converter = coord_transformation.GPSConverter()
-        lv03_min = np.round(converter.WGS84toLV03(min_latitude, min_longitude, 400))
-        lv03_max = np.round(converter.WGS84toLV03(max_latitude, max_longitude, 400))
-
-    return lv03_min, lv03_max
+    return point.Point_LV03(min_latitude, min_longitude), point.Point_LV03(max_latitude, max_longitude)
