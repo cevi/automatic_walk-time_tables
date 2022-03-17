@@ -21,7 +21,7 @@ class Point:
         raise Exception("Not possible on base class.")
 
     def has_elevation(self) -> bool:
-        return self.h < 0.0
+        return self.h <= 0.0
 
 class Point_LV03(Point):
     """ LV03 coordinates """

@@ -7,7 +7,7 @@ from automatic_walk_time_tables.geo_processing.find_walk_table_points import sel
 from automatic_walk_time_tables.geo_processing.map_numbers import find_map_numbers
 from automatic_walk_time_tables.map_downloader.create_map import MapCreator
 from automatic_walk_time_tables.walk_time_table.walk_table import plot_elevation_profile, create_walk_table
-from automatic_walk_time_tables.utils.gpx_parser import GPXParser
+from automatic_walk_time_tables.utils.file_parser import GPXParser, KMLParser
 from automatic_walk_time_tables.utils import path
 from server_logging.status_handler import ExportStateLogger
 
@@ -33,6 +33,9 @@ class AutomatedWalkTableGenerator:
 
         if extension == '.gpx':
             parser = GPXParser(route_file)
+            self.path = parser.parse()
+        elif extension == '.kml':
+            parser = KMLParser(route_file)
             self.path = parser.parse()
         else:
             raise Exception('Unsupported file format')
