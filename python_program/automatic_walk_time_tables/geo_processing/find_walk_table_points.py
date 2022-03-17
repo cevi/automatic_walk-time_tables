@@ -94,7 +94,7 @@ def reduce_number_of_points(pts_step_2: List[Tuple[float, point.Point]], walk_po
                     if pt_D is not None:  # Replace B with point D
                         pts_step_3.remove(pt_B)
                         index = next(x for x, val in enumerate(pts_step_3) if val[0] > pt_D[0])
-                        pts_step_3.insert(pts_step_3[index][0], pt_D)
+                        pts_step_3.insert(index, pt_D)
                         pts_dropped.append(pt_B)
 
                     else:  # remove point B
