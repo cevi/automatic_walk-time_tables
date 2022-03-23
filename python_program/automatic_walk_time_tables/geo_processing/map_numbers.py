@@ -5,7 +5,6 @@ from typing import List
 import requests
 
 from automatic_walk_time_tables.utils import path, point
-from automatic_walk_time_tables.geo_processing import coord_transformation
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +46,6 @@ def find_map_numbers(path : path.Path) -> str:
     for map in data["results"]:
         all_maps.append([map["properties"]["name_de"], map["bbox"]])
 
-    converter = coord_transformation.GPSConverter()
     needed_maps = set()
 
     for p in path.points:
