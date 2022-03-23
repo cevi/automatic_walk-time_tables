@@ -3,8 +3,13 @@ from . import path
 from . import point
 from typing import List
 
+import logging
 import gpxpy
 import xml.etree.ElementTree as ET
+
+from . import height_fetcher
+
+logger = logging.getLogger(__file__)
 
 class GPXParser:
     def __init__(self, gpx_raw_data : TextIOWrapper):
@@ -26,13 +31,15 @@ class GPXParser:
         if len(paths) == 0:
             raise Exception('No track found')
 
+        lv03_path = path.Path_LV03()
+        lv03_path.route_name = gpx.name
         if not paths[0].has_elevation_for_all_points():
-            raise Exception('No elevation data available. NOT IMPLEMENTED YET')
+            heightFetcher = height_fetcher.HeightFetcher()
+            lv03_path = heightFetcher.fetch_path(lv03_path)
         else:
             pass # all good, GPX has elevation data
         
-        paths[0].route_name = gpx.name
-        return paths[0].to_LV03()
+        return lv03_path
 
 class KMLParser:
     def __init__(self, file_path : TextIOWrapper):
@@ -63,11 +70,19 @@ class KMLParser:
         coordinates = coord_tag.text
         coordinates = coordinates.split(' ')
         coordinates = [c.split(',') for c in coordinates]
-        coordinates = [[float(c[0]), float(c[1])] for c in coordinates]
         has_elevation = len(coordinates[0]) == 3
+        
         if not has_elevation:
-            coordinates = [point.Point_WGS84(c[0], c[1]) for c in coordinates]
-            raise Exception('No elevation data available. NOT IMPLEMENTED YET')
+            if coordinates[0][0].startswith("8"):
+                # file actually has latitudes and longitudes flipped
+                coordinates = [point.Point_WGS84(float(c[1]), float(c[0])) for c in coordinates]
+            else:
+                coordinates = [point.Point_WGS84(float(c[0]), float(c[1])) for c in coordinates]
+            path_lv03 = path.Path_WGS84(coordinates).to_LV03()
+            heightFetcher = height_fetcher.HeightFetcher()
+            path_lv03 = heightFetcher.fetch_path(path_lv03)
+            return path_lv03
+
         else:
-            coordinates = [point.Point_WGS84(c[0], c[1], c[2]) for c in coordinates]
+            coordinates = [point.Point_WGS84(float(c[0]), float(c[1]), float(c[2])) for c in coordinates]
         return path.Path_LV03([p.to_LV03() for p in coordinates])
