@@ -30,9 +30,15 @@ class Path:
 
         return True
 
+    def __str__(self):
+        return "Path: " + self.route_name + ", points: " + str(self.points)
+
+    def __repr__(self):
+        return self.__str__()
+
 class Path_LV03(Path):
     """ LV03 coordinates """
-    def __init__(self, points : List[point.Point_LV03]):
+    def __init__(self, points : List[point.Point_LV03] = []):
         super().__init__(points)
         self.type = PathType.LV03
         self.check_points()
@@ -48,7 +54,7 @@ class Path_LV03(Path):
 
 class Path_WGS84(Path):
     """ WGS84 coordinates """
-    def __init__(self, points : List[point.Point_WGS84]):
+    def __init__(self, points : List[point.Point_WGS84] = []):
         super().__init__(points)
         self.type = PathType.WGS84
 

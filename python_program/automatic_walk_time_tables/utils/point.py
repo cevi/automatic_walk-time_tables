@@ -23,6 +23,12 @@ class Point:
     def has_elevation(self) -> bool:
         return self.h <= 0.0
 
+    def __str__(self):
+        return "Point: lat: " + str(self.lat) + ", lon: " + str(self.lon) + ", h: " + str(self.h)
+
+    def __repr__(self):
+        return self.__str__()
+
 class Point_LV03(Point):
     """ LV03 coordinates """
     def __init__(self, lat : float, lon : float, h : float = -1.0) -> None:
@@ -33,7 +39,7 @@ class Point_LV03(Point):
         """ convert LV95 to WGS84 """
         converter = coord_transformation.GPSConverter()
         wgs84 = converter.LV03toWGS84(self.lat, self.lon, self.h)
-        return Point_WGS84(wgs84[0], wgs84[1], wgs84[2])
+        return Point_WGS84(wgs84[0], wgs84[1], wgs84[2] if self.h != -1. else -1.0)
         # TODO: make sure that we copy over name etc.
 
     def to_LV03(self):
@@ -50,7 +56,7 @@ class Point_WGS84(Point):
         """ convert WGS84 to LV03 """
         converter = coord_transformation.GPSConverter()
         lv03 = converter.WGS84toLV03(self.lat, self.lon, self.h)
-        return Point_LV03(lv03[0], lv03[1], lv03[2])
+        return Point_LV03(lv03[0], lv03[1], lv03[2] if self.h != -1. else -1.0)
         # TODO: make sure that we copy over name etc.
 
 
