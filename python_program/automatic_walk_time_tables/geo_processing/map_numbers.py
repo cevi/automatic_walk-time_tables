@@ -20,8 +20,10 @@ def sort_maps(s: str) -> int:
     """
     Carves out the LK number and returns it as an integer
     This can be used to sort a list of map names.
+
+    Sometimes, multiple map numbers are given XXXX/YYYY, so we only want the first one.
     """
-    return int(s.split("(")[1].split(")")[0].split("LK ")[1])
+    return int(s.split("(")[1].split(")")[0].split("LK ")[1].split("/")[0])
 
 
 def find_map_numbers(path : path.Path) -> str:
