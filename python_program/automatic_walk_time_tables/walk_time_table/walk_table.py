@@ -102,13 +102,13 @@ def create_walk_table(time_stamp, speed, way_points : List[Tuple[float, point.Po
     name_of_points = []
 
     # get infos about points
-    for i, point in enumerate(way_points):
-        lv03 = point[1].to_LV03()
+    for i, pt in enumerate(way_points):
+        lv03 = pt[1].to_LV03()
 
         # calc time
         deltaTime = 0.0
         if oldPoint is not None:
-            deltaTime = calc_walk_time(point[1].h - oldPoint[1].h, abs(oldPoint[0] - point[0]), speed)
+            deltaTime = calc_walk_time(pt[1].h - oldPoint[1].h, abs(oldPoint[0] - pt[0]), speed)
         time += deltaTime
 
         time_stamp = time_stamp + timedelta(hours=deltaTime)
@@ -117,7 +117,7 @@ def create_walk_table(time_stamp, speed, way_points : List[Tuple[float, point.Po
         name_of_point = find_swisstopo_name.find_name((lv03.lat + 2_000_000, lv03.lon + 1_000_000), 50)
         name_of_points.append(name_of_point)
         logger.debug(
-            str(round(abs((oldPoint[0] if oldPoint is not None else 0.0) - point[0]), 1)) + 'km ' +
+            str(round(abs((oldPoint[0] if oldPoint is not None else 0.0) - pt[0]), 1)) + 'km ' +
             str(int(lv03.h)) + 'm ü. M. ' +
             str(round(deltaTime, 1)) + 'h ' +
             time_stamp.strftime('%H:%M') + 'Uhr ' +
@@ -127,9 +127,9 @@ def create_walk_table(time_stamp, speed, way_points : List[Tuple[float, point.Po
             int(lv03.lat)) + ', ' + str(int(lv03.lon)) + ')'
         sheet['C' + str(8 + i)] = int(lv03.h)
         if i > 0:
-            sheet['E' + str(8 + i)] = round(abs((oldPoint[0] if oldPoint is not None else 0.0) - point[0]), 1)
+            sheet['E' + str(8 + i)] = round(abs((oldPoint[0] if oldPoint is not None else 0.0) - pt[0]), 1)
 
-        oldPoint = point
+        oldPoint = pt
 
     logger.debug('--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---')
     logger.debug(str(round(total_distance, 1)) + 'km ' + str(round(time, 1)) + 'h')

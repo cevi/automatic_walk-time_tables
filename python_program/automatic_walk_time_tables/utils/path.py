@@ -1,5 +1,6 @@
 from . import point
 from typing import List
+import copy
 
 class PathType:
     NONE = "NONE"
@@ -9,8 +10,14 @@ class PathType:
 class Path:
     def __init__(self, points : List[point.Point] = []):
         self.route_name = ""
-        self.points = points
+        self.points = copy.deepcopy(points)
         self.type = PathType.NONE
+
+    def clear(self):
+        del self.points
+
+        self.points = []
+        self.route_name = ""
 
     def check_points(self):
         """ checks all points if they have the same type as the path """
@@ -24,8 +31,8 @@ class Path:
         raise Exception("Not possible on base class.")
 
     def has_elevation_for_all_points(self):
-        for point in self.points:
-            if not point.has_elevation():
+        for pt in self.points:
+            if not pt.has_elevation():
                 return False
 
         return True

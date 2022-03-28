@@ -4,13 +4,13 @@
 from automatic_walk_time_tables.utils import path, point
 from typing import Tuple
 
-def calc_perimeter(path : path.Path) -> Tuple[point.Point_LV03, point.Point_LV03] :
+def calc_perimeter(path_ : path.Path) -> Tuple[point.Point_LV03, point.Point_LV03] :
     min_latitude = None
     max_latitude = None
     min_longitude = None
     max_longitude = None
 
-    for pt in path.points:
+    for pt in path_.points:
         p = pt.to_LV03()
         if min_latitude is None or p.lat < min_latitude:
             min_latitude = p.lat

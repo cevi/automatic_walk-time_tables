@@ -12,7 +12,6 @@ from pyclustering.utils.metric import type_metric, distance_metric
 
 from automatic_walk_time_tables.geo_processing import gpx_utils
 from automatic_walk_time_tables.generator_status import GeneratorStatus
-from automatic_walk_time_tables.geo_processing import coord_transformation
 from automatic_walk_time_tables.utils import path, point
 from server_logging.status_handler import ExportStateLogger
 
@@ -38,9 +37,9 @@ class MapCreator:
     `A4_WIDTH_FACTOR * map_scale` gives you the number of km displayed on one A4 paper.
     """
 
-    def __init__(self, path : path.Path, uuid: str):
+    def __init__(self, path_ : path.Path, uuid: str):
         self.logger = logging.getLogger(__name__)
-        self.path = path
+        self.path_ = path_
         self.uuid = uuid
 
     def auto_select_map_scaling(self) -> int:
@@ -53,7 +52,7 @@ class MapCreator:
 
         """
 
-        lower_left, upper_right = gpx_utils.calc_perimeter(self.path)
+        lower_left, upper_right = gpx_utils.calc_perimeter(self.path_)
 
         # List of most common map scales
         common_map_scales = [10_000, 25_000, 50_000, 100_000, 200_000]
@@ -186,7 +185,7 @@ class MapCreator:
         """
 
         path_coordinates = []
-        for pt in self.path.points:
+        for pt in self.path_.points:
             pt_lv03 : point.Point_LV03 = pt.to_LV03() # TODO: can we use LV03 here somehow?
             path_coordinates.append([pt_lv03.lat + 2_000_000, pt_lv03.lon + 1_000_000]) # convert to LV95
 
@@ -353,7 +352,7 @@ class MapCreator:
         path_covered = False
 
         points_as_array = []
-        for pt in self.path.points:
+        for pt in self.path_.points:
             pt03 = pt.to_LV03()
             points_as_array.append([pt03.lat + 2_000_000, pt03.lon + 1_000_000]) # TODO: can we use LV03?
 

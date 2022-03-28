@@ -8,12 +8,12 @@ from automatic_walk_time_tables.utils import path, point
 logger = logging.getLogger(__name__)
 
 
-def select_waypoints(path : path.Path, walk_point_limit=21):
+def select_waypoints(path_ : path.Path, walk_point_limit=21):
     """
     Algorithm that selects suitable points for the Marschzeittabelle.
     Some parts are inspired by the Ramer–Douglas–Peucker algorithm. Especially
     the third step, which reduces the number of points.
-    path : path imported from GPX / KML
+    path_ : path imported from GPX / KML
     walk_point_limit : max number of points in the walk-time table, default 21
     -------------------------------------------------------------------------
     The aim is to choose points that are as evenly distributed as possible
@@ -21,7 +21,7 @@ def select_waypoints(path : path.Path, walk_point_limit=21):
     is done in three steps: preselection, remove_unnecessary_points, reduce_number_of_points.
     """
 
-    total_distance, pts_step_1 = preselection_step(path)
+    total_distance, pts_step_1 = preselection_step(path_)
 
     logger.debug("Preselection returned %d points", len(pts_step_1))
 
@@ -173,7 +173,7 @@ def get_coordinates(pt: point.Point):
     return pt.lat, pt.lon
 
 
-def preselection_step(path : path.Path):
+def preselection_step(path_ : path.Path):
     """
         Preselection: Select all points from the tracking file which satisfy one of the following criteria.
         This guarantees that all important points are considered. We call the set of selected points pts_step_1.
@@ -193,14 +193,14 @@ def preselection_step(path : path.Path):
     lastPoint = None
 
     # (1) Preselection
-    for i,pt in enumerate(path.points):
+    for i,pt in enumerate(path_.points):
         newCoord = get_coordinates(pt.to_WGS84())
 
         if i == 0: # First point
             pts_step_1.append((0, pt))
             lastCoord = get_coordinates(pt.to_WGS84())
             lastSlope = 0.
-        elif i == len(path.points) - 1: # Last point
+        elif i == len(path_.points) - 1: # Last point
             distDelta = geopy.distance.distance(lastCoord, newCoord).km
             cumulated_distance += distDelta
             pts_step_1.append((cumulated_distance, pt))
@@ -256,7 +256,7 @@ def calc_secant_line(pt_A: Tuple[float, point.Point], pt_C: Tuple[float, point.P
     return m, b
 
 
-def prepare_for_plot(path : path.Path):
+def prepare_for_plot(path_ : path.Path):
     """
     Prepares a gpx file for plotting.
     Returns two list, one with the elevation of all points in the gpx file and one with the associated,
@@ -269,7 +269,7 @@ def prepare_for_plot(path : path.Path):
     distances: List[float] = []
     heights: List[float] = []
 
-    for pt in path.points:
+    for pt in path_.points:
 
         newCoord = get_coordinates(pt.to_WGS84())
 
