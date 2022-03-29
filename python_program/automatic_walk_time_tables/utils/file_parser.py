@@ -5,7 +5,6 @@ from typing import List
 
 import logging
 import gpxpy
-import xml.etree.ElementTree as ET
 
 from . import height_fetcher
 
@@ -39,29 +38,31 @@ def parse_gpx_file(gpx_raw_data : TextIOWrapper) -> path.Path_LV03:
     return lv03_path
 
 def parse_kml_file(file_path : TextIOWrapper) -> path.Path_LV03:
-    tree = ET.parse(file_path)
-    root = tree.getroot()
+    raw_data = file_path.read()
 
-    if not 'kml' in root.tag:
-        raise Exception('Root tag is not kml, but ' + root.tag)
+    # find <LineString> and </LineString>
+    start_index = raw_data.find('<LineString>')
+    end_index = raw_data.find('</LineString>')
+
+    # check if <LineString> and </LineString> are found
+    if start_index == -1 or end_index == -1:
+        raise Exception('No <LineString> or </LineString> found')
     
-    if not 'Document' in root[0].tag:
-        raise Exception('First tag is not Document, but ' + root[0].tag)
+    # remove <LineString> and </LineString>
+    raw_data = raw_data[start_index+len('<LineString>'):end_index]
+
+    # carve out contents of <coordinates>...</coordinates>
+    start_index = raw_data.find('<coordinates>')
+    end_index = raw_data.find('</coordinates>')
     
-    if not 'Placemark' in root[0][1].tag:
-        raise Exception('Second Document tag is not Placemark, but ' + root[0][1].tag)
+    # check if <coordinates> and </coordinates> are found
+    if start_index == -1 or end_index == -1:
+        raise Exception('No <coordinates> or </coordinates> found')
     
-    if not 'LineString' in root[0][1][3].tag:
-        raise Exception('First Placemark tag is not LineString, but ' + root[0][1][3].tag)
-    
-    # get the LineString
-    coord_tag = root[0][1][3][2]
-    if not 'coordinates' in coord_tag.tag:
-        raise Exception('LineString tag is not coordinates, but ' + coord_tag.tag)
-    
-    # get the coordinates
-    coordinates = coord_tag.text
-    coordinates = coordinates.split(' ')
+    # remove <coordinates> and </coordinates>
+    raw_data = raw_data[start_index+len('<coordinates>'):end_index]
+
+    coordinates = raw_data.split(' ')
     coordinates = [c.split(',') for c in coordinates]
     has_elevation = len(coordinates[0]) == 3
 
