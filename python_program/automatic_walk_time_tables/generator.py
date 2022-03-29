@@ -31,16 +31,12 @@ class AutomatedWalkTableGenerator:
         self.path_ = path.Path_LV03()
         self.path_.clear()
 
-        self.logger.info(str(self.path_))
-
         if extension == '.gpx':
             self.path_ = parse_gpx_file(route_file)
         elif extension == '.kml':
             self.path_ = parse_kml_file(route_file)
         else:
             raise Exception('Unsupported file format')
-
-        self.logger.info(str(self.path_))
 
         self.output_directory = args.output_directory
         pathlib.Path(self.output_directory).mkdir(parents=True, exist_ok=True)

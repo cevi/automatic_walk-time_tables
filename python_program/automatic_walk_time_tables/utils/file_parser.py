@@ -26,9 +26,9 @@ def parse_gpx_file(gpx_raw_data : TextIOWrapper) -> path.Path_LV03:
     if len(paths) == 0:
         raise Exception('No track found')
 
-    lv03_path = path.Path_LV03()
+    lv03_path = paths[0].to_LV03()
     lv03_path.route_name = gpx.name
-    if not paths[0].has_elevation_for_all_points():
+    if not lv03_path.has_elevation_for_all_points():
         lv03_path = height_fetcher.height_fetch_path(lv03_path)
     else:
         pass # all good, GPX has elevation data
@@ -84,5 +84,11 @@ def parse_kml_file(file_path : TextIOWrapper) -> path.Path_LV03:
         return path_lv03
 
     else:
-        coordinates = [point.Point_WGS84(float(c[0]), float(c[1]), float(c[2])) for c in coordinates]
+        c1 = float(coordinates[0][0])
+        c2 = float(coordinates[0][1])
+        if c1 < c2:
+            # latitudes and longitudes are flipped
+            coordinates = [point.Point_WGS84(float(c[1]), float(c[0]), float(c[2])) for c in coordinates]
+        else:
+            coordinates = [point.Point_WGS84(float(c[0]), float(c[1]), float(c[2])) for c in coordinates]
     return path.Path_LV03([p.to_LV03() for p in coordinates])

@@ -21,7 +21,7 @@ class Point:
         raise Exception("Not possible on base class.")
 
     def has_elevation(self) -> bool:
-        return self.h <= 0.0
+        return self.h > 0.0 # assume switzerland, where there is no point below 0
 
     def __str__(self):
         return "Point: lat: " + str(self.lat) + ", lon: " + str(self.lon) + ", h: " + str(self.h)
