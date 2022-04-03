@@ -1,9 +1,8 @@
-from automatic_walk_time_tables import arg_parser
-from automatic_walk_time_tables.arg_parser import ArgNamespace
+from automatic_walk_time_tables.arg_parser import get_parser
 from server_logging.log_helper import setup_recursive_logger
 
 if __name__ == "__main__":
-    parser = create_parser()
+    parser = get_parser()
     args = parser.parse_args()
 
     # Set up the root handler
