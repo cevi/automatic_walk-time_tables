@@ -15,8 +15,8 @@ export class ExportSettingsComponent implements OnInit {
   uuid: string = '';
 
   options: FormGroup;
-  gpx_uploaded: boolean = false;
-  public gpx_file: File | undefined = undefined;
+  route_uploaded: boolean = false;
+  public route_file: File | undefined = undefined;
 
   constructor(private mapAnimator: MapAnimatorService, fb: FormBuilder, private router: Router) {
 
@@ -37,15 +37,15 @@ export class ExportSettingsComponent implements OnInit {
 
   download_map() {
 
-    if (!this.gpx_uploaded || !this.gpx_file)
+    if (!this.route_uploaded || !this.route_file)
       return
 
     // Start Animation
-    this.mapAnimator.add_gpx_file(this.gpx_file);
+    this.mapAnimator.add_route_file(this.route_file);
 
     let formData = new FormData();
 
-    formData.append("file", this.gpx_file);
+    formData.append("file", this.route_file);
 
     let url = ExportSettingsComponent.baseURL + 'create?';
 
@@ -75,17 +75,17 @@ export class ExportSettingsComponent implements OnInit {
 
 
 
-  new_gpx_uploaded(gpx_file: File) {
+  new_route_uploaded(route_file: File) {
 
-    this.gpx_uploaded = true;
-    this.gpx_file = gpx_file
+    this.route_uploaded = true;
+    this.route_file = route_file
 
   }
 
 
-  delete_gpx_file() {
+  delete_route_file() {
 
-    this.gpx_uploaded = false;
+    this.route_uploaded = false;
 
   }
 

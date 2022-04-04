@@ -7,23 +7,28 @@
 
   <mat-stepper orientation="vertical">
 
-    <mat-step [hasError]="!gpx_uploaded" errorMessage="GPX Datei fehlt!">
+    <mat-step [hasError]="!route_uploaded" errorMessage="Route fehlt! Bitte Datei hochladen.">
 
       <ng-template matStepLabel>Route Hochladen</ng-template>
 
       <div class="content-block">
         <p>
-          Lade eine GPX-Datei hoch. Diese kannst du aus SchweizMobil oder der Swisstopo-App exportieren.
+          Lade eine GPX-Datei hoch, diese kannst du aus SchweizMobil oder der Swisstopo-App exportieren. Alternativ
+          kannst du eine KML-Datei hochladen, die du sie vom Kartenviewer von Swisstopo exportieren kannst.
         </p>
 
-        <app-upload-area *ngIf="!gpx_uploaded" class="upload-area" (file_uploaded)="new_gpx_uploaded($event)"></app-upload-area>
-        <app-download *ngIf="gpx_uploaded && gpx_file"  [name]="gpx_file?.name" [changeDate]="gpx_file?.lastModified"></app-download>
+        <app-upload-area *ngIf="!route_uploaded" class="upload-area"
+                         (file_uploaded)="new_route_uploaded($event)"></app-upload-area>
+        <app-download *ngIf="route_uploaded && route_file" [name]="route_file?.name"
+                      [changeDate]="route_file?.lastModified"></app-download>
 
       </div>
 
-      <button mat-stroked-button color="primary" *ngIf="!gpx_uploaded" routerLink="guide" fragment="get-gpx-file"> Wie erhalte ich eine GPX-Datei? </button>
-      <button mat-stroked-button color="warn" *ngIf="gpx_uploaded" (click)="delete_gpx_file()"> Datei löschen </button>
-      <button mat-stroked-button color="primary" matStepperNext [disabled]="!gpx_uploaded">Weiter</button>
+      <button mat-stroked-button color="primary" *ngIf="!route_uploaded" routerLink="guide" fragment="get-gpx-file"> Wie
+        erhalte ich eine GPX- oder KML-Datei?
+      </button>
+      <button mat-stroked-button color="warn" *ngIf="route_uploaded" (click)="delete_route_file()"> Datei löschen</button>
+      <button mat-stroked-button color="primary" matStepperNext [disabled]="!route_uploaded">Weiter</button>
 
     </mat-step>
 
@@ -82,7 +87,7 @@
       <div class="content-block">
 
         <p>Nun sind wir bereit deine Marschzeittabelle zu erstellen:</p>
-        <button mat-stroked-button color="primary" [disabled]="!gpx_uploaded" id="export-button"
+        <button mat-stroked-button color="primary" [disabled]="!route_uploaded" id="export-button"
                 (click)="download_map()">
           Generieren lassen
         </button>

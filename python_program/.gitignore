@@ -1,6 +1,9 @@
-imgs/
-testWalks/
+# working directories
+input/*
 output/*
+
+# containing currently unused files
+automatic_walk_time_tables/res/original_data/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
