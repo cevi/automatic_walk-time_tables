@@ -10,6 +10,7 @@ from matplotlib import pyplot as plt
 
 from automatic_walk_time_tables.geo_processing import find_swisstopo_name, find_walk_table_points, coord_transformation
 from automatic_walk_time_tables.utils import path, point
+from automatic_walk_time_tables.utils.point import Point_LV03
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +104,7 @@ def create_walk_table(time_stamp, speed, way_points : List[Tuple[float, point.Po
 
     # get infos about points
     for i, pt in enumerate(way_points):
-        lv03 = pt[1].to_LV03()
+        lv03: Point_LV03 = pt[1].to_LV03()
 
         # calc time
         deltaTime = 0.0
@@ -114,7 +115,7 @@ def create_walk_table(time_stamp, speed, way_points : List[Tuple[float, point.Po
         time_stamp = time_stamp + timedelta(hours=deltaTime)
 
         # print infos
-        name_of_point = find_swisstopo_name.find_name((lv03[0] + 2_000_000, lv03[1] + 1_000_000))
+        name_of_point = find_swisstopo_name.find_name((lv03.lat + 2_000_000, lv03.lon + 1_000_000))
         name_of_points.append(name_of_point)
         logger.debug(
             str(round(abs((oldPoint[0] if oldPoint is not None else 0.0) - pt[0]), 1)) + 'km ' +
