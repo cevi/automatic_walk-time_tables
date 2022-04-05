@@ -1,0 +1,101 @@
+<h2>J+S-Marschzeittabellen automatisiert generieren</h2>
+
+<button mat-stroked-button color="primary" class="help-button" routerLink="guide"> So funktioniert es!
+</button>
+
+<form [formGroup]="options">
+
+  <mat-stepper orientation="vertical">
+
+    <mat-step [hasError]="!route_uploaded" errorMessage="Route fehlt! Bitte Datei hochladen.">
+
+      <ng-template matStepLabel>Route Hochladen</ng-template>
+
+      <div class="content-block">
+        <p>
+          Lade eine GPX-Datei hoch, diese kannst du aus SchweizMobil oder der Swisstopo-App exportieren. Alternativ
+          kannst du eine KML-Datei hochladen, die du sie vom Kartenviewer von Swisstopo exportieren kannst.
+        </p>
+
+        <app-upload-area *ngIf="!route_uploaded" class="upload-area"
+                         (file_uploaded)="new_route_uploaded($event)"></app-upload-area>
+        <app-download *ngIf="route_uploaded && route_file" [name]="route_file?.name"
+                      [changeDate]="route_file?.lastModified"></app-download>
+
+      </div>
+
+      <button mat-stroked-button color="primary" *ngIf="!route_uploaded" routerLink="guide" fragment="get-gpx-file"> Wie
+        erhalte ich eine GPX- oder KML-Datei?
+      </button>
+      <button mat-stroked-button color="warn" *ngIf="route_uploaded" (click)="delete_route_file()"> Datei löschen</button>
+      <button mat-stroked-button color="primary" matStepperNext [disabled]="!route_uploaded">Weiter</button>
+
+    </mat-step>
+
+    <mat-step>
+      <ng-template matStepLabel>Einstellungen zur Karte</ng-template>
+
+      <div class="content-block">
+        <mat-slide-toggle formControlName="create-map-pdfs">Karte als PDF beifügen</mat-slide-toggle>
+        <div class="slider">
+          <label>Kartenmassstab: 1:{{scale.value}}</label>
+          <mat-slider #scale min="10000" max="100000" step="5000"
+                      (change)="options.controls['map-scaling'].setValue($event.value)"
+                      [value]="options.controls['map-scaling'].value"></mat-slider>
+        </div>
+      </div>
+
+      <button mat-stroked-button color="primary" matStepperNext>Weiter</button>
+
+    </mat-step>
+
+    <mat-step>
+
+      <ng-template matStepLabel>Einstellungen zur Marschzeittabelle</ng-template>
+
+      <div class="content-block">
+        <mat-slide-toggle formControlName="create-excel">Marschzeittabelle als Excel beifügen</mat-slide-toggle>
+
+        <div class="slider">
+          <label>Geschwindigkeit: {{velocity.value}} km/h</label>
+          <mat-slider #velocity min="0.5" max="20" step="0.25"
+                      (change)="options.controls['velocity'].setValue($event.value)"
+                      [value]="options.controls['velocity'].value"
+          ></mat-slider>
+        </div>
+
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Dein Name</mat-label>
+          <input matInput type="text" formControlName="creator-name">
+        </mat-form-field>
+
+        <br>
+
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Abmarsch Zeit</mat-label>
+          <input matInput type="datetime-local" formControlName="departure-time">
+        </mat-form-field>
+      </div>
+
+      <button mat-stroked-button color="primary" matStepperNext>Weiter</button>
+
+    </mat-step>
+
+
+    <mat-step>
+      <ng-template matStepLabel>Marschzeittabelle Erstellen</ng-template>
+      <div class="content-block">
+
+        <p>Nun sind wir bereit deine Marschzeittabelle zu erstellen:</p>
+        <button mat-stroked-button color="primary" [disabled]="!route_uploaded" id="export-button"
+                (click)="download_map()">
+          Generieren lassen
+        </button>
+      </div>
+
+    </mat-step>
+
+  </mat-stepper>
+
+</form>
+

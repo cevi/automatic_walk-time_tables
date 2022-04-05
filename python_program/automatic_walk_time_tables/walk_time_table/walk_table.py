@@ -4,20 +4,19 @@ from datetime import timedelta
 from math import log
 from typing import Tuple, List
 
-import gpxpy
 import numpy as np
 import openpyxl
-from gpxpy.gpx import GPXTrackPoint
 from matplotlib import pyplot as plt
 
 from automatic_walk_time_tables.geo_processing import find_swisstopo_name, find_walk_table_points, coord_transformation
+from automatic_walk_time_tables.utils import path, point
 
 logger = logging.getLogger(__name__)
 
 
-def plot_elevation_profile(raw_data_points: gpxpy.gpx,
-                           way_points: List[Tuple[int, GPXTrackPoint]],
-                           temp_points: List[Tuple[int, GPXTrackPoint]],
+def plot_elevation_profile(path : path.Path,
+                           way_points: List[Tuple[float, point.Point]],
+                           temp_points: List[Tuple[float, point.Point]],
                            file_name: str,
                            open_figure: bool):
     """
@@ -33,7 +32,7 @@ def plot_elevation_profile(raw_data_points: gpxpy.gpx,
     plt.clf()
 
     # plot heights of exported data from SchweizMobil
-    distances, heights = find_walk_table_points.prepare_for_plot(raw_data_points)
+    distances, heights = find_walk_table_points.prepare_for_plot(path)
     plt.plot(distances, heights, label='Wanderweg')
 
     # resize plot area
@@ -41,9 +40,9 @@ def plot_elevation_profile(raw_data_points: gpxpy.gpx,
     plt.ylim(ymax=max(heights) + additional_space, ymin=min(heights) - additional_space)
 
     # add way_points to plot
-    plt.scatter([dist[0] for dist in temp_points], [height[1].elevation for height in temp_points], c='lightgray', )
-    plt.scatter([dist[0] for dist in way_points], [height[1].elevation for height in way_points], c='orange', )
-    plt.plot([dist[0] for dist in way_points], [height[1].elevation for height in way_points],
+    plt.scatter([dist[0] for dist in temp_points], [height[1].h for height in temp_points], c='lightgray', )
+    plt.scatter([dist[0] for dist in way_points], [height[1].h for height in way_points], c='orange', )
+    plt.plot([dist[0] for dist in way_points], [height[1].h for height in way_points],
              label='Marschzeittabelle')
 
     # labels
@@ -69,15 +68,23 @@ def plot_elevation_profile(raw_data_points: gpxpy.gpx,
         plt.show()
 
 
-def create_walk_table(time_stamp, speed, way_points, total_distance, file_name: str, route_name: str, creator_name: str,
+def create_walk_table(time_stamp, speed, way_points : List[Tuple[float, point.Point]], total_distance, file_name: str, route_name: str, creator_name: str,
                       map_numbers: str):
     """
 
     Saves the Excel file as .output/Marschzeittabelle_{{file_name}}.xlsx'
 
     """
+    # print the current path to debug
+    try:
+        xfile = openpyxl.load_workbook('automatic_walk_time_tables/res/Marschzeit_Template.xlsx')
+    except:
+        try:
+            xfile = openpyxl.load_workbook('res/Marschzeit_Template.xlsx')
+        except:
+            logger.error("Could not find template file for walk table.")
+            raise FileNotFoundError
 
-    xfile = openpyxl.load_workbook('res/Marschzeit_Template.xlsx')
     sheet = xfile.worksheets[0]
     oldPoint = None
     time = 0
@@ -94,19 +101,14 @@ def create_walk_table(time_stamp, speed, way_points, total_distance, file_name: 
 
     name_of_points = []
 
-    # get Infos points
-    for i, point in enumerate(way_points):
-
-        # convert Coordinates to LV03
-        converter = coord_transformation.GPSConverter()
-        wgs84 = [point[1].latitude, point[1].longitude, point[1].elevation]
-        lv03 = converter.WGS84toLV03(wgs84[0], wgs84[1], wgs84[2])
-        lv03 = np.round(lv03)
+    # get infos about points
+    for i, pt in enumerate(way_points):
+        lv03 = pt[1].to_LV03()
 
         # calc time
         deltaTime = 0.0
         if oldPoint is not None:
-            deltaTime = calc_walk_time(point[1].elevation - oldPoint[1].elevation, abs(oldPoint[0] - point[0]), speed)
+            deltaTime = calc_walk_time(pt[1].h - oldPoint[1].h, abs(oldPoint[0] - pt[0]), speed)
         time += deltaTime
 
         time_stamp = time_stamp + timedelta(hours=deltaTime)
@@ -115,19 +117,19 @@ def create_walk_table(time_stamp, speed, way_points, total_distance, file_name: 
         name_of_point = find_swisstopo_name.find_name((lv03[0] + 2_000_000, lv03[1] + 1_000_000))
         name_of_points.append(name_of_point)
         logger.debug(
-            str(round(abs((oldPoint[0] if oldPoint is not None else 0.0) - point[0]), 1)) + 'km ' +
-            str(int(lv03[2])) + 'm ü. M. ' +
+            str(round(abs((oldPoint[0] if oldPoint is not None else 0.0) - pt[0]), 1)) + 'km ' +
+            str(int(lv03.h)) + 'm ü. M. ' +
             str(round(deltaTime, 1)) + 'h ' +
             time_stamp.strftime('%H:%M') + 'Uhr ' +
-            str((int(lv03[0]), int(lv03[1]))) + " " + name_of_point)
+            str((int(lv03.lat), int(lv03.lon))) + " " + name_of_point)
 
         sheet['A' + str(8 + i)] = str(name_of_point) + ' (' + str(
-            int(lv03[0])) + ', ' + str(int(lv03[1])) + ')'
-        sheet['C' + str(8 + i)] = int(lv03[2])
+            int(lv03.lat)) + ', ' + str(int(lv03.lon)) + ')'
+        sheet['C' + str(8 + i)] = int(lv03.h)
         if i > 0:
-            sheet['E' + str(8 + i)] = round(abs((oldPoint[0] if oldPoint is not None else 0.0) - point[0]), 1)
+            sheet['E' + str(8 + i)] = round(abs((oldPoint[0] if oldPoint is not None else 0.0) - pt[0]), 1)
 
-        oldPoint = point
+        oldPoint = pt
 
     logger.debug('--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---')
     logger.debug(str(round(total_distance, 1)) + 'km ' + str(round(time, 1)) + 'h')

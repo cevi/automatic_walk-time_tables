@@ -4,6 +4,8 @@ import time
 from builtins import int
 
 from rtree.index import Index as RTreeIndex
+import os
+from math import sqrt
 
 logger = logging.getLogger(__name__)
 

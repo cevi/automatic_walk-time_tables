@@ -6,3 +6,5 @@ python_program/swissname_data.txt
 python_program/swissname_data.data
 python_program/res/swissname_data_index.idx
 python_program/res/swissname_data_index.dat
+python_program/automatic_walk_time_tables/res/swisstlm3d_2021-04_2056_5728.gdb
+python_program/automatic_walk_time_tables/res/swissnames3d_2021_2056.shp

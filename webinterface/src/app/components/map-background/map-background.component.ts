@@ -1,20 +1,20 @@
 import {Component, OnDestroy, OnInit} from '@angular/core';
-import {Tile} from "../helpers/tile";
-import {Canvas_Coordinates, LV95_Coordinates} from "../helpers/coordinates";
-import {MapCreator} from "../helpers/map-creator";
-import {MapAnimatorService} from "../services/map-animator.service";
+import {Tile} from "../../helpers/tile";
+import {Canvas_Coordinates, LV95_Coordinates} from "../../helpers/coordinates";
+import {MapCreator} from "../../helpers/map-creator";
+import {MapAnimatorService} from "../../services/map-animator.service";
 import {BehaviorSubject, combineLatest, Subscription} from "rxjs";
 
 
 @Component({
-  selector: 'app-display-map',
-  templateUrl: './display-map.component.html',
-  styleUrls: ['./display-map.component.scss'],
+  selector: 'app-map-background',
+  templateUrl: './map-background.component.html',
+  styleUrls: ['./map-background.component.scss'],
   providers: [
     {provide: Window, useValue: window}
   ]
 })
-export class DisplayMapComponent implements OnInit, OnDestroy {
+export class MapBackgroundComponent implements OnInit, OnDestroy {
 
   path_subscription: Subscription | undefined;
   map_subscription: Subscription | undefined;
