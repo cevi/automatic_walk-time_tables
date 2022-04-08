@@ -7,3 +7,4 @@ grequests==0.6.0
 argparse==1.4.0
 pyclustering==0.10.1.2
 rtree==0.9.7
+fiona==1.8.21

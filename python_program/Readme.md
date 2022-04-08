@@ -28,7 +28,7 @@ The full documentation of the API endpoints can be found here: [API Endpoints](A
    dependencies:
 
    ```bash
-   pip3 install -r ./automatic_walk_time_tables/requirements.txt
+   $ pip3 install -r ./automatic_walk_time_tables/requirements.txt
    ```
 
 2) In order to create PDF-map exports, you need to set up a docker container. Please follow
@@ -36,6 +36,16 @@ The full documentation of the API endpoints can be found here: [API Endpoints](A
    feature with the `--create-map-pdfs False` argument,
    see [Command Line Arguments](automatic_walk_time_tables/Command_Line_Arguments.md) for further details.
 
+3) Install `libspatialindex` for robust spatial indexing methods. Using the command:
+   ```bash
+   $ apt -y install libspatialindex-dev
+   ```
+   
+4) Download geo data to the directory `./res`
+   ```bash
+   $ wget https://cms.geo.admin.ch/Topo/swisstlm3d/LV95/swissTLM3D_1.9_LV95_LN02_shp3d.zip
+   $ unzip swissTLM3D_1.9_LV95_LN02_shp3d.zip 
+   ```
 ### Launch the script
 
 You can launch the script as a standalone python3 application by calling:
@@ -48,6 +58,11 @@ Where the `file-name` flag specifies the path to your route file (GPX- or KML-fi
 produced files (Excel, PDFs...) are stored in the directory specified with the argument `--output_directory`; default
 is `./output/`. A full documentation of all command line arguments can be found
 here: [Command Line Arguments](automatic_walk_time_tables/Command_Line_Arguments.md).
+
+## Test and Debug Tools
+
+Make sure that your system fulfill the prerequisites as described in the section above, i.g. you should be able to run
+the `automatic_walk_time_tables` script locally using python3.
 
 ## About swisstopo Services
 

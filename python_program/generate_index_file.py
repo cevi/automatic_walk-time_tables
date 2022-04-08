@@ -4,7 +4,7 @@ from server_logging.log_helper import setup_recursive_logger
 
 setup_recursive_logger(logging.INFO)
 
-from automatic_walk_time_tables.geo_processing.name_finding.name_index import NameIndex
+from swiss_TML_api.name_finding import NameIndex
 
 logger = logging.getLogger(__name__)
 
