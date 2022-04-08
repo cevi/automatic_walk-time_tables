@@ -36,16 +36,6 @@ The full documentation of the API endpoints can be found here: [API Endpoints](A
    feature with the `--create-map-pdfs False` argument,
    see [Command Line Arguments](automatic_walk_time_tables/Command_Line_Arguments.md) for further details.
 
-3) Install `libspatialindex` for robust spatial indexing methods. Using the command:
-   ```bash
-   $ apt -y install libspatialindex-dev
-   ```
-   
-4) Download geo data to the directory `./res`
-   ```bash
-   $ wget https://cms.geo.admin.ch/Topo/swisstlm3d/LV95/swissTLM3D_1.9_LV95_LN02_shp3d.zip
-   $ unzip swissTLM3D_1.9_LV95_LN02_shp3d.zip 
-   ```
 ### Launch the script
 
 You can launch the script as a standalone python3 application by calling:
