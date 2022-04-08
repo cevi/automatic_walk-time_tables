@@ -1,3 +1,4 @@
+import json
 import logging
 import random
 
@@ -15,12 +16,12 @@ from swiss_TML_api.name_finding.name_finder import NameFinder
 
 def get_random_coordinates_along_path():
     # TODO: use the route for producing random coordinate points.
-    route_file = open('test_helper/longpath.gpx', 'r')
-    lv03_path = [(2600798.0, 1199188.1)]
 
-    length = len(lv03_path)
-    pkt = lv03_path[random.randint(0, length - 1)]
-    return pkt
+    with open('longpath.json', 'r') as f:
+        lv03_path = json.load(f)
+        length = len(lv03_path)
+        pkt = lv03_path[random.randint(0, length - 1)]
+        return pkt
 
 
 if __name__ == "__main__":

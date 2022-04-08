@@ -22,7 +22,16 @@ More information about the topographic landscape model can be found here:
 Make sure to download the latest version of the topographic landscape model dataset here:
 from https://www.swisstopo.admin.ch/de/geodata/landscape/tlm3d.html.
 
-And store it in the directory `./res/swissTLM3D_1.9_LV95_LN02_shp3d/`. Currently, we only need the `.shp` files.
+1) Install `libspatialindex` for robust spatial indexing methods. Using the command:
+   ```bash
+   $ apt -y install libspatialindex-dev
+   ```
+
+2) And store it in the directory `./res/swissTLM3D_1.9_LV95_LN02_shp3d/`. Currently, we only need the `.shp` files.
+   ```bash
+   $ wget https://cms.geo.admin.ch/Topo/swisstlm3d/LV95/swissTLM3D_1.9_LV95_LN02_shp3d.zip
+   $ unzip swissTLM3D_1.9_LV95_LN02_shp3d.zip 
+   ```
 
 ## Testing of Name Finding Algorithm
 

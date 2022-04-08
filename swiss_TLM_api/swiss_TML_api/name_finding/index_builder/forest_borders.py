@@ -11,13 +11,14 @@ from swiss_TML_api.name_finding.index_builder.index_builder import IndexBuilder
 from swiss_TML_api.name_finding.swiss_name import SwissName
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class ForestBorders(IndexBuilder):
 
     def load(self):
         self.insert_forest_intersections(
-            ['swissTLM3D_TLM_BODENBEDECKUNG.shp'])  # , 'swissTLM3D_TLM_BODENBEDECKUNG_ost.shp'])
+            ['swissTLM3D_TLM_BODENBEDECKUNG_west.shp', 'swissTLM3D_TLM_BODENBEDECKUNG_ost.shp'])
 
     def calc_intersection(self, path_index, obj):
         geo = obj["geometry"]['coordinates'][0]
@@ -53,7 +54,7 @@ class ForestBorders(IndexBuilder):
     def insert_forest_intersections(self, shp_files):
 
         # Check if path index exists, if not it will be build
-        base_path = './res/swissTLM3D_1.9_LV95_LN02_shp3d/'
+        base_path = './res/swissTLM3D_1.9_LV95_LN02_shp3d_full/'
         path_index = self.get_street_index(base_path + 'swissTLM3D_TLM_STRASSE.shp')
         path_index.close()  # as we use multiprocessing we have to reload the index for each thread
 
@@ -71,7 +72,7 @@ class ForestBorders(IndexBuilder):
             logger.debug("\t -> insertion completed")
 
     def process_shp_file(self, shp_file):
-        base_path = './res/swissTLM3D_1.9_LV95_LN02_shp3d/'
+        base_path = './res/swissTLM3D_1.9_LV95_LN02_shp3d_full/'
 
         # Calculate intersections with forest
         with fiona.open(base_path + shp_file) as src:
