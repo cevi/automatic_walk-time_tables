@@ -4,9 +4,10 @@ import queue
 import threading
 
 import fiona
-from rtree.index import Index as RTreeIndex
 from shapely.geometry import LineString
 
+from swiss_TML_api.name_finding.helper_index.flurnamen_index import FlurnamenIndex
+from swiss_TML_api.name_finding.helper_index.street_index import StreetIndex
 from swiss_TML_api.name_finding.index_builder.index_builder import IndexBuilder
 from swiss_TML_api.name_finding.swiss_name import SwissName
 
@@ -15,10 +16,18 @@ logger.setLevel(logging.DEBUG)
 
 
 class ForestBorders(IndexBuilder):
+    """
+    This IndexBuilder inserts all points where a path or road enters the forest.
+    """
 
     def load(self):
-        self.insert_forest_intersections(
-            ['swissTLM3D_TLM_BODENBEDECKUNG_west.shp', 'swissTLM3D_TLM_BODENBEDECKUNG_ost.shp'])
+
+        if self.reduced:
+            self.insert_forest_intersections(
+                ['swissTLM3D_TLM_BODENBEDECKUNG.shp'])
+        else:
+            self.insert_forest_intersections(
+                ['swissTLM3D_TLM_BODENBEDECKUNG_west.shp', 'swissTLM3D_TLM_BODENBEDECKUNG_ost.shp'])
 
     def calc_intersection(self, path_index, obj):
         geo = obj["geometry"]['coordinates'][0]
@@ -35,7 +44,7 @@ class ForestBorders(IndexBuilder):
 
             for path in paths:
 
-                path = LineString(path)
+                path = LineString(path['geo'])
                 inters = polygon.intersection(path)
 
                 if inters.geom_type == 'Point':
@@ -53,10 +62,14 @@ class ForestBorders(IndexBuilder):
 
     def insert_forest_intersections(self, shp_files):
 
+        print(self.base_path)
         # Check if path index exists, if not it will be build
-        base_path = './resources/swissTLM3D_1.9_LV95_LN02_shp3d_full/'
-        path_index = self.get_street_index(base_path + 'swissTLM3D_TLM_STRASSE.shp')
+        street_index_builder = StreetIndex(self.base_path + 'swissTLM3D_TLM_STRASSE.shp')
+        path_index = street_index_builder.get_street_index()
         path_index.close()  # as we use multiprocessing we have to reload the index for each thread
+
+        flurname_index_builder = FlurnamenIndex(self.base_path + 'swissTLM3D_TLM_FLURNAME.shp')
+        flurname_index = flurname_index_builder.get_flurname_index()
 
         pois = set()
 
@@ -65,17 +78,18 @@ class ForestBorders(IndexBuilder):
 
             logger.debug("\t -> insert {} results to index".format(len(pois)))
             for poi in pois:
+                flurname: SwissName = next(flurname_index.nearest(coordinates=poi, num_results=1, objects='raw'))
+                name = "Waldrand bei {}".format(flurname.name)
                 self.index.insert(id=0,
                                   coordinates=poi,
-                                  obj=SwissName(name="Waldrand", object_type="Waldrand", x=poi[0], y=poi[1], h=0))
+                                  obj=SwissName(name=name, object_type="Waldrand", x=poi[0], y=poi[1], h=0))
 
             logger.debug("\t -> insertion completed")
 
     def process_shp_file(self, shp_file):
-        base_path = './resources/swissTLM3D_1.9_LV95_LN02_shp3d_full/'
 
         # Calculate intersections with forest
-        with fiona.open(base_path + shp_file) as src:
+        with fiona.open(self.base_path + shp_file) as src:
 
             q = queue.Queue()
             intersections = set()
@@ -83,7 +97,8 @@ class ForestBorders(IndexBuilder):
 
             def worker(res_set, set_lock):
 
-                path_index = self.get_street_index(base_path + 'swissTLM3D_TLM_STRASSE.shp')
+                street_index_builder = StreetIndex(self.base_path + 'swissTLM3D_TLM_STRASSE.shp')
+                path_index = street_index_builder.get_street_index()
 
                 while True:
                     batch = q.get()
@@ -119,41 +134,3 @@ class ForestBorders(IndexBuilder):
             logger.debug("\t -> parallel work completed")
 
             return intersections
-
-    def get_street_index(self, shp_file, street_types=('Weg', 'Strasse')):
-
-        index_file_path = './index_cache/street_index'
-        path_index = RTreeIndex(index_file_path)
-
-        if path_index.get_size() > 0:
-            logger.debug('\tCached index of size {} found'.format(path_index.get_size()))
-            return path_index
-
-        logger.debug("\tBuild temporary street index:")
-
-        with fiona.open(shp_file) as src:
-            skipped_objects = set()
-
-            for counter, obj in enumerate(src):
-
-                if not counter % 100_000:
-                    logger.debug('\t -> {} / {} objects added'.format(counter, len(src)))
-
-                geo = obj["geometry"]['coordinates']
-                obj_type = obj['properties']['OBJEKTART']
-
-                if any(s in obj_type for s in street_types) and obj["geometry"]['type'] == 'LineString':
-                    path = [pkt[:-1] for pkt in geo]  # remove elevation information
-                    path = LineString(path)
-                    path_index.insert(id=0, coordinates=path.bounds, obj=geo)
-
-                else:
-                    skipped_objects.add(obj_type)
-
-            if len(skipped_objects):
-                logger.info("\tSkipped Objects: {}".format(skipped_objects))
-
-        path_index.flush()
-        logger.debug("\tBuild of temporary street index completed.")
-
-        return path_index

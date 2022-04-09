@@ -8,9 +8,9 @@ logger = logging.getLogger(__name__)
 
 class NameFinder(NameIndex):
 
-    def __init__(self):
+    def __init__(self, force_rebuild=False, reduced=False):
         start = time.time()
-        super().__init__()
+        super().__init__(force_rebuild, reduced)
         end = time.time()
 
         logger.info('Index loaded (after {}s)'.format(str(end - start)))

@@ -48,7 +48,6 @@ class MapImage:
                 index = index + 1
                 img = Image.open(BytesIO(response.content))
                 img.thumbnail((self.TILE_WIDTH, self.TILE_WIDTH), Image.ANTIALIAS)
-
                 w, h = img.size
                 self.img.paste(img, (i * w, h * (self.y_count - j), i * w + w, h * (self.y_count - j) + h))
 
@@ -64,7 +63,7 @@ class MapImage:
     def mark_point(self, draw, lv03_pkt, pkt_rad):
         img_x, img_y = self.calc_img_coord(self.img.size, lv03_pkt)
         circle_coords = (img_x - pkt_rad, img_y - pkt_rad, img_x + pkt_rad, img_y + pkt_rad)
-        draw.ellipse(circle_coords, outline=(255, 0, 0), width=5)
+        draw.ellipse(circle_coords, outline=(255, 100, 0), width=5)
 
     def calc_img_coord(self, image_size, lv03_point):
         # calc the coords in respect to the image pixels

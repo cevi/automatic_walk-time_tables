@@ -1,14 +1,21 @@
 import fiona
 
+from swiss_TML_api.name_finding.helper_index.street_index import StreetIndex
 from swiss_TML_api.name_finding.index_builder.index_builder import IndexBuilder
 from swiss_TML_api.name_finding.swiss_name import SwissName
 
 
 class TLM_Streets(IndexBuilder):
+    """
+    This IndexBuilder inserts all intersections where the name of at least two adjacent streets is known.
+    """
 
     def load(self):
-        base_path = './resources/swissTLM3D_1.9_LV95_LN02_shp3d_full/'
-        shp_file = base_path + 'swissTLM3D_TLM_STRASSE.shp'
+
+        street_index_builder = StreetIndex(self.base_path + 'swissTLM3D_TLM_STRASSE.shp')
+        path_index = street_index_builder.get_street_index()
+
+        shp_file = self.base_path + 'swissTLM3D_TLM_STRASSENINFO.shp'
 
         with fiona.open(shp_file) as src:
 
@@ -17,11 +24,15 @@ class TLM_Streets(IndexBuilder):
                 geo = obj["geometry"]['coordinates']
                 obj_type = obj['properties']['OBJEKTART']
 
-                if obj_type == 'Platz' and obj["geometry"]['type'] == 'LineString':
-                    pkt = geo[0][:-1]
+                if obj_type == 'Standardknoten':
+                    search_area = (geo[0] - 1, geo[1] - 1, geo[0] + 1, geo[1] + 1)
+                    adjoined_streets = path_index.intersection(coordinates=search_area, objects='raw')
 
-                    name = "{} {} {}".format(obj['properties']['KUNSTBAUTE'], obj['properties']['WANDERWEGE'],
-                                             obj['properties']['STR_NAME_U'])
+                    street_names = set(
+                        [obj['properties']['STRNAME'] for obj in adjoined_streets if obj['properties']['STRNAME']])
 
-                    swiss_name = SwissName(name=name, object_type='Platz', x=int(pkt[0]), y=int(pkt[0]), h=0)
-                    self.index.insert(id=0, coordinates=pkt, obj=swiss_name)
+                    if len(street_names) >= 2:
+                        name = "Kreuzung: {}".format(', '.join(str(s) for s in street_names))
+                        swiss_name = SwissName(name=name, object_type='Kreuzung', x=int(geo[0]), y=int(geo[1]),
+                                               h=geo[2])
+                        self.index.insert(id=0, coordinates=geo[0:2], obj=swiss_name)

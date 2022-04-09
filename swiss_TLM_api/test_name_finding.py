@@ -25,9 +25,9 @@ def get_random_coordinates_along_path():
 
 
 if __name__ == "__main__":
-    name_index = NameFinder()
+    name_index = NameFinder(force_rebuild=True, reduced=True)
 
-    lv03_coord = get_random_coordinates_along_path()
+    lv03_coord = [2601239.0, 1195897.1]  # get_random_coordinates_along_path()
     image = MapImage(lv03_coord, zoom_level=9)
 
     draw = ImageDraw.Draw(image.img)
@@ -37,9 +37,10 @@ if __name__ == "__main__":
     names = name_index.get_names(lv03_coord[0], lv03_coord[1], 50)
 
     for name in names:
-        image.mark_point(draw, (name.x, name.y), 3)
+        print(name)
+        image.mark_point(draw, (name.x, name.y), 4)
 
     draw.rectangle((0, 0, image.img.size[0], 24), fill=(255, 255, 255))
-    draw.text((0.0, 0.0), 'Selected Name: ' + str(names[0]), (0, 0, 0), font=fnt)
+    draw.text((0.0, 0.0), str(names[0]), (0, 0, 0), font=fnt)
 
     image.img.save("map_snipped.png")
