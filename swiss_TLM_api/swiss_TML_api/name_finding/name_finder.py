@@ -27,10 +27,11 @@ class NameFinder(NameIndex):
             Therefore this process should be done locally.
 
         """
+
+        logger.info("Search name for {} / {}.".format(lat, lon))
         start = time.time()
 
         list_of_points = list(self.index.nearest((lat, lon, lat, lon), num_results=n, objects='raw'))
-        print(list_of_points)
 
         end = time.time()
         logger.info("Time for searching name: {}s".format(end - start))
