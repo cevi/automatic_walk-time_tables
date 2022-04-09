@@ -11,7 +11,7 @@ app = Flask(__name__)
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
 
-@app.route('/swiss_name', methods=['POST'])
+@app.route('/swiss_name', methods=['GET'])
 def get_name():
     lv95_coords = request.json
     response = []
