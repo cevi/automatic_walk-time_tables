@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 from datetime import timedelta
@@ -5,10 +6,10 @@ from math import log
 from typing import Tuple, List
 
 import openpyxl
+import requests
 from matplotlib import pyplot as plt
 
 from automatic_walk_time_tables.geo_processing import find_walk_table_points
-from src.swiss_TML_api.name_finding.name_finder import NameFinder
 from automatic_walk_time_tables.utils import path, point
 from automatic_walk_time_tables.utils.point import Point_LV03
 
@@ -79,10 +80,10 @@ def create_walk_table(time_stamp, speed, way_points: List[Tuple[float, point.Poi
     """
     # print the current path to debug
     try:
-        xfile = openpyxl.load_workbook('automatic_walk_time_tables/resources/Marschzeit_Template.xlsx')
+        xfile = openpyxl.load_workbook('automatic_walk_time_tables/res/Marschzeit_Template.xlsx')
     except:
         try:
-            xfile = openpyxl.load_workbook('resources/Marschzeit_Template.xlsx')
+            xfile = openpyxl.load_workbook('res/Marschzeit_Template.xlsx')
         except:
             logger.error("Could not find template file for walk table.")
             raise FileNotFoundError
@@ -102,7 +103,6 @@ def create_walk_table(time_stamp, speed, way_points: List[Tuple[float, point.Poi
     sheet['K8'] = time_stamp.strftime('%H:%M')
 
     name_of_points = []
-    name_finder = NameFinder()
 
     # get infos about points
     for i, pt in enumerate(way_points):
@@ -116,9 +116,19 @@ def create_walk_table(time_stamp, speed, way_points: List[Tuple[float, point.Poi
 
         time_stamp = time_stamp + timedelta(hours=deltaTime)
 
-        # print infos
-        name_of_point = name_finder.get_names(lv03.lat + 2_000_000, lv03.lon + 1_000_000)
+        # get name
+        # TODO: request all names with one API call
+
+        url = "http://swiss_tml:1848/swiss_name"
+
+        payload = json.dumps([[lv03.lat + 2_000_000, lv03.lon + 1_000_000]])
+        headers = {'Content-Type': 'application/json'}
+        req = requests.request("GET", url, headers=headers, data=payload)
+        resp = req.json()
+
+        name_of_point = resp[0]['swiss_name']
         name_of_points.append(name_of_point)
+
         logger.debug(
             str(round(abs((oldPoint[0] if oldPoint is not None else 0.0) - pt[0]), 1)) + 'km ' +
             str(int(lv03.h)) + 'm ü. M. ' +
