@@ -7,15 +7,32 @@ finding. All this data can be queried with an internal API specified in this doc
 More information about the topographic landscape model can be found here:
 [Federal Office of Topography](https://www.swisstopo.admin.ch/en/knowledge-facts/topographic-landscape-model.html).
 
-## API API_Endpoints
+## API Endpoints
 
-- name finding: find name for given point / points
+A detailed description of the API endpoint can be found here: [API Endpoints](API_Endpoints.md).
+
+- swiss_name: find names for given points
+
+**Future Endpoints**:
+- route calculation, given two points, the API returns a list of points describing a route between the two.
 - calc POIs for a given route, i.g. for a given route the API returns a list along the path with POIs. We understand
   PIOs as points with a special / precise naming, e.g. the peak of a mounten, a river crossing, a fire place, etc.
 
-**Future Endpoints**:
 
-- route calculation, given two points, the API returns a list of points describing a route between the two.
+## Run the Wrapper as a Web-API using Docker
+
+We are using a flask server to expose the python3 module as API endpoints. You can start the server with the following
+commands. Once executed, the API can be accessed over http://localhost:5000/.
+
+```bash
+$ docker build . -t cevi/swiss_tlm_api:latest
+$ docker run --publish=1848:1848 --mount type=bind,source="$(pwd)"/resources,target=/app/resources \
+             --mount type=bind,source="$(pwd)"/index_cache,target=/app/index_cache \
+             cevi/swiss_tlm_api:latest 
+```
+
+The full documentation of the API endpoints can be found here: [API Endpoints](API_Endpoints.md).
+
 
 ## Prerequisites
 

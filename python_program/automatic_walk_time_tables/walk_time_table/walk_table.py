@@ -79,10 +79,10 @@ def create_walk_table(time_stamp, speed, way_points: List[Tuple[float, point.Poi
     """
     # print the current path to debug
     try:
-        xfile = openpyxl.load_workbook('automatic_walk_time_tables/res/Marschzeit_Template.xlsx')
+        xfile = openpyxl.load_workbook('automatic_walk_time_tables/resources/Marschzeit_Template.xlsx')
     except:
         try:
-            xfile = openpyxl.load_workbook('res/Marschzeit_Template.xlsx')
+            xfile = openpyxl.load_workbook('resources/Marschzeit_Template.xlsx')
         except:
             logger.error("Could not find template file for walk table.")
             raise FileNotFoundError

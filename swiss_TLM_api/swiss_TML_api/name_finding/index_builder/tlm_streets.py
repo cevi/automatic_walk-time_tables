@@ -7,7 +7,7 @@ from swiss_TML_api.name_finding.swiss_name import SwissName
 class TLM_Streets(IndexBuilder):
 
     def load(self):
-        base_path = './res/swissTLM3D_1.9_LV95_LN02_shp3d_full/'
+        base_path = './resources/swissTLM3D_1.9_LV95_LN02_shp3d_full/'
         shp_file = base_path + 'swissTLM3D_TLM_STRASSE.shp'
 
         with fiona.open(shp_file) as src:

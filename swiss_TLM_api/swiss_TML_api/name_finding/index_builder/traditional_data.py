@@ -11,15 +11,15 @@ class TraditionalData(IndexBuilder):
 
     def load(self):
         # Linien (Verkehrsbauten, Sportanlagen, Fliessgewässern ...)
-        self.add_to_database('./res/swissNAMES3D_LIN.csv', 1, 5, 10, 11, 12)
+        self.add_to_database('./resources/swissNAMES3D_LIN.csv', 1, 5, 10, 11, 12)
         logger.debug("\tAdded 'swissNAMES3D_LIN'")
 
         # Punkte (Topografische Namen, Flur- und Lokalnamen, Gebäudenamen ...)
-        self.add_to_database('./res/swissNAMES3D_PKT.csv', 1, 6, 11, 12, 13)
+        self.add_to_database('./resources/swissNAMES3D_PKT.csv', 1, 6, 11, 12, 13)
         logger.debug("\tAdded 'swissNAMES3D_PKT'")
 
         # Polygone (Siedlungsnamen, Seenamen, Geländenamen ..)
-        self.add_to_database('./res/swissNAMES3D_PLY.csv', 1, 5, 10, 11, 12)
+        self.add_to_database('./resources/swissNAMES3D_PLY.csv', 1, 5, 10, 11, 12)
         logger.debug("\tAdded 'swissNAMES3D_PLY'")
 
     def add_to_database(self, file, typeIndex, name, x, y, h):
