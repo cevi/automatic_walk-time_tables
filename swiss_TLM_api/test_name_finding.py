@@ -27,14 +27,14 @@ def get_random_coordinates_along_path():
 if __name__ == "__main__":
     name_index = NameFinder(force_rebuild=True, reduced=True)
 
-    lv03_coord = [2601239.0, 1195897.1]  # get_random_coordinates_along_path()
+    lv03_coord = [2601835.8, 1196902.6]  # get_random_coordinates_along_path()
     image = MapImage(lv03_coord, zoom_level=9)
 
     draw = ImageDraw.Draw(image.img)
     fnt = ImageFont.truetype("Pillow/Tests/fonts/FreeMono.ttf", 18)
 
     # Set up the root handler
-    names = name_index.get_names(lv03_coord[0], lv03_coord[1], 50)
+    names = name_index.get_names(lv03_coord[0], lv03_coord[1], 75)
 
     for name in names:
         print(name)

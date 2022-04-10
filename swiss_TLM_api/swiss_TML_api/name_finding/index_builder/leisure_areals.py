@@ -25,5 +25,6 @@ class LeisureAreals(IndexBuilder):
                 obj_type = obj['properties']['OBJEKTART']
                 name = obj['properties']['NAME']
 
-                swiss_name = SwissName(name=name, object_type=obj_type, x=int(coord.x), y=int(coord.y), h=0)
+                height = sum([pkt[2] for pkt in obj["geometry"]['coordinates'][0]]) / len(geo)  # get mean height
+                swiss_name = SwissName(name=name, object_type=obj_type, x=int(coord.x), y=int(coord.y), h=height)
                 self.index.insert(id=0, coordinates=(coord.x, coord.y), obj=swiss_name)
