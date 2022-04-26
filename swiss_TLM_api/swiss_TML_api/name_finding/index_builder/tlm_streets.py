@@ -85,7 +85,7 @@ class TLM_Streets(IndexBuilder):
 
             for obj in src:
 
-                if obj['properties']['KUNSTBAUTE'] not in ('Keine', 'k_W'):
+                if obj['properties']['KUNSTBAUTE'] not in ('Keine', 'k_W') and obj["geometry"]['type'] == 'LineString':
 
                     geo = obj["geometry"]['coordinates']
                     obj_type = obj['properties']['KUNSTBAUTE']
