@@ -2,13 +2,14 @@ import logging
 from copy import copy
 from typing import List, Tuple
 
-import geopy.distance
 from automatic_walk_time_tables.utils import path, point
+from automatic_walk_time_tables.utils.point import Point_LV03
+from automatic_walk_time_tables.utils.way_point import WayPoint
 
 logger = logging.getLogger(__name__)
 
 
-def select_waypoints(path_ : path.Path, walk_point_limit=21):
+def select_waypoints(path_: path.Path_LV03, walk_point_limit=21) -> Tuple[float, List[WayPoint], List[WayPoint]]:
     """
     Algorithm that selects suitable points for the Marschzeittabelle.
     Some parts are inspired by the Ramer–Douglas–Peucker algorithm. Especially
@@ -37,7 +38,7 @@ def select_waypoints(path_ : path.Path, walk_point_limit=21):
     return total_distance, pts_step_2, pts_step_3
 
 
-def reduce_number_of_points(pts_step_2: List[Tuple[float, point.Point]], walk_point_limit: int):
+def reduce_number_of_points(pts_step_2: List[WayPoint], walk_point_limit: int):
     """
     Final selection: Iteratively reduce the number of points to the maximum specified in walk_point_limit. To
     achieve this we iteratively increase a maximum derivation (drv_limit) value until we have dropped enough points.
@@ -53,10 +54,10 @@ def reduce_number_of_points(pts_step_2: List[Tuple[float, point.Point]], walk_po
     through the selected points, we increase drv_limit by 2 meters and try again.
     """
 
-    pts_step_3: List[Tuple[float, point.Point]] = copy(pts_step_2)
+    pts_step_3: List[WayPoint] = copy(pts_step_2)
 
-    pt_A: Tuple[float, point.Point] = None
-    pt_B: Tuple[float, point.Point] = None
+    pt_A: WayPoint = None
+    pt_B: WayPoint = None
 
     drv_limit = 0
 
@@ -81,19 +82,22 @@ def reduce_number_of_points(pts_step_2: List[Tuple[float, point.Point]], walk_po
                 m, b = calc_secant_line(pt_A, pt_C)
                 secant_elev = calc_secant_elevation(m, b, pt_B)
 
-                if abs(secant_elev - pt_B[1].h) < drv_limit:
+                if abs(secant_elev - pt_B.point.h) < drv_limit:
 
                     # Check if B must be replaced by a previously dropped point D
                     pt_D = None
-                    for pt in list(filter(lambda p: pt_A[0] < p[0] < pt_C[0], pts_dropped)):
+                    for pt in list(
+                            filter(lambda p: pt_A.accumulated_distance < p[0] < pt_C.accumulated_distance,
+                                   pts_dropped)):
                         secant_elev = calc_secant_elevation(m, b, pt)
-                        if abs(secant_elev - pt[1].h) >= drv_limit:
+                        if abs(secant_elev - pt.point.h) >= drv_limit:
                             pt_D = pt
                             break
 
                     if pt_D is not None:  # Replace B with point D
                         pts_step_3.remove(pt_B)
-                        index = next(x for x, val in enumerate(pts_step_3) if val[0] > pt_D[0])
+                        index = next(x for x, val in enumerate(pts_step_3) if
+                                     val.accumulated_distance > pt_D.accumulated_distance)
                         pts_step_3.insert(index, pt_D)
                         pts_dropped.append(pt_B)
 
@@ -113,7 +117,7 @@ def reduce_number_of_points(pts_step_2: List[Tuple[float, point.Point]], walk_po
     return pts_step_3
 
 
-def remove_unnecessary_points(pts_step_1: List[Tuple[int, point.Point]]):
+def remove_unnecessary_points(pts_step_1: List[WayPoint]):
     """
     Now we loop through the preselected points and tighten the selection criteria.
     Into the list pts_step_2 we include points according to the following rules:
@@ -132,26 +136,27 @@ def remove_unnecessary_points(pts_step_1: List[Tuple[int, point.Point]]):
 
     drv_limit = 20
 
-    last_pt: Tuple[float, point.Point] = pts_step_1[0]
-    pts_step_2: List[Tuple[float, point.Point]] = [last_pt]
+    last_pt: WayPoint = pts_step_1[0]
+    pts_step_2: List[WayPoint] = [last_pt]
 
     for pt in pts_step_1[1:]:
 
         if last_pt is not None:
 
-            last_coord = get_coordinates(last_pt[1].to_WGS84())
-            coord = get_coordinates(pt[1].to_WGS84())
+            last_coord = get_coordinates(last_pt.point)
+            coord = get_coordinates(pt.point)
 
-            if (abs(last_pt[1].h - pt[1].h) > 20
-                and geopy.distance.distance(last_coord, coord).m > 250) \
-                    or geopy.distance.distance(last_coord, coord).m > 1500: # TODO: this line seems obsole, bug?
+            if abs(last_pt.point.h - pt.point.h) > 20 and coord[0] - last_coord[0] > 250:
 
                 m, b = calc_secant_line(last_pt, pt)
 
                 # add point with max derivation
-                for intermediate_point in list(filter(lambda p: last_pt[0] < p[0] < pt[0], pts_step_1)):
+                for intermediate_point in \
+                        list(filter(
+                            lambda p: last_pt.accumulated_distance < p.accumulated_distance < pt.accumulated_distance,
+                            pts_step_1)):
 
-                    derivation = abs(calc_secant_elevation(m, b, intermediate_point) - intermediate_point[1].h)
+                    derivation = abs(calc_secant_elevation(m, b, intermediate_point) - intermediate_point.point.h)
                     if drv_limit <= derivation:
                         pts_step_2.append(intermediate_point)
                         drv_limit = derivation
@@ -173,7 +178,7 @@ def get_coordinates(pt: point.Point):
     return pt.lat, pt.lon
 
 
-def preselection_step(path_ : path.Path):
+def preselection_step(path_: path.Path):
     """
         Preselection: Select all points from the tracking file which satisfy one of the following criteria.
         This guarantees that all important points are considered. We call the set of selected points pts_step_1.
@@ -184,68 +189,66 @@ def preselection_step(path_ : path.Path):
         - distance to last selected point bigger than 250 meters
     """
 
-    cumulated_distance = 0.0
-    pts_step_1: List[Tuple[float, point.Point]] = []
+    accumulated_distance = 0.0
+    way_points: List[WayPoint] = []
 
-    lastSlope = None
-    lastCoord = None
+    last_slope = 0
+    last_point = path_.points[0]
 
-    lastPoint = None
+    # Insert first point of path
+    way_points.append(WayPoint(0, last_point))
 
     # (1) Preselection
-    for i,pt in enumerate(path_.points):
-        newCoord = get_coordinates(pt.to_WGS84())
+    for i in range(len(path_.points) - 2):
 
-        if i == 0: # First point
-            pts_step_1.append((0, pt))
-            lastCoord = get_coordinates(pt.to_WGS84())
-            lastSlope = 0.
-        elif i == len(path_.points) - 1: # Last point
-            distDelta = geopy.distance.distance(lastCoord, newCoord).km
-            cumulated_distance += distDelta
-            pts_step_1.append((cumulated_distance, pt))
-        else: # Any other point
-            distDelta = geopy.distance.distance(lastCoord, newCoord).km
-            cumulated_distance += distDelta
+        last_coord: Point_LV03 = path_.points[i].to_LV03()
+        coord: Point_LV03 = path_.points[i + 1].to_LV03()
 
-            if distDelta > 0.:
-                newSlope = (pt.h - pts_step_1[-1][1].h) / distDelta
-                if abs(newSlope) > 0.0:
-                    if abs(newSlope - lastSlope) > 0.5: # Slope change
-                        pts_step_1.append((cumulated_distance, pt))
-                        lastSlope = newSlope
-                        lastCoord = newCoord
-                        continue
-                        
-                if geopy.distance.distance(lastCoord, newCoord).m > 250:
-                    pts_step_1.append((cumulated_distance, pt))
-                    lastCoord = newCoord
-                    lastSlope = newSlope
-                    continue
+        delta_dist = last_coord.distance(coord)
+        accumulated_distance += delta_dist
 
-    return cumulated_distance, pts_step_1
+        # skip duplicated points in GPX file, less than 1cm in distance
+        if delta_dist <= 0.01:
+            continue
+
+        slope = (coord.h - way_points[-1].point.h) / delta_dist
+        if abs(slope) > 0. and abs(slope - last_slope) > 0.5:  # significant slope change
+            way_points.append(WayPoint(accumulated_distance, coord))
+
+        elif accumulated_distance - way_points[-1].accumulated_distance > 250:
+            way_points.append(WayPoint(accumulated_distance, coord))
+
+        # TODO: add significant local extremum in track elevation
+
+    # Insert last point of path
+    way_points.append(WayPoint(accumulated_distance, path_.points[-1]))
+
+    logger.info(""
+                "Total route length = {}m".format(accumulated_distance))
+
+    return accumulated_distance, way_points
 
 
-def calc_secant_elevation(m: float, b: float, pt_B: Tuple[float, point.Point]):
+def calc_secant_elevation(m: float, b: float, pt_B: WayPoint):
     """
     Calculates the elevation of a point on the secant line defined by m and b. The point on the
     secant line is chosen such that location matches the location of pkr_B.
     elevation = m * loc_of_pt_B + b
     """
 
-    # pt_B[0] returns the location of point B in km
-    return m * (pt_B[0] * 1000) + b
+    # pt_B[0] returns the location of point B in meter
+    return m * pt_B.accumulated_distance + b
 
 
-def calc_secant_line(pt_A: Tuple[float, point.Point], pt_C: Tuple[float, point.Point]):
+def calc_secant_line(pt_A: WayPoint, pt_C: WayPoint):
     """
     Constructs a secant line through points A and C, i.g. a linear function passing through point A and C.
     Returns the slope and the intersect of a linear function through A and C.
     """
 
-    # the locations of pt_A and pt_C given in km.
-    x1, y1 = pt_A[0] * 1000, pt_A[1].h
-    x2, y2 = pt_C[0] * 1000, pt_C[1].h
+    # the locations of pt_A and pt_C given is given in m.
+    x1, y1 = pt_A.accumulated_distance, pt_A.point.h
+    x2, y2 = pt_C.accumulated_distance, pt_C.point.h
 
     # if the location of A and C is identical, the slope m is defined as 0
     m: float = (y1 - y2) / (x1 - x2) if (x1 - x2) != 0 else 0.0
@@ -256,14 +259,14 @@ def calc_secant_line(pt_A: Tuple[float, point.Point], pt_C: Tuple[float, point.P
     return m, b
 
 
-def prepare_for_plot(path_ : path.Path):
+def prepare_for_plot(path_: path.Path_LV03):
     """
     Prepares a gpx file for plotting.
     Returns two list, one with the elevation of all points in the gpx file and one with the associated,
     accumulated distance form the starting point.
     """
 
-    coord: Tuple[float, float] = None
+    coord: Point_LV03 = None
     accumulated_distance: float = 0.0
 
     distances: List[float] = []
@@ -271,15 +274,12 @@ def prepare_for_plot(path_ : path.Path):
 
     for pt in path_.points:
 
-        newCoord = get_coordinates(pt.to_WGS84())
-
         if coord is not None:
-            distDelta = geopy.distance.distance(coord, newCoord).km
-            accumulated_distance += distDelta
+            accumulated_distance += coord.distance(pt)
 
         distances.append(accumulated_distance)
         heights.append(pt.h)
 
-        coord = newCoord
+        coord = pt
 
     return distances, heights
