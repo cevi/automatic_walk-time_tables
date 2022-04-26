@@ -3,16 +3,18 @@ import logging
 import os
 import time
 from pathlib import Path
-from typing import List, Tuple
+from typing import List
 
 import numpy as np
 import requests
 from pyclustering.cluster.kmeans import kmeans
 from pyclustering.utils.metric import type_metric, distance_metric
 
-from automatic_walk_time_tables.geo_processing import gpx_utils
 from automatic_walk_time_tables.generator_status import GeneratorStatus
-from automatic_walk_time_tables.utils import path, point
+from automatic_walk_time_tables.geo_processing import gpx_utils
+from automatic_walk_time_tables.utils import path
+from automatic_walk_time_tables.utils.point import Point_LV03, Point_LV95
+from automatic_walk_time_tables.utils.way_point import WayPoint
 from server_logging.status_handler import ExportStateLogger
 
 
@@ -23,6 +25,7 @@ def GetSpacedElements(array, numElems=4):
 
     indices = np.round(np.linspace(0, len(array) - 1, numElems)).astype(int)
     return list(np.array(array)[indices])
+
 
 class MapCreator:
     A4_HEIGHT_FACTOR = 4.5 / 25.0
@@ -37,7 +40,7 @@ class MapCreator:
     `A4_WIDTH_FACTOR * map_scale` gives you the number of km displayed on one A4 paper.
     """
 
-    def __init__(self, path_ : path.Path, uuid: str):
+    def __init__(self, path_: path.Path, uuid: str):
         self.logger = logging.getLogger(__name__)
         self.path_ = path_
         self.uuid = uuid
@@ -66,7 +69,7 @@ class MapCreator:
         return map_scale
 
     def plot_route_on_map(self,
-                          way_points: List[Tuple[float, point.Point]],
+                          way_points: List[WayPoint],
                           file_name: str,
                           map_scaling: int,
                           name_of_points: List[str],
@@ -140,7 +143,7 @@ class MapCreator:
                     f"PDF Status: {json.loads(pdf_status.content)['done']}: {json.loads(pdf_status.content)['status']}")
 
             self.logger.info(
-                    f"PDF Status: {json.loads(pdf_status.content)['done']}: {json.loads(pdf_status.content)['status']}")
+                f"PDF Status: {json.loads(pdf_status.content)['done']}: {json.loads(pdf_status.content)['status']}")
 
             self.logger.info(f"Received PDF {index + 1} out of {len(map_centers)}.")
             self.logger.log(ExportStateLogger.REQUESTABLE,
@@ -176,7 +179,7 @@ class MapCreator:
             self.logger.info("Saved map to {}_{}_map.pdf".format(file_name, index))
 
     def create_mapfish_query(self, layer, map_scaling, center,
-                             way_points: List[Tuple[float, point.Point]],
+                             way_points: List[WayPoint],
                              name_of_points):
         """
 
@@ -186,8 +189,8 @@ class MapCreator:
 
         path_coordinates = []
         for pt in self.path_.points:
-            pt_lv03 : point.Point_LV03 = pt.to_LV03() # TODO: can we use LV03 here somehow?
-            path_coordinates.append([pt_lv03.lat + 2_000_000, pt_lv03.lon + 1_000_000]) # convert to LV95
+            pt_lv95: Point_LV95 = pt.to_LV95()
+            path_coordinates.append([pt_lv95.lat, pt_lv95.lon])  # convert to LV95
 
         # load the default map matrices, used to inform mapfish about the available map scales and tile size
         with open(str(Path(__file__).resolve().parent) + '/default_map_matrices.json') as json_file:
@@ -251,7 +254,7 @@ class MapCreator:
 
         point_layers = []
         for i, point in enumerate(way_points):
-            lv03 = point[1].to_LV03()
+            lv95 = point.point.to_LV95()
 
             # TODO: currently, we convert to LV95, is there a way to stick to LV03 also for mapfish?
 
@@ -263,7 +266,7 @@ class MapCreator:
                             "type": "Feature",
                             "geometry": {
                                 "type": "Point",
-                                "coordinates": [lv03.lat + 2_000_000, lv03.lon + 1_000_000]
+                                "coordinates": [lv95.lat, lv95.lon]
                             },
                             "properties": {
                                 "_ngeo_style": "1"
@@ -302,7 +305,7 @@ class MapCreator:
                                 "haloColor": "#ffffff",
                                 "haloOpacity": "0.5",
                                 "haloRadius": ".5",
-                                "label": name_of_points[i], # TODO: read point name from point
+                                "label": name_of_points[i],  # TODO: read point name from point
                                 "fillColor": "#FF0000",
                                 "fillOpacity": 0,
                                 "labelAlign": "cm",
@@ -346,15 +349,15 @@ class MapCreator:
 
         w = self.A4_WIDTH_FACTOR * map_scaling
         h = self.A4_HEIGHT_FACTOR * map_scaling
-        n = 0 # number of A4 pages
+        n = 0  # number of A4 pages
         n_points = 200
 
         path_covered = False
 
         points_as_array = []
         for pt in self.path_.points:
-            pt03 = pt.to_LV03()
-            points_as_array.append([pt03.lat + 2_000_000, pt03.lon + 1_000_000]) # TODO: can we use LV03?
+            pt95 = pt.to_LV95()
+            points_as_array.append([pt95.lat, pt95.lon])
 
         while not path_covered:
             n = n + 1

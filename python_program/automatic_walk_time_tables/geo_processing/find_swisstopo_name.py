@@ -3,6 +3,8 @@ import logging
 import os
 from math import sqrt
 
+from automatic_walk_time_tables.utils.point import Point_LV95
+
 logger = logging.getLogger(__name__)
 
 
@@ -24,7 +26,7 @@ def add_to_database(file, db, typeIndex, name, x, y):
     logger.debug("Database has " + str(len(db)) + " entries.")
 
 
-def find_name(coord, dist):
+def find_name(point: Point_LV95, dist):
     """
         See also https://api3.geo.admin.ch/api/faq/index.html#which-layers-have-a-tooltip
         fair use limit 20 Request per minute
@@ -36,8 +38,8 @@ def find_name(coord, dist):
 
     flurname_list = [swiss_name
                      for swiss_name in database if
-                     abs(swiss_name.x - coord[0]) < dist * 4 and
-                     abs(swiss_name.y - coord[1]) < dist * 4]
+                     abs(swiss_name.x - point.lat) < dist * 4 and
+                     abs(swiss_name.y - point.lon) < dist * 4]
 
     # print(list(map(lambda x: x.name, flurname_list)))
 
@@ -50,7 +52,7 @@ def find_name(coord, dist):
     # Flurname swisstopo: 0.9
 
     flurname_list.sort(key=lambda swiss_name:
-    sqrt((abs(swiss_name.x - coord[0]) ** 2 + abs(swiss_name.y - coord[1]) ** 2)) / (
+    sqrt((abs(swiss_name.x - point.lat) ** 2 + abs(swiss_name.y - point.lon) ** 2)) / (
         2 if swiss_name.object_type in ['Haltestelle Bahn', 'Huegel', 'Pass', 'Strassenpass', 'Alpiner Gipfel',
                                         'Gipfel',
                                         ] else
@@ -67,7 +69,7 @@ def find_name(coord, dist):
         return ''
 
     return ('bei/m ' if sqrt(
-        abs(flurname_list[0].x - coord[0]) ** 2 + abs(flurname_list[0].y - coord[1]) ** 2) > dist else '') + \
+        abs(flurname_list[0].x - point.lat) ** 2 + abs(flurname_list[0].y - point.lon) ** 2) > dist else '') + \
            flurname_list[0].name
 
 
