@@ -7,9 +7,9 @@ from typing import List
 import openpyxl
 from matplotlib import pyplot as plt
 
-from automatic_walk_time_tables.geo_processing import find_swisstopo_name, find_walk_table_points
+from automatic_walk_time_tables.geo_processing import find_swisstopo_name
 from automatic_walk_time_tables.utils import path
-from automatic_walk_time_tables.utils.point import Point_LV03, Point_LV95
+from automatic_walk_time_tables.utils.point import Point_LV03
 from automatic_walk_time_tables.utils.way_point import WayPoint
 
 logger = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ def plot_elevation_profile(path_: path.Path_LV03,
                            open_figure: bool):
     """
 
-    Plots the elevation profile of the path contained in the GPX-file. In addition the
+    Plots the elevation profile of the path contained in the GPX-file. In addition, the
     plot contains the approximated elevation profile by the way_points.
 
     Saves the plot as an image in the ./output directory as an image called {{file_name}}<.png
@@ -31,7 +31,11 @@ def plot_elevation_profile(path_: path.Path_LV03,
 
     # clear the plot, plot heights of exported data from SchweizMobil
     plt.clf()
-    distances, heights = find_walk_table_points.prepare_for_plot(path_)
+
+    original_waypoints = path_.to_waypoints()
+    distances = [p.accumulated_distance for p in original_waypoints]
+    heights = [p.point.h for p in original_waypoints]
+
     plt.plot([d / 1_000.0 for d in distances], heights, label='Wanderweg')
 
     # resize plot area
@@ -60,7 +64,7 @@ def plot_elevation_profile(path_: path.Path_LV03,
     plt.grid(color='gray', linestyle='dashed', linewidth=0.5)
 
     # Check if output directory exists, if not, create it.
-    if (not os.path.exists('output')):
+    if not os.path.exists('output'):
         os.mkdir('output')
 
     # show the plot and save image

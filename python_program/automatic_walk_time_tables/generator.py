@@ -45,7 +45,7 @@ class AutomatedWalkTableGenerator:
     def run(self):
         gpx_rout_name = self.path_.route_name
 
-        self.logger.info(str(self.path_))
+        self.logger.debug(str(self.path_))
 
         name = self.output_directory + 'Route' if gpx_rout_name == "" else self.output_directory + gpx_rout_name
         map_numbers = find_map_numbers(self.path_)  # map numbers and their names as a single string
