@@ -27,7 +27,7 @@ def parse_gpx_file(gpx_raw_data : TextIOWrapper) -> path.Path_LV03:
         raise Exception('No track found')
 
     lv03_path = paths[0].to_LV03()
-    lv03_path.route_name = gpx.name
+    lv03_path.route_name = gpx.name if gpx.name else ""
     if not lv03_path.has_elevation_for_all_points():
         lv03_path = height_fetcher.height_fetch_path(lv03_path)
     else:

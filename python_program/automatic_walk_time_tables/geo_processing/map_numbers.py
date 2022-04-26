@@ -18,12 +18,18 @@ def is_in_bbox(bbox: List[float], pt : point.Point_LV03) -> bool:
 
 def sort_maps(s: str) -> int:
     """
-    Carves out the LK number and returns it as an integer
+    Carves out the LK or CN number and returns it as an integer
     This can be used to sort a list of map names.
 
     Sometimes, multiple map numbers are given XXXX/YYYY, so we only want the first one.
     """
-    return int(s.split("(")[1].split(")")[0].split("LK ")[1].split("/")[0])
+
+    unbracketed_str = s.split("(")[1].split(")")[0]
+
+    if 'CN ' in unbracketed_str:
+        return int(unbracketed_str.split("CN ")[1].split("/")[0])
+
+    return int(unbracketed_str.split("LK ")[1].split("/")[0])
 
 
 def find_map_numbers(path_ : path.Path) -> str:
