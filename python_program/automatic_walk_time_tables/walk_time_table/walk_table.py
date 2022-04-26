@@ -9,13 +9,9 @@ import openpyxl
 import requests
 from matplotlib import pyplot as plt
 
-from automatic_walk_time_tables.geo_processing import find_swisstopo_name
 from automatic_walk_time_tables.utils import path
 from automatic_walk_time_tables.utils.point import Point_LV03
 from automatic_walk_time_tables.utils.way_point import WayPoint
-from automatic_walk_time_tables.geo_processing import find_walk_table_points
-from automatic_walk_time_tables.utils import path, point
-from automatic_walk_time_tables.utils.point import Point_LV03
 
 logger = logging.getLogger(__name__)
 
