@@ -56,7 +56,7 @@ class Point_WGS84(Point):
         """ convert WGS84 to LV03 """
         converter = coord_transformation.GPSConverter()
         lv03 = converter.WGS84toLV03(self.lat, self.lon, self.h)
-        return Point_LV03(lv03[0], lv03[1], lv03[2] if self.h != -1. else -1.0)
+        return Point_LV03(lv03[0], lv03[1],  self.h)
         # TODO: make sure that we copy over name etc.
 
 
