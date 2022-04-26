@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 from datetime import timedelta
@@ -5,12 +6,16 @@ from math import log
 from typing import List
 
 import openpyxl
+import requests
 from matplotlib import pyplot as plt
 
 from automatic_walk_time_tables.geo_processing import find_swisstopo_name
 from automatic_walk_time_tables.utils import path
 from automatic_walk_time_tables.utils.point import Point_LV03
 from automatic_walk_time_tables.utils.way_point import WayPoint
+from automatic_walk_time_tables.geo_processing import find_walk_table_points
+from automatic_walk_time_tables.utils import path, point
+from automatic_walk_time_tables.utils.point import Point_LV03
 
 logger = logging.getLogger(__name__)
 
@@ -124,9 +129,20 @@ def create_walk_table(time_stamp, speed, way_points: List[WayPoint], total_dista
 
         time_stamp = time_stamp + timedelta(hours=deltaTime)
 
-        # print infos (in LV95)
-        name_of_point = find_swisstopo_name.find_name(lv03.to_LV95(), 50)
+        # get name
+        # TODO: request all names with one API call
+
+        url = "http://swiss_tml:1848/swiss_name"
+
+        lv95 = lv03.to_LV95()
+        payload = json.dumps([[lv95.lat, lv95.lon]])
+        headers = {'Content-Type': 'application/json'}
+        req = requests.request("GET", url, headers=headers, data=payload)
+        resp = req.json()
+
+        name_of_point = resp[0]['swiss_name']
         name_of_points.append(name_of_point)
+
         logger.debug(
             str(round(abs((oldPoint.accumulated_distance if oldPoint is not None else 0.0) - pt.accumulated_distance),
                       1)) + 'km ' +

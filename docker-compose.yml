@@ -7,6 +7,15 @@ services:
     ports:
       - "8080:8080"
 
+  swiss_tml:
+    build:
+      context: swiss_TLM_api/.
+    ports:
+      - "1848:1848"
+    volumes:
+      - ./swiss_TLM_api/resources:/app/resources
+      - ./swiss_TLM_api/index_cache:/app/index_cache
+
   backend:
     build:
       context: python_program/.
@@ -14,6 +23,7 @@ services:
       - "5000:5000"
     depends_on:
       - mapfish
+      - swiss_tml
 
   webinterface:
     build:

@@ -1,7 +1,3 @@
-# working directories
-input/*
-output/*
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -130,5 +126,3 @@ dmypy.json
 
 .idea
 
-
-map_snipped.png
