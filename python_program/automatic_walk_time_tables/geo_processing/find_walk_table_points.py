@@ -87,7 +87,7 @@ def reduce_number_of_points(pts_step_2: List[WayPoint], walk_point_limit: int):
                     # Check if B must be replaced by a previously dropped point D
                     pt_D = None
                     for pt in list(
-                            filter(lambda p: pt_A.accumulated_distance < p[0] < pt_C.accumulated_distance,
+                            filter(lambda p: pt_A.accumulated_distance < p.accumulated_distance < pt_C.accumulated_distance,
                                    pts_dropped)):
                         secant_elev = calc_secant_elevation(m, b, pt)
                         if abs(secant_elev - pt.point.h) >= drv_limit:
