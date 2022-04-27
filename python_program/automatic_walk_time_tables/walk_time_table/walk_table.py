@@ -136,7 +136,7 @@ def create_walk_table(time_stamp, speed, way_points: List[WayPoint], total_dista
         sheet['C' + str(8 + i)] = int(lv03.h)
         if i > 0:
             sheet['E' + str(8 + i)] = round(
-                abs((oldPoint.accumulated_distance if oldPoint is not None else 0.0) - pt.accumulated_distance), 1)
+                abs((oldPoint.accumulated_distance if oldPoint is not None else 0.0) - pt.accumulated_distance), 1) / 1_000.0
 
         oldPoint = pt
 
