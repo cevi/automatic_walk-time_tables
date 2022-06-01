@@ -52,7 +52,7 @@ def find_map_numbers(path_ : path.Path) -> str:
     all_maps = []
     data = json.loads(result.content)
     for map in data["results"]:
-        all_maps.append([map["properties"]["name_de"], map["bbox"]])
+        all_maps.append([map["properties"]["name"], map["bbox"]])
 
     needed_maps = set()
 

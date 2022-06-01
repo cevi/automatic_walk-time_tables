@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 def plot_elevation_profile(path_: path.Path_LV03,
                            way_points: List[WayPoint],
-                           temp_points: List[WayPoint],
+                           pois: List[WayPoint],
                            file_name: str,
                            open_figure: bool):
     """
@@ -37,19 +37,19 @@ def plot_elevation_profile(path_: path.Path_LV03,
     distances = [p.accumulated_distance for p in original_waypoints]
     heights = [p.point.h for p in original_waypoints]
 
-    plt.plot([d / 1_000.0 for d in distances], heights, label='Wanderweg')
+    plt.plot([d / 1_000.0 for d in distances], heights, label='Wanderweg', zorder=1)
 
     # resize plot area
     additional_space = log(max(heights) - min(heights)) * 25
     plt.ylim(ymax=max(heights) + additional_space, ymin=min(heights) - additional_space)
 
     # add way_points to plot
-    plt.scatter([p.accumulated_distance / 1_000.0 for p in temp_points], [p.point.h for p in temp_points],
-                c='lightgray')
-    plt.scatter([p.accumulated_distance / 1_000.0 for p in way_points], [p.point.h for p in way_points],
-                c='orange')
     plt.plot([p.accumulated_distance / 1_000.0 for p in way_points], [p.point.h for p in way_points],
-             label='Marschzeittabelle')
+             label='Marschzeittabelle', zorder=2)
+    plt.scatter([p.accumulated_distance / 1_000.0 for p in pois], [p.point.h for p in pois],
+                c='lightblue', zorder=1, label='Points of Interest')
+    plt.scatter([p.accumulated_distance / 1_000.0 for p in way_points], [p.point.h for p in way_points],
+                c='orange', s=15, zorder=4, label='Wegpunkte')
 
     # Check difference between the length of the original path and the length of the way points
     logger.info("way_points = {} | distances = {}".format(way_points[-1].accumulated_distance, distances[-1]))
@@ -152,7 +152,8 @@ def create_walk_table(time_stamp, speed, way_points: List[WayPoint], total_dista
         sheet['C' + str(8 + i)] = int(lv03.h)
         if i > 0:
             sheet['E' + str(8 + i)] = round(
-                abs((oldPoint.accumulated_distance if oldPoint is not None else 0.0) - pt.accumulated_distance), 1) / 1_000.0
+                abs((oldPoint.accumulated_distance if oldPoint is not None else 0.0) - pt.accumulated_distance),
+                1) / 1_000.0
 
         oldPoint = pt
 

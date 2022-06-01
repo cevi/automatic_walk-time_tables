@@ -20,7 +20,7 @@ from server_logging.status_handler import ExportStateHandler, ExportStateLogger
 
 stateHandler = ExportStateHandler()
 stateLogger = ExportStateLogger(stateHandler)
-setup_recursive_logger(logging.INFO, stateLogger)
+setup_recursive_logger(logging.DEBUG, stateLogger)
 
 from automatic_walk_time_tables.generator import AutomatedWalkTableGenerator
 
