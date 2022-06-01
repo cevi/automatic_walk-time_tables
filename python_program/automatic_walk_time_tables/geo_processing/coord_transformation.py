@@ -168,7 +168,7 @@ class GPSConverter(object):
         d = []
         d.append(self.WGStoCHy(latitude, longitude))
         d.append(self.WGStoCHx(latitude, longitude))
-        d.append(self.WGStoCHh(latitude, longitude, ellHeight))
+        d.append(ellHeight)
         return d
 
 
