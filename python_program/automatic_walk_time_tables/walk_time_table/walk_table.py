@@ -3,49 +3,57 @@ import logging
 import os
 from datetime import timedelta
 from math import log
-from typing import Tuple, List
+from typing import List
 
 import openpyxl
 import requests
 from matplotlib import pyplot as plt
 
-from automatic_walk_time_tables.geo_processing import find_walk_table_points
-from automatic_walk_time_tables.utils import path, point
+from automatic_walk_time_tables.utils import path
 from automatic_walk_time_tables.utils.point import Point_LV03
+from automatic_walk_time_tables.utils.way_point import WayPoint
 
 logger = logging.getLogger(__name__)
 
 
-def plot_elevation_profile(path: path.Path,
-                           way_points: List[Tuple[float, point.Point]],
-                           temp_points: List[Tuple[float, point.Point]],
+def plot_elevation_profile(path_: path.Path_LV03,
+                           way_points: List[WayPoint],
+                           temp_points: List[WayPoint],
                            file_name: str,
                            open_figure: bool):
     """
 
-    Plots the elevation profile of the path contained in the GPX-file. In addition the
+    Plots the elevation profile of the path contained in the GPX-file. In addition, the
     plot contains the approximated elevation profile by the way_points.
 
     Saves the plot as an image in the ./output directory as an image called {{file_name}}<.png
 
     """
 
-    # clear the plot
+    # clear the plot, plot heights of exported data from SchweizMobil
     plt.clf()
 
-    # plot heights of exported data from SchweizMobil
-    distances, heights = find_walk_table_points.prepare_for_plot(path)
-    plt.plot(distances, heights, label='Wanderweg')
+    original_waypoints = path_.to_waypoints()
+    distances = [p.accumulated_distance for p in original_waypoints]
+    heights = [p.point.h for p in original_waypoints]
+
+    plt.plot([d / 1_000.0 for d in distances], heights, label='Wanderweg')
 
     # resize plot area
     additional_space = log(max(heights) - min(heights)) * 25
     plt.ylim(ymax=max(heights) + additional_space, ymin=min(heights) - additional_space)
 
     # add way_points to plot
-    plt.scatter([dist[0] for dist in temp_points], [height[1].h for height in temp_points], c='lightgray', )
-    plt.scatter([dist[0] for dist in way_points], [height[1].h for height in way_points], c='orange', )
-    plt.plot([dist[0] for dist in way_points], [height[1].h for height in way_points],
+    plt.scatter([p.accumulated_distance / 1_000.0 for p in temp_points], [p.point.h for p in temp_points],
+                c='lightgray')
+    plt.scatter([p.accumulated_distance / 1_000.0 for p in way_points], [p.point.h for p in way_points],
+                c='orange')
+    plt.plot([p.accumulated_distance / 1_000.0 for p in way_points], [p.point.h for p in way_points],
              label='Marschzeittabelle')
+
+    # Check difference between the length of the original path and the length of the way points
+    logger.info("way_points = {} | distances = {}".format(way_points[-1].accumulated_distance, distances[-1]))
+    assert abs(way_points[-1].accumulated_distance - distances[-1]) <= 250  # max diff 250 meters
 
     # labels
     plt.ylabel('Höhe [m ü. M.]')
@@ -57,7 +65,7 @@ def plot_elevation_profile(path: path.Path,
     plt.grid(color='gray', linestyle='dashed', linewidth=0.5)
 
     # Check if output directory exists, if not, create it.
-    if (not os.path.exists('output')):
+    if not os.path.exists('output'):
         os.mkdir('output')
 
     # show the plot and save image
@@ -70,7 +78,7 @@ def plot_elevation_profile(path: path.Path,
         plt.show()
 
 
-def create_walk_table(time_stamp, speed, way_points: List[Tuple[float, point.Point]], total_distance, file_name: str,
+def create_walk_table(time_stamp, speed, way_points: List[WayPoint], total_distance, file_name: str,
                       route_name: str, creator_name: str,
                       map_numbers: str):
     """
@@ -106,12 +114,13 @@ def create_walk_table(time_stamp, speed, way_points: List[Tuple[float, point.Poi
 
     # get infos about points
     for i, pt in enumerate(way_points):
-        lv03: Point_LV03 = pt[1].to_LV03()
+        lv03: Point_LV03 = pt.point.to_LV03()
 
         # calc time
         deltaTime = 0.0
         if oldPoint is not None:
-            deltaTime = calc_walk_time(pt[1].h - oldPoint[1].h, abs(oldPoint[0] - pt[0]), speed)
+            deltaTime = calc_walk_time(pt.point.h - oldPoint.point.h,
+                                       abs(oldPoint.accumulated_distance - pt.accumulated_distance), speed)
         time += deltaTime
 
         time_stamp = time_stamp + timedelta(hours=deltaTime)
@@ -121,7 +130,8 @@ def create_walk_table(time_stamp, speed, way_points: List[Tuple[float, point.Poi
 
         url = "http://swiss_tml:1848/swiss_name"
 
-        payload = json.dumps([[lv03.lat + 2_000_000, lv03.lon + 1_000_000]])
+        lv95 = lv03.to_LV95()
+        payload = json.dumps([[lv95.lat, lv95.lon]])
         headers = {'Content-Type': 'application/json'}
         req = requests.request("GET", url, headers=headers, data=payload)
         resp = req.json()
@@ -130,7 +140,8 @@ def create_walk_table(time_stamp, speed, way_points: List[Tuple[float, point.Poi
         name_of_points.append(name_of_point)
 
         logger.debug(
-            str(round(abs((oldPoint[0] if oldPoint is not None else 0.0) - pt[0]), 1)) + 'km ' +
+            str(round(abs((oldPoint.accumulated_distance if oldPoint is not None else 0.0) - pt.accumulated_distance),
+                      1)) + 'km ' +
             str(int(lv03.h)) + 'm ü. M. ' +
             str(round(deltaTime, 1)) + 'h ' +
             time_stamp.strftime('%H:%M') + 'Uhr ' +
@@ -140,7 +151,8 @@ def create_walk_table(time_stamp, speed, way_points: List[Tuple[float, point.Poi
             int(lv03.lat)) + ', ' + str(int(lv03.lon)) + ')'
         sheet['C' + str(8 + i)] = int(lv03.h)
         if i > 0:
-            sheet['E' + str(8 + i)] = round(abs((oldPoint[0] if oldPoint is not None else 0.0) - pt[0]), 1)
+            sheet['E' + str(8 + i)] = round(
+                abs((oldPoint.accumulated_distance if oldPoint is not None else 0.0) - pt.accumulated_distance), 1) / 1_000.0
 
         oldPoint = pt
 
