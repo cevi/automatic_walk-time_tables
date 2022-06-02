@@ -70,6 +70,8 @@ class AutomatedWalkTableGenerator:
         name = self.output_directory + 'Route' if gpx_rout_name == "" else self.output_directory + gpx_rout_name
 
         # calc Points for walk table
+        # TODO: find the map numbers using the swiss_TML API instead of calling the Swisstopo API.
+        # This could improve the performance as currently this function call takes around 5s to complete.
         map_numbers = self.__log_runtime(find_map_numbers, "Time used to find map numbers", self.path_)
         self.logger.debug("Input File Name: %s", name)
         self.logger.debug("Map Numbers: %s", map_numbers)

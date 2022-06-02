@@ -12,6 +12,9 @@ from automatic_walk_time_tables.utils.way_point import WayPoint
 logger = logging.getLogger(__name__)
 
 
+# TODO: converte this file to a class
+# Doing so we can avoid a lot of function arguments, and replace them with instance variables.
+
 def replace_with_close_by_pois(way_points: List[WayPoint],
                                pois: List[WayPoint],
                                original_waypoints: List[WayPoint]) -> List[WayPoint]:
@@ -67,6 +70,10 @@ def replace_with_close_by_pois(way_points: List[WayPoint],
             final_way_points.append(closest_poi)
             pois.remove(closest_poi)
             continue
+
+        # TODO: add addtional POIs
+        # if we haven't included all POIs in the path, we could add additional, new waypoints based on the
+        # leftovers of the POIs. We add them in the order of the furthers secant to path distance.
 
         final_way_points.append(p)
 
@@ -276,6 +283,11 @@ def calc_points_of_interest(path_: List[WayPoint]) -> List[WayPoint]:
     pois.append(path_[min_index])
 
     # TODO: calc points of interest
+    # Either the user passes the POIs with the API call or we have to calculate them.
+    # In the latter case, these are to be calculated using the map data, e.g. exciting points like mountain peaks,
+    # significant river crossings, castles/runes, significant forest edges, etc.
+    # Ths should be done with a call to the swiss_TLM API.
+
     # random point
     pois.append(path_[560])
     pois.append(path_[870])

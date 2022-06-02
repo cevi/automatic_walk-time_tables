@@ -41,6 +41,10 @@ def get_name():
 
     return jsonify(response)
 
+# TODO: add an endpoint for POI calculation
+
+# TODO: add en endpoint for the calculation of the map numbers
+# Problem: until now if not found the correct dataset containing the map borders
 
 if __name__ == "__main__":
     app.run(debug=(os.environ.get("DEBUG", "False").lower() in ('true', '1', 't')), host="0.0.0.0",
