@@ -24,6 +24,8 @@ services:
     depends_on:
       - mapfish
       - swiss_tml
+    environment:
+      TZ: Europe/Zurich
 
   webinterface:
     build:

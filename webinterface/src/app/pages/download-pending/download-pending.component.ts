@@ -1,6 +1,7 @@
 import {Component, OnInit} from '@angular/core';
 import {environment} from "../../../environments/environment";
 import {ActivatedRoute, Router} from "@angular/router";
+import { StatusManagerService } from 'src/app/services/status-manager.service';
 
 @Component({
   selector: 'app-download-pending',
@@ -10,12 +11,9 @@ import {ActivatedRoute, Router} from "@angular/router";
 export class DownloadPendingComponent implements OnInit {
 
   static baseURL = environment.API_URL;
-
-  status_message: string = 'Der Export wurde gestartet, wir bitten um etwas Geduld.';
-  status: string = 'unknown';
   private readonly uuid: string = '';
 
-  constructor( activatedRoute: ActivatedRoute, private router: Router) {
+  constructor( activatedRoute: ActivatedRoute, private router: Router, public statusManager: StatusManagerService) {
     // Get UUID from the URL
     this.uuid  = activatedRoute.snapshot.url[1].toString();
   }
@@ -32,8 +30,10 @@ export class DownloadPendingComponent implements OnInit {
       .then(response => response.json())
       .then(res => {
 
-        this.status = res.status;
-        this.status_message = res.message;
+        this.statusManager.status = res.status
+        this.statusManager.status_message = res.message
+        this.statusManager.last_change = res.last_change
+        this.statusManager.history = res.history
 
         if ('finished' == res.status) {
           this.router.navigate(['download', this.uuid]).then();
@@ -52,8 +52,8 @@ export class DownloadPendingComponent implements OnInit {
   }
 
   private log_network_error(err: Error) {
-    this.status = 'error';
-    this.status_message = 'Ein Netzwerk-Fehler ist aufgetreten, bitte versuche es erneut.'
+    this.statusManager.status = 'error';
+    this.statusManager.status_message = 'Ein Netzwerk-Fehler ist aufgetreten, bitte versuche es erneut.'
     console.error(err);
   }
 

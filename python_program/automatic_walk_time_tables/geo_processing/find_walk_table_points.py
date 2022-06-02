@@ -36,7 +36,7 @@ def replace_with_close_by_pois(way_points: List[WayPoint],
         closest_poi = min(pois, key=lambda poi: abs(poi.accumulated_distance - p.accumulated_distance))
 
         # Check if the poi lies between way_points[i - 1] and way_points[i + 1]
-        if not (way_points[i - 1].accumulated_distance < closest_poi.accumulated_distance < \
+        if not (way_points[i - 1].accumulated_distance < closest_poi.accumulated_distance <
                 way_points[i + 1].accumulated_distance):
             final_way_points.append(p)
             continue

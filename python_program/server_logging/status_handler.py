@@ -1,6 +1,6 @@
 import logging
 import threading
-import time
+from datetime import datetime
 
 
 class ExportStateHandler:
@@ -29,7 +29,23 @@ class ExportStateHandler:
         try:
             if type(uuid) is not str or len(uuid) == 0:
                 raise Exception("Invalid uuid")
-            self.states[uuid] = {'status': status, 'message': msg, 'last_change': time.time()}
+
+            # Update History
+            history = []
+            if uuid in self.states.keys():
+                history = self.states[uuid]['history']
+
+                old_state = self.states[uuid].copy()
+                del old_state['history']
+                history.append(old_state)
+
+            self.states[uuid] = {
+                'status': status,
+                'message': msg,
+                'last_change': datetime.now().strftime("%H:%M:%S"),
+                'history': history
+            }
+
         finally:
             self.lock.release()
 
@@ -44,7 +60,11 @@ class ExportStateHandler:
             if type(uuid) is not str or len(uuid) == 0:
                 raise Exception("Invalid uuid")
             if uuid not in self.states.keys():
-                return {'status': 'error', 'message': 'Status zu dieser ID ist unbekannt.', 'last_change': time.time()}
+                return {
+                    'status': 'error',
+                    'message': 'Status zu dieser ID ist unbekannt.',
+                    'last_change': datetime.now().strftime("%H:%M:%S")
+                }
             return self.states[uuid]
         finally:
             self.lock.release()
