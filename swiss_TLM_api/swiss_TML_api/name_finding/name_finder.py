@@ -9,6 +9,17 @@ logger = logging.getLogger(__name__)
 class NameFinder(NameIndex):
 
     def __init__(self, force_rebuild=False, reduced=False):
+        """
+            If force_rebuild is True, the index will be rebuilt (all old files will be removed).
+            If force_rebuild is False, the index will be loaded from the filesystem (if it exists)
+            or downloaded from Google Drive.
+
+            If reduced is True, only the reduced index (city of Bern) will be used.
+            Note: this index cannot be downloaded from Google Drive. It must be created form the original
+            files provided by Swisstopo.
+
+        """
+
         start = time.time()
         super().__init__(force_rebuild, reduced)
         end = time.time()

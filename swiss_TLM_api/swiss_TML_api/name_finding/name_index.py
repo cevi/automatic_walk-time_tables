@@ -1,8 +1,10 @@
 import glob
 import logging
 import os
+import shutil
 import time
 
+import gdown
 from rtree.index import Index as RTreeIndex
 
 from swiss_TML_api.name_finding.index_builder.einzelobjekte import Einzelobjekte
@@ -30,8 +32,19 @@ def delete_file(pattern):
 class NameIndex:
 
     def __init__(self, force_rebuild, reduced):
+
         self.index_file_path = './index_cache/swissname_data_index'
 
+        # Check if index files exist
+        # If the index does not exist and force_rebuild is False,
+        # we download the index from Google Drive
+        if not force_rebuild and not os.path.isfile(self.index_file_path + '.dat'):
+            file_id = "1gESYkWDCrAJ06ADBwM-c2SrEpri6I5P0"
+            output = "./index_cache/index_cache.tar.xz"
+            gdown.download(id=file_id, output=output, quiet=False)
+            shutil.unpack_archive(output, "./index_cache/")
+
+        # If force_rebuild is enabled, we recreate the index file.
         if force_rebuild:
             delete_file('./index_cache/*.dat')
             delete_file('./index_cache/*.idx')
@@ -62,7 +75,8 @@ class NameIndex:
         #   -   Druckleitung bzw. Fliessgewaesser als Kreuzung mit Weg aus TLM_FLIESSGEWAESSER
         #   -   Add intersections with river that have no bridge (e.g. 2720398, 1178367)
 
-        index_parts = [ForestBorders, TLM_Streets, StopsAndStations, LeisureAreals, Flurnamen, Versorgungsbauten, Einzelobjekte]
+        index_parts = [ForestBorders, TLM_Streets, StopsAndStations, LeisureAreals, Flurnamen, Versorgungsbauten,
+                       Einzelobjekte]
         for index_part in index_parts:
             start = time.time()
             logger.info("\tInsertion of {} started...".format(index_part.__name__))
