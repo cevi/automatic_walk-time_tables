@@ -7,9 +7,7 @@ from automatic_walk_time_tables.generator_status import GeneratorStatus
 from automatic_walk_time_tables.geo_processing.find_walk_table_points import select_waypoints
 from automatic_walk_time_tables.geo_processing.map_numbers import find_map_numbers
 from automatic_walk_time_tables.map_downloader.create_map import MapCreator
-from automatic_walk_time_tables.utils import path
-from automatic_walk_time_tables.utils.file_parser import parse_gpx_file, parse_kml_file
-from automatic_walk_time_tables.utils.path import Path_LV03
+from automatic_walk_time_tables.utils.file_parser import GeoFileParser
 from automatic_walk_time_tables.walk_time_table.walk_table import plot_elevation_profile, create_walk_table
 from server_logging.status_handler import ExportStateLogger
 
@@ -25,21 +23,8 @@ class AutomatedWalkTableGenerator:
         for arg in vars(self.args):
             self.logger.debug("  %s: %s", arg, getattr(self.args, arg))
 
-        route_file = open(self.args.file_name, 'r')
-        self.logger.debug("Reading %s", self.args.file_name)
-
-        # get the extension of the file
-        extension = pathlib.Path(self.args.file_name).suffix
-
-        self.path_: Path_LV03 = path.Path_LV03()
-        self.path_.clear()
-
-        if extension == '.gpx':
-            self.path_ = parse_gpx_file(route_file)
-        elif extension == '.kml':
-            self.path_ = parse_kml_file(route_file)
-        else:
-            raise Exception('Unsupported file format')
+        geo_file_parser = GeoFileParser()
+        self.path_ = geo_file_parser.parse(self.args.file_name)
 
         self.output_directory = args.output_directory
         pathlib.Path(self.output_directory).mkdir(parents=True, exist_ok=True)
