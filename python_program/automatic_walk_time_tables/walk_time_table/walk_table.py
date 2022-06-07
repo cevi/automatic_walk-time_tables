@@ -3,22 +3,21 @@ import logging
 import os
 from datetime import timedelta
 from math import log
-from typing import List
 
 import openpyxl
 import requests
 from matplotlib import pyplot as plt
 
 from automatic_walk_time_tables.utils import path
+from automatic_walk_time_tables.utils.path import Path
 from automatic_walk_time_tables.utils.point import Point_LV03
-from automatic_walk_time_tables.utils.way_point import WayPoint
 
 logger = logging.getLogger(__name__)
 
 
-def plot_elevation_profile(path_: path.Path_LV03,
-                           way_points: List[WayPoint],
-                           pois: List[WayPoint],
+def plot_elevation_profile(path_: path.Path,
+                           way_points: path.Path,
+                           pois: path.Path,
                            file_name: str,
                            open_figure: bool):
     """
@@ -33,9 +32,8 @@ def plot_elevation_profile(path_: path.Path_LV03,
     # clear the plot, plot heights of exported data from SchweizMobil
     plt.clf()
 
-    original_waypoints = path_.to_waypoints()
-    distances = [p.accumulated_distance for p in original_waypoints]
-    heights = [p.point.h for p in original_waypoints]
+    distances = [p.accumulated_distance for p in path_.way_points]
+    heights = [p.point.h for p in path_.way_points]
 
     plt.plot([d / 1_000.0 for d in distances], heights, label='Wanderweg', zorder=1)
 
@@ -44,16 +42,19 @@ def plot_elevation_profile(path_: path.Path_LV03,
     plt.ylim(ymax=max(heights) + additional_space, ymin=min(heights) - additional_space)
 
     # add way_points to plot
-    plt.plot([p.accumulated_distance / 1_000.0 for p in way_points], [p.point.h for p in way_points],
+    plt.plot([p.accumulated_distance / 1_000.0 for p in way_points.way_points],
+             [p.point.h for p in way_points.way_points],
              label='Marschzeittabelle', zorder=2)
-    plt.scatter([p.accumulated_distance / 1_000.0 for p in pois], [p.point.h for p in pois],
+    plt.scatter([p.accumulated_distance / 1_000.0 for p in pois.way_points], [p.point.h for p in pois.way_points],
                 c='lightblue', zorder=1, label='Points of Interest')
-    plt.scatter([p.accumulated_distance / 1_000.0 for p in way_points], [p.point.h for p in way_points],
+    plt.scatter([p.accumulated_distance / 1_000.0 for p in way_points.way_points],
+                [p.point.h for p in way_points.way_points],
                 c='orange', s=15, zorder=4, label='Wegpunkte')
 
     # Check difference between the length of the original path and the length of the way points
-    logger.info("way_points = {} | distances = {}".format(way_points[-1].accumulated_distance, distances[-1]))
-    assert abs(way_points[-1].accumulated_distance - distances[-1]) <= 250  # max diff 250 meters
+    logger.info(
+        "way_points = {} | distances = {}".format(way_points.way_points[-1].accumulated_distance, distances[-1]))
+    assert abs(way_points.way_points[-1].accumulated_distance - distances[-1]) <= 250  # max diff 250 meters
 
     # labels
     plt.ylabel('Höhe [m ü. M.]')
@@ -78,7 +79,7 @@ def plot_elevation_profile(path_: path.Path_LV03,
         plt.show()
 
 
-def create_walk_table(time_stamp, speed, way_points: List[WayPoint], total_distance, file_name: str,
+def create_walk_table(time_stamp, speed, way_points: Path, file_name: str,
                       route_name: str, creator_name: str,
                       map_numbers: str):
     """
@@ -113,7 +114,7 @@ def create_walk_table(time_stamp, speed, way_points: List[WayPoint], total_dista
     name_of_points = []
 
     # get infos about points
-    for i, pt in enumerate(way_points):
+    for i, pt in enumerate(way_points.way_points):
         lv03: Point_LV03 = pt.point.to_LV03()
 
         # calc time
@@ -158,7 +159,7 @@ def create_walk_table(time_stamp, speed, way_points: List[WayPoint], total_dista
         oldPoint = pt
 
     logger.debug('--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---')
-    logger.debug(str(round(total_distance, 1)) + 'km ' + str(round(time, 1)) + 'h')
+    logger.debug(str(round(way_points.total_distance, 1)) + 'km ' + str(round(time, 1)) + 'h')
     logger.debug('=== === === === === === === === === === === === === === === === === === ===')
 
     # Check if output directory exists, if not, create it.

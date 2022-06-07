@@ -16,11 +16,11 @@ class GeoFileParser(object):
     """
 
     def __init__(self):
-        self.logger = logging.getLogger(__file__)
+        self.__logger = logging.getLogger(__file__)
 
     def parse(self, file_name: str) -> path.Path:
         route_file = open(file_name, 'r')
-        self.logger.debug("Reading %s", file_name)
+        self.__logger.debug("Reading %s", file_name)
 
         # get the extension of the file
         extension = pathlib.Path(file_name).suffix
@@ -32,15 +32,15 @@ class GeoFileParser(object):
         else:
             raise Exception('Unsupported file format')
 
-    def __parse_gpx_file(self, gpx_raw_data: TextIO) -> path.Path_LV03:
+    def __parse_gpx_file(self, gpx_raw_data: TextIO) -> path.Path:
         gpx: gpxpy.gpx = gpxpy.parse(gpx_raw_data)
-        paths: List[path.Path_WGS84] = []
+        paths: List[path.Path] = []
         for track in gpx.tracks:
             for segment in track.segments:
                 points: List[point.Point_WGS84] = []
                 for p in segment.points:
                     points.append(point.Point_WGS84(p.latitude, p.longitude, p.elevation))
-                paths.append(path.Path_WGS84(points))
+                paths.append(path.Path(points))
 
         if len(paths) > 1:
             raise Exception('More than one track found')
@@ -48,18 +48,18 @@ class GeoFileParser(object):
         if len(paths) == 0:
             raise Exception('No track found')
 
-        lv03_path = paths[0].to_LV03()
-        lv03_path.route_name = gpx.name if gpx.name else ""
-        if not lv03_path.has_elevation_for_all_points():
-            lv03_path = height_fetcher.height_fetch_path(lv03_path)
+        path_ = paths[0]
+        path_.route_name = gpx.name if gpx.name else ""
+        if not path_.has_elevation_for_all_points():
+            path_ = height_fetcher.height_fetch_path(path_)
         else:
             pass  # all good, GPX has elevation data
 
-        self.logger.debug("Loaded GPX file with " + str(len(lv03_path.points)) + " coordinates.")
+        self.__logger.debug("Loaded GPX file with " + str(path_.number_of_waypoints) + " coordinates.")
 
-        return lv03_path
+        return path_
 
-    def parse_kml_file__(self, file_path: TextIO) -> path.Path_LV03:
+    def parse_kml_file__(self, file_path: TextIO) -> path.Path:
         raw_data = file_path.read()
 
         # find <LineString> and </LineString>
@@ -88,7 +88,7 @@ class GeoFileParser(object):
         coordinates = [c.split(',') for c in coordinates]
         has_elevation = len(coordinates[0]) == 3
 
-        self.logger.debug("Loaded KML file with " + str(len(coordinates)) + " coordinates.")
+        self.__logger.debug("Loaded KML file with " + str(len(coordinates)) + " coordinates.")
 
         if not has_elevation:
             # convert the first pair of coordinates to floats and compare them
@@ -101,16 +101,17 @@ class GeoFileParser(object):
                 coordinates = [point.Point_WGS84(float(c[1]), float(c[0])) for c in coordinates]
             else:
                 coordinates = [point.Point_WGS84(float(c[0]), float(c[1])) for c in coordinates]
-            path_lv03 = path.Path_WGS84(coordinates).to_LV03()
-            path_lv03 = height_fetcher.height_fetch_path(path_lv03)
-            return path_lv03
 
+            path_ = path.Path(coordinates)
+            path_ = height_fetcher.height_fetch_path(path_)
+            return path_
+
+        c1 = float(coordinates[0][0])
+        c2 = float(coordinates[0][1])
+        if c1 < c2:
+            # latitudes and longitudes are flipped
+            coordinates = [point.Point_WGS84(float(c[1]), float(c[0]), float(c[2])) for c in coordinates]
         else:
-            c1 = float(coordinates[0][0])
-            c2 = float(coordinates[0][1])
-            if c1 < c2:
-                # latitudes and longitudes are flipped
-                coordinates = [point.Point_WGS84(float(c[1]), float(c[0]), float(c[2])) for c in coordinates]
-            else:
-                coordinates = [point.Point_WGS84(float(c[0]), float(c[1]), float(c[2])) for c in coordinates]
-        return path.Path_LV03([p.to_LV03() for p in coordinates])
+            coordinates = [point.Point_WGS84(float(c[0]), float(c[1]), float(c[2])) for c in coordinates]
+
+        return path.Path(coordinates)

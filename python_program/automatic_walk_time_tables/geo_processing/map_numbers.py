@@ -9,12 +9,13 @@ from automatic_walk_time_tables.utils import path, point
 logger = logging.getLogger(__name__)
 
 
-def is_in_bbox(bbox: List[float], pt : point.Point_LV03) -> bool:
+def is_in_bbox(bbox: List[float], pt: point.Point_LV03) -> bool:
     """ 
     Checks if a given GPX point in LV03 is inside a bounding box (given in LV03 coordinates).
     """
 
     return bbox[0] < pt.lat < bbox[2] and bbox[1] < pt.lon < bbox[3]
+
 
 def sort_maps(s: str) -> int:
     """
@@ -32,7 +33,7 @@ def sort_maps(s: str) -> int:
     return int(unbracketed_str.split("LK ")[1].split("/")[0])
 
 
-def find_map_numbers(path_ : path.Path) -> str:
+def find_map_numbers(path_: path.Path) -> str:
     """
     Gets the Landeskarten-numbers around the start point of the tour. Then checks for each point, if it is inside one of the maps.
     If so, the card will be added and finally all cards are returned as a string sorted by number ascending.
@@ -40,11 +41,11 @@ def find_map_numbers(path_ : path.Path) -> str:
     base_url = "https://api3.geo.admin.ch/rest/services/all/MapServer/identify?geometryFormat=geojson&geometryType=esriGeometryPoint&lang=de&layers=all:ch.swisstopo.geologie-geologischer_atlas.metadata&limit=50&returnGeometry=true&tolerance=100&"
 
     # get lv95 coordinates for the start point
-    start_point : point.Point_LV03 = path_.points[0].to_LV03()
+    start_point: point.Point_LV03 = path_.way_points[0].point.to_LV03()
 
     # Now we get all Landeskarte numbers from the API for the maps around start and end.
     # This means 1 request, which is below the fair use limit.
-    url = base_url + f"geometry={start_point.lat},{start_point.lon}&imageDisplay=1283,937,96&mapExtent=400000,000000,900000,300000" # extent in LV03
+    url = base_url + f"geometry={start_point.lat},{start_point.lon}&imageDisplay=1283,937,96&mapExtent=400000,000000,900000,300000"  # extent in LV03
 
     logger.debug("Fetching " + url)
     result = requests.get(url)
@@ -56,9 +57,9 @@ def find_map_numbers(path_ : path.Path) -> str:
 
     needed_maps = set()
 
-    for p in path_.points:
+    for p in path_.way_points:
         for name, bbox in all_maps:
-            if is_in_bbox(bbox, p):
+            if is_in_bbox(bbox, p.point):
                 needed_maps.add(name)
                 break
 

@@ -10,11 +10,10 @@ import requests
 from pyclustering.cluster.kmeans import kmeans
 from pyclustering.utils.metric import type_metric, distance_metric
 
+import automatic_walk_time_tables.utils.geometry_utils
 from automatic_walk_time_tables.generator_status import GeneratorStatus
-from automatic_walk_time_tables.geo_processing import gpx_utils
 from automatic_walk_time_tables.utils import path
-from automatic_walk_time_tables.utils.point import Point_LV03, Point_LV95
-from automatic_walk_time_tables.utils.way_point import WayPoint
+from automatic_walk_time_tables.utils.point import Point_LV95
 from server_logging.status_handler import ExportStateLogger
 
 
@@ -55,21 +54,21 @@ class MapCreator:
 
         """
 
-        lower_left, upper_right = gpx_utils.calc_perimeter(self.path_)
+        lower_left, upper_right = automatic_walk_time_tables.utils.geometry_utils.calc_perimeter(self.path_)
 
         # List of most common map scales
         common_map_scales = [10_000, 25_000, 50_000, 100_000, 200_000]
 
         for map_scale in common_map_scales:
             if self.A4_HEIGHT_FACTOR * map_scale >= upper_right.lon - lower_left.lon and \
-                    self.A4_WIDTH_FACTOR * map_scale >= lower_left.lon - upper_right.lan:
+                    self.A4_WIDTH_FACTOR * map_scale >= lower_left.lon - upper_right.lat:
                 break
 
         self.logger.info(f'Map scaling automatically set to 1:{map_scale}')
         return map_scale
 
     def plot_route_on_map(self,
-                          way_points: List[WayPoint],
+                          way_points: path.Path,
                           file_name: str,
                           map_scaling: int,
                           name_of_points: List[str],
@@ -107,7 +106,8 @@ class MapCreator:
 
         for index, map_center in enumerate(map_centers):
 
-            query_json = self.create_mapfish_query(layer, map_scaling, map_center, way_points, name_of_points)
+            query_json = self.create_mapfish_query(layer, map_scaling, map_center, way_points,
+                                                   name_of_points)
 
             base_url = "{}://{}:{}".format(print_api_protocol, print_api_base_url, print_api_port)
             url = '{}/print/default/report.pdf'.format(base_url)
@@ -179,7 +179,7 @@ class MapCreator:
             self.logger.info("Saved map to {}_{}_map.pdf".format(file_name, index))
 
     def create_mapfish_query(self, layer, map_scaling, center,
-                             way_points: List[WayPoint],
+                             way_points: path.Path,
                              name_of_points):
         """
 
@@ -188,8 +188,8 @@ class MapCreator:
         """
 
         path_coordinates = []
-        for pt in self.path_.points:
-            pt_lv95: Point_LV95 = pt.to_LV95()
+        for pt in self.path_.way_points:
+            pt_lv95: Point_LV95 = pt.point.to_LV95()
             path_coordinates.append([pt_lv95.lat, pt_lv95.lon])  # convert to LV95
 
         # load the default map matrices, used to inform mapfish about the available map scales and tile size
@@ -253,7 +253,7 @@ class MapCreator:
         }
 
         point_layers = []
-        for i, point in enumerate(way_points):
+        for i, point in enumerate(way_points.way_points):
             lv95 = point.point.to_LV95()
 
             # TODO: currently, we convert to LV95, is there a way to stick to LV03 also for mapfish?
@@ -355,8 +355,8 @@ class MapCreator:
         path_covered = False
 
         points_as_array = []
-        for pt in self.path_.points:
-            pt95 = pt.to_LV95()
+        for pt in self.path_.way_points:
+            pt95 = pt.point.to_LV95()
             points_as_array.append([pt95.lat, pt95.lon])
 
         while not path_covered:
