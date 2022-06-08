@@ -4,7 +4,7 @@ import pathlib
 import time
 
 from automatic_walk_time_tables.generator_status import GeneratorStatus
-from automatic_walk_time_tables.geo_processing.map_numbers import find_map_numbers
+from automatic_walk_time_tables.geo_processing.map_numbers import fetch_map_numbers
 from automatic_walk_time_tables.map_downloader.create_map import MapCreator
 from automatic_walk_time_tables.path_transformers.douglas_peucker_transformer import DouglasPeuckerTransformer
 from automatic_walk_time_tables.path_transformers.naming_transformer import NamingTransformer
@@ -46,12 +46,6 @@ class AutomatedWalkTableGenerator:
 
         name = self.__output_directory + 'Route' if gpx_rout_name == "" else self.__output_directory + gpx_rout_name
 
-        # TODO: Find the map numbers using the swiss_TML API instead of calling the Swisstopo API.
-        #       This could improve the performance as currently this function call takes around 5s to complete.
-        map_numbers = self.__log_runtime(find_map_numbers, "Time used to find map numbers", self.__path)
-        self.__logger.debug("Input File Name: %s", name)
-        self.__logger.debug("Map Numbers: %s", map_numbers)
-
         # calc POIs for the path
         pois_transformer = POIsTransformer()
         pois: path.Path = pois_transformer.transform(self.__path)
@@ -68,7 +62,6 @@ class AutomatedWalkTableGenerator:
 
         if self.args.create_elevation_profile:
             self.__logger.debug('Boolean indicates that we should create the elevation profile.')
-            # calc Points for walk table
             self.__log_runtime(plot_elevation_profile, "Time used to plot elevation profile excel", self.__path,
                                selected_way_points, pois, file_name=name,
                                open_figure=self.args.open_figure)
@@ -76,6 +69,10 @@ class AutomatedWalkTableGenerator:
                               {'uuid': self.uuid, 'status': GeneratorStatus.RUNNING})
 
         if self.args.create_excel:
+            map_numbers = self.__log_runtime(fetch_map_numbers, "Time used to fetch map numbers", self.__path)
+            self.__logger.debug("Input File Name: %s", name)
+            self.__logger.debug("Map Numbers: %s", map_numbers)
+
             self.__logger.debug('Boolean indicates that we should create walk-time table as Excel file')
             self.__log_runtime(create_walk_table, "Time used to create walk-time table as Excel",
                                self.args.departure_time, self.args.velocity, selected_way_points,

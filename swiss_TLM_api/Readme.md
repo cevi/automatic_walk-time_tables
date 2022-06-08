@@ -12,6 +12,7 @@ More information about the topographic landscape model can be found here:
 A detailed description of the API endpoint can be found here: [API Endpoints](API_Endpoints.md).
 
 - swiss_name: find names for given points
+- map_number: fetch the map numbers for a given path
 
 **Future Endpoints**:
 - route calculation, given two points, the API returns a list of points describing a route between the two.

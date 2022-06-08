@@ -6,6 +6,7 @@ from flask_cors import CORS
 from shapely.geometry import Point
 
 from swiss_TML_api.logging.log_helper import setup_recursive_logger
+from swiss_TML_api.map_numbers.map_numbers_fetcher import fetch_map_numbers
 
 setup_recursive_logger(logging.INFO)
 logger = logging.getLogger(__name__)
@@ -41,10 +42,13 @@ def get_name():
 
     return jsonify(response)
 
+
 # TODO: add an endpoint for POI calculation
 
-# TODO: add en endpoint for the calculation of the map numbers
-# Problem: until now if not found the correct dataset containing the map borders
+@app.route('/map_numbers', methods=['GET'])
+def get_map_numbers():
+    return fetch_map_numbers()
+
 
 if __name__ == "__main__":
     app.run(debug=(os.environ.get("DEBUG", "False").lower() in ('true', '1', 't')), host="0.0.0.0",
