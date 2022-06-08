@@ -70,7 +70,12 @@ class AutomatedWalkTableGenerator:
                               {'uuid': self.uuid, 'status': GeneratorStatus.RUNNING})
 
         if self.args.create_excel:
-            map_numbers = self.__log_runtime(fetch_map_numbers, "Time used to fetch map numbers", self.__path)
+
+            # We use fetch map numbers only for the selected way points,
+            # this is much faster that for every point in the original path. As the swiss_TML_api uses a tolerance
+            # of 2_000m anyway the chance to miss a map number is very small.
+
+            map_numbers = self.__log_runtime(fetch_map_numbers, "Time used to fetch map numbers", selected_way_points)
             self.__logger.debug("Input File Name: %s", name)
             self.__logger.debug("Map Numbers: %s", map_numbers)
 
