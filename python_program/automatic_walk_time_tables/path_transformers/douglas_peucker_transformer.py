@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import copy
 import logging
 import math
 from typing import List
@@ -113,6 +112,8 @@ class DouglasPeuckerTransformer(PathTransformer):
             # TODO: add addtional POIs
             # if we haven't included all POIs in the path, we could add additional, new waypoints based on the
             # leftovers of the POIs. We add them in the order of the furthers secant to path distance.
+
+            # TODO: point may end up very close to each other! Fix this...
 
             final_way_points.insert(p)
 
