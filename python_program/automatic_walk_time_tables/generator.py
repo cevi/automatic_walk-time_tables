@@ -57,8 +57,9 @@ class AutomatedWalkTableGenerator:
                                                             self.__path)
 
         # name points of walk-time table
-        naming_fetcher = NamingTransformer()
-        selected_way_points = naming_fetcher.transform(selected_way_points)
+        if self.args.create_excel or self.args.create_map_pdfs:
+            naming_fetcher = NamingTransformer()
+            selected_way_points = naming_fetcher.transform(selected_way_points)
 
         if self.args.create_elevation_profile:
             self.__logger.debug('Boolean indicates that we should create the elevation profile.')
