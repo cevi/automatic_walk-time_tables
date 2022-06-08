@@ -1,11 +1,9 @@
-import json
 import logging
 import os
 from datetime import timedelta
 from math import log
 
 import openpyxl
-import requests
 from matplotlib import pyplot as plt
 
 from automatic_walk_time_tables.utils import path
@@ -111,8 +109,6 @@ def create_walk_table(time_stamp, speed, way_points: Path, file_name: str,
     sheet['N3'] = speed
     sheet['K8'] = time_stamp.strftime('%H:%M')
 
-    name_of_points = []
-
     # get infos about points
     for i, pt in enumerate(way_points.way_points):
         lv03: Point_LV03 = pt.point.to_LV03()
@@ -126,29 +122,15 @@ def create_walk_table(time_stamp, speed, way_points: Path, file_name: str,
 
         time_stamp = time_stamp + timedelta(hours=deltaTime)
 
-        # get name
-        # TODO: request all names with one API call
-
-        url = "http://swiss_tml:1848/swiss_name"
-
-        lv95 = lv03.to_LV95()
-        payload = json.dumps([[lv95.lat, lv95.lon]])
-        headers = {'Content-Type': 'application/json'}
-        req = requests.request("GET", url, headers=headers, data=payload)
-        resp = req.json()
-
-        name_of_point = resp[0]['swiss_name']
-        name_of_points.append(name_of_point)
-
         logger.debug(
             str(round(abs((oldPoint.accumulated_distance if oldPoint is not None else 0.0) - pt.accumulated_distance),
                       1)) + 'km ' +
             str(int(lv03.h)) + 'm ü. M. ' +
             str(round(deltaTime, 1)) + 'h ' +
             time_stamp.strftime('%H:%M') + 'Uhr ' +
-            str((int(lv03.lat), int(lv03.lon))) + " " + name_of_point)
+            str((int(lv03.lat), int(lv03.lon))) + " " + pt.name)
 
-        sheet['A' + str(8 + i)] = str(name_of_point) + ' (' + str(
+        sheet['A' + str(8 + i)] = pt.name + ' (' + str(
             int(lv03.lat)) + ', ' + str(int(lv03.lon)) + ')'
         sheet['C' + str(8 + i)] = int(lv03.h)
         if i > 0:
@@ -169,8 +151,6 @@ def create_walk_table(time_stamp, speed, way_points: Path, file_name: str,
     xfile.save(file_name + '_Marschzeittabelle.xlsx')
 
     logger.info("Marschzeittabelle saved as " + file_name + '_Marschzeittabelle.xlsx')
-
-    return name_of_points
 
 
 def calc_walk_time(delta_height, delta_dist, speed):

@@ -54,10 +54,10 @@ class Path:
         Appends a way point to the end of the path.
         """
 
-        assert self.__total_distance <= way_point.accumulated_distance
-
         if self.__total_distance == way_point.accumulated_distance != 0.0:
             return
+
+        assert self.__total_distance <= way_point.accumulated_distance
 
         self.__total_distance = way_point.accumulated_distance
         self.__way_points.append(way_point)
@@ -66,6 +66,8 @@ class Path:
         """
 
         Inserts a way point to the path.
+        If the index is not passed as an argument,the way point will be inserted automatically at the correct position.
+        Otherwise, the way point will be inserted at the given index.
 
         """
 

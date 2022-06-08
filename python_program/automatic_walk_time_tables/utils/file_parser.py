@@ -4,9 +4,9 @@ from typing import List, TextIO
 
 import gpxpy
 
-from . import height_fetcher
 from . import path
 from . import point
+from ..path_transformers.heigth_fetcher_transfomer import HeightFetcherTransformer
 
 
 class GeoFileParser(object):
@@ -17,6 +17,7 @@ class GeoFileParser(object):
 
     def __init__(self):
         self.__logger = logging.getLogger(__file__)
+        self.height_fetcher = HeightFetcherTransformer(min_number_of_points=2500)
 
     def parse(self, file_name: str) -> path.Path:
         route_file = open(file_name, 'r')
@@ -51,7 +52,7 @@ class GeoFileParser(object):
         path_ = paths[0]
         path_.route_name = gpx.name if gpx.name else ""
         if not path_.has_elevation_for_all_points():
-            path_ = height_fetcher.height_fetch_path(path_)
+            path_ = self.height_fetcher.transform(path_)
         else:
             pass  # all good, GPX has elevation data
 
@@ -103,7 +104,8 @@ class GeoFileParser(object):
                 coordinates = [point.Point_WGS84(float(c[0]), float(c[1])) for c in coordinates]
 
             path_ = path.Path(coordinates)
-            path_ = height_fetcher.height_fetch_path(path_)
+            path_ = self.height_fetcher.transform(path_)
+
             return path_
 
         c1 = float(coordinates[0][0])

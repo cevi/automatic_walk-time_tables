@@ -7,6 +7,7 @@ from automatic_walk_time_tables.generator_status import GeneratorStatus
 from automatic_walk_time_tables.geo_processing.map_numbers import find_map_numbers
 from automatic_walk_time_tables.map_downloader.create_map import MapCreator
 from automatic_walk_time_tables.path_transformers.douglas_peucker_transformer import DouglasPeuckerTransformer
+from automatic_walk_time_tables.path_transformers.naming_transformer import NamingTransformer
 from automatic_walk_time_tables.path_transformers.pois_transfomer import POIsTransformer
 from automatic_walk_time_tables.utils import path
 from automatic_walk_time_tables.utils.file_parser import GeoFileParser
@@ -62,7 +63,8 @@ class AutomatedWalkTableGenerator:
                                                             self.__path)
 
         # name points of walk-time table
-        # TODO: implement transformer for naming
+        naming_fetcher = NamingTransformer()
+        selected_way_points = naming_fetcher.transform(selected_way_points)
 
         if self.args.create_elevation_profile:
             self.__logger.debug('Boolean indicates that we should create the elevation profile.')
@@ -75,17 +77,14 @@ class AutomatedWalkTableGenerator:
 
         if self.args.create_excel:
             self.__logger.debug('Boolean indicates that we should create walk-time table as Excel file')
-            name_of_points = self.__log_runtime(create_walk_table, "Time used to create walk-time table as Excel",
-                                                self.args.departure_time, self.args.velocity, selected_way_points,
-                                                route_name=gpx_rout_name,
-                                                file_name=name, creator_name=self.args.creator_name,
-                                                map_numbers=map_numbers)
+            self.__log_runtime(create_walk_table, "Time used to create walk-time table as Excel",
+                               self.args.departure_time, self.args.velocity, selected_way_points,
+                               route_name=gpx_rout_name,
+                               file_name=name, creator_name=self.args.creator_name,
+                               map_numbers=map_numbers)
 
             self.__logger.log(ExportStateLogger.REQUESTABLE, 'Marschzeittabelle wurde erstellt.',
                               {'uuid': self.uuid, 'status': GeneratorStatus.RUNNING})
-
-        else:
-            name_of_points = [''] * selected_way_points.number_of_waypoints
 
         if self.args.create_map_pdfs:
             self.__logger.debug('Boolean indicates that we should create map PDFs.')
@@ -95,7 +94,6 @@ class AutomatedWalkTableGenerator:
                                selected_way_points,
                                file_name=name,
                                map_scaling=self.args.map_scaling,
-                               name_of_points=name_of_points,
                                print_api_base_url=self.args.print_api_base_url)
 
     def __log_runtime(self, function, log_string='Time used', *args, **kwargs, ):

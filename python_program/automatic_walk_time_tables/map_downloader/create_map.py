@@ -71,7 +71,6 @@ class MapCreator:
                           way_points: path.Path,
                           file_name: str,
                           map_scaling: int,
-                          name_of_points: List[str],
                           layer: str = 'ch.swisstopo.pixelkarte-farbe',
                           print_api_base_url: str = 'localhost',
                           print_api_port: int = 8080,
@@ -106,8 +105,7 @@ class MapCreator:
 
         for index, map_center in enumerate(map_centers):
 
-            query_json = self.create_mapfish_query(layer, map_scaling, map_center, way_points,
-                                                   name_of_points)
+            query_json = self.create_mapfish_query(layer, map_scaling, map_center, way_points)
 
             base_url = "{}://{}:{}".format(print_api_protocol, print_api_base_url, print_api_port)
             url = '{}/print/default/report.pdf'.format(base_url)
@@ -178,9 +176,7 @@ class MapCreator:
 
             self.logger.info("Saved map to {}_{}_map.pdf".format(file_name, index))
 
-    def create_mapfish_query(self, layer, map_scaling, center,
-                             way_points: path.Path,
-                             name_of_points):
+    def create_mapfish_query(self, layer, map_scaling, center, way_points: path.Path):
         """
 
         Returns the JSON-Object used for querying
@@ -305,7 +301,7 @@ class MapCreator:
                                 "haloColor": "#ffffff",
                                 "haloOpacity": "0.5",
                                 "haloRadius": ".5",
-                                "label": name_of_points[i],  # TODO: read point name from point
+                                "label": point.name,
                                 "fillColor": "#FF0000",
                                 "fillOpacity": 0,
                                 "labelAlign": "cm",
