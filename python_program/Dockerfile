@@ -15,5 +15,5 @@ EXPOSE 5000
 
 ENV PRINT_API_BASE_URL=mapfish
 
-RUN chmod +x ./entrypoint.sh
-ENTRYPOINT ["./entrypoint.sh"]
+# Entrypoint
+CMD gunicorn --bind :5000 --workers 1 --threads 2 --timeout 60 app:app
