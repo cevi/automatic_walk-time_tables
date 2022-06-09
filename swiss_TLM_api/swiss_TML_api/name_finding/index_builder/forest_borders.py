@@ -21,13 +21,16 @@ class ForestBorders(IndexBuilder):
     """
 
     def load(self):
-
-        if self.reduced:
-            self.insert_forest_intersections(
-                ['swissTLM3D_TLM_BODENBEDECKUNG.shp'])
-        else:
-            self.insert_forest_intersections(
-                ['swissTLM3D_TLM_BODENBEDECKUNG_west.shp', 'swissTLM3D_TLM_BODENBEDECKUNG_ost.shp'])
+        # TODO: this does not work with a fresh copy of the files from the ZIP.
+        # fix:
+        # only use BODENBEDECKUNG.shp
+        self.insert_forest_intersections(['swissTLM3D_TLM_BODENBEDECKUNG.shp'])
+        #if self.reduced:
+        #    self.insert_forest_intersections(
+        #        ['swissTLM3D_TLM_BODENBEDECKUNG.shp'])
+        #else:
+        #    self.insert_forest_intersections(
+        #        ['swissTLM3D_TLM_BODENBEDECKUNG_west.shp', 'swissTLM3D_TLM_BODENBEDECKUNG_ost.shp'])
 
     def calc_intersection(self, path_index, obj):
         geo = obj["geometry"]['coordinates'][0]
