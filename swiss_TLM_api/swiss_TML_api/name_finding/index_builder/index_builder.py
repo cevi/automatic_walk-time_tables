@@ -9,7 +9,7 @@ class IndexBuilder:
         self.index = index
 
         # The reduced dataset only contains the city of Bern
-        base_path = './resources/swissTLM3D_1.9_LV95_LN02_shp3d'
+        base_path = './resources/swissTLM3D_LV95_data'
         self.base_path = base_path + ("_full/" if not reduced else "/")
         self.reduced = reduced
 

@@ -53,9 +53,43 @@ class NameIndex:
 
         if self.index.get_size() > 0:
             logger.debug('Index of size {} found  at {}'.format(self.index.get_size(), self.index_file_path))
+            return
 
-        else:
-            self.generate_index(reduced)
+        if reduced and not any(fname.endswith('.shp') for fname in os.listdir('resources/swissTLM3D_LV95_data/')):
+            logger.info('SHP files not found. Downloading them from Swisstopo')
+
+            url = 'https://cms.geo.admin.ch/Topo/swisstlm3d/LV95/swissTLM3D_1.9_LV95_LN02_shp3d.zip'
+            folder = './resources/swissTLM3D_LV95_data/'
+            self.__download_resources(url, folder)
+
+        if not reduced and not any(fname.endswith('.shp')
+                                   for fname in os.listdir('resources/swissTLM3D_LV95_data_full/')):
+            logger.info('SHP files not found. Downloading them from Swisstopo')
+
+            url = 'https://data.geo.admin.ch/ch.swisstopo.swisstlm3d/swisstlm3d_2022-03/' \
+                  'swisstlm3d_2022-03_2056_5728.shp.zip '
+            folder = './resources/swissTLM3D_LV95_data_full/'
+            self.__download_resources(url, folder)
+
+        self.generate_index(reduced)
+
+    def __download_resources(self, url: str, destination: str):
+        # Download a zip from url and extract it
+        output = destination + 'swissTLM3D_LV95_raw.zip'
+        gdown.download(url, output, quiet=False)
+        shutil.unpack_archive(filename=output, extract_dir=destination)
+
+        for directory in os.listdir(destination):
+
+            if any(ext in directory for ext in ('.zip', '.gitkeep')):
+                continue
+
+            for file in os.listdir(os.path.join(destination, directory)):
+                file_name = os.path.join(destination, directory, file)
+                shutil.move(file_name, os.path.join(destination, file))
+
+            os.rmdir(os.path.join(destination, directory))
+        os.remove(output)
 
     def generate_index(self, reduced):
 

@@ -49,7 +49,7 @@ from https://www.swisstopo.admin.ch/de/geodata/landscape/tlm3d.html.
 2) And store it in the directory `./res/swissTLM3D_1.9_LV95_LN02_shp3d/`. Currently, we only need the `.shp` files.
    ```bash
    $ wget https://cms.geo.admin.ch/Topo/swisstlm3d/LV95/swissTLM3D_1.9_LV95_LN02_shp3d.zip
-   $ unzip swissTLM3D_1.9_LV95_LN02_shp3d.zip 
+   $ unzip swissTLM3D_LV95_data.zip 
    ```
 
 ## Testing of Name Finding Algorithm
