@@ -15,4 +15,4 @@ COPY . /app
 EXPOSE 1848
 
 # Entrypoint
-CMD gunicorn --bind :1848 --workers 1 --threads 1 --timeout 60 app:app
+CMD gunicorn --bind :1848 --workers 1 --threads 2 --timeout 60 app:app

@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import logging
 import os
+from threading import Thread
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -17,9 +20,20 @@ from swiss_TML_api.map_numbers.map_numbers_fetcher import MapNumberIndex
 app = Flask(__name__)
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
+name_index: NameFinder | None = None
+map_number_index: MapNumberIndex | None = None
+
+
 # The NameFinder is a shared object, thus the index get only loaded once
-name_index = NameFinder()
-map_number_index = MapNumberIndex()
+def _load_indexes():
+    global name_index, map_number_index
+    name_index = NameFinder(force_rebuild=False, reduced=False)
+    map_number_index = MapNumberIndex()
+
+
+# We load the indexes in a separate thread to avoid blocking the main thread and running into the timeout errors
+thread = Thread(target=_load_indexes)
+thread.start()
 
 
 @app.route('/swiss_name', methods=['GET'])
