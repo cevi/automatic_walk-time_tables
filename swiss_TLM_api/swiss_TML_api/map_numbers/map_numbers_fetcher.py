@@ -1,7 +1,9 @@
 import logging
+import os
 from typing import List
 
 import requests
+from rtree.exceptions import RTreeError
 from rtree.index import Index as RTreeIndex
 
 logger = logging.getLogger(__name__)
@@ -15,11 +17,21 @@ class MapNumberIndex:
     index_file_path = './index_cache/map_numbers_index'
 
     def __init__(self):
-        self.index = RTreeIndex(self.index_file_path)
 
-        if self.index.get_size() > 0:
-            logger.info('MapNumber index of size {} found at {}'.format(self.index.get_size(), self.index_file_path))
-            return
+        try:
+            self.index = RTreeIndex(self.index_file_path)
+        except RTreeError as e:
+            logger.error("Could not load index file for map numbers. " + str(e))
+
+            # delete corrupted file (index_file_path) and retry
+            os.remove(self.index_file_path + '.dat')
+            os.remove(self.index_file_path + '.idx')
+            self.index = RTreeIndex(self.index_file_path)
+
+            if self.index and self.index.get_size() > 0:
+                logger.info(
+                    'MapNumber index of size {} found at {}'.format(self.index.get_size(), self.index_file_path))
+                return
 
         # Build index using the swisstopo api
         base_coordinates = [2650000, 1200000]
