@@ -65,7 +65,7 @@ class AutomatedWalkTableGenerator:
             self.__logger.debug('Boolean indicates that we should create the elevation profile.')
             self.__log_runtime(plot_elevation_profile, "Time used to plot elevation profile excel", self.__path,
                                selected_way_points, pois, file_name=name,
-                               open_figure=self.args.open_figure)
+                               open_figure=self.args.open_figure, legend_position=self.args.legend_position)
             self.__logger.log(ExportStateLogger.REQUESTABLE, 'Höhenprofil wurde erstellt.',
                               {'uuid': self.uuid, 'status': GeneratorStatus.RUNNING})
 

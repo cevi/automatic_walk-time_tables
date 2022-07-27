@@ -50,5 +50,7 @@ def get_parser():
                         help='If this flag is set, the created images will be shown (i.g. the map and elevation plot '
                              'will be opened after its creation). For this feature a desktop environment is needed. '
                              'Disabled as default (False).')
+    parser.add_argument('--legend_position', default='upper right', type=str,
+                        help='Position of the legend in the elevation plot.')
 
     return parser

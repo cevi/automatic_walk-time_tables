@@ -16,6 +16,7 @@
 | `--log-level`           | `Integer`     | Log Level (see https://docs.python.org/3/library/logging.html#levels). Default: WARNING                                                                                                                                                                                                                   |
 | `--output_directory`    | `String`      | Subdirectory in the output folder for storing the created files. Should be empty or ending with "/"                                                                                                                                                                                                       |
 | `--print-api-base-url`  | `String`      | Base URL of the mapfish server used for creating PDF exports. Default: localhost.                                                                                                                                                                                                                         |
+| `--legend_position`     | `String`      | Position of the legend on the map. Default: bottom-right.                                                                                                                                                                                                                                                 |
 
 ### Enable/Disable Features
 

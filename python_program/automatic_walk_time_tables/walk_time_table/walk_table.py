@@ -17,7 +17,8 @@ def plot_elevation_profile(path_: path.Path,
                            way_points: path.Path,
                            pois: path.Path,
                            file_name: str,
-                           open_figure: bool):
+                           open_figure: bool,
+                           legend_position: 'upper right' | 'lower right' | 'lower left' | 'upper left'):
     """
 
     Plots the elevation profile of the path contained in the GPX-file. In addition, the
@@ -58,7 +59,7 @@ def plot_elevation_profile(path_: path.Path,
     plt.ylabel('Höhe [m ü. M.]')
     plt.xlabel('Distanz [km]')
     plt.title('Höhenprofil', fontsize=20)
-    plt.legend(loc='upper right', frameon=False)
+    plt.legend(loc=legend_position, frameon=False)
 
     # Grid
     plt.grid(color='gray', linestyle='dashed', linewidth=0.5)
