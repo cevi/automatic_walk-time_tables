@@ -11,6 +11,7 @@ from swiss_TML_api.name_finding.index_builder.einzelobjekte import Einzelobjekte
 from swiss_TML_api.name_finding.index_builder.flurnamen import Flurnamen
 from swiss_TML_api.name_finding.index_builder.forest_borders import ForestBorders
 from swiss_TML_api.name_finding.index_builder.leisure_areals import LeisureAreals
+from swiss_TML_api.name_finding.index_builder.pkt_names import PKTNames
 from swiss_TML_api.name_finding.index_builder.stops_and_stations import StopsAndStations
 from swiss_TML_api.name_finding.index_builder.tlm_streets import TLM_Streets
 from swiss_TML_api.name_finding.index_builder.versorgungsbauten import Versorgungsbauten
@@ -109,8 +110,8 @@ class NameIndex:
         #   -   Druckleitung bzw. Fliessgewaesser als Kreuzung mit Weg aus TLM_FLIESSGEWAESSER
         #   -   Add intersections with river that have no bridge (e.g. 2720398, 1178367)
 
-        index_parts = [ForestBorders, TLM_Streets, StopsAndStations, LeisureAreals, Flurnamen, Versorgungsbauten,
-                       Einzelobjekte]
+        index_parts = (ForestBorders, TLM_Streets, StopsAndStations, LeisureAreals, Flurnamen, Versorgungsbauten,
+                       Einzelobjekte, PKTNames)
         for index_part in index_parts:
             start = time.time()
             logger.info("\tInsertion of {} started...".format(index_part.__name__))
