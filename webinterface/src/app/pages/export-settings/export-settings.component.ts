@@ -26,7 +26,8 @@ export class ExportSettingsComponent implements OnInit {
       'departure-time': new FormControl((new Date()).toISOString().substring(0, 16)),
       'creator-name': new FormControl(''),
       'create-map-pdfs': new FormControl(true),
-      'create-excel': new FormControl(true)
+      'create-excel': new FormControl(true),
+      'legend-position': new FormControl('lower right')
     });
 
   }

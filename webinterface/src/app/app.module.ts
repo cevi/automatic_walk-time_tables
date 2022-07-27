@@ -21,6 +21,8 @@ import { DownloadDataComponent } from './pages/download-data/download-data.compo
 import { UploadAreaComponent } from './components/upload-area/upload-area.component';
 import {MatIconModule} from "@angular/material/icon";
 import {DownloadModule} from "./modules/download-module/download.module";
+import {MatSelectModule} from "@angular/material/select";
+import {MatOptionModule} from "@angular/material/core";
 
 @NgModule({
   declarations: [
@@ -46,7 +48,9 @@ import {DownloadModule} from "./modules/download-module/download.module";
     ReactiveFormsModule,
     MatSnackBarModule,
     MatIconModule,
-    DownloadModule
+    DownloadModule,
+    MatSelectModule,
+    MatOptionModule
   ],
   providers: [],
   bootstrap: [AppComponent]

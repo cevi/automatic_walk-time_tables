@@ -27,10 +27,34 @@
       <button mat-stroked-button color="primary" *ngIf="!route_uploaded" routerLink="guide" fragment="get-gpx-file"> Wie
         erhalte ich eine GPX- oder KML-Datei?
       </button>
-      <button mat-stroked-button color="warn" *ngIf="route_uploaded" (click)="delete_route_file()"> Datei löschen</button>
+      <button mat-stroked-button color="warn" *ngIf="route_uploaded" (click)="delete_route_file()"> Datei löschen
+      </button>
       <button mat-stroked-button color="primary" matStepperNext [disabled]="!route_uploaded">Weiter</button>
 
     </mat-step>
+
+    <mat-step>
+      <ng-template matStepLabel>Einstellungen zum Höhenprofil</ng-template>
+
+      <div class="content-block">
+
+         <p>
+          Position der Legende zum Höhenprofil:
+        </p>
+
+        <mat-select placeholder="Position der Legende" formControlName="legend-position">
+          <mat-option value="upper left">Oben Links</mat-option>
+          <mat-option value="lower left">Unten Links</mat-option>
+          <mat-option value="upper right">Oben Rechts</mat-option>
+          <mat-option value="lower right">Unten Rechts</mat-option>
+        </mat-select>
+
+      </div>
+
+      <button mat-stroked-button color="primary" matStepperNext>Weiter</button>
+
+    </mat-step>
+
 
     <mat-step>
       <ng-template matStepLabel>Einstellungen zur Karte</ng-template>
