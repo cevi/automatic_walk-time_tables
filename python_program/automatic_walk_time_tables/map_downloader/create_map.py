@@ -314,6 +314,7 @@ class MapCreator:
             "layout": "A4 landscape",
             "outputFormat": "pdf",
             "attributes": {
+                "scale": "Massstab: 1:" + f"{map_scaling:,}".replace(',', "'"),
                 "map": {
                     "center": center,
                     "scale": map_scaling,
