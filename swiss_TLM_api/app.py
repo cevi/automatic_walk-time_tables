@@ -42,17 +42,26 @@ def get_name():
     response = []
 
     for (lat, lon) in lv95_coords:
-        names = name_index.get_names(lat, lon, 1)
-        name: SwissName = names[0]
 
         req_pkt = Point((lat, lon))
-        tlm_pkt = Point((name.x, name.y))
+
+        swiss_names = name_index.get_names(lat, lon, 3)
+        swiss_name: SwissName = swiss_names[0]
+
+        # If object_type is of type 'Weggabelung' and there exists a Hauptgipfel nearby, we take the Hauptgipfel
+        if swiss_name.object_type == 'Weggabelung' and len(swiss_names) > 1:
+            for n in swiss_names[1:]:
+
+                tlm_pkt = Point((n.x, n.y))
+                if n.object_type == 'Hauptgipfel' and round(req_pkt.distance(tlm_pkt)) <= 250:
+                    swiss_name.name = 'Weggabelung bei ' + n.name
+                    break
 
         response.append({
-            "lv95_coord": (name.x, name.y),
-            "offset": round(req_pkt.distance(tlm_pkt)),
-            "swiss_name": name.name,
-            "object_type": name.object_type
+            "lv95_coord": (swiss_name.x, swiss_name.y),
+            "offset": round(req_pkt.distance(Point((swiss_name.x, swiss_name.y)))),
+            "swiss_name": swiss_name.name,
+            "object_type": swiss_name.object_type
         })
 
     return jsonify(response)
