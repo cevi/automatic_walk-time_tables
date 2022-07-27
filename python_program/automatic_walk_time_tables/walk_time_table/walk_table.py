@@ -18,7 +18,7 @@ def plot_elevation_profile(path_: path.Path,
                            pois: path.Path,
                            file_name: str,
                            open_figure: bool,
-                           legend_position: 'upper right' | 'lower right' | 'lower left' | 'upper left'):
+                           legend_position: str):
     """
 
     Plots the elevation profile of the path contained in the GPX-file. In addition, the
