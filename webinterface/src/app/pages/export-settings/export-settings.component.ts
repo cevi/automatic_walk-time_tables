@@ -27,7 +27,8 @@ export class ExportSettingsComponent implements OnInit {
       'creator-name': new FormControl(''),
       'create-map-pdfs': new FormControl(true),
       'create-excel': new FormControl(true),
-      'legend-position': new FormControl('lower right')
+      'legend-position': new FormControl('lower right'),
+      'map-layers': new FormControl('ch.swisstopo.pixelkarte-farbe'),
     });
 
   }

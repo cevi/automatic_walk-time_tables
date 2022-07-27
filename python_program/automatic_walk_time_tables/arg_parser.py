@@ -52,5 +52,7 @@ def get_parser():
                              'Disabled as default (False).')
     parser.add_argument('--legend-position', default='upper right', type=str,
                         help='Position of the legend in the elevation plot.')
+    parser.add_argument('--map-layers', default='ch.swisstopo.pixelkarte-farbe', type=str,
+                        help='Comma separated list of map layers to be used. Default: "ch.swisstopo.pixelkarte-farbe".')
 
     return parser

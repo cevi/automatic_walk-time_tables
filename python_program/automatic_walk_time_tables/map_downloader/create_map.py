@@ -71,7 +71,7 @@ class MapCreator:
                           way_points: path.Path,
                           file_name: str,
                           map_scaling: int,
-                          layer: str = 'ch.swisstopo.pixelkarte-farbe',
+                          map_layers: List[str] = None,
                           print_api_base_url: str = 'localhost',
                           print_api_port: int = 8080,
                           print_api_protocol: str = 'http'):
@@ -88,6 +88,10 @@ class MapCreator:
 
         """
 
+        # Set default map layer
+        if map_layers is None:
+            map_layers = ['ch.swisstopo.pixelkarte-farbe']
+
         if map_scaling is None:
             map_scaling = self.auto_select_map_scaling()
 
@@ -98,32 +102,34 @@ class MapCreator:
                             f"Eine Anfrage würde {len(map_centers)} PDFs generieren, wir haben die Anzahl aber auf 10 beschränkt. Bitte vergrössere deinen Kartenmassstab und probiere es erneut.",
                             {'uuid': self.uuid, 'status': GeneratorStatus.ERROR})
             logging.error(f'Too many map centers (exceeding faire use limit).')
-            if (self.logger.getEffectiveLevel() == logging.DEBUG):
+            if self.logger.getEffectiveLevel() == logging.DEBUG:
                 raise Exception("You should respect the faire use limit!")
             else:
                 exit(1)
 
         for index, map_center in enumerate(map_centers):
 
-            query_json = self.create_mapfish_query(layer, map_scaling, map_center, way_points)
+            query_json = self.create_mapfish_query(map_layers, map_scaling, map_center, way_points)
 
             base_url = "{}://{}:{}".format(print_api_protocol, print_api_base_url, print_api_port)
             url = '{}/print/default/report.pdf'.format(base_url)
 
             self.logger.debug("Posting to mapfish: " + url)
 
+            response_obj = None
+
             try:
                 response_obj = requests.post(url, data=json.dumps(query_json))
             except requests.exceptions.ConnectionError:
                 self.logger.error("Could not connect to mapfish server. Is the server running?")
-                if (self.logger.getEffectiveLevel() == logging.DEBUG):
+                if self.logger.getEffectiveLevel() == logging.DEBUG:
                     raise Exception("Could not connect to mapfish server. Is the server running?")
                 else:
                     exit(1)
 
-            if response_obj.status_code != 200:
+            if response_obj is None or response_obj.status_code != 200:
                 logging.error("Error while posting to mapfish: " + str(response_obj.status_code))
-                if (self.logger.getEffectiveLevel() == logging.DEBUG):
+                if self.logger.getEffectiveLevel() == logging.DEBUG:
                     raise Exception('Can not fetch map. Status Code: {}'.format(response_obj.status_code))
                 else:
                     exit(1)
@@ -176,7 +182,7 @@ class MapCreator:
 
             self.logger.info("Saved map to {}_{}_map.pdf".format(file_name, index))
 
-    def create_mapfish_query(self, layer, map_scaling, center, way_points: path.Path):
+    def create_mapfish_query(self, map_layers, map_scaling, center, way_points: path.Path):
         """
 
         Returns the JSON-Object used for querying
@@ -232,21 +238,8 @@ class MapCreator:
             "type": "geojson",
             "name": "selected track"
         }
-        map_layer = {
-            "baseURL": "https://wmts100.geo.admin.ch/1.0.0/{Layer}/{style}/{Time}/{TileMatrixSet}/{TileMatrix}/{TileCol}/{TileRow}.jpeg",
-            "dimensions": ["Time"],
-            "dimensionParams": {"Time": "current"},
-            "name": layer,
-            "imageFormat": "image/jpeg",
-            "layer": layer,
-            "matrixSet": "2056",
-            "opacity": 0.85,
-            "requestEncoding": "REST",
-            "matrices": default_matrices,
-            "style": "default",
-            "type": "WMTS",
-            "version": "1.0.0"
-        }
+        map_layers = list(
+            map(lambda layer: self.create_map_layer(layer, default_matrices=default_matrices), map_layers))
 
         point_layers = []
         for i, point in enumerate(way_points.way_points):
@@ -328,12 +321,37 @@ class MapCreator:
                     "pdfA": True,
                     "projection": "EPSG:2056",
                     "rotation": 0,
-                    "layers": point_layers + [path_layer, map_layer]
+                    "layers": point_layers + ([path_layer] + map_layers)
                 }
             }
         }
 
         return query_json
+
+    def create_map_layer(self, layer, default_matrices):
+
+        image_type = 'jpeg'
+
+        if layer not in (
+                'ch.swisstopo.pixelkarte-farbe', 'ch.swisstopo.pixelkarte-grau', 'ch.swisstopo.pixelkarte-farbe-pk25',
+                'ch.swisstopo.pixelkarte-grau-pk25', 'ch.swisstopo.swissimage-product'):
+            image_type = 'png'
+
+        return {
+            "baseURL": "https://wmts100.geo.admin.ch/1.0.0/{Layer}/{style}/{Time}/{TileMatrixSet}/{TileMatrix}/{TileCol}/{TileRow}." + image_type,
+            "dimensions": ["Time"],
+            "dimensionParams": {"Time": "current"},
+            "name": layer,
+            "imageFormat": "image/" + image_type,
+            "layer": layer,
+            "matrixSet": "2056",
+            "opacity": 0.85,
+            "requestEncoding": "REST",
+            "matrices": default_matrices,
+            "style": "default",
+            "type": "WMTS",
+            "version": "1.0.0"
+        }
 
     def create_map_centers(self, map_scaling: int) -> List[np.array]:
         """

@@ -97,6 +97,7 @@ class AutomatedWalkTableGenerator:
                                selected_way_points,
                                file_name=name,
                                map_scaling=self.args.map_scaling,
+                               map_layers=list(map(lambda layer: layer.strip(), self.args.map_layers.split(','))),
                                print_api_base_url=self.args.print_api_base_url)
 
     def __log_runtime(self, function, log_string='Time used', *args, **kwargs, ):
