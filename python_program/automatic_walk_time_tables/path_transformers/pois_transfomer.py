@@ -54,7 +54,10 @@ class POIsTransformer(PathTransformer):
                     min_dist = dist
                     min_index = i
             self.__logger.debug('Nearest point for %s is %s', poi, path.way_points[min_index])
-            pois.insert(path.way_points[min_index])
+
+            # Add POI if path crosses it with a distance of maximum 50m
+            if min_dist <= 50:
+                pois.insert(path.way_points[min_index])
 
         self.__logger.debug('POIs: %s', pois)
 
