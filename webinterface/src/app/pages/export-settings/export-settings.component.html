@@ -61,9 +61,12 @@
 
       <div class="content-block">
         <mat-slide-toggle formControlName="create-map-pdfs">Karte als PDF beifügen</mat-slide-toggle>
+        <br>
+        <mat-slide-toggle formControlName="auto-scale">Massstab automatisch wählen</mat-slide-toggle>
+
         <div class="slider">
           <label>Kartenmassstab: 1:{{scale.value}}</label>
-          <mat-slider #scale min="10000" max="100000" step="5000"
+          <mat-slider #scale min="10000" max="100000" step="5000" [disabled]="this.options.controls['auto-scale'].value"
                       (change)="options.controls['map-scaling'].setValue($event.value)"
                       [value]="options.controls['map-scaling'].value"></mat-slider>
         </div>

@@ -30,7 +30,7 @@ export class ExportSettingsComponent implements OnInit {
       'legend-position': new FormControl('lower right'),
       'map-layers': new FormControl('ch.swisstopo.pixelkarte-farbe'),
       'list-of-pois': new FormControl(''),
-
+      'auto-scale': new FormControl(false),
     });
 
 
@@ -74,6 +74,12 @@ export class ExportSettingsComponent implements OnInit {
     for (const option in this.options.controls) {
 
       if (['creator-name', 'list-of-pois'].includes(option) && !this.options.controls[option].value.length)
+        continue;
+
+      if (option === 'map-scaling' && this.options.controls['auto-scale'].value)
+        continue;
+
+      if (option === 'auto-scale')
         continue;
 
       console.log(this.options.controls[option].value)
