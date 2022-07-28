@@ -1,3 +1,13 @@
+proxies:
+  - !proxy
+    scheme: http
+    host: tile_cache
+    port: 8080
+    matchers:
+      - !localMatch
+        reject: true
+      - !acceptAll { }
+
 templates:
 
   #===========================================================================
@@ -7,10 +17,10 @@ templates:
     reportTemplate: report.jrxml
     attributes:
 
-      scale: !string {}
+      scale: !string { }
 
       map: !map
-        maxDpi: 400
+        maxDpi: 250
         width: 813
         height: 566
 
@@ -67,5 +77,5 @@ templates:
         directory: '.'
       - !createMap { }
       - !createScalebar { }
-      - !createNorthArrow {}
+      - !createNorthArrow { }
 

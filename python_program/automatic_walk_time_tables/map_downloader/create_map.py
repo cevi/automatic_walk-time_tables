@@ -318,7 +318,7 @@ class MapCreator:
                 "map": {
                     "center": center,
                     "scale": map_scaling,
-                    "dpi": 400,
+                    "dpi": 250,
                     "pdfA": True,
                     "projection": "EPSG:2056",
                     "rotation": 0,
@@ -339,7 +339,7 @@ class MapCreator:
             image_type = 'png'
 
         return {
-            "baseURL": "https://wmts100.geo.admin.ch/1.0.0/{Layer}/{style}/{Time}/{TileMatrixSet}/{TileMatrix}/{TileCol}/{TileRow}." + image_type,
+            "baseURL": "http://wmts.geo.admin.ch/1.0.0/{Layer}/{style}/{Time}/{TileMatrixSet}/{TileMatrix}/{TileCol}/{TileRow}." + image_type,
             "dimensions": ["Time"],
             "dimensionParams": {"Time": "current"},
             "name": layer,

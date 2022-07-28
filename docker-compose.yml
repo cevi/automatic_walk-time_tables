@@ -2,10 +2,15 @@ version: "3.9"
 
 services:
 
+  tile_cache:
+    build: tile_caching
+
   mapfish:
     build: pdf_map_export/.
     ports:
       - "8080:8080"
+    depends_on:
+      - tile_cache
 
   swiss_tml:
     build:
