@@ -69,6 +69,7 @@ class MapCreator:
 
     def plot_route_on_map(self,
                           way_points: path.Path,
+                          pois: path.Path,
                           file_name: str,
                           map_scaling: int,
                           map_layers: List[str] = None,
@@ -80,6 +81,7 @@ class MapCreator:
         Creates a map of the route and marking the selected way points on it.
 
         way_points : selected way points of the  walk-time table
+        pois: pois of the walk-time table
         tile_format_ext : Format of the tile, allowed values jpeg or png, default jpeg
         layer : Map layer, see https://wmts.geo.admin.ch/EPSG/2056/1.0.0/WMTSCapabilities.xml for options
         print_api_base_url : host of the mapfish instance, default localhost
@@ -109,7 +111,7 @@ class MapCreator:
 
         for index, map_center in enumerate(map_centers):
 
-            query_json = self.create_mapfish_query(map_layers, map_scaling, map_center, way_points)
+            query_json = self.create_mapfish_query(map_layers, map_scaling, map_center, way_points, pois)
 
             base_url = "{}://{}:{}".format(print_api_protocol, print_api_base_url, print_api_port)
             url = '{}/print/default/report.pdf'.format(base_url)
@@ -182,7 +184,7 @@ class MapCreator:
 
             self.logger.info("Saved map to {}_{}_map.pdf".format(file_name, index))
 
-    def create_mapfish_query(self, map_layers, map_scaling, center, way_points: path.Path):
+    def create_mapfish_query(self, map_layers, map_scaling, center, way_points: path.Path, pois: path.Path):
         """
 
         Returns the JSON-Object used for querying
@@ -245,69 +247,15 @@ class MapCreator:
         for i, point in enumerate(way_points.way_points):
             lv95 = point.point.to_LV95()
 
+            point_layer = self.create_point_json(lv95, point)
+            point_layers.append(point_layer)
+
+        for i, point in enumerate(pois.way_points):
+            lv95 = point.point.to_LV95()
+
             # TODO: currently, we convert to LV95, is there a way to stick to LV03 also for mapfish?
 
-            point_layer = {
-                "geoJson": {
-                    "type": "FeatureCollection",
-                    "features": [
-                        {
-                            "type": "Feature",
-                            "geometry": {
-                                "type": "Point",
-                                "coordinates": [lv95.lat, lv95.lon]
-                            },
-                            "properties": {
-                                "_ngeo_style": "1"
-                            },
-                            "id": 1596274
-                        }
-                    ]
-                },
-                "opacity": 1,
-                "style": {
-                    "version": 2,
-                    "[_ngeo_style = '1']": {
-                        "symbolizers": [
-                            {
-                                "type": "point",
-                                "fillColor": "#FF0000",
-                                "fillOpacity": 0,
-                                "rotation": "30",
-
-                                "graphicName": "circle",
-                                "graphicOpacity": 0.4,
-                                "pointRadius": 5,
-
-                                "strokeColor": "#e30613",
-                                "strokeOpacity": 1,
-                                "strokeWidth": 2,
-                                "strokeLinecap": "round",
-                                "strokeLinejoin": "round",
-                            },
-                            {
-                                "type": "text",
-                                "fontColor": "#e30613",
-                                "fontFamily": "sans-serif",
-                                "fontSize": "8px",
-                                "fontStyle": "normal",
-                                "haloColor": "#ffffff",
-                                "haloOpacity": "0.5",
-                                "haloRadius": ".5",
-                                "label": point.name,
-                                "fillColor": "#FF0000",
-                                "fillOpacity": 0,
-                                "labelAlign": "cm",
-                                "labelRotation": "0",
-                                "labelXOffset": "0",
-                                "labelYOffset": "-12"
-                            }
-                        ]
-                    }
-                },
-                "type": "geojson",
-                "name": "selected track pois"
-            }
+            point_layer = self.create_point_json(lv95, point, '#00BFFF', pointRadius=7)
             point_layers.append(point_layer)
 
         query_json = {
@@ -328,6 +276,70 @@ class MapCreator:
         }
 
         return query_json
+
+    def create_point_json(self, lv95, point, color='#FF0000', pointRadius=5, label=False):
+        point_layer = {
+            "geoJson": {
+                "type": "FeatureCollection",
+                "features": [
+                    {
+                        "type": "Feature",
+                        "geometry": {
+                            "type": "Point",
+                            "coordinates": [lv95.lat, lv95.lon]
+                        },
+                        "properties": {
+                            "_ngeo_style": "1"
+                        },
+                        "id": 1596274
+                    }
+                ]
+            },
+            "opacity": 1,
+            "style": {
+                "version": 2,
+                "[_ngeo_style = '1']": {
+                    "symbolizers": [
+                        {
+                            "type": "point",
+                            "fillColor": color,
+                            "fillOpacity": 0,
+                            "rotation": "30",
+
+                            "graphicName": "circle",
+                            "graphicOpacity": 0.4,
+                            "pointRadius": pointRadius,
+
+                            "strokeColor": color,
+                            "strokeOpacity": 1,
+                            "strokeWidth": 2,
+                            "strokeLinecap": "round",
+                            "strokeLinejoin": "round",
+                        },
+                        {
+                            "type": "text",
+                            "fontColor": "#e30613",
+                            "fontFamily": "sans-serif",
+                            "fontSize": "8px",
+                            "fontStyle": "normal",
+                            "haloColor": "#ffffff",
+                            "haloOpacity": "0.5",
+                            "haloRadius": ".5",
+                            "label": point.name if label else '',
+                            "fillColor": color,
+                            "fillOpacity": 0,
+                            "labelAlign": "cm",
+                            "labelRotation": "0",
+                            "labelXOffset": "0",
+                            "labelYOffset": "-12"
+                        }
+                    ]
+                }
+            },
+            "type": "geojson",
+            "name": "selected track pois"
+        }
+        return point_layer
 
     def create_map_layer(self, layer, default_matrices):
 

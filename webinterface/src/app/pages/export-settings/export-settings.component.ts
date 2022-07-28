@@ -29,8 +29,26 @@ export class ExportSettingsComponent implements OnInit {
       'create-excel': new FormControl(true),
       'legend-position': new FormControl('lower right'),
       'map-layers': new FormControl('ch.swisstopo.pixelkarte-farbe'),
+      'list-of-pois': new FormControl(''),
+
     });
 
+
+    if (localStorage['form_values'] && this.isJsonString(localStorage['form_values'])) {
+      this.options.setValue(JSON.parse(localStorage['form_values']))
+      console.log('Loaded form values from local storage')
+    }
+
+
+  }
+
+  isJsonString(str: string): boolean {
+    try {
+      JSON.parse(str);
+    } catch (e) {
+      return false;
+    }
+    return true;
   }
 
   ngOnInit(): void {
@@ -38,6 +56,8 @@ export class ExportSettingsComponent implements OnInit {
 
 
   download_map() {
+
+    localStorage['form_values'] = JSON.stringify(this.options.value);
 
     if (!this.route_uploaded || !this.route_file)
       return
@@ -53,10 +73,12 @@ export class ExportSettingsComponent implements OnInit {
 
     for (const option in this.options.controls) {
 
-      if (option === 'creator-name' && !this.options.controls['creator-name'].value.length)
+      if (['creator-name', 'list-of-pois'].includes(option) && !this.options.controls[option].value.length)
         continue;
 
-      url += '&--' + option + '=' + this.options.controls[option].value
+      console.log(this.options.controls[option].value)
+      url += '&--' + option + '=' + this.options.controls[option].value.toString().replaceAll('\n', ';')
+
     }
 
     fetch(url, {
@@ -74,7 +96,6 @@ export class ExportSettingsComponent implements OnInit {
       .finally(() => this.router.navigate(['pending', this.uuid]))
 
   }
-
 
 
   new_route_uploaded(route_file: File) {

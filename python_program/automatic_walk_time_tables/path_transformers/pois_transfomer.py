@@ -1,7 +1,10 @@
+import logging
+
 import numpy as np
 
 from automatic_walk_time_tables.path_transformers.path_transfomer import PathTransformer
 from automatic_walk_time_tables.utils.path import Path
+from automatic_walk_time_tables.utils.point import Point_LV03
 
 
 class POIsTransformer(PathTransformer):
@@ -9,8 +12,10 @@ class POIsTransformer(PathTransformer):
         Transformer which transforms a path to a path containing only pois.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, pois_list_as_str: str = '') -> None:
         super().__init__()
+        self.pois_list_as_str = pois_list_as_str
+        self.__logger = logging.getLogger(__name__)
 
     def transform(self, path: Path) -> Path:
         pois = Path([path.way_points[0].point])
@@ -22,11 +27,36 @@ class POIsTransformer(PathTransformer):
         pois.insert(path.way_points[max_index])
         pois.insert(path.way_points[min_index])
 
-        # TODO: calc points of interest
-        # Either the user passes the POIs with the API call or we have to calculate them.
-        # In the latter case, these are to be calculated using the map data, e.g. exciting points like mountain peaks,
-        # significant river crossings, castles/runes, significant forest edges, etc.
-        # Ths should be done with a call to the swiss_TLM API.
+        pois_coord = []
+
+        # TODO: calc points of interest if list is empty
+        if self.pois_list_as_str != '':
+
+            try:
+                pois_strs = self.pois_list_as_str.split(';')
+                for poi_str in pois_strs:
+                    poi = poi_str.split(',')
+                    poi = Point_LV03(float(poi[0]), float(poi[1]), 0)
+                    pois_coord.append(poi)
+
+            except Exception as e:
+                logging.error(e)
+
+        self.__logger.debug('POIs: %s', pois_coord)
+
+        # find the nearest point for every point in pois_coords
+        for poi in pois_coord:
+            min_dist = np.inf
+            min_index = 0
+            for i, p in enumerate(path.way_points):
+                dist = (p.point.lat - poi.lat) ** 2 + (p.point.lon - poi.lon) ** 2
+                if dist < min_dist:
+                    min_dist = dist
+                    min_index = i
+            self.__logger.debug('Nearest point for %s is %s', poi, path.way_points[min_index])
+            pois.insert(path.way_points[min_index])
+
+        self.__logger.debug('POIs: %s', pois)
 
         # add endpoint to list of points of interest
         pois.append(path.way_points[-1])

@@ -47,7 +47,7 @@ class AutomatedWalkTableGenerator:
         name = self.__output_directory + 'Route' if gpx_rout_name == "" else self.__output_directory + gpx_rout_name
 
         # calc POIs for the path
-        pois_transformer = POIsTransformer()
+        pois_transformer = POIsTransformer(self.args.list_of_pois)
         pois: path.Path = pois_transformer.transform(self.__path)
 
         # calc points for walk-time table
@@ -70,7 +70,6 @@ class AutomatedWalkTableGenerator:
                               {'uuid': self.uuid, 'status': GeneratorStatus.RUNNING})
 
         if self.args.create_excel:
-
             # We use fetch map numbers only for the selected way points,
             # this is much faster that for every point in the original path. As the swiss_TML_api uses a tolerance
             # of 2_000m anyway the chance to miss a map number is very small.
@@ -95,6 +94,7 @@ class AutomatedWalkTableGenerator:
             self.__log_runtime(map_creator.plot_route_on_map,
                                "Time used to create map PDFs",
                                selected_way_points,
+                               pois=pois,
                                file_name=name,
                                map_scaling=self.args.map_scaling,
                                map_layers=list(map(lambda layer: layer.strip(), self.args.map_layers.split(','))),

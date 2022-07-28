@@ -71,6 +71,7 @@ class DouglasPeuckerTransformer(PathTransformer):
 
         for i, p in enumerate(way_points.way_points):
 
+            # We always use the start and end point of a route
             if i == 0 or i == len(way_points.way_points) - 1:
                 final_way_points.append(p)
                 continue
@@ -78,7 +79,14 @@ class DouglasPeuckerTransformer(PathTransformer):
             # find closest poi
             closest_poi = min(pois.way_points, key=lambda poi: abs(poi.accumulated_distance - p.accumulated_distance))
 
+            # check if poi is nearer to p rather than to way_points.way_points[i + 1]
+            if abs(closest_poi.accumulated_distance - p.accumulated_distance) >= \
+                    abs(closest_poi.accumulated_distance - way_points.way_points[i + 1].accumulated_distance):
+                final_way_points.append(p)
+                continue
+
             # Check if the poi lies between way_points[i - 1] and way_points[i + 1]
+            # if not we can safely add p and continue
             if not (way_points.way_points[i - 1].accumulated_distance < closest_poi.accumulated_distance <
                     way_points.way_points[i + 1].accumulated_distance):
                 final_way_points.insert(p)
@@ -88,36 +96,50 @@ class DouglasPeuckerTransformer(PathTransformer):
 
             # Check points before the poi
             m, b = calc_secant_line(way_points.way_points[i - 1], closest_poi)
+            original_m, original_b = calc_secant_line(way_points.way_points[i - 1], p)
+
             points_between_poi = self.points_between(way_points.way_points[i - 1], closest_poi,
                                                      original_waypoints.way_points)
-            for original_point in points_between_poi:
-                secant_elev = calc_secant_elevation(m, b, original_point)
-                can_replace &= abs(secant_elev - original_point.point.h) < self.maximum_poi_error
+            can_replace = self.check_poi_replacement(b, can_replace, m, original_b, original_m, points_between_poi)
 
             # Check points after the poi
             m, b = calc_secant_line(closest_poi, way_points.way_points[i + 1])
             points_between_poi = self.points_between(closest_poi, way_points.way_points[i + 1],
                                                      original_waypoints.way_points)
-            for original_point in points_between_poi:
-                secant_elev = calc_secant_elevation(m, b, original_point)
-                can_replace &= abs(secant_elev - original_point.point.h) < self.maximum_poi_error
+            can_replace = self.check_poi_replacement(b, can_replace, m, original_b, original_m, points_between_poi)
 
             if can_replace:
                 self.__logger.debug("Replace point #%d (%s) with POI (%s)", i, way_points.way_points[i].point.__str__(),
                                     closest_poi.point.__str__())
-                final_way_points.append(closest_poi)
+                final_way_points.insert(closest_poi)
                 pois.remove(closest_poi)
                 continue
 
-            # TODO: add addtional POIs
-            # if we haven't included all POIs in the path, we could add additional, new waypoints based on the
-            # leftovers of the POIs. We add them in the order of the furthers secant to path distance.
-
-            # TODO: point may end up very close to each other! Fix this...
-
             final_way_points.insert(p)
 
+        # add additional pois if they are at least 100 meters apart from any other point
+        for poi in pois.way_points:
+            if any(abs(poi.accumulated_distance - p.accumulated_distance) < 50 for p in
+                   final_way_points.way_points):
+                continue
+            final_way_points.insert(poi)
+
+        # Drop Point's close to each other
+        self.drop_points(5, Path(), final_way_points, True)
         return final_way_points
+
+    def check_poi_replacement(self, b, can_replace, m, original_b, original_m, points_between_poi):
+
+        for original_point in points_between_poi:
+            secant_elev = calc_secant_elevation(m, b, original_point)
+            original_elev = calc_secant_elevation(original_m, original_b, original_point)
+
+            offset = abs(secant_elev - original_point.point.h)
+            original_offset = abs(original_elev - original_point.point.h)
+
+            can_replace &= offset < self.maximum_poi_error or offset <= original_offset + 20
+
+        return can_replace
 
     def douglas_peucker(self, way_points: Path):
         """

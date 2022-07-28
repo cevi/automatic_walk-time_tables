@@ -54,5 +54,6 @@ def get_parser():
                         help='Position of the legend in the elevation plot.')
     parser.add_argument('--map-layers', default='ch.swisstopo.pixelkarte-farbe', type=str,
                         help='Comma separated list of map layers to be used. Default: "ch.swisstopo.pixelkarte-farbe".')
+    parser.add_argument('--list-of-pois', default='', type=str, help='Comma separated list of POIs to be used.')
 
     return parser

@@ -99,6 +99,22 @@
       <ng-template matStepLabel>Einstellungen zur Marschzeittabelle</ng-template>
 
       <div class="content-block">
+
+
+        <p>
+          Points of Interest entlang der Route. Falls möglich, werden diese Punkte bei der Marschzeittabelle
+          berücksichtigt. Pro Linie ein Koordinaten-Paar im LV03 Format angeben, Longitude und Latitude mit einem Komma
+          trennen. <br>
+          Beispiel: 667357,208554
+        </p>
+
+        <mat-form-field appearance="fill">
+          <mat-label>Points of Interest</mat-label>
+          <textarea formControlName="list-of-pois" matInput></textarea>
+        </mat-form-field>
+      </div>
+
+      <div class="content-block">
         <mat-slide-toggle formControlName="create-excel">Marschzeittabelle als Excel beifügen</mat-slide-toggle>
 
         <div class="slider">
