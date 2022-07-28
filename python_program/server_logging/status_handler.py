@@ -18,13 +18,14 @@ class ExportStateHandler:
         self.states = {}
         self.lock = threading.Lock()
 
-    def update_status(self, uuid: str, status: any, msg: str):
+    def update_status(self, uuid: str, status: any, msg: str, route=None):
         """
 
         Updates the status with the corresponding uuid.
         If no state for the passed uuid is found, it will create a new one.
 
         """
+
         self.lock.acquire()
         try:
             if type(uuid) is not str or len(uuid) == 0:
@@ -43,6 +44,7 @@ class ExportStateHandler:
                 'status': status,
                 'message': msg,
                 'last_change': datetime.now().strftime("%H:%M:%S"),
+                'route': {} if route is None else route,
                 'history': history
             }
 
@@ -120,8 +122,12 @@ class ExportStateLogger(logging.StreamHandler):
             if 'status' in record.args.keys() and type(record.args['status']) is str:
                 status = str(record.args['status'])
 
+            route = None
+            if 'route' in record.args.keys():
+                route = str(record.args['route'])
+
             msg = self.format(record)
-            self.status_handler.update_status(str(record.args['uuid']), status, msg)
+            self.status_handler.update_status(str(record.args['uuid']), status, msg, route=route)
 
         except:
             self.handleError(record)

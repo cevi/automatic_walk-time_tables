@@ -127,3 +127,10 @@ class Path:
 
     def __repr__(self) -> str:
         return self.__str__()
+
+    def to_json(self):
+
+        return {
+            "route_name": self.route_name,
+            "way_points": [wp.to_json() for wp in self.__way_points]
+        }

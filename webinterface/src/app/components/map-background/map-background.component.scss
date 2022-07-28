@@ -31,6 +31,25 @@
 
 }
 
+@media (min-height: 1500px), (min-width: 1500px) {
+
+  .content {
+    margin: 0;
+    position: fixed;
+    right: 0;
+    background-color: #ffffff;
+    max-height: 100vh;
+    height: 100vh;
+    width: 700px;
+  }
+
+  #map-canvas {
+    width: calc(100vw - 800px);
+  }
+
+}
+
+
 ::ng-deep .content h1, ::ng-deep .content h2 {
   text-align: center;
 }

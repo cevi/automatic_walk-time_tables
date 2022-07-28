@@ -36,6 +36,17 @@ class Point:
     def __repr__(self):
         return self.__str__()
 
+    def to_json(self):
+
+        lv95 = self.to_LV95()
+
+        return {
+            "lat": lv95.lat,
+            "lon": lv95.lon,
+            "h": lv95.h,
+            "type": lv95.type
+        }
+
 
 class Point_LV95(Point):
 

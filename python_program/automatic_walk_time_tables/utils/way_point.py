@@ -24,3 +24,10 @@ class WayPoint:
     @name.setter
     def name(self, name: str) -> None:
         self.__name = name
+
+    def to_json(self):
+        return {
+            "accumulated_distance": self.accumulated_distance,
+            "point": self.point.to_json(),
+            "name": self.name
+        }

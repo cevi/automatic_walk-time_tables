@@ -62,9 +62,6 @@ export class ExportSettingsComponent implements OnInit {
     if (!this.route_uploaded || !this.route_file)
       return
 
-    // Start Animation
-    this.mapAnimator.add_route_file(this.route_file);
-
     let formData = new FormData();
 
     formData.append("file", this.route_file);

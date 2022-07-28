@@ -70,7 +70,12 @@ export class MapBackgroundComponent implements OnInit, OnDestroy {
     ctx.fillStyle = "#ffffff"
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
-    ctx.globalAlpha = 0.2;
+    if (this.window.innerWidth < 1500) {
+      ctx.globalAlpha = 0.2;
+    } else {
+      ctx.globalAlpha = 0.5;
+    }
+
     tiles.forEach(t => {
       if (t.image)
         ctx.drawImage(t.image, t.canvas_position.x, t.canvas_position.y, Tile.TILE_RENDER_SIZE, Tile.TILE_RENDER_SIZE);
@@ -80,7 +85,7 @@ export class MapBackgroundComponent implements OnInit, OnDestroy {
 
   private draw_route(ctx: CanvasRenderingContext2D, path: LV95_Coordinates[], map_creator: MapCreator) {
 
-    ctx.strokeStyle = "#AFA5FF"
+    ctx.strokeStyle = "#E88615"
     ctx.lineWidth = 3
     ctx.globalAlpha = 1;
     ctx.beginPath();
@@ -109,7 +114,7 @@ export class MapBackgroundComponent implements OnInit, OnDestroy {
     if (!ctx)
       throw new Error('Canvas is Null!');
 
-    const pageWidth = this.window.innerWidth;
+    const pageWidth = (this.window.innerWidth > 1500) ? (this.window.innerWidth - 800) : this.window.innerWidth;
     const pageHeight = this.window.innerHeight;
 
     const x_tiles_count = Math.ceil(pageWidth / Tile.TILE_RENDER_SIZE);
@@ -138,7 +143,6 @@ export class MapBackgroundComponent implements OnInit, OnDestroy {
     }
 
     return zoom_level
-
 
   }
 }

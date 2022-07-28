@@ -1,7 +1,8 @@
 import {Component, OnInit} from '@angular/core';
 import {environment} from "../../../environments/environment";
 import {ActivatedRoute, Router} from "@angular/router";
-import { StatusManagerService } from 'src/app/services/status-manager.service';
+import {StatusManagerService} from 'src/app/services/status-manager.service';
+import {MapAnimatorService} from "../../services/map-animator.service";
 
 @Component({
   selector: 'app-download-pending',
@@ -13,9 +14,9 @@ export class DownloadPendingComponent implements OnInit {
   static baseURL = environment.API_URL;
   private readonly uuid: string = '';
 
-  constructor( activatedRoute: ActivatedRoute, private router: Router, public statusManager: StatusManagerService) {
+  constructor(private mapAnimator: MapAnimatorService, activatedRoute: ActivatedRoute, private router: Router, public statusManager: StatusManagerService) {
     // Get UUID from the URL
-    this.uuid  = activatedRoute.snapshot.url[1].toString();
+    this.uuid = activatedRoute.snapshot.url[1].toString();
   }
 
   ngOnInit(): void {
@@ -25,6 +26,7 @@ export class DownloadPendingComponent implements OnInit {
   get_status_updates() {
 
     const baseURL = DownloadPendingComponent.baseURL + "status/"
+    let route_fetched = false;
 
     fetch(baseURL + this.uuid)
       .then(response => response.json())
@@ -35,6 +37,19 @@ export class DownloadPendingComponent implements OnInit {
         this.statusManager.last_change = res.last_change
         this.statusManager.history = res.history
 
+
+        if (res?.route && !route_fetched) {
+
+          try {
+            JSON.parse(res?.route.replace(/'/g, '"'));
+            route_fetched = true;
+            this.mapAnimator.add_route_json(res.route);
+          } catch (_) {
+            // do nothing
+          }
+
+        }
+
         if ('finished' == res.status) {
           this.router.navigate(['download', this.uuid]).then();
           return;
@@ -44,7 +59,7 @@ export class DownloadPendingComponent implements OnInit {
           return;
         }
 
-        setTimeout(() => this.get_status_updates(), 500)
+        setTimeout(() => this.get_status_updates(), route_fetched ? 75 : 500);
       })
       .catch(err => this.log_network_error(err))
 

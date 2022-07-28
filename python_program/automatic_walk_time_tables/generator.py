@@ -7,6 +7,7 @@ from automatic_walk_time_tables.generator_status import GeneratorStatus
 from automatic_walk_time_tables.geo_processing.map_numbers import fetch_map_numbers
 from automatic_walk_time_tables.map_downloader.create_map import MapCreator
 from automatic_walk_time_tables.path_transformers.douglas_peucker_transformer import DouglasPeuckerTransformer
+from automatic_walk_time_tables.path_transformers.equidistant_transfomer import EquidistantTransformer
 from automatic_walk_time_tables.path_transformers.naming_transformer import NamingTransformer
 from automatic_walk_time_tables.path_transformers.pois_transfomer import POIsTransformer
 from automatic_walk_time_tables.utils import path
@@ -55,6 +56,13 @@ class AutomatedWalkTableGenerator:
         selected_way_points: path.Path = self.__log_runtime(douglas_peucker_transformer.transform,
                                                             "Time used to compute walk_time_table",
                                                             self.__path)
+
+        equidistant_transformer = EquidistantTransformer(equidistant_distance=10)
+        equidistant_way_points: path.Path = equidistant_transformer.transform(self.__path)
+
+        self.__logger.log(ExportStateLogger.REQUESTABLE, 'Route wurde berechnet.',
+                          {'uuid': self.uuid, 'status': GeneratorStatus.RUNNING,
+                           'route': equidistant_way_points.to_json()})
 
         # name points of walk-time table
         if self.args.create_excel or self.args.create_map_pdfs:
