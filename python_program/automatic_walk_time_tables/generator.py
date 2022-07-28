@@ -90,6 +90,8 @@ class AutomatedWalkTableGenerator:
 
         if self.args.create_map_pdfs:
             self.__logger.debug('Boolean indicates that we should create map PDFs.')
+            self.__logger.log(ExportStateLogger.REQUESTABLE, 'Karten werden erstellt...',
+                              {'uuid': self.uuid, 'status': GeneratorStatus.RUNNING})
             map_creator = MapCreator(self.__path, self.uuid)
             self.__log_runtime(map_creator.plot_route_on_map,
                                "Time used to create map PDFs",
