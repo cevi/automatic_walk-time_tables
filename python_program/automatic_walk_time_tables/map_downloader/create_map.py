@@ -247,7 +247,7 @@ class MapCreator:
         for i, point in enumerate(way_points.way_points):
             lv95 = point.point.to_LV95()
 
-            point_layer = self.create_point_json(lv95, point)
+            point_layer = self.create_point_json(lv95, point, label=True)
             point_layers.append(point_layer)
 
         for i, point in enumerate(pois.way_points):
