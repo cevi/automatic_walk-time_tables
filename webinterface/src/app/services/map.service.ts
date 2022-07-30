@@ -12,7 +12,6 @@ import {createStringXY} from "ol/coordinate";
 import VectorSource from "ol/source/Vector";
 import VectorLayer from "ol/layer/Vector";
 import {Geometry} from "ol/geom";
-import {Style, Fill, Stroke} from 'ol/style';
 
 @Injectable({
   providedIn: 'root'
@@ -70,7 +69,7 @@ export class MapService {
     projection.setExtent(this.EXTEND);
 
     const wmtsLayer = new Tile({
-      source: this.createWMTSSource(this.layerConfigs[layerLabel], projection)
+      source: this.createWMTSSource(this.layerConfigs[layerLabel], projection),
     });
 
     const mousePosition = document.getElementById('mousePosition');
@@ -134,7 +133,8 @@ export class MapService {
       tileGrid: tileGrid,
       projection: projection,
       layer: layerConfig.serverLayerName,
-      requestEncoding: 'REST'
+      requestEncoding: 'REST',
+      attributions: ['© Daten: swisstopo']
     });
   };
 
