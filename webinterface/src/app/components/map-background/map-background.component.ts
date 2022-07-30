@@ -44,7 +44,7 @@ export class MapBackgroundComponent implements OnInit, OnDestroy {
       });
 
       feature.setStyle(new Style({
-        stroke: new Stroke({color: '#ff0000', width: 5})
+        stroke: new Stroke({color: '#ec9929', width: 5})
       }));
 
       this.mapService.getVectorSource().addFeature(feature);
