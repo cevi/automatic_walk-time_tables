@@ -67,7 +67,7 @@ export class DownloadPendingComponent implements OnInit {
   }
 
   private log_network_error(err: Error) {
-    this.statusManager.status = 'error';
+    this.statusManager.status = 'Fehler';
     this.statusManager.status_message = 'Ein Netzwerk-Fehler ist aufgetreten, bitte versuche es erneut.'
     console.error(err);
   }
