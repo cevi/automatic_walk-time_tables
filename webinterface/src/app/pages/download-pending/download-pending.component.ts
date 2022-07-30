@@ -50,12 +50,12 @@ export class DownloadPendingComponent implements OnInit {
 
         }
 
-        if ('finished' == res.status) {
+        if ('Fertig' == res.status) {
           this.router.navigate(['download', this.uuid]).then();
           return;
         }
 
-        if ('error' == res.status) {
+        if ('Fehler' == res.status) {
           return;
         }
 
