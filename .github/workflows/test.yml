@@ -8,5 +8,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Build the stack
-        run: docker-compose -f docker-compose.yml -f docker-compose.test.yml up -d
+        run: docker-compose -f docker-compose.yml -f docker-compose.test.yml build 
+      - name: Start the containers and run cypress
+        run: docker-compose -f docker-compose.yml -f docker-compose.test.yml up --exit-code-from cypress
+        
     
