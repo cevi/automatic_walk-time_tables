@@ -12,7 +12,7 @@
 <p *ngFor="let old_state of statusManager.history" class="old_state">
   &nbsp;- <b>{{old_state?.last_change}}:</b> {{old_state?.message}}
 </p>
-<p [ngClass]="{'error_message': statusManager.status == 'error'}"><b>Status: </b>{{statusManager.status_message}} <i> ({{statusManager.status}})</i></p>
+<p [ngClass]="{'error_message': statusManager.status == 'Fehler'}"><b>Status: </b>{{statusManager.status_message}} <i> ({{statusManager.status}})</i></p>
 
 
 <ng-container *ngIf="statusManager.status == 'error'">
