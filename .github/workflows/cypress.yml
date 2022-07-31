@@ -1,4 +1,4 @@
-name: Testing
+name: End2End Testing with Cypress
 on: push
 env:
   ANGULAR_CONFIGURATION: cypress
