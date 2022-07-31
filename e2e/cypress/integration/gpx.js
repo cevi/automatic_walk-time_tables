@@ -6,9 +6,9 @@ it('detects server', () => {
     cy.get('.mat-button-wrapper').should('contain', 'So funktioniert es!');
 })
 
-it('test GPX file without change', () => {
+it('Test small GPX file without change', () => {
     cy.visit('/')
-    cy.get('#uploader').selectFile("cypress/fixtures/test.gpx");
+    cy.get('#uploader').selectFile("cypress/fixtures/test_small.gpx");
     cy.get('#goto-step-2').click();
     cy.get('#goto-step-3').click();
     cy.get('#goto-step-4').click();
@@ -29,9 +29,9 @@ it('test GPX file without change', () => {
     cy.wait(2000);
 })
 
-it('test GPX file with change', () => {
+it('Test small GPX file with UI change', () => {
     cy.visit('/');
-    cy.get('#uploader').selectFile("cypress/fixtures/test.gpx");
+    cy.get('#uploader').selectFile("cypress/fixtures/test_small.gpx");
     cy.get('#goto-step-2').click();
     cy.get('#goto-step-3').click();
     cy.get('[formControlName="create-map-pdfs"]').click(); // no map
