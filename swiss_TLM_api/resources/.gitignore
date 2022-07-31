@@ -1,0 +1,10 @@
+swissTLM3D_LV95_data*/*.cpg
+swissTLM3D_LV95_data*/*.dbf
+swissTLM3D_LV95_data*/*.prj
+swissTLM3D_LV95_data*/*.shp
+swissTLM3D_LV95_data*/*.shx
+swissTLM3D_LV95_data*/*.CPG
+swissTLM3D_LV95_data*/*.xml
+
+street_index.*
+swissname_data_index.*

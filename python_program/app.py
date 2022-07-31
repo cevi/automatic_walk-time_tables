@@ -79,7 +79,7 @@ def create_map():
         logger.error('No GPX/KML file provided with the POST request.'.format(uuid), {'uuid': uuid})
 
         response = app.response_class(
-            response=json.dumps({'status': 'error', 'message': 'No file submitted.'}),
+            response=json.dumps({'status': GeneratorStatus.ERROR, 'message': 'No file submitted.'}),
             status=500, mimetype='application/json')
         return response
 
@@ -89,7 +89,7 @@ def create_map():
     if not file or not allowed_file(file.filename):
         logger.error('Invalid file extension in filename \"{}\".'.format(file.filename), {'uuid': uuid})
         response = app.response_class(
-            response=json.dumps({'status': 'error', 'message': 'Your file is not valid.'}),
+            response=json.dumps({'status': GeneratorStatus.ERROR, 'message': 'Your file is not valid.'}),
             status=500, mimetype='application/json')
         return response
 
@@ -132,7 +132,7 @@ def request_zip(uuid):
     base_path = pathlib.Path('./output/' + uuid + '/')
     state = stateHandler.get_status(uuid)
 
-    if (state and state['status'] != 'finished') or not os.path.exists(base_path):
+    if (state and state['status'] != GeneratorStatus.SUCCESS) or not os.path.exists(base_path):
         return "Die angefragten Daten sind nicht (mehr) verfügbar."
 
     # Return Zip with data

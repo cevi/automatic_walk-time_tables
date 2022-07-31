@@ -10,11 +10,10 @@ import requests
 from pyclustering.cluster.kmeans import kmeans
 from pyclustering.utils.metric import type_metric, distance_metric
 
+import automatic_walk_time_tables.utils.geometry_utils
 from automatic_walk_time_tables.generator_status import GeneratorStatus
-from automatic_walk_time_tables.geo_processing import gpx_utils
 from automatic_walk_time_tables.utils import path
-from automatic_walk_time_tables.utils.point import Point_LV03, Point_LV95
-from automatic_walk_time_tables.utils.way_point import WayPoint
+from automatic_walk_time_tables.utils.point import Point_LV95
 from server_logging.status_handler import ExportStateLogger
 
 
@@ -55,25 +54,25 @@ class MapCreator:
 
         """
 
-        lower_left, upper_right = gpx_utils.calc_perimeter(self.path_)
+        lower_left, upper_right = automatic_walk_time_tables.utils.geometry_utils.calc_perimeter(self.path_)
 
         # List of most common map scales
         common_map_scales = [10_000, 25_000, 50_000, 100_000, 200_000]
 
         for map_scale in common_map_scales:
             if self.A4_HEIGHT_FACTOR * map_scale >= upper_right.lon - lower_left.lon and \
-                    self.A4_WIDTH_FACTOR * map_scale >= lower_left.lon - upper_right.lan:
+                    self.A4_WIDTH_FACTOR * map_scale >= lower_left.lon - upper_right.lat:
                 break
 
         self.logger.info(f'Map scaling automatically set to 1:{map_scale}')
         return map_scale
 
     def plot_route_on_map(self,
-                          way_points: List[WayPoint],
+                          way_points: path.Path,
+                          pois: path.Path,
                           file_name: str,
                           map_scaling: int,
-                          name_of_points: List[str],
-                          layer: str = 'ch.swisstopo.pixelkarte-farbe',
+                          map_layers: List[str] = None,
                           print_api_base_url: str = 'localhost',
                           print_api_port: int = 8080,
                           print_api_protocol: str = 'http'):
@@ -82,6 +81,7 @@ class MapCreator:
         Creates a map of the route and marking the selected way points on it.
 
         way_points : selected way points of the  walk-time table
+        pois: pois of the walk-time table
         tile_format_ext : Format of the tile, allowed values jpeg or png, default jpeg
         layer : Map layer, see https://wmts.geo.admin.ch/EPSG/2056/1.0.0/WMTSCapabilities.xml for options
         print_api_base_url : host of the mapfish instance, default localhost
@@ -89,6 +89,10 @@ class MapCreator:
         print_api_protocol : protocol used for accessing mapfish, default http
 
         """
+
+        # Set default map layer
+        if map_layers is None:
+            map_layers = ['ch.swisstopo.pixelkarte-farbe']
 
         if map_scaling is None:
             map_scaling = self.auto_select_map_scaling()
@@ -100,32 +104,34 @@ class MapCreator:
                             f"Eine Anfrage würde {len(map_centers)} PDFs generieren, wir haben die Anzahl aber auf 10 beschränkt. Bitte vergrössere deinen Kartenmassstab und probiere es erneut.",
                             {'uuid': self.uuid, 'status': GeneratorStatus.ERROR})
             logging.error(f'Too many map centers (exceeding faire use limit).')
-            if (self.logger.getEffectiveLevel() == logging.DEBUG):
+            if self.logger.getEffectiveLevel() == logging.DEBUG:
                 raise Exception("You should respect the faire use limit!")
             else:
                 exit(1)
 
         for index, map_center in enumerate(map_centers):
 
-            query_json = self.create_mapfish_query(layer, map_scaling, map_center, way_points, name_of_points)
+            query_json = self.create_mapfish_query(map_layers, map_scaling, map_center, way_points, pois)
 
             base_url = "{}://{}:{}".format(print_api_protocol, print_api_base_url, print_api_port)
             url = '{}/print/default/report.pdf'.format(base_url)
 
             self.logger.debug("Posting to mapfish: " + url)
 
+            response_obj = None
+
             try:
                 response_obj = requests.post(url, data=json.dumps(query_json))
             except requests.exceptions.ConnectionError:
                 self.logger.error("Could not connect to mapfish server. Is the server running?")
-                if (self.logger.getEffectiveLevel() == logging.DEBUG):
+                if self.logger.getEffectiveLevel() == logging.DEBUG:
                     raise Exception("Could not connect to mapfish server. Is the server running?")
                 else:
                     exit(1)
 
-            if response_obj.status_code != 200:
+            if response_obj is None or response_obj.status_code != 200:
                 logging.error("Error while posting to mapfish: " + str(response_obj.status_code))
-                if (self.logger.getEffectiveLevel() == logging.DEBUG):
+                if self.logger.getEffectiveLevel() == logging.DEBUG:
                     raise Exception('Can not fetch map. Status Code: {}'.format(response_obj.status_code))
                 else:
                     exit(1)
@@ -178,9 +184,7 @@ class MapCreator:
 
             self.logger.info("Saved map to {}_{}_map.pdf".format(file_name, index))
 
-    def create_mapfish_query(self, layer, map_scaling, center,
-                             way_points: List[WayPoint],
-                             name_of_points):
+    def create_mapfish_query(self, map_layers, map_scaling, center, way_points: path.Path, pois: path.Path):
         """
 
         Returns the JSON-Object used for querying
@@ -188,8 +192,8 @@ class MapCreator:
         """
 
         path_coordinates = []
-        for pt in self.path_.points:
-            pt_lv95: Point_LV95 = pt.to_LV95()
+        for pt in self.path_.way_points:
+            pt_lv95: Point_LV95 = pt.point.to_LV95()
             path_coordinates.append([pt_lv95.lat, pt_lv95.lon])  # convert to LV95
 
         # load the default map matrices, used to inform mapfish about the available map scales and tile size
@@ -236,12 +240,122 @@ class MapCreator:
             "type": "geojson",
             "name": "selected track"
         }
-        map_layer = {
-            "baseURL": "https://wmts100.geo.admin.ch/1.0.0/{Layer}/{style}/{Time}/{TileMatrixSet}/{TileMatrix}/{TileCol}/{TileRow}.jpeg",
+        map_layers = list(
+            map(lambda layer: self.create_map_layer(layer, default_matrices=default_matrices), map_layers))
+
+        point_layers = []
+        for i, point in enumerate(way_points.way_points):
+            lv95 = point.point.to_LV95()
+
+            point_layer = self.create_point_json(lv95, point, label=True)
+            point_layers.append(point_layer)
+
+        for i, point in enumerate(pois.way_points):
+            lv95 = point.point.to_LV95()
+
+            # TODO: currently, we convert to LV95, is there a way to stick to LV03 also for mapfish?
+
+            point_layer = self.create_point_json(lv95, point, '#00BFFF', pointRadius=7)
+            point_layers.append(point_layer)
+
+        query_json = {
+            "layout": "A4 landscape",
+            "outputFormat": "pdf",
+            "attributes": {
+                "scale": "Massstab: 1:" + f"{map_scaling:,}".replace(',', "'"),
+                "map": {
+                    "center": center,
+                    "scale": map_scaling,
+                    "dpi": 250,
+                    "pdfA": True,
+                    "projection": "EPSG:2056",
+                    "rotation": 0,
+                    "layers": point_layers + ([path_layer] + map_layers)
+                }
+            }
+        }
+
+        return query_json
+
+    def create_point_json(self, lv95, point, color='#FF0000', pointRadius=5, label=False):
+        point_layer = {
+            "geoJson": {
+                "type": "FeatureCollection",
+                "features": [
+                    {
+                        "type": "Feature",
+                        "geometry": {
+                            "type": "Point",
+                            "coordinates": [lv95.lat, lv95.lon]
+                        },
+                        "properties": {
+                            "_ngeo_style": "1"
+                        },
+                        "id": 1596274
+                    }
+                ]
+            },
+            "opacity": 1,
+            "style": {
+                "version": 2,
+                "[_ngeo_style = '1']": {
+                    "symbolizers": [
+                        {
+                            "type": "point",
+                            "fillColor": color,
+                            "fillOpacity": 0,
+                            "rotation": "30",
+
+                            "graphicName": "circle",
+                            "graphicOpacity": 0.4,
+                            "pointRadius": pointRadius,
+
+                            "strokeColor": color,
+                            "strokeOpacity": 1,
+                            "strokeWidth": 2,
+                            "strokeLinecap": "round",
+                            "strokeLinejoin": "round",
+                        },
+                        {
+                            "type": "text",
+                            "fontColor": "#e30613",
+                            "fontFamily": "sans-serif",
+                            "fontSize": "8px",
+                            "fontStyle": "normal",
+                            "haloColor": "#ffffff",
+                            "haloOpacity": "0.5",
+                            "haloRadius": ".5",
+                            "label": point.name if label else '',
+                            "fillColor": color,
+                            "fillOpacity": 0,
+                            "labelAlign": "cm",
+                            "labelRotation": "0",
+                            "labelXOffset": "0",
+                            "labelYOffset": "-12"
+                        }
+                    ]
+                }
+            },
+            "type": "geojson",
+            "name": "selected track pois"
+        }
+        return point_layer
+
+    def create_map_layer(self, layer, default_matrices):
+
+        image_type = 'jpeg'
+
+        if layer not in (
+                'ch.swisstopo.pixelkarte-farbe', 'ch.swisstopo.pixelkarte-grau', 'ch.swisstopo.pixelkarte-farbe-pk25',
+                'ch.swisstopo.pixelkarte-grau-pk25', 'ch.swisstopo.swissimage-product'):
+            image_type = 'png'
+
+        return {
+            "baseURL": "http://wmts.geo.admin.ch/1.0.0/{Layer}/{style}/{Time}/{TileMatrixSet}/{TileMatrix}/{TileCol}/{TileRow}." + image_type,
             "dimensions": ["Time"],
             "dimensionParams": {"Time": "current"},
             "name": layer,
-            "imageFormat": "image/jpeg",
+            "imageFormat": "image/" + image_type,
             "layer": layer,
             "matrixSet": "2056",
             "opacity": 0.85,
@@ -251,93 +365,6 @@ class MapCreator:
             "type": "WMTS",
             "version": "1.0.0"
         }
-
-        point_layers = []
-        for i, point in enumerate(way_points):
-            lv95 = point.point.to_LV95()
-
-            # TODO: currently, we convert to LV95, is there a way to stick to LV03 also for mapfish?
-
-            point_layer = {
-                "geoJson": {
-                    "type": "FeatureCollection",
-                    "features": [
-                        {
-                            "type": "Feature",
-                            "geometry": {
-                                "type": "Point",
-                                "coordinates": [lv95.lat, lv95.lon]
-                            },
-                            "properties": {
-                                "_ngeo_style": "1"
-                            },
-                            "id": 1596274
-                        }
-                    ]
-                },
-                "opacity": 1,
-                "style": {
-                    "version": 2,
-                    "[_ngeo_style = '1']": {
-                        "symbolizers": [
-                            {
-                                "type": "point",
-                                "fillColor": "#FF0000",
-                                "fillOpacity": 0,
-                                "rotation": "30",
-
-                                "graphicName": "circle",
-                                "graphicOpacity": 0.4,
-                                "pointRadius": 5,
-
-                                "strokeColor": "#e30613",
-                                "strokeOpacity": 1,
-                                "strokeWidth": 2,
-                                "strokeLinecap": "round",
-                                "strokeLinejoin": "round",
-                            },
-                            {
-                                "type": "text",
-                                "fontColor": "#e30613",
-                                "fontFamily": "sans-serif",
-                                "fontSize": "8px",
-                                "fontStyle": "normal",
-                                "haloColor": "#ffffff",
-                                "haloOpacity": "0.5",
-                                "haloRadius": ".5",
-                                "label": name_of_points[i],  # TODO: read point name from point
-                                "fillColor": "#FF0000",
-                                "fillOpacity": 0,
-                                "labelAlign": "cm",
-                                "labelRotation": "0",
-                                "labelXOffset": "0",
-                                "labelYOffset": "-12"
-                            }
-                        ]
-                    }
-                },
-                "type": "geojson",
-                "name": "selected track pois"
-            }
-            point_layers.append(point_layer)
-
-        query_json = {
-            "layout": "A4 landscape",
-            "outputFormat": "pdf",
-            "attributes": {
-                "map": {
-                    "center": center,
-                    "scale": map_scaling,
-                    "dpi": 400,
-                    "pdfA": True,
-                    "projection": "EPSG:2056",
-                    "rotation": 0,
-                    "layers": point_layers + [path_layer, map_layer]
-                }
-            }
-        }
-
-        return query_json
 
     def create_map_centers(self, map_scaling: int) -> List[np.array]:
         """
@@ -355,8 +382,8 @@ class MapCreator:
         path_covered = False
 
         points_as_array = []
-        for pt in self.path_.points:
-            pt95 = pt.to_LV95()
+        for pt in self.path_.way_points:
+            pt95 = pt.point.to_LV95()
             points_as_array.append([pt95.lat, pt95.lon])
 
         while not path_covered:

@@ -28,7 +28,7 @@ The full documentation of the API endpoints can be found here: [API Endpoints](A
    dependencies:
 
    ```bash
-   pip3 install -r ./automatic_walk_time_tables/requirements.txt
+   $ pip3 install -r ./automatic_walk_time_tables/requirements.txt
    ```
 
 2) In order to create PDF-map exports, you need to set up a docker container. Please follow
@@ -48,6 +48,11 @@ Where the `file-name` flag specifies the path to your route file (GPX- or KML-fi
 produced files (Excel, PDFs...) are stored in the directory specified with the argument `--output_directory`; default
 is `./output/`. A full documentation of all command line arguments can be found
 here: [Command Line Arguments](automatic_walk_time_tables/Command_Line_Arguments.md).
+
+## Test and Debug Tools
+
+Make sure that your system fulfill the prerequisites as described in the section above, i.g. you should be able to run
+the `automatic_walk_time_tables` script locally using python3.
 
 ## About swisstopo Services
 

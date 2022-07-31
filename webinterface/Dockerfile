@@ -24,6 +24,9 @@ RUN npm run build -- --configuration $configuration
 # Use official nginx image as the base image
 FROM nginx:latest
 
+# copy the nginx configuration file to the container
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
 # Copy the build output txo replace the default nginx contents.
 COPY --from=build /usr/local/app/dist/automatic-walk-time-tables /usr/share/nginx/html
 
