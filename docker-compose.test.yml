@@ -1,0 +1,12 @@
+services:
+  cypress:
+    build: ./e2e
+    depends_on:
+      - webinterface
+    environment:
+      - CYPRESS_baseUrl=http://webinterface:80
+    
+    # share the current folder as volume to avoid copying
+    working_dir: /opt/e2e
+    volumes:
+      - ./e2e:/opt/e2e

@@ -12,7 +12,8 @@ development mode. Other modes are:
 
 * `configuration=prod_backend` which uses the productive backend, but serves angular not in production mode
 * `configuration=production` which uses the productive backend and serve angular in production mode
-* `configuration=development` serves angular in development mode and uses localhost as backend 
+* `configuration=development` serves angular in development mode and uses localhost as backend
+* `configuration=cypress` serves angular in devloop mode and uses `backend` as backend
 
 Example:
 ```bash
