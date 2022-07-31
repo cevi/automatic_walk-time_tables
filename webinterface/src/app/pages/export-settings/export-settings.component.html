@@ -29,7 +29,7 @@
       </button>
       <button mat-stroked-button color="warn" *ngIf="route_uploaded" (click)="delete_route_file()"> Datei löschen
       </button>
-      <button mat-stroked-button color="primary" matStepperNext [disabled]="!route_uploaded">Weiter</button>
+      <button mat-stroked-button color="primary" matStepperNext [disabled]="!route_uploaded" id="goto-step-2">Weiter</button>
 
     </mat-step>
 
@@ -51,7 +51,7 @@
 
       </div>
 
-      <button mat-stroked-button color="primary" matStepperNext>Weiter</button>
+      <button mat-stroked-button color="primary" matStepperNext id="goto-step-3">Weiter</button>
 
     </mat-step>
 
@@ -93,7 +93,7 @@
 
       </div>
 
-      <button mat-stroked-button color="primary" matStepperNext>Weiter</button>
+      <button mat-stroked-button color="primary" matStepperNext id="goto-step-4">Weiter</button>
 
     </mat-step>
 
@@ -141,7 +141,7 @@
         </mat-form-field>
       </div>
 
-      <button mat-stroked-button color="primary" matStepperNext>Weiter</button>
+      <button mat-stroked-button color="primary" matStepperNext id="goto-step-5">Weiter</button>
 
     </mat-step>
 
