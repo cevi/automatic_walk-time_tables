@@ -34,9 +34,16 @@ export class ExportSettingsComponent implements OnInit {
     });
 
 
-    if (localStorage['form_values'] && this.isJsonString(localStorage['form_values'])) {
-      this.options.setValue(JSON.parse(localStorage['form_values']))
-      console.log('Loaded form values from local storage')
+    // we need this try-catch block to ensure the loaded data is compatible with the current form layout
+    try {
+
+      if (localStorage['form_values'] && this.isJsonString(localStorage['form_values'])) {
+        this.options.setValue(JSON.parse(localStorage['form_values']))
+        console.log('Loaded form values from local storage')
+      }
+
+    } catch (_) {
+      // safe to ignore
     }
 
 
