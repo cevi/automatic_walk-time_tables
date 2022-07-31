@@ -1,7 +1,7 @@
 
 <h2>Export läuft, wir bitten um Geduld.</h2>
 
-<ng-container *ngIf="statusManager.status != 'error' else onerror">
+<ng-container *ngIf="statusManager.status != 'Fehler' else onerror">
   <mat-progress-bar mode="query"></mat-progress-bar>
 </ng-container>
 <ng-template #onerror>

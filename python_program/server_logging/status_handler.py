@@ -63,7 +63,7 @@ class ExportStateHandler:
                 raise Exception("Invalid uuid")
             if uuid not in self.states.keys():
                 return {
-                    'status': 'error',
+                    'status': GeneratorStatus.ERROR,
                     'message': 'Status zu dieser ID ist unbekannt.',
                     'last_change': datetime.now().strftime("%H:%M:%S")
                 }
