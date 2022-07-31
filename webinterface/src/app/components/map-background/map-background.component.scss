@@ -5,29 +5,40 @@
   top: 0;
   left: 0;
   overflow: hidden;
-  z-index: -10;
 }
 
 #logo {
   position: absolute;
   max-width: 550px;
   width: 60%;
-  left: 20px;
+  left: 40px;
   top: 20px;
   opacity: 1;
 }
 
+#mousePosition {
+  position: fixed;
+  display: block;
+  bottom: 0;
+  left: 65px;
+  font-size: 11px;
+  height: 35px;
+  width: 250px;
+  z-index: 1000;
+  color: #000;
+}
 
 .content {
 
   margin: 180px auto 50px auto;
 
-  background-color: #ffffffa0;
+  background-color: #ffffffe3;
   padding: 50px 50px;
   max-width: 700px;
   overflow: auto;
 
   max-height: calc(100vh - 330px);
+  position: relative;
 
 }
 
