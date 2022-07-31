@@ -11,6 +11,11 @@ services:
       - "8080:8080"
     depends_on:
       - tile_cache
+    healthcheck:
+      test: "curl -f http://localhost:8080"
+      interval: 2s
+      timeout: 1s
+      retries: 60
 
   swiss_tml:
     build:
@@ -20,6 +25,11 @@ services:
     volumes:
       - ./swiss_TLM_api/resources:/app/resources
       - ./swiss_TLM_api/index_cache:/app/index_cache
+    healthcheck:
+      test: "curl -f http://localhost:1848/ready | grep 'ready'"
+      interval: 2s
+      timeout: 1s
+      retries: 60
 
   backend:
     build:
@@ -27,8 +37,10 @@ services:
     ports:
       - "5000:5000"
     depends_on:
-      - mapfish
-      - swiss_tml
+      swiss_tml:
+        condition: service_healthy
+      mapfish:
+        condition: service_healthy
     environment:
       TZ: Europe/Zurich
 
