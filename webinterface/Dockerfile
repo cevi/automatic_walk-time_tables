@@ -22,7 +22,7 @@ RUN npm run build -- --configuration $configuration
 
 # Stage 2: Serve app with nginx server
 # Use official nginx image as the base image
-FROM nginx:latest
+FROM nginx:1.23
 
 # copy the nginx configuration file to the container
 COPY nginx.conf /etc/nginx/conf.d/default.conf
