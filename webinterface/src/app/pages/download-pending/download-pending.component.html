@@ -15,6 +15,6 @@
 <p [ngClass]="{'error_message': statusManager.status == 'Fehler'}"><b>Status: </b>{{statusManager.status_message}} <i> ({{statusManager.status}})</i></p>
 
 
-<ng-container *ngIf="statusManager.status == 'error'">
+<ng-container *ngIf="statusManager.status == 'Fehler'">
   <button mat-stroked-button color="warn" routerLink="/">Neuer Versuch starten</button>
 </ng-container>
