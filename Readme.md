@@ -75,4 +75,9 @@ $ docker-compose up [--build]
 
 *Note:* `--build` is optional and forces docker to rebuild the containers.
 
-
+## Testing
+The application is tested using `cypress`. Make sure to include the `cypress` container with
+```bash
+$ docker-compose -f docker-compose.yml -f docker-compose.test.yml up -d
+```
+At boot, this container will run the `cypress` tests.
