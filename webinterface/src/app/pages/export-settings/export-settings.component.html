@@ -29,7 +29,7 @@
       </button>
       <button mat-stroked-button color="warn" *ngIf="route_uploaded" (click)="delete_route_file()"> Datei löschen
       </button>
-      <button mat-stroked-button color="primary" matStepperNext [disabled]="!route_uploaded">Weiter</button>
+      <button mat-stroked-button color="primary" matStepperNext [disabled]="!route_uploaded" (click)="fetch_route()">Hochladen und weiter</button>
 
     </mat-step>
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import functools
 import io
@@ -10,11 +12,12 @@ import uuid as uuid_factory
 import zipfile
 from threading import Thread
 
-from flask import Flask, request, send_file
+from flask import Flask, request, send_file, Response
 from flask_cors import CORS
 
 from automatic_walk_time_tables.arg_parser import get_parser
 from automatic_walk_time_tables.generator_status import GeneratorStatus
+from automatic_walk_time_tables.utils.file_parser import GeoFileParser
 from server_logging.log_helper import setup_recursive_logger
 from server_logging.status_handler import ExportStateHandler, ExportStateLogger
 
@@ -65,37 +68,40 @@ def allowed_file(filename):
     return get_file_ending(filename) in ('gpx', 'kml')
 
 
+@app.route('/parse_route', methods=['POST'])
+def parse_route():
+    uuid = str(uuid_factory.uuid4().hex)
+    result = save_file(uuid)
+
+    # check result of save_file function
+    if isinstance(result, Response):
+        return result
+    file_name = result
+
+    geo_file_parser = GeoFileParser(fetch_elevation=False)
+    path = geo_file_parser.parse(file_name)
+
+    response = app.response_class(
+        response=json.dumps({'status': GeneratorStatus.SUCCESS, 'uuid': str(uuid), 'route': path.to_polyline()}),
+        status=200, mimetype='application/json')
+
+    return response
+
+
 @app.route('/create', methods=['POST'])
 def create_map():
     uuid = str(uuid_factory.uuid4().hex)
     logger.debug('New request to with create_map().', {'uuid': uuid})
 
-    # check if output and input folders exist, if not, create them
-    input_directory = 'input/' + uuid + '/'
+    # Save file to input directory
+    result = save_file(uuid)
+
+    # check result of save_file function
+    if isinstance(result, Response):
+        return result
+    file_name = result
+
     output_directory = 'output/' + uuid + '/'
-    pathlib.Path(input_directory).mkdir(parents=True, exist_ok=True)
-
-    if 'file' not in request.files:
-        logger.error('No GPX/KML file provided with the POST request.'.format(uuid), {'uuid': uuid})
-
-        response = app.response_class(
-            response=json.dumps({'status': GeneratorStatus.ERROR, 'message': 'No file submitted.'}),
-            status=500, mimetype='application/json')
-        return response
-
-    file = request.files['file']
-
-    # Check if a valid file is provided
-    if not file or not allowed_file(file.filename):
-        logger.error('Invalid file extension in filename \"{}\".'.format(file.filename), {'uuid': uuid})
-        response = app.response_class(
-            response=json.dumps({'status': GeneratorStatus.ERROR, 'message': 'Your file is not valid.'}),
-            status=500, mimetype='application/json')
-        return response
-
-    file_ending = get_file_ending(file.filename)
-    file_name = './input/' + uuid + '/upload.' + file_ending
-    file.save(file_name)
 
     logger.log(ExportStateLogger.REQUESTABLE, 'Export wird vorbereitet.',
                {'uuid': uuid, 'status': GeneratorStatus.RUNNING})
@@ -112,7 +118,7 @@ def create_map():
 
     # Send the download link to the user
     response = app.response_class(
-        response=json.dumps({'status': 'submitted', 'uuid': str(uuid)}),
+        response=json.dumps({'status': GeneratorStatus.RUNNING, 'uuid': str(uuid)}),
         status=200, mimetype='application/json')
 
     return response
@@ -157,6 +163,36 @@ def request_zip(uuid):
             as_attachment=True,
             attachment_filename='Download.zip'
         )
+
+
+def save_file(uuid) -> str | Response:
+    # check if output and input folders exist, if not, create them
+    input_directory = 'input/' + uuid + '/'
+    pathlib.Path(input_directory).mkdir(parents=True, exist_ok=True)
+
+    if 'file' not in request.files:
+        logger.error('No GPX/KML file provided with the POST request.'.format(uuid), {'uuid': uuid})
+
+        response = app.response_class(
+            response=json.dumps({'status': GeneratorStatus.ERROR, 'message': 'No file submitted.'}),
+            status=500, mimetype='application/json')
+        return response
+
+    file = request.files['file']
+
+    # Check if a valid file is provided
+    if not file or not allowed_file(file.filename):
+        logger.error('Invalid file extension in filename \"{}\".'.format(file.filename), {'uuid': uuid})
+        response = app.response_class(
+            response=json.dumps({'status': GeneratorStatus.ERROR, 'message': 'Your file is not valid.'}),
+            status=500, mimetype='application/json')
+        return response
+
+    file_ending = get_file_ending(file.filename)
+    file_name = './input/' + uuid + '/upload.' + file_ending
+    file.save(file_name)
+
+    return file_name
 
 
 if __name__ == "__main__":

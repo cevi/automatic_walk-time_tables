@@ -15,9 +15,10 @@ class GeoFileParser(object):
     It creates objects of type path.Path containing the waypoints of the GeoFile.
     """
 
-    def __init__(self):
+    def __init__(self, fetch_elevation=True):
         self.__logger = logging.getLogger(__file__)
         self.height_fetcher = HeightFetcherTransformer(min_number_of_points=2500)
+        self.fetch_elevation = fetch_elevation
 
     def parse(self, file_name: str) -> path.Path:
         route_file = open(file_name, 'r')
@@ -104,7 +105,9 @@ class GeoFileParser(object):
                 coordinates = [point.Point_WGS84(float(c[0]), float(c[1])) for c in coordinates]
 
             path_ = path.Path(coordinates)
-            path_ = self.height_fetcher.transform(path_)
+
+            if self.fetch_elevation:
+                path_ = self.height_fetcher.transform(path_)
 
             return path_
 
