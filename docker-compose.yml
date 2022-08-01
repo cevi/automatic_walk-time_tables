@@ -3,9 +3,11 @@ version: "3.9"
 services:
 
   tile_cache:
+    image: registry.test.cevi.tools/cevi/awtg_tile_caching:latest
     build: tile_caching
 
   mapfish:
+    image: registry.test.cevi.tools/cevi/awtg_mapfish:latest
     build: pdf_map_export/.
     ports:
       - "8080:8080"
@@ -13,6 +15,7 @@ services:
       - tile_cache
 
   swiss_tml:
+    image: registry.test.cevi.toolscevi/swiss_tml_api:latest
     build:
       context: swiss_TLM_api/.
     ports:
@@ -22,6 +25,7 @@ services:
       - ./swiss_TLM_api/index_cache:/app/index_cache
 
   backend:
+    image: registry.test.cevi.tools/cevi/awtg_backend:latest
     build:
       context: python_program/.
     ports:
@@ -33,6 +37,7 @@ services:
       TZ: Europe/Zurich
 
   webinterface:
+    image: registry.test.cevi.tools/cevi/awtg_webinterface:latest
     build:
       context: webinterface/.
       args:

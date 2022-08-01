@@ -1,0 +1,21 @@
+name: DevBuild
+
+on:
+  push:
+    branches:
+      - 'master'
+
+env:
+  ANGULAR_CONFIGURATION: dev_build
+
+jobs:
+  devBuild:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Build the stack
+        run: docker-compose --env-file prod.env up --build
+
+      - name: Push containers to registry
+        run: docker-compose push
