@@ -2,6 +2,8 @@ import logging
 import threading
 from datetime import datetime
 
+from automatic_walk_time_tables.generator_status import GeneratorStatus
+
 
 class ExportStateHandler:
     """
