@@ -5,6 +5,7 @@
     "ng": "ng",
     "start": "angular-build-info && ng serve",
     "build": "angular-build-info && ng build",
+    "build:docker": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },

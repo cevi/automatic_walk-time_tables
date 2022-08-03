@@ -39,7 +39,8 @@ services:
   webinterface:
     image: registry.test.cevi.tools/cevi/awtg_webinterface:latest
     build:
-      context: webinterface/.
+      context: .
+      dockerfile: webinterface/Dockerfile
       args:
         # By default, we build in development mode. You can change the build mode by specifying $ANGULAR_CONFIGURATION.
         - configuration=${ANGULAR_CONFIGURATION:-development}

@@ -7,25 +7,29 @@ FROM node:16 as build
 WORKDIR /usr/local/app
 
 # Install app dependencies
-COPY package*.json ./
+COPY ./webinterface/package*.json ./
 
 # Install all the dependencies from package-lock.json
 RUN npm ci
 
 # Add the source code to app
-COPY ./ /usr/local/app/
+COPY ./webinterface/ /usr/local/app/
+COPY ./.git/HEAD /usr/local/app/.git/HEAD
+COPY ./.git/refs/heads/ /usr/local/app/.git/refs/heads/
 
 ARG configuration=development
 
+RUN bash create_build_info.sh
+
 # Generate the build of the application
-RUN npm run build -- --configuration $configuration
+RUN npm run build:docker -- --configuration $configuration
 
 # Stage 2: Serve app with nginx server
 # Use official nginx image as the base image
 FROM nginx:1.23
 
 # copy the nginx configuration file to the container
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY ./webinterface/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy the build output txo replace the default nginx contents.
 COPY --from=build /usr/local/app/dist/automatic-walk-time-tables /usr/share/nginx/html

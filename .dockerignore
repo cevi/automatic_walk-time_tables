@@ -1,0 +1,11 @@
+# Ignore everything
+*
+
+# Allow files and directories
+!webinterface
+!.git/HEAD
+!.git/refs/heads/*
+
+# Folders to ignroe
+webinterface/node_modules/*
+webinterface/src/build.ts
