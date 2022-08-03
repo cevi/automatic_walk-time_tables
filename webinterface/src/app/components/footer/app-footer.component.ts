@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import packageInfo from '../../../../package.json';
+import {Component, OnInit} from '@angular/core';
+import buildInfo from '../../../build';
 
 @Component({
   selector: 'app-footer',
@@ -8,11 +8,14 @@ import packageInfo from '../../../../package.json';
 })
 export class AppFooterComponent implements OnInit {
 
-  public version: string;
+  public buildInfo = buildInfo;
+  public buildDate;
+
 
   constructor() {
 
-    this.version = packageInfo.version;
+    this.buildDate = new Date(buildInfo.timestamp).toISOString().substr(0, 10) +
+      ' ' + new Date(buildInfo.timestamp).toLocaleTimeString();
 
   }
 
