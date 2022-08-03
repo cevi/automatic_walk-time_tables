@@ -8,9 +8,9 @@
 - Additional parameters (see [Command Line Arguments](automatic_walk_time_tables/Command_Line_Arguments.md) are accepted
   the same way as they are passed to the python script).
 - Returns a JSON with the following fields:
-    - `status`: `submitted` or `error`
-    - `uuid`: uuid of the created walk-table (only if `status`=`submitted`)
-    - `message`: Error message (only if `status`=`error`)
+    - `status`: `Laufend` or `Fehler`
+    - `uuid`: uuid of the created walk-table (only if `status`=`Laufend`)
+    - `message`: Error message (only if `status`=`Fehler`)
 
 #### Example:
 
@@ -30,7 +30,7 @@ Possible response:
 ### /status/[uuid] [GET]
 
 - Returns a JSON with the following fields:
-    - `status`: `submitted`, `running`, `error`, `finished`
+    - `status`: `Laufend`, `Fehler`, `Fertig`
     - `message`: Message
     - `last_change`: Timestamp of the last change
 
