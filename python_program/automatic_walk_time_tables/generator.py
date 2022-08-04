@@ -102,7 +102,7 @@ class AutomatedWalkTableGenerator:
                               {'uuid': self.uuid, 'status': GeneratorStatus.RUNNING})
             map_creator = MapCreator(self.__path, self.uuid)
             self.__log_runtime(map_creator.plot_route_on_map,
-                               "Benötifte Zeit zum Erstellen der Karten-PDFs",
+                               "Benötigte Zeit zum Erstellen der Karten-PDFs",
                                selected_way_points,
                                pois=pois,
                                file_name=name,
