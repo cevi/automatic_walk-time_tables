@@ -4,7 +4,7 @@ import {Subscription} from "rxjs";
 import Map from 'ol/Map';
 import {MapService} from "../../services/map.service";
 import {Feature} from "ol";
-import {LineString} from "ol/geom";
+import {Circle, LineString} from "ol/geom";
 import {Stroke, Style} from "ol/style";
 
 @Component({
@@ -48,6 +48,25 @@ export class MapBackgroundComponent implements OnInit, OnDestroy {
       }));
 
       this.mapService.getVectorSource().addFeature(feature);
+
+    });
+
+    this.mapAnimator.way_points$.subscribe(way_points => {
+
+      way_points.forEach(way_point => {
+
+        const feature = new Feature({
+          geometry: new Circle([way_point.x, way_point.y], 25)
+        });
+
+        feature.setStyle(new Style({
+          stroke: new Stroke({color: '#df5010', width: 5})
+        }));
+
+        this.mapService.getVectorSource().addFeature(feature);
+
+      });
+
 
     });
 

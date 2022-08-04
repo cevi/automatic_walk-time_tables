@@ -29,12 +29,21 @@
       </button>
       <button mat-stroked-button color="warn" *ngIf="route_uploaded" (click)="delete_route_file()"> Datei löschen
       </button>
-      <button mat-stroked-button color="primary" matStepperNext [disabled]="!route_uploaded" (click)="fetch_route()">Hochladen und weiter</button>
+      <button mat-stroked-button color="primary" matStepperNext [disabled]="!route_uploaded"
+              (click)="create_walk_time_table()">Weiter
+      </button>
 
     </mat-step>
 
     <mat-step>
       <ng-template matStepLabel>Einstellungen zum Höhenprofil</ng-template>
+
+
+      <div style="display: block;" *ngIf="plot_options != {}">
+        <p>Höhenprofil</p>
+        <div echarts [options]="plot_options" class="hoehenprofil"></div>
+      </div>
+
 
       <div class="content-block">
 

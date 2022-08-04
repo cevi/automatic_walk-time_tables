@@ -5,9 +5,9 @@ from automatic_walk_time_tables.geo_processing import coord_transformation
 
 class PointType:
     NONE = "NONE"
-    LV03 = "LV03"
-    LV95 = "LV95"
-    WGS84 = "WGS84"
+    LV03 = "21781"
+    LV95 = "2056"
+    WGS84 = "4979"
 
 
 # Abstract Base class

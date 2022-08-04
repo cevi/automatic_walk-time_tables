@@ -8,13 +8,20 @@ import {BehaviorSubject, Observable, Subject} from "rxjs";
 export class MapAnimatorService {
 
   private readonly _path$: Subject<LV95_Coordinates[]>;
+  private readonly _way_points$: Subject<LV95_Coordinates[]>;
   private readonly _map_center$: BehaviorSubject<LV95_Coordinates>;
+
+  private _path: LV95_Coordinates[] | undefined;
 
   constructor() {
 
     this._path$ = new Subject<LV95_Coordinates[]>();
     this._map_center$ = new BehaviorSubject<LV95_Coordinates>({x: 2719675, y: 1216320})
+    this._way_points$ = new Subject<LV95_Coordinates[]>();
 
+    this._path$.subscribe(path => {
+      this._path = path;
+    });
 
   }
 
@@ -26,10 +33,14 @@ export class MapAnimatorService {
     return this._map_center$;
   }
 
-
-  distance_between(pkt1: LV95_Coordinates, pkt2: LV95_Coordinates) {
-    return Math.sqrt(Math.pow(pkt1.x - pkt2.x, 2) + Math.pow(pkt1.y - pkt2.y, 2));
+  get path(): LV95_Coordinates[] | undefined {
+    return this._path;
   }
+
+  get way_points$(): Observable<LV95_Coordinates[]> {
+    return this._way_points$;
+  }
+
 
   async add_route(route_as_array: number[][]) {
 
@@ -65,4 +76,14 @@ export class MapAnimatorService {
 
   }
 
+  add_way_points(selected_way_points: number[][]) {
+
+    const points = selected_way_points.map((pkt: any) => {
+      return {'x': pkt[0], 'y': pkt[1]};
+    });
+
+    this._way_points$?.next(points);
+
+
+  }
 }

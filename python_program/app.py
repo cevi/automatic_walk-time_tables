@@ -12,9 +12,16 @@ import uuid as uuid_factory
 import zipfile
 from threading import Thread
 
+import polyline
 from flask import Flask, request, send_file, Response
 from flask_cors import CORS
 
+from automatic_walk_time_tables.path_transformers.douglas_peucker_transformer import DouglasPeuckerTransformer
+from automatic_walk_time_tables.path_transformers.equidistant_transfomer import EquidistantTransformer
+from automatic_walk_time_tables.path_transformers.heigth_fetcher_transfomer import HeightFetcherTransformer
+from automatic_walk_time_tables.path_transformers.pois_transfomer import POIsTransformer
+from automatic_walk_time_tables.utils.path import Path
+from automatic_walk_time_tables.utils.point import Point_LV95
 from server_logging.log_helper import setup_recursive_logger
 from server_logging.status_handler import ExportStateHandler, ExportStateLogger
 
@@ -51,8 +58,18 @@ def parse_route():
         geo_file_parser = GeoFileParser(fetch_elevation=False)
         path = geo_file_parser.parse(file_content=file_content, extension=options['file_type'])
 
+        equidistant_transformer = EquidistantTransformer(equidistant_distance=10)
+        path = equidistant_transformer.transform(path)
+
         route = path.to_polyline() if 'encoding' in options and options['encoding'] == 'polyline' else path.to_json()
-        result_json = {'status': GeneratorStatus.SUCCESS, 'route': route}
+        result_json = {
+            'status': GeneratorStatus.SUCCESS,
+            'route': route,
+        }
+
+        if path.has_elevation_for_all_points():
+            result_json['elevation_data'] = path.to_elevation_polyline()
+
         return app.response_class(response=json.dumps(result_json), status=200, mimetype='application/json')
 
     except Exception as e:
@@ -62,6 +79,59 @@ def parse_route():
         return app.response_class(
             response=json.dumps({'status': GeneratorStatus.ERROR, 'message': str(e)}),
             status=500, mimetype='application/json')
+
+
+@app.route('/create-walk-time-table', methods=['POST'])
+def create_walk_time_table():
+    if request.is_json:
+        options = request.get_json()
+    elif 'options' in request.form:
+        options = json.loads(request.form['options'])
+    else:
+        return app.response_class(
+            response=json.dumps({'status': GeneratorStatus.ERROR, 'message': 'Invalid request format.'}),
+            status=500, mimetype='application/json')
+
+    # Decode options['route'] form polyline
+    if 'encoding' in options and options['encoding'] == 'polyline':
+
+        path = Path(list(map(lambda pkt: Point_LV95(lat=pkt[0], lon=pkt[1]), polyline.decode(options['route'], 0))))
+
+        if 'elevation_data' in options:
+
+            elevation_data = polyline.decode(options['elevation_data'], 0)
+            for i, way_point in enumerate(path.way_points):
+                way_point.point.h = elevation_data[i][1]
+
+        else:
+            height_fetcher_transformer = HeightFetcherTransformer()
+            path = height_fetcher_transformer.transform(path)
+
+        # calc POIs for the path
+        pois_transformer = POIsTransformer()
+        pois: Path = pois_transformer.transform(path)
+
+        douglas_peucker_transformer = DouglasPeuckerTransformer(number_of_waypoints=21, pois=pois)
+        selected_way_points = douglas_peucker_transformer.transform(path)
+
+        result_json = {
+            'status': GeneratorStatus.SUCCESS,
+            'path_elevation': path.to_elevation_polyline(),
+            'selected_way_points': selected_way_points.to_polyline(),
+            'selected_way_points_elevation': selected_way_points.to_elevation_polyline(),
+            'pois': pois.to_polyline()
+        }
+        return app.response_class(response=json.dumps(result_json), status=200, mimetype='application/json')
+
+
+    else:
+        return app.response_class(
+            response=json.dumps({'status': GeneratorStatus.ERROR, 'message': 'Invalid Encoding of route.'}),
+            status=500, mimetype='application/json')
+
+    return app.response_class(
+        response=json.dumps({'status': GeneratorStatus.SUCCESS}),
+        status=200, mimetype='application/json')
 
 
 @app.route('/create', methods=['POST'])
