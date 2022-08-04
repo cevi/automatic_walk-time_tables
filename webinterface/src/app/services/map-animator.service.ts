@@ -11,6 +11,8 @@ export class MapAnimatorService {
   private readonly _way_points$: Subject<LV95_Coordinates[]>;
   private readonly _map_center$: BehaviorSubject<LV95_Coordinates>;
 
+  private readonly _current_location$: Subject<LV95_Coordinates>;
+
   private _path: LV95_Coordinates[] | undefined;
 
   constructor() {
@@ -18,6 +20,8 @@ export class MapAnimatorService {
     this._path$ = new Subject<LV95_Coordinates[]>();
     this._map_center$ = new BehaviorSubject<LV95_Coordinates>({x: 2719675, y: 1216320})
     this._way_points$ = new Subject<LV95_Coordinates[]>();
+
+    this._current_location$ = new Subject<LV95_Coordinates>();
 
     this._path$.subscribe(path => {
       this._path = path;
@@ -39,6 +43,10 @@ export class MapAnimatorService {
 
   get way_points$(): Observable<LV95_Coordinates[]> {
     return this._way_points$;
+  }
+
+  get current_location$(): Observable<LV95_Coordinates> {
+    return this._current_location$;
   }
 
 
@@ -86,4 +94,9 @@ export class MapAnimatorService {
 
 
   }
+
+  set_location(pkt: LV95_Coordinates) {
+    this._current_location$.next(pkt);
+  }
+
 }

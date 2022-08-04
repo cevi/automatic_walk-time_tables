@@ -4,7 +4,7 @@ import numpy as np
 
 from automatic_walk_time_tables.path_transformers.path_transfomer import PathTransformer
 from automatic_walk_time_tables.utils.path import Path
-from automatic_walk_time_tables.utils.point import Point_LV03
+from automatic_walk_time_tables.utils.point import Point_LV03, Point_LV95
 
 
 class POIsTransformer(PathTransformer):
@@ -36,7 +36,7 @@ class POIsTransformer(PathTransformer):
                 pois_strs = self.pois_list_as_str.split(';')
                 for poi_str in pois_strs:
                     poi = poi_str.split(',')
-                    poi = Point_LV03(float(poi[0]), float(poi[1]), 0)
+                    poi = Point_LV95(float(poi[0]), float(poi[1]), 0)
                     pois_coord.append(poi)
 
             except Exception as e:
@@ -49,7 +49,10 @@ class POIsTransformer(PathTransformer):
             min_dist = np.inf
             min_index = 0
             for i, p in enumerate(path.way_points):
-                dist = (p.point.lat - poi.lat) ** 2 + (p.point.lon - poi.lon) ** 2
+
+                p_lv95 = p.point.to_LV95()
+
+                dist = (p_lv95.lat - poi.lat) ** 2 + (p_lv95.lon - poi.lon) ** 2
                 if dist < min_dist:
                     min_dist = dist
                     min_index = i

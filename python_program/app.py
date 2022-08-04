@@ -13,7 +13,7 @@ import zipfile
 from threading import Thread
 
 import polyline
-from flask import Flask, request, send_file, Response
+from flask import Flask, request, send_file
 from flask_cors import CORS
 
 from automatic_walk_time_tables.path_transformers.douglas_peucker_transformer import DouglasPeuckerTransformer
@@ -107,22 +107,29 @@ def create_walk_time_table():
             height_fetcher_transformer = HeightFetcherTransformer()
             path = height_fetcher_transformer.transform(path)
 
+        pois_str: str = ""
+        if 'pois' in options:
+            pois_str = options['pois']
+
         # calc POIs for the path
-        pois_transformer = POIsTransformer()
+        pois_transformer = POIsTransformer(pois_list_as_str=pois_str)
         pois: Path = pois_transformer.transform(path)
+
+        logger.info('Pois: {}'.format(pois))
 
         douglas_peucker_transformer = DouglasPeuckerTransformer(number_of_waypoints=21, pois=pois)
         selected_way_points = douglas_peucker_transformer.transform(path)
 
         result_json = {
             'status': GeneratorStatus.SUCCESS,
+            'path': path.to_polyline(),
             'path_elevation': path.to_elevation_polyline(),
             'selected_way_points': selected_way_points.to_polyline(),
             'selected_way_points_elevation': selected_way_points.to_elevation_polyline(),
-            'pois': pois.to_polyline()
+            'pois': pois.to_polyline(),
+            'pois_elevation': pois.to_elevation_polyline(),
         }
         return app.response_class(response=json.dumps(result_json), status=200, mimetype='application/json')
-
 
     else:
         return app.response_class(
@@ -138,15 +145,6 @@ def create_walk_time_table():
 def create_map():
     uuid = str(uuid_factory.uuid4().hex)
     logger.debug('New request to with create_map().', {'uuid': uuid})
-
-    # Save file to input directory
-    result = save_file(uuid)
-
-    # check result of save_file function
-    if isinstance(result, Response):
-        return result
-    file_name = result
-
     output_directory = 'output/' + uuid + '/'
 
     logger.log(ExportStateLogger.REQUESTABLE, 'Export wird vorbereitet.',
@@ -156,10 +154,15 @@ def create_map():
     args_as_dict = request.args.to_dict(flat=True)
     args = list(functools.reduce(lambda x, y: x + y, args_as_dict.items()))
     args = list(filter(lambda x: x != '', args))
-    args = parser.parse_args(['-fn', file_name, '--output_directory', output_directory, '--print-api-base-url',
+    args = parser.parse_args(['-fn', '', '--output_directory', output_directory, '--print-api-base-url',
                               os.environ['PRINT_API_BASE_URL']] + args)
 
-    thread = Thread(target=create_export, kwargs={'uuid': uuid, 'args': args})
+    options = json.loads(request.form['options'])
+    logger.info('Options: {}'.format(options))
+    file_content = request.form['file_content']
+
+    thread = Thread(target=create_export,
+                    kwargs={'uuid': uuid, 'args': args, 'options': options, 'file_content': file_content})
     thread.start()
 
     # Send the download link to the user
@@ -211,14 +214,14 @@ def request_zip(uuid):
         )
 
 
-def create_export(uuid: str, args: argparse.Namespace):
+def create_export(uuid: str, args: argparse.Namespace, options, file_content):
     logger.log(ExportStateLogger.REQUESTABLE, 'Der Export wurde gestartet.',
                {'uuid': uuid, 'status': GeneratorStatus.RUNNING})
 
     generator = None
 
     try:
-        generator = AutomatedWalkTableGenerator(args, uuid)
+        generator = AutomatedWalkTableGenerator(args, uuid, options, file_content)
         generator.run()
 
     finally:
@@ -229,51 +232,6 @@ def create_export(uuid: str, args: argparse.Namespace):
             logger.log(ExportStateLogger.REQUESTABLE,
                        'Der Export ist fehlgeschlagen. Ein unbekannter Fehler ist aufgetreten!',
                        {'uuid': uuid, 'status': GeneratorStatus.ERROR})
-
-        # Remove uploaded file from upload directory
-        os.remove(args.file_name)
-        os.rmdir('./input/' + uuid)
-
-
-def get_file_ending(filename):
-    return filename.rsplit('.', 1).pop().lower()
-
-
-def allowed_file(filename):
-    if '.' not in filename:
-        return False
-
-    return get_file_ending(filename) in ('gpx', 'kml')
-
-
-def save_file(uuid) -> str | Response:
-    # check if output and input folders exist, if not, create them
-    input_directory = 'input/' + uuid + '/'
-    pathlib.Path(input_directory).mkdir(parents=True, exist_ok=True)
-
-    if 'file' not in request.files:
-        logger.error('No GPX/KML file provided with the POST request.'.format(uuid), {'uuid': uuid})
-
-        response = app.response_class(
-            response=json.dumps({'status': GeneratorStatus.ERROR, 'message': 'No file submitted.'}),
-            status=500, mimetype='application/json')
-        return response
-
-    file = request.files['file']
-
-    # Check if a valid file is provided
-    if not file or not allowed_file(file.filename):
-        logger.error('Invalid file extension in filename \"{}\".'.format(file.filename), {'uuid': uuid})
-        response = app.response_class(
-            response=json.dumps({'status': GeneratorStatus.ERROR, 'message': 'Your file is not valid.'}),
-            status=500, mimetype='application/json')
-        return response
-
-    file_ending = get_file_ending(file.filename)
-    file_name = './input/' + uuid + '/upload.' + file_ending
-    file.save(file_name)
-
-    return file_name
 
 
 if __name__ == "__main__":

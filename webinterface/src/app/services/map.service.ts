@@ -50,6 +50,7 @@ export class MapService {
   };
 
   private vector_source: VectorSource<Geometry> = new VectorSource({wrapX: false});
+  private overlay_source: VectorSource<Geometry> = new VectorSource({wrapX: false});
 
   constructor() {
 
@@ -81,8 +82,13 @@ export class MapService {
       source: this.vector_source
     });
 
+        // create overlay drawing layer
+    const overlayLayer = new VectorLayer({
+      source: this.overlay_source
+    });
+
     return new Map({
-      layers: [wmtsLayer, vectorLayer],
+      layers: [wmtsLayer, vectorLayer, overlayLayer],
       target: 'map-canvas',
       view: new View({
         center: [2719640, 1216329],
@@ -142,4 +148,8 @@ export class MapService {
     return this.vector_source;
   }
 
+  getOverlay() {
+        return this.overlay_source;
+
+  }
 }

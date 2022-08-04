@@ -51,7 +51,25 @@ export class MapBackgroundComponent implements OnInit, OnDestroy {
 
     });
 
+    this.mapAnimator.current_location$.subscribe(location => {
+
+      console.log('current location', location);
+
+      const feature = new Feature({
+        geometry: new Circle([location.x, location.y], 15)
+      });
+
+      feature.setStyle(new Style({
+        stroke: new Stroke({color: '#1066df', width: 5})
+      }));
+
+      this.mapService.getOverlay().addFeature(feature);
+
+    });
+
     this.mapAnimator.way_points$.subscribe(way_points => {
+
+      this.mapService.getVectorSource().clear();
 
       way_points.forEach(way_point => {
 
