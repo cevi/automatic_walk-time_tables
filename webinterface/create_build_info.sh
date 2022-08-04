@@ -16,6 +16,7 @@ const build = {
     git: {
         branch: \"${git_branch}\",
         hash: \"${git_commit:0:8}\"
+        url: \"https://github.com/cevi/automatic_walk-time_tables/tree/${git_commit}\"
     }
 };
 
