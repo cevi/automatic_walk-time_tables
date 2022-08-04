@@ -16,7 +16,7 @@ class NamingTransformer(PathTransformer):
 
     def transform(self, path_: Path) -> Path:
         for pt in path_.way_points:
-            url = "http://swiss_tml:1848/swiss_name"
+            url = "http://awt-swiss-tml:1848/swiss_name"
 
             lv95 = pt.point.to_LV95()
             payload = json.dumps([[lv95.lat, lv95.lon]])
