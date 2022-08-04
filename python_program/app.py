@@ -91,7 +91,7 @@ def parse_route():
 @app.route('/create', methods=['POST'])
 def create_map():
     uuid = str(uuid_factory.uuid4().hex)
-    logger.debug('New request to with create_map().', {'uuid': uuid})
+    logger.debug('New request to create_map().', {'uuid': uuid})
 
     # Save file to input directory
     result = save_file(uuid)
