@@ -51,7 +51,7 @@ here: [Command Line Arguments](automatic_walk_time_tables/Command_Line_Arguments
 
 ## Test and Debug Tools
 
-Make sure that your system fulfill the prerequisites as described in the section above, i.g. you should be able to run
+Make sure that your system fulfills the prerequisites as described in the section above, i.e. you should be able to run
 the `automatic_walk_time_tables` script locally using python3.
 
 ## About swisstopo Services
