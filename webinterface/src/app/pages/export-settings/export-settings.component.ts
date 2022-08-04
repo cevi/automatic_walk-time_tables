@@ -89,7 +89,7 @@ export class ExportSettingsComponent implements OnInit {
     formData.append("file_content", xml_string);
 
     let url = ExportSettingsComponent.baseURL + 'create?';
-    url += '--list-of-pois=' + this.pois +'create-elevation-profile';
+    url += '--list-of-pois=' + this.pois + 'create-elevation-profile';
     for (const option in this.options.controls) {
 
       if (['creator-name'].includes(option) && !this.options.controls[option].value.length)
@@ -231,6 +231,16 @@ export class ExportSettingsComponent implements OnInit {
         this.path_elevation = this.path_elevation.map((pkt: number[]) => [pkt[0] / 1_000, pkt[1]])
         pois_elevation = pois_elevation.map((pkt: number[]) => [pkt[0] / 1_000, pkt[1]])
 
+
+        let markPointsData: { name: string; coord: number[]; }[] = [];
+
+        pois_elevation.forEach(poi => {
+          markPointsData.push({
+            name: 'Point of Interest',
+            coord: [poi[0], poi[1]]
+          });
+        });
+
         this.plot_options = {
           tooltip: {
             trigger: 'axis',
@@ -285,31 +295,26 @@ export class ExportSettingsComponent implements OnInit {
               symbolSize: 6,
               lineStyle: {
                 width: 3
-              }
-            },
-            {
-              name: 'Pois',
-              type: 'scatter',
-              itemStyle: {
-                color: 'rgb(16,102,223)'
               },
-              data: pois_elevation,
-              symbolSize: 15,
-              lineStyle: {
-                width: 3
-              }
+              markPoint: {
+                data: markPointsData,
+                symbolSize: 25,
+              },
             },
+
           ],
         };
 
       });
   }
 
-  mouseClick($event: any) {
+  mouseClick() {
 
-    const distance = $event.value[0];
+    // get element
+    const chart = document.querySelector("#chart > div:nth-child(2) > div > div:nth-child(1) > div:nth-child(1)");
+    let distance = parseFloat(chart?.innerHTML ? chart?.innerHTML : '0');
 
-    if (this.path_elevation == undefined || this.path == undefined)
+    if (this.path_elevation == undefined || this.path == undefined || distance == 0)
       return;
 
     // get index in this.path_elevation
@@ -320,6 +325,7 @@ export class ExportSettingsComponent implements OnInit {
 
     this.pois += coord[0] + ',' + coord[1] + ';';
     this.create_walk_time_table().then();
+
 
   }
 }

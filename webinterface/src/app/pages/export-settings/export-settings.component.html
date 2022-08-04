@@ -44,7 +44,7 @@
           Mit einem Klick ins Höhenprofil kannst du zusätzliche Wegpunkte einfügen. Diese werden falls möglich
           berücksichtigt.
         </p>
-        <div id="chart" (chartClick)="mouseClick($event)" echarts [options]="plot_options" class="hoehenprofil"></div>
+        <div id="chart" (click)="mouseClick()" echarts [options]="plot_options" class="hoehenprofil"></div>
       </div>
 
 
