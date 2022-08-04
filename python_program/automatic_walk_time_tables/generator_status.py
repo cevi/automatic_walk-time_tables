@@ -1,4 +1,4 @@
 class GeneratorStatus:
-    SUCCESS = 'Fertig'
-    RUNNING = 'Laufend'
-    ERROR = 'Fehler'
+    SUCCESS = 'success'
+    RUNNING = 'running'
+    ERROR = 'error'

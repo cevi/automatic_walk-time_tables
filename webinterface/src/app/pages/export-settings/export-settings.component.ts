@@ -124,20 +124,30 @@ export class ExportSettingsComponent implements OnInit {
 
   }
 
-  fetch_route() {
+  async fetch_route() {
 
     if (!this.route_uploaded || !this.route_file)
       return
 
+    // minify XML data
+    let xml_string = (await this.route_file.text()).toString()
+    xml_string = xml_string.replace(/>\s*/g, '>');  // Remove space after >
+    xml_string = xml_string.replace(/\s*</g, '<');  // Remove space before <
+
     let formData = new FormData();
-    formData.append("file", this.route_file);
+    formData.append("options", JSON.stringify({
+      'encoding': 'polyline',
+      'file_type': this.route_file.name.split('.').pop()
+    }));
+    formData.append("file_content", xml_string);
 
     let url = ExportSettingsComponent.baseURL + 'parse_route';
 
     fetch(url, {
       method: "POST",
       headers: {
-        Accept: 'text/plain',
+        ContentType: 'multipart/form-data',
+        Accept: 'application/json',
       },
       body: formData
     })

@@ -15,9 +15,6 @@ from threading import Thread
 from flask import Flask, request, send_file, Response
 from flask_cors import CORS
 
-from automatic_walk_time_tables.arg_parser import get_parser
-from automatic_walk_time_tables.generator_status import GeneratorStatus
-from automatic_walk_time_tables.utils.file_parser import GeoFileParser
 from server_logging.log_helper import setup_recursive_logger
 from server_logging.status_handler import ExportStateHandler, ExportStateLogger
 
@@ -26,6 +23,10 @@ stateLogger = ExportStateLogger(stateHandler)
 setup_recursive_logger(logging.INFO, stateLogger)
 
 from automatic_walk_time_tables.generator import AutomatedWalkTableGenerator
+from automatic_walk_time_tables.utils.file_parser import GeoFileParser
+
+from automatic_walk_time_tables.arg_parser import get_parser
+from automatic_walk_time_tables.generator_status import GeneratorStatus
 
 logger = logging.getLogger(__name__)
 
@@ -33,59 +34,34 @@ app = Flask(__name__)
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
 
-def create_export(uuid: str, args: argparse.Namespace):
-    logger.log(ExportStateLogger.REQUESTABLE, 'Der Export wurde gestartet.',
-               {'uuid': uuid, 'status': GeneratorStatus.RUNNING})
-
-    generator = None
-
-    try:
-        generator = AutomatedWalkTableGenerator(args, uuid)
-        generator.run()
-
-    finally:
-
-        export_state = stateHandler.get_status(uuid)['status']
-
-        if not generator or export_state == GeneratorStatus.RUNNING:
-            logger.log(ExportStateLogger.REQUESTABLE,
-                       'Der Export ist fehlgeschlagen. Ein unbekannter Fehler ist aufgetreten!',
-                       {'uuid': uuid, 'status': GeneratorStatus.ERROR})
-
-        # Remove uploaded file from upload directory
-        os.remove(args.file_name)
-        os.rmdir('./input/' + uuid)
-
-
-def get_file_ending(filename):
-    return filename.rsplit('.', 1).pop().lower()
-
-
-def allowed_file(filename):
-    if '.' not in filename:
-        return False
-
-    return get_file_ending(filename) in ('gpx', 'kml')
-
-
 @app.route('/parse_route', methods=['POST'])
 def parse_route():
-    uuid = str(uuid_factory.uuid4().hex)
-    result = save_file(uuid)
+    options = json.loads(request.form['options'])
+    logger.info('Options: {}'.format(options))
 
-    # check result of save_file function
-    if isinstance(result, Response):
-        return result
-    file_name = result
+    file_content = request.form['file_content']
 
-    geo_file_parser = GeoFileParser(fetch_elevation=False)
-    path = geo_file_parser.parse(file_name)
+    try:
+        if 'file_type' not in options or options['file_type'] is None:
+            raise Exception('No file ending provided.')
 
-    response = app.response_class(
-        response=json.dumps({'status': GeneratorStatus.SUCCESS, 'uuid': str(uuid), 'route': path.to_polyline()}),
-        status=200, mimetype='application/json')
+        if file_content is None:
+            raise Exception('No GPX/KML file provided with the POST request.')
 
-    return response
+        geo_file_parser = GeoFileParser(fetch_elevation=False)
+        path = geo_file_parser.parse(file_content=file_content, extension=options['file_type'])
+
+        route = path.to_polyline() if 'encoding' in options and options['encoding'] == 'polyline' else path.to_json()
+        result_json = {'status': GeneratorStatus.SUCCESS, 'route': route}
+        return app.response_class(response=json.dumps(result_json), status=200, mimetype='application/json')
+
+    except Exception as e:
+
+        logger.error('Exception while parsing file: {}'.format(e))
+
+        return app.response_class(
+            response=json.dumps({'status': GeneratorStatus.ERROR, 'message': str(e)}),
+            status=500, mimetype='application/json')
 
 
 @app.route('/create', methods=['POST'])
@@ -165,6 +141,41 @@ def request_zip(uuid):
         )
 
 
+def create_export(uuid: str, args: argparse.Namespace):
+    logger.log(ExportStateLogger.REQUESTABLE, 'Der Export wurde gestartet.',
+               {'uuid': uuid, 'status': GeneratorStatus.RUNNING})
+
+    generator = None
+
+    try:
+        generator = AutomatedWalkTableGenerator(args, uuid)
+        generator.run()
+
+    finally:
+
+        export_state = stateHandler.get_status(uuid)['status']
+
+        if not generator or export_state == GeneratorStatus.RUNNING:
+            logger.log(ExportStateLogger.REQUESTABLE,
+                       'Der Export ist fehlgeschlagen. Ein unbekannter Fehler ist aufgetreten!',
+                       {'uuid': uuid, 'status': GeneratorStatus.ERROR})
+
+        # Remove uploaded file from upload directory
+        os.remove(args.file_name)
+        os.rmdir('./input/' + uuid)
+
+
+def get_file_ending(filename):
+    return filename.rsplit('.', 1).pop().lower()
+
+
+def allowed_file(filename):
+    if '.' not in filename:
+        return False
+
+    return get_file_ending(filename) in ('gpx', 'kml')
+
+
 def save_file(uuid) -> str | Response:
     # check if output and input folders exist, if not, create them
     input_directory = 'input/' + uuid + '/'
@@ -197,4 +208,4 @@ def save_file(uuid) -> str | Response:
 
 if __name__ == "__main__":
     app.run(debug=(os.environ.get("DEBUG", "False").lower() in ('true', '1', 't')), host="0.0.0.0",
-            port=int(os.environ.get("PORT", 8080)))
+            port=int(os.environ.get("PORT", 5000)), )
