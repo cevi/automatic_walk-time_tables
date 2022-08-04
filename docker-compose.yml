@@ -15,7 +15,7 @@ services:
       - tile_cache
 
   swiss_tml:
-    image: registry.cevi.toolscevi/awt_swiss-tml-api:latest
+    image: registry.cevi.tools/cevi/awt_swiss-tml-api:latest
     build:
       context: swiss_TLM_api/.
     ports:

@@ -9,7 +9,7 @@ services:
     image: registry.cevi.tools/cevi/awt_mapfish:dev
 
   swiss_tml:
-    image: registry.cevi.toolscevi/awt_swiss-tml-api:dev
+    image: registry.cevi.tools/cevi/awt_swiss-tml-api:dev
 
   backend:
     image: registry.cevi.tools/cevi/awt_backend:dev
