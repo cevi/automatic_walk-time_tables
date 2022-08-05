@@ -28,7 +28,7 @@ The full documentation of the API endpoints can be found here: [API Endpoints](A
    dependencies:
 
    ```bash
-   pip3 install -r ./automatic_walk_time_tables/requirements.txt
+   $ pip3 install -r ./automatic_walk_time_tables/requirements.txt
    ```
 
 2) In order to create PDF-map exports, you need to set up a docker container. Please follow
@@ -49,9 +49,14 @@ produced files (Excel, PDFs...) are stored in the directory specified with the a
 is `./output/`. A full documentation of all command line arguments can be found
 here: [Command Line Arguments](automatic_walk_time_tables/Command_Line_Arguments.md).
 
+## Test and Debug Tools
+
+Make sure that your system fulfills the prerequisites as described in the section above, i.e. you should be able to run
+the `automatic_walk_time_tables` script locally using python3.
+
 ## About swisstopo Services
 
-This script highly depends on the services form swisstopo (Federal Office of Topography swisstopo). Those services are
+This script highly depends on the services from swisstopo (Federal Office of Topography swisstopo). Those services are
 free-of-charge and do not require registration (since 01.03.2021). However, you should follow there "Fair Use" rules.
 More details see [API Documentation](https://api3.geo.admin.ch/services/sdiservices.html)
 and [Terms of Use](https://www.geo.admin.ch/de/geo-dienstleistungen/geodienste/terms-of-use.html).

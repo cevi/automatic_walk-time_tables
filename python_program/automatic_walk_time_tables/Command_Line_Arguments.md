@@ -1,4 +1,3 @@
-
 ## Required Arguments
 
 | Name                | arguments | Description                                                                |
@@ -16,6 +15,9 @@
 | `--log-level`           | `Integer`     | Log Level (see https://docs.python.org/3/library/logging.html#levels). Default: WARNING                                                                                                                                                                                                                   |
 | `--output_directory`    | `String`      | Subdirectory in the output folder for storing the created files. Should be empty or ending with "/"                                                                                                                                                                                                       |
 | `--print-api-base-url`  | `String`      | Base URL of the mapfish server used for creating PDF exports. Default: localhost.                                                                                                                                                                                                                         |
+| `--legend-position`     | `String`      | Position of the legend on the map. Default: bottom-right.                                                                                                                                                                                                                                                 |
+| `--map-layers`          | `String`      | Comma separated list of map layers to be used. Default: "ch.swisstopo.pixelkarte-farbe".                                                                                                                                                                                                                  |
+| `--list-of-pois`        | `String`      | List of point of interests. One coordinate (LV03) pair per line separated by comma, line end marked with "\n", e.g. "623345,256023;625345,253023"                                                                                                                                                         | 
 
 ### Enable/Disable Features
 

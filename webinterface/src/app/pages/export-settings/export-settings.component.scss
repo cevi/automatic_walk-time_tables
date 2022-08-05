@@ -4,6 +4,16 @@
 
 }
 
+.mat-select {
+  background-color: rgba(0, 0, 0, 0.04);
+  padding: 15px 5px;
+
+}
+
+.mat-form-field {
+  width: 100%;
+}
+
 .slider {
   margin: 25px 0 0;
   display: grid;
@@ -15,7 +25,7 @@
 }
 
 @media (min-width: 600px) {
-  .slider{
+  .slider {
     grid-template-columns: 220px auto;
     margin-top: 10px;
   }
@@ -52,5 +62,5 @@
 }
 
 .mat-stroked-button {
-  margin: 0 10px 0 0 ;
+  margin: 0 10px 0 0;
 }

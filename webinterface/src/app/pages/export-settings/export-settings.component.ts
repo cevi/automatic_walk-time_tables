@@ -3,6 +3,7 @@ import {environment} from "../../../environments/environment";
 import {FormBuilder, FormControl, FormGroup} from "@angular/forms";
 import {MapAnimatorService} from "../../services/map-animator.service";
 import {Router} from "@angular/router";
+import {decode} from "@googlemaps/polyline-codec";
 
 @Component({
   selector: 'app-export-settings',
@@ -26,9 +27,36 @@ export class ExportSettingsComponent implements OnInit {
       'departure-time': new FormControl((new Date()).toISOString().substring(0, 16)),
       'creator-name': new FormControl(''),
       'create-map-pdfs': new FormControl(true),
-      'create-excel': new FormControl(true)
+      'create-excel': new FormControl(true),
+      'legend-position': new FormControl('lower right'),
+      'map-layers': new FormControl('ch.swisstopo.pixelkarte-farbe'),
+      'list-of-pois': new FormControl(''),
+      'auto-scale': new FormControl(false),
     });
 
+
+    // we need this try-catch block to ensure the loaded data is compatible with the current form layout
+    try {
+
+      if (localStorage['form_values'] && this.isJsonString(localStorage['form_values'])) {
+        this.options.setValue(JSON.parse(localStorage['form_values']))
+        console.log('Loaded form values from local storage')
+      }
+
+    } catch (_) {
+      // safe to ignore
+    }
+
+
+  }
+
+  isJsonString(str: string): boolean {
+    try {
+      JSON.parse(str);
+    } catch (e) {
+      return false;
+    }
+    return true;
   }
 
   ngOnInit(): void {
@@ -37,11 +65,10 @@ export class ExportSettingsComponent implements OnInit {
 
   download_map() {
 
+    localStorage['form_values'] = JSON.stringify(this.options.value);
+
     if (!this.route_uploaded || !this.route_file)
       return
-
-    // Start Animation
-    this.mapAnimator.add_route_file(this.route_file);
 
     let formData = new FormData();
 
@@ -51,11 +78,20 @@ export class ExportSettingsComponent implements OnInit {
 
     for (const option in this.options.controls) {
 
-      if (option === 'creator-name' && !this.options.controls['creator-name'].value.length)
+      if (['creator-name', 'list-of-pois'].includes(option) && !this.options.controls[option].value.length)
         continue;
 
-      url += '&--' + option + '=' + this.options.controls[option].value
+      if (option === 'map-scaling' && this.options.controls['auto-scale'].value)
+        continue;
+
+      if (option === 'auto-scale')
+        continue;
+
+      console.log(this.options.controls[option].value)
+      url += '&--' + option + '=' + this.options.controls[option].value.toString().replaceAll('\n', ';')
+
     }
+
 
     fetch(url, {
       method: "POST",
@@ -69,10 +105,9 @@ export class ExportSettingsComponent implements OnInit {
         const response = JSON.parse(resp)
         this.uuid = response['uuid'];
       })
-      .finally(() => this.router.navigate(['pending', this.uuid]))
+      .finally(() => this.router.navigate(['pending', this.uuid]));
 
   }
-
 
 
   new_route_uploaded(route_file: File) {
@@ -86,6 +121,32 @@ export class ExportSettingsComponent implements OnInit {
   delete_route_file() {
 
     this.route_uploaded = false;
+
+  }
+
+  fetch_route() {
+
+    if (!this.route_uploaded || !this.route_file)
+      return
+
+    let formData = new FormData();
+    formData.append("file", this.route_file);
+
+    let url = ExportSettingsComponent.baseURL + 'parse_route';
+
+    fetch(url, {
+      method: "POST",
+      headers: {
+        Accept: 'text/plain',
+      },
+      body: formData
+    })
+      .then(response => response.json())
+      .then((resp: any) => {
+        console.log(resp)
+        const path = decode(resp?.route, 0);
+        this.mapAnimator.add_route(path).then();
+      });
 
   }
 

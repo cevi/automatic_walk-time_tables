@@ -2,26 +2,49 @@ version: "3.9"
 
 services:
 
-  mapfish:
+  awt-tile-cache:
+    image: registry.cevi.tools/cevi/awt_tile-caching:latest
+    build: tile_caching
+
+  awt-mapfish:
+    image: registry.cevi.tools/cevi/awt_mapfish:latest
     build: pdf_map_export/.
     ports:
       - "8080:8080"
+    depends_on:
+      - awt-tile-cache
 
-  backend:
+  awt-swiss-tml:
+    image: registry.cevi.tools/cevi/awt_swiss-tml-api:latest
+    build:
+      context: swiss_TLM_api/.
+    ports:
+      - "1848:1848"
+    volumes:
+      - ./swiss_TLM_api/resources:/app/resources
+      - ./swiss_TLM_api/index_cache:/app/index_cache
+
+  awt-backend:
+    image: registry.cevi.tools/cevi/awt_backend:latest
     build:
       context: python_program/.
     ports:
       - "5000:5000"
     depends_on:
-      - mapfish
+      - awt-mapfish
+      - awt-swiss-tml
+    environment:
+      TZ: Europe/Zurich
 
-  webinterface:
+  awt-webinterface:
+    image: registry.cevi.tools/cevi/awt_webinterface:latest
     build:
-      context: webinterface/.
+      context: .
+      dockerfile: webinterface/Dockerfile
       args:
         # By default, we build in development mode. You can change the build mode by specifying $ANGULAR_CONFIGURATION.
         - configuration=${ANGULAR_CONFIGURATION:-development}
     ports:
       - "80:80"
     depends_on:
-      - backend
+      - awt-backend

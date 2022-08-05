@@ -172,7 +172,7 @@
           "name": "selected track pois"
         },
         {
-          "baseURL": "https://wmts100.geo.admin.ch/1.0.0/{Layer}/{style}/{Time}/{TileMatrixSet}/{TileMatrix}/{TileCol}/{TileRow}.jpeg",
+          "baseURL": "https://wmts.geo.admin.ch/1.0.0/{Layer}/{style}/{Time}/{TileMatrixSet}/{TileMatrix}/{TileCol}/{TileRow}.jpeg",
           "dimensions": [
             "Time"
           ],

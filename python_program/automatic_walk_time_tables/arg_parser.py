@@ -50,5 +50,12 @@ def get_parser():
                         help='If this flag is set, the created images will be shown (i.g. the map and elevation plot '
                              'will be opened after its creation). For this feature a desktop environment is needed. '
                              'Disabled as default (False).')
+    parser.add_argument('--legend-position', default='upper right', type=str,
+                        help='Position of the legend in the elevation plot.')
+    parser.add_argument('--map-layers', default='ch.swisstopo.pixelkarte-farbe', type=str,
+                        help='Comma separated list of map layers to be used. Default: "ch.swisstopo.pixelkarte-farbe".')
+    parser.add_argument('--list-of-pois', default='', type=str, help='List of point of interests. One coordinate ('
+                                                                     'LV03) pair per line separated by comma, '
+                                                                     'line end marked with "\n".')
 
     return parser

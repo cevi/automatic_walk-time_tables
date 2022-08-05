@@ -2,78 +2,79 @@ import logging
 import os
 from datetime import timedelta
 from math import log
-from typing import List
+from multiprocessing import Process
 
 import openpyxl
 from matplotlib import pyplot as plt
 
-from automatic_walk_time_tables.geo_processing import find_swisstopo_name, find_walk_table_points
 from automatic_walk_time_tables.utils import path
-from automatic_walk_time_tables.utils.point import Point_LV03, Point_LV95
-from automatic_walk_time_tables.utils.way_point import WayPoint
+from automatic_walk_time_tables.utils.path import Path
+from automatic_walk_time_tables.utils.point import Point_LV03
 
 logger = logging.getLogger(__name__)
 
 
-def plot_elevation_profile(path_: path.Path_LV03,
-                           way_points: List[WayPoint],
-                           temp_points: List[WayPoint],
+def plot_elevation_profile(path_: path.Path,
+                           way_points: path.Path,
+                           pois: path.Path,
                            file_name: str,
-                           open_figure: bool):
+                           open_figure: bool,
+                           legend_position: str):
     """
 
-    Plots the elevation profile of the path contained in the GPX-file. In addition the
+    Plots the elevation profile of the path contained in the GPX-file. In addition, the
     plot contains the approximated elevation profile by the way_points.
 
     Saves the plot as an image in the ./output directory as an image called {{file_name}}<.png
 
     """
 
+    p = Process(target=_plot_elevation_profile, args=(file_name, legend_position, open_figure, path_, pois, way_points))
+    p.start()
+    p.join()
+
+
+def _plot_elevation_profile(file_name, legend_position, open_figure, path_, pois, way_points):
     # clear the plot, plot heights of exported data from SchweizMobil
     plt.clf()
-    distances, heights = find_walk_table_points.prepare_for_plot(path_)
-    plt.plot([d / 1_000.0 for d in distances], heights, label='Wanderweg')
-
+    distances = [p.accumulated_distance for p in path_.way_points]
+    heights = [p.point.h for p in path_.way_points]
+    plt.plot([d / 1_000.0 for d in distances], heights, label='Wanderweg', zorder=1)
     # resize plot area
     additional_space = log(max(heights) - min(heights)) * 25
     plt.ylim(ymax=max(heights) + additional_space, ymin=min(heights) - additional_space)
-
     # add way_points to plot
-    plt.scatter([p.accumulated_distance / 1_000.0 for p in temp_points], [p.point.h for p in temp_points],
-                c='lightgray')
-    plt.scatter([p.accumulated_distance / 1_000.0 for p in way_points], [p.point.h for p in way_points],
-                c='orange')
-    plt.plot([p.accumulated_distance / 1_000.0 for p in way_points], [p.point.h for p in way_points],
-             label='Marschzeittabelle')
-
+    plt.plot([p.accumulated_distance / 1_000.0 for p in way_points.way_points],
+             [p.point.h for p in way_points.way_points],
+             label='Marschzeittabelle', zorder=2)
+    plt.scatter([p.accumulated_distance / 1_000.0 for p in pois.way_points], [p.point.h for p in pois.way_points],
+                c='lightblue', zorder=1, label='Points of Interest')
+    plt.scatter([p.accumulated_distance / 1_000.0 for p in way_points.way_points],
+                [p.point.h for p in way_points.way_points],
+                c='orange', s=15, zorder=4, label='Wegpunkte')
     # Check difference between the length of the original path and the length of the way points
-    logger.info("way_points = {} | distances = {}".format(way_points[-1].accumulated_distance, distances[-1]))
-    assert abs(way_points[-1].accumulated_distance - distances[-1]) <= 250  # max diff 250 meters
-
+    logger.info(
+        "way_points = {} | distances = {}".format(way_points.way_points[-1].accumulated_distance, distances[-1]))
+    assert abs(way_points.way_points[-1].accumulated_distance - distances[-1]) <= 250  # max diff 250 meters
     # labels
     plt.ylabel('Höhe [m ü. M.]')
     plt.xlabel('Distanz [km]')
     plt.title('Höhenprofil', fontsize=20)
-    plt.legend(loc='upper right', frameon=False)
-
+    plt.legend(loc=legend_position, frameon=False)
     # Grid
     plt.grid(color='gray', linestyle='dashed', linewidth=0.5)
-
     # Check if output directory exists, if not, create it.
-    if (not os.path.exists('output')):
+    if not os.path.exists('output'):
         os.mkdir('output')
-
     # show the plot and save image
     plt.savefig(file_name + '_elevation_profile.png', dpi=750)
-
     logger.info("Elevation profile plot saved as " + file_name + '_elevation_profile.png')
-
     if open_figure:
         logger.debug("Opening figure as specified by the user.")
         plt.show()
 
 
-def create_walk_table(time_stamp, speed, way_points: List[WayPoint], total_distance, file_name: str,
+def create_walk_table(time_stamp, speed, way_points: Path, file_name: str,
                       route_name: str, creator_name: str,
                       map_numbers: str):
     """
@@ -105,10 +106,8 @@ def create_walk_table(time_stamp, speed, way_points: List[WayPoint], total_dista
     sheet['N3'] = speed
     sheet['K8'] = time_stamp.strftime('%H:%M')
 
-    name_of_points = []
-
     # get infos about points
-    for i, pt in enumerate(way_points):
+    for i, pt in enumerate(way_points.way_points):
         lv03: Point_LV03 = pt.point.to_LV03()
 
         # calc time
@@ -120,28 +119,26 @@ def create_walk_table(time_stamp, speed, way_points: List[WayPoint], total_dista
 
         time_stamp = time_stamp + timedelta(hours=deltaTime)
 
-        # print infos (in LV95)
-        name_of_point = find_swisstopo_name.find_name(lv03.to_LV95(), 50)
-        name_of_points.append(name_of_point)
         logger.debug(
             str(round(abs((oldPoint.accumulated_distance if oldPoint is not None else 0.0) - pt.accumulated_distance),
                       1)) + 'km ' +
             str(int(lv03.h)) + 'm ü. M. ' +
             str(round(deltaTime, 1)) + 'h ' +
             time_stamp.strftime('%H:%M') + 'Uhr ' +
-            str((int(lv03.lat), int(lv03.lon))) + " " + name_of_point)
+            str((int(lv03.lat), int(lv03.lon))) + " " + pt.name)
 
-        sheet['A' + str(8 + i)] = str(name_of_point) + ' (' + str(
+        sheet['A' + str(8 + i)] = pt.name + ' (' + str(
             int(lv03.lat)) + ', ' + str(int(lv03.lon)) + ')'
         sheet['C' + str(8 + i)] = int(lv03.h)
         if i > 0:
             sheet['E' + str(8 + i)] = round(
-                abs((oldPoint.accumulated_distance if oldPoint is not None else 0.0) - pt.accumulated_distance), 1) / 1_000.0
+                abs((oldPoint.accumulated_distance if oldPoint is not None else 0.0) - pt.accumulated_distance),
+                1) / 1_000.0
 
         oldPoint = pt
 
     logger.debug('--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---')
-    logger.debug(str(round(total_distance, 1)) + 'km ' + str(round(time, 1)) + 'h')
+    logger.debug(str(round(way_points.total_distance, 1)) + 'km ' + str(round(time, 1)) + 'h')
     logger.debug('=== === === === === === === === === === === === === === === === === === ===')
 
     # Check if output directory exists, if not, create it.
@@ -151,8 +148,6 @@ def create_walk_table(time_stamp, speed, way_points: List[WayPoint], total_dista
     xfile.save(file_name + '_Marschzeittabelle.xlsx')
 
     logger.info("Marschzeittabelle saved as " + file_name + '_Marschzeittabelle.xlsx')
-
-    return name_of_points
 
 
 def calc_walk_time(delta_height, delta_dist, speed):

@@ -18,8 +18,6 @@ class Point:
         self.h = h
         self.type = PointType.NONE
 
-        # TODO: add name here
-
     def to_LV03(self):
         raise Exception("Not possible on base class.")
 
@@ -37,6 +35,17 @@ class Point:
 
     def __repr__(self):
         return self.__str__()
+
+    def to_json(self):
+
+        lv95 = self.to_LV95()
+
+        return {
+            "lat": lv95.lat,
+            "lon": lv95.lon,
+            "h": lv95.h,
+            "type": lv95.type
+        }
 
 
 class Point_LV95(Point):
@@ -70,7 +79,6 @@ class Point_LV03(Point):
         converter = coord_transformation.GPSConverter()
         wgs84 = converter.LV03toWGS84(self.lat, self.lon, self.h)
         return Point_WGS84(wgs84[0], wgs84[1], wgs84[2] if self.h != -1. else -1.0)
-        # TODO: make sure that we copy over name etc.
 
     def to_LV03(self):
         """ convert LV03 to LV03 """
@@ -98,7 +106,6 @@ class Point_WGS84(Point):
         converter = coord_transformation.GPSConverter()
         lv03 = converter.WGS84toLV03(self.lat, self.lon, self.h)
         return Point_LV03(lv03[0], lv03[1], self.h)
-        # TODO: make sure that we copy over name etc.
 
     def to_WGS84(self):
         """ convert WGS84 to WGS84 """

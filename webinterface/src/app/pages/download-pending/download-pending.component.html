@@ -1,7 +1,7 @@
 
 <h2>Export läuft, wir bitten um Geduld.</h2>
 
-<ng-container *ngIf="status != 'error' else onerror">
+<ng-container *ngIf="statusManager.status != 'Fehler' else onerror">
   <mat-progress-bar mode="query"></mat-progress-bar>
 </ng-container>
 <ng-template #onerror>
@@ -9,8 +9,12 @@
 </ng-template>
 
 <p> Marschzeittabelle wird erstellt, wir bitten um Geduld.</p>
-<p [ngClass]="{'error_message': status == 'error'}"><b>Status: </b>{{status_message}} <i> ({{status}})</i></p>
+<p *ngFor="let old_state of statusManager.history" class="old_state">
+  &nbsp;- <b>{{old_state?.last_change}}:</b> {{old_state?.message}}
+</p>
+<p [ngClass]="{'error_message': statusManager.status == 'Fehler'}"><b>Status: </b>{{statusManager.status_message}} <i> ({{statusManager.status}})</i></p>
 
-<ng-container *ngIf="status == 'error'">
+
+<ng-container *ngIf="statusManager.status == 'Fehler'">
   <button mat-stroked-button color="warn" routerLink="/">Neuer Versuch starten</button>
 </ng-container>

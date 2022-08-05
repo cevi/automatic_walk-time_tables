@@ -32,7 +32,8 @@
             ],
             "styles": [
               "./node_modules/@angular/material/prebuilt-themes/indigo-pink.css",
-              "src/styles.scss"
+              "src/styles.scss",
+              "node_modules/ol/ol.css"
             ],
             "scripts": []
           },
@@ -41,8 +42,8 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kb",
-                  "maximumError": "1mb"
+                  "maximumWarning": "1mb",
+                  "maximumError": "1.5mb"
                 },
                 {
                   "type": "anyComponentStyle",
@@ -70,6 +71,20 @@
               "vendorChunk": true,
               "extractLicenses": false,
               "sourceMap": true,
+              "namedChunks": true
+            },
+            "dev_build": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.dev_build.ts"
+                }
+              ],
+              "buildOptimizer": true,
+              "optimization": true,
+              "vendorChunk": true,
+              "extractLicenses": false,
+              "sourceMap": false,
               "namedChunks": true
             },
             "development": {
