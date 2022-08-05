@@ -6,6 +6,6 @@
 !.git/HEAD
 !.git/refs/heads/*
 
-# Folders to ignroe
+# Folders to ignore
 webinterface/node_modules/*
 webinterface/src/build.ts

@@ -1,7 +1,7 @@
 proxies:
   - !proxy
     scheme: http
-    host: tile_cache
+    host: awt-tile-cache
     port: 8080
     matchers:
       - !localMatch

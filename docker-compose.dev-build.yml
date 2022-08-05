@@ -2,17 +2,18 @@ version: "3.9"
 
 services:
 
-  tile_cache:
-    image: registry.cevi.tools/cevi/awtg_tile_caching:dev
+  awt-tile-cache:
+    image: registry.cevi.tools/cevi/awt_tile-caching:dev
 
-  mapfish:
-    image: registry.cevi.tools/cevi/awtg_mapfish:dev
+  awt-mapfish:
+    image: registry.cevi.tools/cevi/awt_mapfish:dev
 
-  swiss_tml:
-    image: registry.cevi.tools/swiss_tml_api:dev
+  awt-swiss-tml:
+    image: registry.cevi.tools/cevi/awt_swiss-tml-api:dev
 
-  backend:
-   image: registry.cevi.tools/cevi/awtg_backend:dev
+  awt-backend:
+    image: registry.cevi.tools/cevi/awt_backend:dev
 
-  webinterface:
-    image: registry.cevi.tools/cevi/awtg_webinterface:dev
+  awt-webinterface:
+    image: registry.cevi.tools/cevi/awt_webinterface:dev
+
