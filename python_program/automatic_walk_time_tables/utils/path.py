@@ -1,6 +1,8 @@
 import copy
 from typing import List
 
+import polyline
+
 from .point import Point_LV03, Point
 from .way_point import WayPoint
 
@@ -134,3 +136,9 @@ class Path:
             "route_name": self.route_name,
             "way_points": [wp.to_json() for wp in self.__way_points]
         }
+
+    def to_polyline(self):
+        return polyline.encode(
+            list(map(lambda pkt: (pkt.point.to_LV95().lat, pkt.point.to_LV95().lon), self.__way_points)),
+            0
+        )

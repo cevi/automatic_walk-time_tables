@@ -2,6 +2,8 @@ import logging
 import threading
 from datetime import datetime
 
+from automatic_walk_time_tables.generator_status import GeneratorStatus
+
 
 class ExportStateHandler:
     """
@@ -63,7 +65,7 @@ class ExportStateHandler:
                 raise Exception("Invalid uuid")
             if uuid not in self.states.keys():
                 return {
-                    'status': 'error',
+                    'status': GeneratorStatus.ERROR,
                     'message': 'Status zu dieser ID ist unbekannt.',
                     'last_change': datetime.now().strftime("%H:%M:%S")
                 }

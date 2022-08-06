@@ -29,7 +29,7 @@
       </button>
       <button mat-stroked-button color="warn" *ngIf="route_uploaded" (click)="delete_route_file()"> Datei löschen
       </button>
-      <button mat-stroked-button color="primary" matStepperNext [disabled]="!route_uploaded" id="goto-step-2">Weiter</button>
+      <button mat-stroked-button color="primary" matStepperNext [disabled]="!route_uploaded" (click)="fetch_route()" id="goto-step-2">Hochladen und weiter</button>
 
     </mat-step>
 
@@ -39,7 +39,8 @@
       <div class="content-block">
 
         <p>
-          Position der Legende zum Höhenprofil:
+          Hier kannst du einstellen, wo die Legende im Höhenprofil angezeigt wird.
+          Das Höhenprofil wird deinem Export als Bild beigefügt.
         </p>
 
         <mat-select appearance="fill" placeholder="Position der Legende" formControlName="legend-position">

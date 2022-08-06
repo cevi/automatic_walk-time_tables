@@ -1,5 +1,5 @@
 export const environment = {
     production: false,
-    API_URL: 'http://backend:5000/'
+    API_URL: 'http://awt-backend:5000/'
   };
   

@@ -16,8 +16,8 @@ it('Test small KML file without change', () => {
 
     cy.get('#export-button').click();
 
-    cy.url({ timeout: 10000 }).should('contain', 'webinterface/pending');
-    cy.url({ timeout: 60000 }).should('contain', 'webinterface/download');
+    cy.url({ timeout: 10000 }).should('contain', 'awt-webinterface/pending');
+    cy.url({ timeout: 60000 }).should('contain', 'awt-webinterface/download');
 
     cy.get('h2').should('contain', 'Deine Route wurde erfolgreich exportiert!');
 
@@ -43,8 +43,8 @@ it('Test small KML file with UI change', () => {
     cy.get('#goto-step-5').click();
     cy.get('#export-button').click();
 
-    cy.url({ timeout: 10000 }).should('contain', 'webinterface/pending');
-    cy.url({ timeout: 30000 }).should('contain', 'webinterface/download');
+    cy.url({ timeout: 10000 }).should('contain', 'awt-webinterface/pending');
+    cy.url({ timeout: 30000 }).should('contain', 'awt-webinterface/download');
 
     cy.get('h2').should('contain', 'Deine Route wurde erfolgreich exportiert!');
 
@@ -57,5 +57,5 @@ it('Test small KML file with UI change', () => {
 })
 
 it('test backend availability', () => {
-    cy.visit("http://backend:5000", { failOnStatusCode: false });
+    cy.visit("http://awt-backend:5000", { failOnStatusCode: false });
 })

@@ -2,6 +2,7 @@ import logging
 import os
 from datetime import timedelta
 from math import log
+from multiprocessing import Process
 
 import openpyxl
 from matplotlib import pyplot as plt
@@ -28,18 +29,20 @@ def plot_elevation_profile(path_: path.Path,
 
     """
 
+    p = Process(target=_plot_elevation_profile, args=(file_name, legend_position, open_figure, path_, pois, way_points))
+    p.start()
+    p.join()
+
+
+def _plot_elevation_profile(file_name, legend_position, open_figure, path_, pois, way_points):
     # clear the plot, plot heights of exported data from SchweizMobil
     plt.clf()
-
     distances = [p.accumulated_distance for p in path_.way_points]
     heights = [p.point.h for p in path_.way_points]
-
     plt.plot([d / 1_000.0 for d in distances], heights, label='Wanderweg', zorder=1)
-
     # resize plot area
     additional_space = log(max(heights) - min(heights)) * 25
     plt.ylim(ymax=max(heights) + additional_space, ymin=min(heights) - additional_space)
-
     # add way_points to plot
     plt.plot([p.accumulated_distance / 1_000.0 for p in way_points.way_points],
              [p.point.h for p in way_points.way_points],
@@ -49,30 +52,23 @@ def plot_elevation_profile(path_: path.Path,
     plt.scatter([p.accumulated_distance / 1_000.0 for p in way_points.way_points],
                 [p.point.h for p in way_points.way_points],
                 c='orange', s=15, zorder=4, label='Wegpunkte')
-
     # Check difference between the length of the original path and the length of the way points
     logger.info(
         "way_points = {} | distances = {}".format(way_points.way_points[-1].accumulated_distance, distances[-1]))
     assert abs(way_points.way_points[-1].accumulated_distance - distances[-1]) <= 250  # max diff 250 meters
-
     # labels
     plt.ylabel('Höhe [m ü. M.]')
     plt.xlabel('Distanz [km]')
     plt.title('Höhenprofil', fontsize=20)
     plt.legend(loc=legend_position, frameon=False)
-
     # Grid
     plt.grid(color='gray', linestyle='dashed', linewidth=0.5)
-
     # Check if output directory exists, if not, create it.
     if not os.path.exists('output'):
         os.mkdir('output')
-
     # show the plot and save image
     plt.savefig(file_name + '_elevation_profile.png', dpi=750)
-
     logger.info("Elevation profile plot saved as " + file_name + '_elevation_profile.png')
-
     if open_figure:
         logger.debug("Opening figure as specified by the user.")
         plt.show()

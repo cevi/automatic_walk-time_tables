@@ -57,12 +57,12 @@ class AutomatedWalkTableGenerator:
                                                             "Benötigte Zeit zum Berechnen der Marschzeittabelle",
                                                             self.__path)
 
-        equidistant_transformer = EquidistantTransformer(equidistant_distance=10)
+        equidistant_transformer = EquidistantTransformer(equidistant_distance=1)
         equidistant_way_points: path.Path = equidistant_transformer.transform(self.__path)
 
         self.__logger.log(ExportStateLogger.REQUESTABLE, 'Route wurde berechnet.',
                           {'uuid': self.uuid, 'status': GeneratorStatus.RUNNING,
-                           'route': equidistant_way_points.to_json()})
+                           'route': equidistant_way_points.to_polyline()})
 
         # name points of walk-time table
         if self.args.create_excel or self.args.create_map_pdfs:

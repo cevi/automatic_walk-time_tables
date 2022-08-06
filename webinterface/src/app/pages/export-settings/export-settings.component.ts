@@ -3,6 +3,7 @@ import {environment} from "../../../environments/environment";
 import {FormBuilder, FormControl, FormGroup} from "@angular/forms";
 import {MapAnimatorService} from "../../services/map-animator.service";
 import {Router} from "@angular/router";
+import {decode} from "@googlemaps/polyline-codec";
 
 @Component({
   selector: 'app-export-settings',
@@ -91,6 +92,7 @@ export class ExportSettingsComponent implements OnInit {
 
     }
 
+
     fetch(url, {
       method: "POST",
       headers: {
@@ -103,7 +105,7 @@ export class ExportSettingsComponent implements OnInit {
         const response = JSON.parse(resp)
         this.uuid = response['uuid'];
       })
-      .finally(() => this.router.navigate(['pending', this.uuid]))
+      .finally(() => this.router.navigate(['pending', this.uuid]));
 
   }
 
@@ -119,6 +121,32 @@ export class ExportSettingsComponent implements OnInit {
   delete_route_file() {
 
     this.route_uploaded = false;
+
+  }
+
+  fetch_route() {
+
+    if (!this.route_uploaded || !this.route_file)
+      return
+
+    let formData = new FormData();
+    formData.append("file", this.route_file);
+
+    let url = ExportSettingsComponent.baseURL + 'parse_route';
+
+    fetch(url, {
+      method: "POST",
+      headers: {
+        Accept: 'text/plain',
+      },
+      body: formData
+    })
+      .then(response => response.json())
+      .then((resp: any) => {
+        console.log(resp)
+        const path = decode(resp?.route, 0);
+        this.mapAnimator.add_route(path).then();
+      });
 
   }
 

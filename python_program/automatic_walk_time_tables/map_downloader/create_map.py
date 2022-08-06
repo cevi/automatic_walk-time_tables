@@ -81,7 +81,7 @@ class MapCreator:
         Creates a map of the route and marking the selected way points on it.
 
         way_points : selected way points of the  walk-time table
-        pois: pois of the walk-time table
+        pois: points of interest of the walk-time table
         tile_format_ext : Format of the tile, allowed values jpeg or png, default jpeg
         layer : Map layer, see https://wmts.geo.admin.ch/EPSG/2056/1.0.0/WMTSCapabilities.xml for options
         print_api_base_url : host of the mapfish instance, default localhost

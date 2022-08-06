@@ -1,10 +1,10 @@
 services:
-  cypress:
+  awt-cypress:
     build: ./e2e
     depends_on:
-      - webinterface
+      - awt-webinterface
     environment:
-      - CYPRESS_baseUrl=http://webinterface:80
+      - CYPRESS_baseUrl=http://awt-webinterface:80
     
     # share the current folder as volume to avoid copying
     working_dir: /opt/e2e
