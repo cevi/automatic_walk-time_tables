@@ -4,22 +4,17 @@
   text-align: center;
   align-content: center;
 
-  position: absolute;
-
   bottom: 10px;
   right: 10px;
 
   font-size: 10px;
+  height: 4em;
+
+  padding-top: 0.5em;
 
 }
 
 .disclaimer-link {
   text-decoration: none;
   color: black
-}
-
-@media (max-height: 1000px), (max-width: 750px) {
-  .footer {
-    display: none;
-  }
 }
