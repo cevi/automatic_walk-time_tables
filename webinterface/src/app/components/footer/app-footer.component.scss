@@ -13,7 +13,13 @@
 
 }
 
-.disclaimer-link{
+.disclaimer-link {
   text-decoration: none;
   color: black
+}
+
+@media (max-height: 1000px), (max-width: 750px) {
+  .footer {
+    display: none;
+  }
 }
