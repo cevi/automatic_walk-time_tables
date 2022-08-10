@@ -13,9 +13,10 @@ import VectorSource from "ol/source/Vector";
 import VectorLayer from "ol/layer/Vector";
 import {Circle, Geometry, LineString} from "ol/geom";
 import {MapAnimatorService} from "./map-animator.service";
-import {Fill, Stroke, Style} from "ol/style";
+import {Fill, Stroke, Style, Text} from "ol/style";
 import {combineLatest} from "rxjs";
 import {Extent} from "ol/extent";
+import {getRenderPixel} from "ol/render";
 
 
 @Injectable({
@@ -58,6 +59,7 @@ export class MapService {
   private way_points_layer_source: VectorSource<Geometry> = new VectorSource({wrapX: false});
 
   private map: Map | undefined;
+  private pointer: number[] | undefined | null;
 
   constructor() {
 
@@ -94,20 +96,12 @@ export class MapService {
 
     map_animator.pointer$.subscribe(p => {
 
-      this.pointer_layer_source.clear();
+      if (p == null) {
+        this.pointer = null;
+        return
+      }
 
-      if (p == null) return;
-
-      const feature = new Feature({
-        geometry: new Circle([p.x, p.y], 20)
-      });
-
-      feature.setStyle(new Style({
-        stroke: new Stroke({color: '#da177d', width: 5})
-      }));
-
-      this.pointer_layer_source.addFeature(feature);
-
+      this.pointer = [p?.x, p?.y];
 
       const extend: Extent | undefined = this.map?.getView().calculateExtent(this.map?.getSize())
       if (extend == null) return;
@@ -132,6 +126,7 @@ export class MapService {
       }
 
       this.map?.getView().setCenter(new_center);
+      this.map?.render()
 
     });
 
@@ -164,7 +159,12 @@ export class MapService {
 
           feature.setStyle(new Style({
             stroke: new Stroke({color: '#f13c3c', width: 5}),
-            fill: new Fill({color: '#2043d7'})
+            fill: new Fill({color: '#2043d7'}),
+            text: new Text({
+              text: way_point.name,
+              fill: new Fill({color: '#f13c3c'}),
+              font: 'bold 16px Calibri'
+            })
           }));
 
           this.way_points_layer_source.addFeature(feature);
@@ -187,16 +187,20 @@ export class MapService {
       source: this.createWMTSSource(this.layer_configs[layerLabel], projection)
     });
 
+    const wmtsLayer_overlay = new Tile({
+      source: this.createWMTSSource(this.layer_configs[layerLabel], projection)
+    });
+
     const mousePosition = document.getElementById('mousePosition');
     if (mousePosition == null) return;
-
 
     this.map = new Map({
       layers: [
         wmtsLayer,
         new VectorLayer({source: this.path_layer_source}),
+        wmtsLayer_overlay,
         new VectorLayer({source: this.pointer_layer_source}),
-        new VectorLayer({source: this.way_points_layer_source})
+        new VectorLayer({source: this.way_points_layer_source}),
       ],
       target: 'map-canvas',
       view: new View({
@@ -219,6 +223,53 @@ export class MapService {
           undefinedHTML: '&nbsp;'
         })
       ]),
+    });
+
+    this.render_pointer(wmtsLayer_overlay);
+
+  }
+
+  private render_pointer(wmtsLayer: Tile<WMTS>) {
+
+    const radius = 12;
+
+    // before rendering the layer, do some clipping
+    wmtsLayer.on('prerender', (event) => {
+
+      const ctx = event.context as CanvasRenderingContext2D;
+      ctx.save();
+      ctx.beginPath();
+
+      if (this.pointer != null) {
+
+        const pointer = this.map?.getPixelFromCoordinate(this.pointer);
+
+        if (pointer != null) {
+          // only show a circle around the mouse
+          const pixel = getRenderPixel(event, pointer);
+          const offset = getRenderPixel(event, [
+            pointer[0] + radius,
+            pointer[1],
+          ]);
+          const canvasRadius = Math.sqrt(
+            Math.pow(offset[0] - pixel[0], 2) + Math.pow(offset[1] - pixel[1], 2)
+          );
+          ctx.arc(pixel[0], pixel[1], canvasRadius, 0, 2 * Math.PI);
+          ctx.lineWidth = (12 * canvasRadius) / radius;
+          ctx.strokeStyle = '#EFA038FF';
+          ctx.stroke();
+        }
+
+      }
+
+      ctx.clip();
+
+    });
+
+    // after rendering the layer, restore the canvas context
+    wmtsLayer.on('postrender', function (event) {
+      const ctx = event.context as CanvasRenderingContext2D;
+      ctx.restore();
     });
 
   }

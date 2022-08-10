@@ -144,3 +144,6 @@ class Path:
     def to_elevation_polyline(self):
         return polyline.encode(
             list(map(lambda pkt: (pkt.accumulated_distance, pkt.point.h), self.__way_points)), 0)
+
+    def get_names(self):
+        return [wp.name for wp in self.__way_points]

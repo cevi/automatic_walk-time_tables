@@ -20,6 +20,7 @@ from automatic_walk_time_tables.path_transformers.douglas_peucker_transformer im
 from automatic_walk_time_tables.path_transformers.equidistant_transfomer import EquidistantTransformer
 from automatic_walk_time_tables.path_transformers.heigth_fetcher_transfomer import HeightFetcherTransformer
 from automatic_walk_time_tables.path_transformers.pois_transfomer import POIsTransformer
+from automatic_walk_time_tables.path_transformers.naming_transformer import NamingTransformer
 from automatic_walk_time_tables.utils.path import Path
 from automatic_walk_time_tables.utils.point import Point_LV95
 from server_logging.log_helper import setup_recursive_logger
@@ -121,12 +122,14 @@ def create_walk_time_table():
         douglas_peucker_transformer = DouglasPeuckerTransformer(number_of_waypoints=21, pois=pois)
         selected_way_points = douglas_peucker_transformer.transform(path)
 
+        naming_transformer = NamingTransformer()
+        pois = naming_transformer.transform(pois)
+
         result_json = {
             'status': GeneratorStatus.SUCCESS,
-            'path': path.to_polyline(),
-            'path_elevation': path.to_elevation_polyline(),
             'selected_way_points': selected_way_points.to_polyline(),
             'selected_way_points_elevation': selected_way_points.to_elevation_polyline(),
+            'pois_names': pois.get_names(),
             'pois': pois.to_polyline(),
             'pois_elevation': pois.to_elevation_polyline(),
         }

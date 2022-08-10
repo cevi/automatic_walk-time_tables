@@ -232,7 +232,7 @@ export class MapAnimatorService {
 
         const pois = decode(resp?.pois, 0);
         const pois_elevation = decode(resp?.pois_elevation, 0);
-        this._pois$.next(this.create_way_points(pois, pois_elevation));
+        this._pois$.next(this.create_way_points(pois, pois_elevation, resp?.pois_names));
 
         const selected_way_points = decode(resp?.selected_way_points, 0);
         const selected_way_points_elevation = decode(resp?.selected_way_points_elevation, 0);
@@ -273,14 +273,15 @@ export class MapAnimatorService {
 
   }
 
-  private create_way_points(path: LatLngTuple[], elevation: LatLngTuple[]) {
+  private create_way_points(path: LatLngTuple[], elevation: LatLngTuple[], names: string[] = []): LV95_Waypoint[] {
 
     return path.map((p: any, i: number) => {
       return {
         'x': p[0],
         'y': p[1],
         'h': elevation[i][1],
-        'accumulated_distance': elevation[i][0] / 1_000
+        'accumulated_distance': elevation[i][0] / 1_000,
+        'name': (names && names.length > 0) ? names[i] : ''
       };
     });
 

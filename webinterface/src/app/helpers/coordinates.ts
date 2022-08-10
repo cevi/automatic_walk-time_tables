@@ -10,5 +10,6 @@ export interface LV95_Waypoint extends Coordinates {
 
   h: number;
   accumulated_distance: number;
+  name?: string;
 
 }
