@@ -6,13 +6,17 @@ import proj4 from "proj4";
 import {register} from "ol/proj/proj4";
 import {Tile} from "ol/layer";
 import Map from "ol/Map";
-import {View} from "ol";
+import {Feature, View} from "ol";
 import {defaults, MousePosition, ScaleLine} from "ol/control";
 import {createStringXY} from "ol/coordinate";
 import VectorSource from "ol/source/Vector";
 import VectorLayer from "ol/layer/Vector";
-import {Geometry} from "ol/geom";
-import {Style, Fill, Stroke} from 'ol/style';
+import {Circle, Geometry, LineString} from "ol/geom";
+import {MapAnimatorService} from "./map-animator.service";
+import {Fill, Stroke, Style} from "ol/style";
+import {combineLatest} from "rxjs";
+import {Extent} from "ol/extent";
+
 
 @Injectable({
   providedIn: 'root'
@@ -20,12 +24,12 @@ import {Style, Fill, Stroke} from 'ol/style';
 export class MapService {
 
   // OpenLayers settings
-  RESOLUTIONS = [4000, 3750, 3500, 3250, 3000, 2750, 2500, 2250, 2000, 1750, 1500, 1250,
+  private static RESOLUTIONS = [4000, 3750, 3500, 3250, 3000, 2750, 2500, 2250, 2000, 1750, 1500, 1250,
     1000, 750, 650, 500, 250, 100, 50, 20, 10, 5, 2.5, 2, 1.5, 1, 0.5];
-  EXTEND = [2420000, 130000, 2900000, 1350000];
+  private static EXTEND = [2420000, 130000, 2900000, 1350000];
 
   // See https://api3.geo.admin.ch/rest/services/api/MapServer/layersConfig
-  layerConfigs: any = {
+  private layer_configs: any = {
     'pixelkarte': {
 
       "attribution": "swisstopo",
@@ -49,8 +53,11 @@ export class MapService {
     }
   };
 
-  private vector_source: VectorSource<Geometry> = new VectorSource({wrapX: false});
-  private overlay_source: VectorSource<Geometry> = new VectorSource({wrapX: false});
+  private path_layer_source: VectorSource<Geometry> = new VectorSource({wrapX: false});
+  private pointer_layer_source: VectorSource<Geometry> = new VectorSource({wrapX: false});
+  private way_points_layer_source: VectorSource<Geometry> = new VectorSource({wrapX: false});
+
+  private map: Map | undefined;
 
   constructor() {
 
@@ -63,32 +70,134 @@ export class MapService {
 
   }
 
-  public getMap(layerLabel: string = 'pixelkarte') {
+  public link_animator(map_animator: MapAnimatorService) {
+
+    // adjust the map center to the route
+    map_animator.map_center$.subscribe(center =>
+      this.map?.getView().setCenter([center.x, center.y])
+    );
+
+    map_animator.path$.subscribe(path => {
+
+      const feature = new Feature({
+        geometry: new LineString(path.map(p => [p.x, p.y]))
+      });
+
+      feature.setStyle(new Style({
+        stroke: new Stroke({color: '#efa038', width: 5})
+      }));
+
+      this.path_layer_source.addFeature(feature);
+
+    });
+
+
+    map_animator.pointer$.subscribe(p => {
+
+      this.pointer_layer_source.clear();
+
+      if (p == null) return;
+
+      const feature = new Feature({
+        geometry: new Circle([p.x, p.y], 20)
+      });
+
+      feature.setStyle(new Style({
+        stroke: new Stroke({color: '#da177d', width: 5})
+      }));
+
+      this.pointer_layer_source.addFeature(feature);
+
+
+      const extend: Extent | undefined = this.map?.getView().calculateExtent(this.map?.getSize())
+      if (extend == null) return;
+
+      const map_center = [(extend[2] + extend[0]) / 2, (extend[3] + extend[1]) / 2];
+      const max_offset = [(extend[2] - extend[0]) / 2 - 250, (extend[3] - extend[1]) / 2 - 250];
+      const offset = [p.x - map_center[0], p.y - map_center[1]];
+
+      const new_center = map_center;
+
+      if (offset[0] > max_offset[0]) {
+        new_center[0] = map_center[0] + (offset[0] - max_offset[0]);
+      }
+      if (offset[0] < -max_offset[0]) {
+        new_center[0] = map_center[0] + (offset[0] + max_offset[0]);
+      }
+      if (offset[1] > max_offset[1]) {
+        new_center[1] = map_center[1] + (offset[1] - max_offset[1]);
+      }
+      if (offset[1] < -max_offset[1]) {
+        new_center[1] = map_center[1] + (offset[1] + max_offset[1]);
+      }
+
+      this.map?.getView().setCenter(new_center);
+
+    });
+
+    combineLatest([map_animator.way_points$, map_animator.pois$])
+      .subscribe(([way_points, pois]) => {
+
+
+        this.way_points_layer_source.clear();
+
+        way_points.forEach(way_point => {
+
+          const feature = new Feature({
+            geometry: new Circle([way_point.x, way_point.y], 25)
+          });
+
+          feature.setStyle(new Style({
+            stroke: new Stroke({color: '#f13c3c', width: 5})
+          }));
+
+          this.way_points_layer_source.addFeature(feature);
+
+        });
+
+
+        pois.forEach(way_point => {
+
+          const feature = new Feature({
+            geometry: new Circle([way_point.x, way_point.y], 25)
+          });
+
+          feature.setStyle(new Style({
+            stroke: new Stroke({color: '#f13c3c', width: 5}),
+            fill: new Fill({color: '#2043d7'})
+          }));
+
+          this.way_points_layer_source.addFeature(feature);
+
+        });
+
+
+      });
+
+  }
+
+  public draw_map(layerLabel: string = 'pixelkarte') {
 
     // get the projection object for the "EPSG:2056" projection
     const projection = get('EPSG:2056');
     if (projection === null) return;
-    projection.setExtent(this.EXTEND);
+    projection.setExtent(MapService.EXTEND);
 
     const wmtsLayer = new Tile({
-      source: this.createWMTSSource(this.layerConfigs[layerLabel], projection)
+      source: this.createWMTSSource(this.layer_configs[layerLabel], projection)
     });
 
     const mousePosition = document.getElementById('mousePosition');
     if (mousePosition == null) return;
 
-    // create overlay drawing layer
-    const vectorLayer = new VectorLayer({
-      source: this.vector_source
-    });
 
-        // create overlay drawing layer
-    const overlayLayer = new VectorLayer({
-      source: this.overlay_source
-    });
-
-    return new Map({
-      layers: [wmtsLayer, vectorLayer, overlayLayer],
+    this.map = new Map({
+      layers: [
+        wmtsLayer,
+        new VectorLayer({source: this.path_layer_source}),
+        new VectorLayer({source: this.pointer_layer_source}),
+        new VectorLayer({source: this.way_points_layer_source})
+      ],
       target: 'map-canvas',
       view: new View({
         center: [2719640, 1216329],
@@ -117,14 +226,14 @@ export class MapService {
   private createWMTSSource(layerConfig: any, projection: ProjectionLike): WMTS {
 
     const matrixIds: string[] = [];
-    for (let i = 0; i < this.RESOLUTIONS.length; i++) {
+    for (let i = 0; i < MapService.RESOLUTIONS.length; i++) {
       matrixIds.push(String(i));
     }
 
-    const resolutions = layerConfig.resolutions || this.RESOLUTIONS;
+    const resolutions = layerConfig.resolutions || MapService.RESOLUTIONS;
 
     const tileGrid = new WMTSTileGrid({
-      origin: [this.EXTEND[0], this.EXTEND[3]],
+      origin: [MapService.EXTEND[0], MapService.EXTEND[3]],
       resolutions: resolutions,
       matrixIds: matrixIds
     });
@@ -144,12 +253,5 @@ export class MapService {
     });
   };
 
-  public getVectorSource() {
-    return this.vector_source;
-  }
 
-  getOverlay() {
-        return this.overlay_source;
-
-  }
 }

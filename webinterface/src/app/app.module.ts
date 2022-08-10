@@ -24,6 +24,7 @@ import {DownloadModule} from "./modules/download-module/download.module";
 import {MatSelectModule} from "@angular/material/select";
 import {MatOptionModule} from "@angular/material/core";
 import {NgxEchartsModule} from 'ngx-echarts';
+import { ElevationProfileComponent } from './components/elevation-profile/elevation-profile.component';
 
 @NgModule({
   declarations: [
@@ -34,7 +35,8 @@ import {NgxEchartsModule} from 'ngx-echarts';
     UserGuideComponent,
     DownloadPendingComponent,
     DownloadDataComponent,
-    UploadAreaComponent
+    UploadAreaComponent,
+    ElevationProfileComponent
   ],
   imports: [
     BrowserModule,

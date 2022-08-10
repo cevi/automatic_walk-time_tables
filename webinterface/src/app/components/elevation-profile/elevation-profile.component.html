@@ -1,0 +1,3 @@
+<div class="elevation-map" *ngIf="plot_options != {}">
+  <div id="chart" (click)="mouseClick()" (mousemove)="mouseMove()" (mouseout)="mouseOut()" echarts [options]="plot_options"></div>
+</div>

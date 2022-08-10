@@ -29,9 +29,7 @@
       </button>
       <button mat-stroked-button color="warn" *ngIf="route_uploaded" (click)="delete_route_file()"> Datei löschen
       </button>
-      <button mat-stroked-button color="primary" matStepperNext [disabled]="!route_uploaded"
-              (click)="create_walk_time_table()">Weiter
-      </button>
+      <button mat-stroked-button color="primary" matStepperNext [disabled]="!route_uploaded">Weiter</button>
 
     </mat-step>
 
@@ -39,13 +37,10 @@
       <ng-template matStepLabel>Einstellungen zum Höhenprofil</ng-template>
 
 
-      <div style="display: block;" *ngIf="plot_options != {}">
-        <p>Höhenprofil:
-          Mit einem Klick ins Höhenprofil kannst du zusätzliche Wegpunkte einfügen. Diese werden falls möglich
-          berücksichtigt.
-        </p>
-        <div id="chart" (click)="mouseClick()" echarts [options]="plot_options" class="hoehenprofil"></div>
-      </div>
+      <p>Höhenprofil: Mit einem Klick ins Höhenprofil kannst du zusätzliche Wegpunkte einfügen. Diese werden falls
+        möglich berücksichtigt. </p>
+
+      <app-elevation-profile></app-elevation-profile>
 
 
       <div class="content-block">

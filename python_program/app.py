@@ -102,6 +102,7 @@ def create_walk_time_table():
             elevation_data = polyline.decode(options['elevation_data'], 0)
             for i, way_point in enumerate(path.way_points):
                 way_point.point.h = elevation_data[i][1]
+                way_point.accumulated_distance = elevation_data[i][0]
 
         else:
             height_fetcher_transformer = HeightFetcherTransformer()

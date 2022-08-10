@@ -41,17 +41,14 @@ export class DownloadPendingComponent implements OnInit {
 
         if (res?.route && !route_fetched) {
 
-          try {
 
-            const path = decode(res?.route, 0);
-            console.log(path)
+          const path = decode(res?.route, 0);
+          console.log(path)
 
-            route_fetched = true;
-            this.mapAnimator.add_route(path);
+          route_fetched = true;
+          // this.mapAnimator.set_route(path);
+          throw new Error('Not implemented yet');
 
-          } catch (_) {
-            // do nothing
-          }
 
         }
 
