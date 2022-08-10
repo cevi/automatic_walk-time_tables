@@ -170,6 +170,9 @@ export class MapAnimatorService {
 
   }
 
+  public set_map_center(coordinates: LV95_Coordinates) {
+    this._map_center$.next(coordinates);
+  }
 
   private update_map_center(points: LV95_Coordinates[]) {
 
