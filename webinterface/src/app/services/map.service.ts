@@ -94,6 +94,7 @@ export class MapService {
         stroke: new Stroke({color: '#efa038', width: 5})
       }));
 
+      this.path_layer_source.clear();
       this.path_layer_source.addFeature(feature);
 
     });
