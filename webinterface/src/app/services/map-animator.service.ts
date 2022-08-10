@@ -210,7 +210,9 @@ export class MapAnimatorService {
       'encoding': 'polyline',
       'route': encode(path.map(p => [p.x, p.y]), 0),
       'elevation_data': encode(path.map(p => [p.accumulated_distance * 1_000, p.h]), 0),
-      'pois': pois.map(p => `${p.x},${p.y}`).join(';'),
+      'pois_distance': pois
+        .sort((a, b)=> a.accumulated_distance - b.accumulated_distance)
+        .map(p => `${p.accumulated_distance * 1_000}`).join(','),
     };
 
     let formData = new FormData();

@@ -8,6 +8,7 @@ import logging
 import os
 import pathlib
 import shutil
+import time
 import uuid as uuid_factory
 import zipfile
 from threading import Thread
@@ -20,7 +21,6 @@ from automatic_walk_time_tables.path_transformers.douglas_peucker_transformer im
 from automatic_walk_time_tables.path_transformers.equidistant_transfomer import EquidistantTransformer
 from automatic_walk_time_tables.path_transformers.heigth_fetcher_transfomer import HeightFetcherTransformer
 from automatic_walk_time_tables.path_transformers.pois_transfomer import POIsTransformer
-from automatic_walk_time_tables.path_transformers.naming_transformer import NamingTransformer
 from automatic_walk_time_tables.utils.path import Path
 from automatic_walk_time_tables.utils.point import Point_LV95
 from server_logging.log_helper import setup_recursive_logger
@@ -96,6 +96,8 @@ def create_walk_time_table():
     # Decode options['route'] form polyline
     if 'encoding' in options and options['encoding'] == 'polyline':
 
+        start = time.time()
+
         path = Path(list(map(lambda pkt: Point_LV95(lat=pkt[0], lon=pkt[1]), polyline.decode(options['route'], 0))))
 
         if 'elevation_data' in options:
@@ -109,27 +111,30 @@ def create_walk_time_table():
             height_fetcher_transformer = HeightFetcherTransformer()
             path = height_fetcher_transformer.transform(path)
 
-        pois_str: str = ""
-        if 'pois' in options:
-            pois_str = options['pois']
+        end = time.time()
+        logger.info('Decoding polyline took {} seconds.'.format(end - start))
+        start = time.time()
 
         # calc POIs for the path
-        pois_transformer = POIsTransformer(pois_list_as_str=pois_str)
+        pois_transformer = POIsTransformer(
+            pois_list_as_str=options['pois'] if 'pois' in options else '',
+            pois_distance_str=options['pois_distance'] if 'pois_distance' in options else '')
         pois: Path = pois_transformer.transform(path)
 
-        logger.info('Pois: {}'.format(pois))
+        end = time.time()
+        logger.info('Calculating POIs took {} seconds.'.format(end - start))
+        start = time.time()
 
         douglas_peucker_transformer = DouglasPeuckerTransformer(number_of_waypoints=21, pois=pois)
         selected_way_points = douglas_peucker_transformer.transform(path)
 
-        naming_transformer = NamingTransformer()
-        pois = naming_transformer.transform(pois)
+        end = time.time()
+        logger.info('Calculating Douglas-Peucker took {} seconds.'.format(end - start))
 
         result_json = {
             'status': GeneratorStatus.SUCCESS,
             'selected_way_points': selected_way_points.to_polyline(),
             'selected_way_points_elevation': selected_way_points.to_elevation_polyline(),
-            'pois_names': pois.get_names(),
             'pois': pois.to_polyline(),
             'pois_elevation': pois.to_elevation_polyline(),
         }
@@ -158,7 +163,7 @@ def create_map():
     if isinstance(result, Response):
         return result
     file_name = result
-    
+
     output_directory = 'output/' + uuid + '/'
 
     logger.log(ExportStateLogger.REQUESTABLE, 'Export wird vorbereitet.',
