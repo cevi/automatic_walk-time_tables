@@ -13,6 +13,7 @@ import {getRenderPixel} from "ol/render";
 import {take} from "rxjs/operators";
 import {LV95_Waypoint} from "../helpers/coordinates";
 import {SwisstopoMap} from "../helpers/swisstopo-map";
+import {combineLatest} from "rxjs";
 
 
 @Injectable({
@@ -105,49 +106,47 @@ export class MapService extends SwisstopoMap {
     });
 
 
-    map_animator.way_points$.subscribe(way_points => {
+    combineLatest([map_animator.way_points$, map_animator.pois$])
+      .subscribe(([way_points, pois]) => {
 
-      this.way_points_layer_source.clear();
+        this.way_points_layer_source.clear();
 
-      way_points.forEach(way_point => {
+        way_points.forEach(way_point => {
 
-        const feature = new Feature({
-          geometry: new Circle([way_point.x, way_point.y], 25)
+          const feature = new Feature({
+            geometry: new Circle([way_point.x, way_point.y], 25)
+          });
+
+          feature.setStyle(new Style({
+            stroke: new Stroke({color: '#f13c3c', width: 5})
+          }));
+
+          this.way_points_layer_source.addFeature(feature);
+
         });
 
-        feature.setStyle(new Style({
-          stroke: new Stroke({color: '#f13c3c', width: 5})
-        }));
 
-        this.way_points_layer_source.addFeature(feature);
+        pois.forEach(way_point => {
 
-      });
-    })
+          const feature = new Feature({
+            geometry: new Circle([way_point.x, way_point.y], 30)
+          });
 
+          feature.setStyle(new Style({
+            stroke: new Stroke({color: '#2043d7', width: 5}),
+            text: new Text({
+              text: way_point.name,
+              fill: new Fill({color: '#f13c3c'}),
+              font: 'bold 16px Open Sans'
+            })
+          }));
 
-    map_animator.pois$.subscribe(pois => {
+          this.way_points_layer_source.addFeature(feature);
 
-      pois.forEach(way_point => {
-
-        const feature = new Feature({
-          geometry: new Circle([way_point.x, way_point.y], 30)
         });
 
-        feature.setStyle(new Style({
-          stroke: new Stroke({color: '#2043d7', width: 5}),
-          text: new Text({
-            text: way_point.name,
-            fill: new Fill({color: '#f13c3c'}),
-            font: 'bold 16px Open Sans'
-          })
-        }));
-
-        this.way_points_layer_source.addFeature(feature);
 
       });
-
-
-    });
 
   }
 
