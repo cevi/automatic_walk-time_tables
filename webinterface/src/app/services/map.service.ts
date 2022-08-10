@@ -184,7 +184,7 @@ export class MapService {
     projection.setExtent(MapService.EXTEND);
 
     const wmtsLayer = new Tile({
-      source: this.createWMTSSource(this.layer_configs[layerLabel], projection)
+      source: this.createWMTSSource(this.layer_configs[layerLabel], projection),
     });
 
     const wmtsLayer_overlay = new Tile({
@@ -300,7 +300,8 @@ export class MapService {
       tileGrid: tileGrid,
       projection: projection,
       layer: layerConfig.serverLayerName,
-      requestEncoding: 'REST'
+      requestEncoding: 'REST',
+      attributions: "<a href=\"https://www.admin.ch/gov/de/start/rechtliches.html\" target=\"_blank\">&copy; Daten: Swisstopo</a>"
     });
   };
 
