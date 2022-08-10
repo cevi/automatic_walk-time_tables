@@ -49,7 +49,7 @@ class POIsTransformer(PathTransformer):
                 for poi_str in pois_strs:
                     poi = poi_str.split(',')
                     poi = Point_LV95(float(poi[0]), float(poi[1]), 0)
-                    pois_coord.insert(poi)
+                    pois_coord.append(poi)
 
             except Exception as e:
                 logging.error(e)
