@@ -13,6 +13,8 @@ import {take} from "rxjs/operators";
 export class ElevationProfileComponent {
 
   public plot_options: any = {};
+  number_of_way_points: number = 0;
+  number_of_pois: number = 0;
 
   constructor(private mapAnimator: MapAnimatorService) {
 
@@ -50,6 +52,9 @@ export class ElevationProfileComponent {
       .subscribe(([path, way_points, pois]) => {
 
         console.log("Draw elevation profile");
+
+        this.number_of_way_points = way_points.length;
+        this.number_of_pois = pois.length;
 
         this.plot_options = {
           tooltip: {
