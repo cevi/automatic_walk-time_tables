@@ -6,7 +6,7 @@ import proj4 from "proj4";
 import {register} from "ol/proj/proj4";
 import {Tile} from "ol/layer";
 import Map from "ol/Map";
-import {Feature, View} from "ol";
+import {Feature, MapBrowserEvent, View} from "ol";
 import {defaults, MousePosition, ScaleLine} from "ol/control";
 import {createStringXY} from "ol/coordinate";
 import VectorSource from "ol/source/Vector";
@@ -17,6 +17,8 @@ import {Fill, Stroke, Style, Text} from "ol/style";
 import {combineLatest} from "rxjs";
 import {Extent} from "ol/extent";
 import {getRenderPixel} from "ol/render";
+import {take} from "rxjs/operators";
+import {LV95_Waypoint} from "../helpers/coordinates";
 
 
 @Injectable({
@@ -60,6 +62,7 @@ export class MapService {
 
   private map: Map | undefined;
   private pointer: number[] | undefined | null;
+  private map_animator: MapAnimatorService | undefined;
 
   constructor() {
 
@@ -73,6 +76,8 @@ export class MapService {
   }
 
   public link_animator(map_animator: MapAnimatorService) {
+
+    this.map_animator = map_animator;
 
     // adjust the map center to the route
     map_animator.map_center$.subscribe(center =>
@@ -107,7 +112,7 @@ export class MapService {
       if (extend == null) return;
 
       const map_center = [(extend[2] + extend[0]) / 2, (extend[3] + extend[1]) / 2];
-      const max_offset = [(extend[2] - extend[0]) / 2 - 250, (extend[3] - extend[1]) / 2 - 250];
+      const max_offset = [(extend[2] - extend[0]) / 2 - 250, (extend[3] - extend[1]) / 2 - 150];
       const offset = [p.x - map_center[0], p.y - map_center[1]];
 
       const new_center = map_center;
@@ -226,6 +231,54 @@ export class MapService {
     });
 
     this.render_pointer(wmtsLayer_overlay);
+    this.register_listeners();
+
+  }
+
+  private register_listeners() {
+
+    this.map?.on('pointermove', async (evt) => {
+
+      const [nearest_point, dist] = await this.get_nearest_way_point(evt);
+      if (dist <= 50 && nearest_point) this.map_animator?.move_pointer(nearest_point);
+      else this.map_animator?.move_pointer(null);
+
+    });
+
+    this.map?.on('click', async (evt) => {
+
+      const [nearest_point, dist] = await this.get_nearest_way_point(evt);
+      if (dist <= 50 && nearest_point) this.map_animator?.add_point_of_interest(nearest_point);
+
+    });
+
+  }
+
+
+  private async get_nearest_way_point(event: MapBrowserEvent<any>): Promise<[LV95_Waypoint | null, number]> {
+
+    const p = event.coordinate;
+
+    if (this.map_animator == undefined) return [null, Infinity];
+
+    return new Promise((resolve, _) => {
+      this.map_animator?.path$.pipe(take(1))
+        .subscribe(path => {
+
+          // get the coordinates of the point neares to the p
+          const nearest_point = path.reduce((prev, curr) => {
+            const prev_dist = Math.sqrt(Math.pow(prev.x - p[0], 2) + Math.pow(prev.y - p[1], 2));
+            const curr_dist = Math.sqrt(Math.pow(curr.x - p[0], 2) + Math.pow(curr.y - p[1], 2));
+            return prev_dist < curr_dist ? prev : curr;
+          });
+
+          const dist = Math.sqrt(Math.pow(nearest_point.x - p[0], 2) + Math.pow(nearest_point.y - p[1], 2));
+
+          resolve([nearest_point, dist])
+
+        });
+
+    });
 
   }
 
