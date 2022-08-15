@@ -10,7 +10,7 @@ services:
     volumes:
       - ./route_engine/sources/:/custom_files
     environment:
-      - tile_urls=https://download.geofabrik.de/europe/switzerland-latest.osm.pbf
+      # - tile_urls=https://download.geofabrik.de/europe/switzerland-latest.osm.pbf
       - server_threads=2  # determines how many threads will be used to run the valhalla server
       - use_tiles_ignore_pbf=True  # load existing valhalla_tiles.tar directly
       - build_elevation=False  # build elevation with "True" or "Force": will download only the elevation for areas covered by the graph tiles
