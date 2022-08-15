@@ -2,7 +2,7 @@ import {Injectable} from '@angular/core';
 import {WMTS} from "ol/source";
 import {Tile} from "ol/layer";
 import Map from "ol/Map";
-import {Feature, MapBrowserEvent} from "ol";
+import {Feature} from "ol";
 import VectorSource from "ol/source/Vector";
 import VectorLayer from "ol/layer/Vector";
 import {Circle, Geometry, LineString} from "ol/geom";
@@ -11,10 +11,12 @@ import {Fill, Stroke, Style, Text} from "ol/style";
 import {Extent} from "ol/extent";
 import {getRenderPixel} from "ol/render";
 import {take} from "rxjs/operators";
-import {LV95_Waypoint} from "../helpers/coordinates";
+import {LV95_Coordinates, LV95_Waypoint} from "../helpers/coordinates";
 import {SwisstopoMap} from "../helpers/swisstopo-map";
 import {combineLatest} from "rxjs";
-import {Draw} from "ol/interaction";
+import {transform} from "ol/proj";
+import {decode} from "@googlemaps/polyline-codec";
+import {Coordinate} from "ol/coordinate";
 
 
 @Injectable({
@@ -22,14 +24,21 @@ import {Draw} from "ol/interaction";
 })
 export class MapService extends SwisstopoMap {
 
+
   private _path_layer_source: VectorSource<Geometry> = new VectorSource({wrapX: false});
   private pointer_layer_source: VectorSource<Geometry> = new VectorSource({wrapX: false});
   private way_points_layer_source: VectorSource<Geometry> = new VectorSource({wrapX: false});
+  private path_changes_layer_source: VectorSource<Geometry> = new VectorSource({wrapX: false});
 
-  private map: Map | undefined;
+  private _map: Map | undefined;
   private pointer: number[] | undefined | null;
   private map_animator: MapAnimatorService | undefined;
-  private _path_layer: VectorLayer<VectorSource<Geometry>> | undefined;
+
+  private dragging: boolean = false;
+  private drag_start_point: LV95_Waypoint | undefined;
+  private drag_end_point: LV95_Coordinates | undefined;
+  private drag_start_before: LV95_Waypoint | undefined;
+  private drag_start_after: LV95_Waypoint | undefined;
 
   public link_animator(map_animator: MapAnimatorService) {
 
@@ -37,7 +46,7 @@ export class MapService extends SwisstopoMap {
 
     // adjust the map center to the route
     map_animator.map_center$.subscribe(center =>
-      this.map?.getView().setCenter([center.x, center.y])
+      this._map?.getView().setCenter([center.x, center.y])
     );
 
     map_animator.path$.subscribe(path => {
@@ -70,11 +79,11 @@ export class MapService extends SwisstopoMap {
 
       this.pointer = [p?.x, p?.y];
 
-      const extend: Extent | undefined = this.map?.getView().calculateExtent(this.map?.getSize())
+      const extend: Extent | undefined = this._map?.getView().calculateExtent(this._map?.getSize())
       if (extend == null) return;
 
       // Calculate the relative border size based on the current map extent and scale.
-      const extent = this.map?.getView().calculateExtent(this.map?.getSize());
+      const extent = this._map?.getView().calculateExtent(this._map?.getSize());
       if (extent == null) return;
       const min_border = Math.min(extent[2] - extent[0], extent[3] - extent[1]) * 0.05;
 
@@ -99,7 +108,7 @@ export class MapService extends SwisstopoMap {
 
       // Check if the map center has moved.
       if (new_center[0] == map_center[0] && new_center[1] == map_center[1]) {
-        this.map?.render(); // We need to rerender the map anyway to show the new pointer location.
+        this._map?.render(); // We need to rerender the map anyway to show the new pointer location.
         return;
       }
 
@@ -160,12 +169,13 @@ export class MapService extends SwisstopoMap {
     if (wmtsLayer == null || wmtsLayer_overlay == null) return;
 
 
-    this.map = this.create_map_from_layers([
+    this._map = this.create_map_from_layers([
       wmtsLayer,
       new VectorLayer({source: this._path_layer_source}),
       wmtsLayer_overlay,
       new VectorLayer({source: this.pointer_layer_source}),
       new VectorLayer({source: this.way_points_layer_source}),
+      new VectorLayer({source: this.path_changes_layer_source}),
     ]);
 
     this.render_pointer(wmtsLayer_overlay);
@@ -177,36 +187,118 @@ export class MapService extends SwisstopoMap {
     return this._path_layer_source;
   }
 
-
-  public addInteraction(draw: Draw) {
-
-    this.map?.addInteraction(draw)
-
+  get map(): Map | undefined {
+    return this._map;
   }
 
   private register_listeners() {
 
-    this.map?.on('pointermove', async (evt) => {
+    this._map?.on('pointermove', async (evt) => {
 
-      const [nearest_point, dist] = await this.get_nearest_way_point(evt);
+      const [nearest_point, dist] = await this.get_nearest_way_point(evt.coordinate);
       if (dist <= 50 && nearest_point) this.map_animator?.move_pointer(nearest_point);
       else this.map_animator?.move_pointer(null);
 
     });
 
-    this.map?.on('click', async (evt) => {
+    this._map?.on('click', async (evt) => {
 
-      const [nearest_point, dist] = await this.get_nearest_way_point(evt);
+      const [nearest_point, dist] = await this.get_nearest_way_point(evt.coordinate);
       if (dist <= 50 && nearest_point) this.map_animator?.add_point_of_interest(nearest_point);
+
+    });
+
+    this._map?.getViewport().addEventListener('contextmenu', (evt) => evt.preventDefault());
+    document.addEventListener('mouseup', () => {
+
+      if (this.dragging && this.drag_start_before && this.drag_start_after && this.drag_end_point) {
+
+        this.path_changes_layer_source.clear();
+        this.drawingHandler([this.drag_start_before, this.drag_end_point], true);
+        this.drawingHandler([this.drag_end_point, this.drag_start_after], false);
+
+      }
+
+      this.dragging = false;
+      this.drag_start_point = undefined;
+      this.drag_end_point = undefined;
+
+    });
+
+    this.map?.on('pointerdrag', async (event) => {
+
+      // check if mouse button is pressed
+      if (event.originalEvent.buttons !== 2) return;
+
+      // don't move the map
+      event.stopPropagation();
+
+
+      if (!this.dragging) {
+
+        // check if moved away from path
+        const [nearest_point, dist] = await this.get_nearest_way_point(event.coordinate);
+        if (dist > 50 || !nearest_point) return;
+        this.dragging = true;
+        this.drag_start_point = nearest_point;
+
+        console.log('start dragging path...')
+
+      } else {
+
+        if (!this.drag_start_point) return;
+
+        // only if event.coordinate differ significantly from this.drag_start_point
+        if (Math.abs(event.coordinate[0] - this.drag_start_point.x) <= 10 ||
+          Math.abs(event.coordinate[1] - this.drag_start_point.y) <= 10)
+          return;
+
+        const path: LV95_Waypoint[] = await new Promise(resolve => this.map_animator?.path$
+          .pipe(take(1)).subscribe(path => resolve(path)));
+
+        const current_acc_dist = this.drag_start_point?.accumulated_distance
+
+        const dist = Math.sqrt(Math.pow(this.drag_start_point.x - event.coordinate[0], 2) +
+          Math.pow(this.drag_start_point.y - event.coordinate[1], 2)) / 1_000;
+
+        // get points along the path with a vertical distance of 10 from this.drag_start_point
+        this.drag_start_before = path.filter((wp: LV95_Waypoint) => {
+          return current_acc_dist - wp.accumulated_distance >= dist;
+        }).pop();
+
+        this.drag_start_after = path.filter((wp: LV95_Waypoint) => {
+          return wp.accumulated_distance - current_acc_dist >= dist;
+        })[0];
+
+        if (!this.drag_start_before || !this.drag_start_after) return;
+
+        const triangle: Coordinate[] = [
+          [this.drag_start_before.x, this.drag_start_before.y],
+          event.coordinate,
+          [this.drag_start_after.x, this.drag_start_after.y]]
+
+        this.drag_end_point = {x: event.coordinate[0], y: event.coordinate[1]};
+
+        const triangleFeature = new Feature({
+          geometry: new LineString(triangle)
+        });
+
+        triangleFeature.setStyle(new Style({
+          stroke: new Stroke({color: '#e127ae', width: 5})
+        }));
+
+        this.path_changes_layer_source.clear();
+        this.path_changes_layer_source.addFeature(triangleFeature)
+
+      }
+
 
     });
 
   }
 
 
-  private async get_nearest_way_point(event: MapBrowserEvent<any>): Promise<[LV95_Waypoint | null, number]> {
-
-    const p = event.coordinate;
+  private async get_nearest_way_point(p: Coordinate): Promise<[LV95_Waypoint | null, number]> {
 
     if (this.map_animator == undefined) return [null, Infinity];
 
@@ -246,7 +338,7 @@ export class MapService extends SwisstopoMap {
 
       if (this.pointer != null) {
 
-        const pointer = this.map?.getPixelFromCoordinate(this.pointer);
+        const pointer = this._map?.getPixelFromCoordinate(this.pointer);
 
         if (pointer != null) {
           // only show a circle around the mouse
@@ -278,4 +370,65 @@ export class MapService extends SwisstopoMap {
 
   }
 
+  private async drawingHandler(coordinates: LV95_Coordinates[], route_by_start = true) {
+
+    const WGS84 = coordinates.map(c => transform([c.x, c.y], 'EPSG:2056', 'EPSG:4326'));
+
+    if (coordinates.length == 2) {
+
+      // fetch path from valhalla/valhalla at localhost:8002 with json in url
+      const url = 'http://localhost:8002/route?json=' + encodeURIComponent(JSON.stringify({
+        locations: [
+          {lat: WGS84[0][1], lon: WGS84[0][0]},
+          {lat: WGS84[1][1], lon: WGS84[1][0]},
+        ],
+        costing: 'pedestrian',
+        radius: 25
+      }));
+
+      // fetch path from valhalla/valhalla at localhost:8002
+      const data = await fetch(url, {method: 'POST'}).then(response => response.json());
+      const shape: string = data.trip.legs[0].shape;
+
+      let decoded_path = decode(shape, 6).map(p =>
+        transform([p[1], p[0]], 'EPSG:4326', 'EPSG:2056'));
+
+      this.map_animator?.path$.pipe(take(1)).subscribe(async path => {
+
+        if (route_by_start) decoded_path = decoded_path.reverse();
+
+        let near_path = true;
+        let last_elem = null
+
+        // remove points at the beginning of the path
+        while (decoded_path.length > 0 && near_path) {
+
+          let dist;
+          [last_elem, dist] = await this.get_nearest_way_point(decoded_path[decoded_path.length - 1]);
+          near_path = dist <= 25;
+          decoded_path.pop();
+
+        }
+
+        if (last_elem != null)
+          decoded_path.push([last_elem.x, last_elem.y])
+
+        if (route_by_start) decoded_path = decoded_path.reverse();
+
+
+        const feature = new Feature({
+          geometry: new LineString(decoded_path)
+        });
+
+        feature.setStyle(new Style({
+          stroke: new Stroke({color: '#e127ae', width: 5})
+        }));
+
+        this.path_changes_layer_source?.addFeature(feature);
+
+      });
+    }
+
+
+  }
 }
