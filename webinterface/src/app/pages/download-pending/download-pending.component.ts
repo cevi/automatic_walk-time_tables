@@ -41,26 +41,23 @@ export class DownloadPendingComponent implements OnInit {
 
         if (res?.route && !route_fetched) {
 
-          try {
 
-            const path = decode(res?.route, 0);
-            console.log(path)
+          const path = decode(res?.route, 0);
+          console.log(path)
 
-            route_fetched = true;
-            this.mapAnimator.add_route(path);
+          route_fetched = true;
+          // this.mapAnimator.set_route(path);
+          throw new Error('Not implemented yet');
 
-          } catch (_) {
-            // do nothing
-          }
 
         }
 
-        if ('Fertig' == res.status) {
+        if ('success' == res.status) {
           this.router.navigate(['download', this.uuid]).then();
           return;
         }
 
-        if ('Fehler' == res.status) {
+        if ('error' == res.status) {
           return;
         }
 
@@ -72,7 +69,7 @@ export class DownloadPendingComponent implements OnInit {
   }
 
   private log_network_error(err: Error) {
-    this.statusManager.status = 'Fehler';
+    this.statusManager.status = 'error';
     this.statusManager.status_message = 'Ein Netzwerk-Fehler ist aufgetreten, bitte versuche es erneut.'
     console.error(err);
   }

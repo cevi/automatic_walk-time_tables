@@ -34,39 +34,19 @@ export class MapBackgroundComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
 
-    this.map = this.mapService.getMap('pixelkarte');
-
-    // adjust the map center to the route
-    this.mapAnimator.map_center$.subscribe(center =>
-      this.map?.getView().setCenter([center.x, center.y])
-    );
-
-    this.mapAnimator.path$.subscribe(path => {
-
-      const feature = new Feature({
-        geometry: new LineString(path.map(p => [p.x, p.y]))
-      });
-
-      feature.setStyle(new Style({
-        stroke: new Stroke({color: '#ec9929', width: 5})
-      }));
-
-      this.mapService.getVectorSource().addFeature(feature);
-
-    });
-
+    this.mapService.draw_map()
+    this.mapService.link_animator(this.mapAnimator);
 
     const draw = new Draw({
-      source: this.mapService.getVectorSource(),
+      source: this.mapService.path_layer_source,
       type: 'Point',
     });
-    this.map?.addInteraction(draw);
+    this.mapService?.addInteraction(draw);
 
     let coordinates: number[][] = [];
-    this.mapService.getVectorSource().on('addfeature', (event) => this.drawingHandler(coordinates, event));
+    this.mapService.path_layer_source?.on('addfeature', (event) => this.drawingHandler(coordinates, event));
 
   }
-
 
   private async drawingHandler(coordinates: number[][], event: VectorSourceEvent<Geometry>) {
 
@@ -95,22 +75,22 @@ export class MapBackgroundComponent implements OnInit, OnDestroy {
 
       const decoded_path = decode(shape, 6).map(p =>
         transform([p[1], p[0]], 'EPSG:4326', 'EPSG:2056'));
-      console.log(decoded_path)
 
       const feature = new Feature({
         geometry: new LineString(decoded_path)
       });
 
       feature.setStyle(new Style({
-        stroke: new Stroke({color: '#d71f7f', width: 5})
+        stroke: new Stroke({color: '#e127ae', width: 5})
       }));
 
-      this.mapService.getVectorSource().addFeature(feature);
+      this.mapService.path_layer_source?.addFeature(feature);
 
 
     }
 
   }
+
 
   ngOnDestroy(): void {
     this.path_subscription?.unsubscribe();

@@ -9,7 +9,7 @@ import requests
 from automatic_walk_time_tables.path_transformers.path_transfomer import PathTransformer
 from automatic_walk_time_tables.utils import point
 from automatic_walk_time_tables.utils.path import Path
-from automatic_walk_time_tables.utils.point import Point_LV03
+from automatic_walk_time_tables.utils.point import Point, PointType
 
 
 class HeightFetcherTransformer(PathTransformer):
@@ -38,12 +38,14 @@ class HeightFetcherTransformer(PathTransformer):
             ]
         }
 
+        coord_type = path_.way_points[0].point.type
+
         params = {
             "geom": json.dumps(geom_data),
             "nb_points": max(path_.number_of_waypoints, self.min_number_of_points),
             "distinct_points": True,
             "smart_filling": True,
-            "sr": 21781  # LV03
+            "sr": coord_type
         }
 
         r = requests.get(self.PATH_URL, params=params)
@@ -57,9 +59,17 @@ class HeightFetcherTransformer(PathTransformer):
             raise Exception("Failed to fetch elevation for path")
 
         # return the path with elevation
-        points: List[Point_LV03] = []
+        points: List[Point] = []
 
         for entry in r.json():
-            points.append(point.Point_LV03(entry["easting"], entry["northing"], float(entry["alts"]["COMB"])))
+
+            if coord_type == PointType.LV03:
+                points.append(point.Point_LV03(entry["easting"], entry["northing"], float(entry["alts"]["COMB"])))
+            elif coord_type == PointType.LV95:
+                points.append(point.Point_LV95(entry["easting"], entry["northing"], float(entry["alts"]["COMB"])))
+            elif coord_type == PointType.WGS84:
+                points.append(point.Point_WGS84(entry["easting"], entry["northing"], float(entry["alts"]["COMB"])))
+            else:
+                raise Exception("Unknown coordinate type")
 
         return Path(points)

@@ -18,7 +18,7 @@ from server_logging.status_handler import ExportStateLogger
 
 class AutomatedWalkTableGenerator:
 
-    def __init__(self, args: argparse.Namespace, uuid: str = ''):
+    def __init__(self, args: argparse.Namespace, uuid: str, options: dict, file_content: str = ''):
 
         self.args = args
         self.uuid = uuid
@@ -27,8 +27,14 @@ class AutomatedWalkTableGenerator:
         for arg in vars(self.args):
             self.__logger.debug("  %s: %s", arg, getattr(self.args, arg))
 
-        geo_file_parser = GeoFileParser()
-        self.__path = geo_file_parser.parse(self.args.file_name)
+        if 'file_type' not in options or options['file_type'] is None:
+            raise Exception('No file ending provided.')
+
+        if file_content is None:
+            raise Exception('No GPX/KML file provided with the POST request.')
+
+        geo_file_parser = GeoFileParser(fetch_elevation=False)
+        self.__path = geo_file_parser.parse(file_content=file_content, extension=options['file_type'])
 
         self.__output_directory = args.output_directory
         pathlib.Path(self.__output_directory).mkdir(parents=True, exist_ok=True)
@@ -82,7 +88,8 @@ class AutomatedWalkTableGenerator:
             # this is much faster that for every point in the original path. As the swiss_TML_api uses a tolerance
             # of 2_000m anyway the chance to miss a map number is very small.
 
-            map_numbers = self.__log_runtime(fetch_map_numbers, "Benötigte Zeit um die Karten-Nummern zu berechnen", selected_way_points)
+            map_numbers = self.__log_runtime(fetch_map_numbers, "Benötigte Zeit um die Karten-Nummern zu berechnen",
+                                             selected_way_points)
             self.__logger.debug("Input File Name: %s", name)
             self.__logger.debug("Map Numbers: %s", map_numbers)
 

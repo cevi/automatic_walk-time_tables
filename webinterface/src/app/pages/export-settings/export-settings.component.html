@@ -29,12 +29,14 @@
       </button>
       <button mat-stroked-button color="warn" *ngIf="route_uploaded" (click)="delete_route_file()"> Datei löschen
       </button>
-      <button mat-stroked-button color="primary" matStepperNext [disabled]="!route_uploaded" (click)="fetch_route()">Hochladen und weiter</button>
+      <button mat-stroked-button color="primary" matStepperNext [disabled]="!route_uploaded">Weiter</button>
 
     </mat-step>
 
     <mat-step>
       <ng-template matStepLabel>Einstellungen zum Höhenprofil</ng-template>
+
+      <app-elevation-profile></app-elevation-profile>
 
       <div class="content-block">
 
@@ -102,21 +104,6 @@
 
       <ng-template matStepLabel>Einstellungen zur Marschzeittabelle</ng-template>
 
-      <div class="content-block">
-
-
-        <p>
-          Points of Interest entlang der Route. Falls möglich, werden diese Punkte bei der Marschzeittabelle
-          berücksichtigt. Pro Zeile ein Koordinaten-Paar im LV03 Format angeben, Longitude und Latitude mit einem Komma
-          trennen und ohne Abstand schreiben. <br>
-          Beispiel: 667357,208554
-        </p>
-
-        <mat-form-field appearance="fill">
-          <mat-label>Points of Interest</mat-label>
-          <textarea formControlName="list-of-pois" matInput></textarea>
-        </mat-form-field>
-      </div>
 
       <div class="content-block">
         <mat-slide-toggle formControlName="create-excel">Marschzeittabelle als Excel beifügen</mat-slide-toggle>
