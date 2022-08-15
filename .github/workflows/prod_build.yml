@@ -9,7 +9,7 @@ env:
   ANGULAR_CONFIGURATION: dev_build
 
 jobs:
-  devBuild:
+  prodBuild:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -22,7 +22,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build the stack
-        run: docker-compose --env-file prod.env up --build
+        run: docker-compose --env-file prod.env build
 
       - name: Push containers to registry
         run: docker-compose push
