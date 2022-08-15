@@ -56,7 +56,7 @@ def parse_route():
         if file_content is None:
             raise Exception('No GPX/KML file provided with the POST request.')
 
-        geo_file_parser = GeoFileParser(fetch_elevation=False)
+        geo_file_parser = GeoFileParser(fetch_elevation=True)
         path = geo_file_parser.parse(file_content=file_content, extension=options['file_type'])
 
         equidistant_transformer = EquidistantTransformer(equidistant_distance=10)
