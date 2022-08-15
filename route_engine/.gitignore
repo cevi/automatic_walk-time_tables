@@ -1,2 +1,2 @@
-./sources/*
-./resources/*
+./sources/**
+./resources/**
