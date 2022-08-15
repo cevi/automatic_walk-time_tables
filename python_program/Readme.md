@@ -51,12 +51,12 @@ here: [Command Line Arguments](automatic_walk_time_tables/Command_Line_Arguments
 
 ## Test and Debug Tools
 
-Make sure that your system fulfill the prerequisites as described in the section above, i.g. you should be able to run
+Make sure that your system fulfills the prerequisites as described in the section above, i.e. you should be able to run
 the `automatic_walk_time_tables` script locally using python3.
 
 ## About swisstopo Services
 
-This script highly depends on the services form swisstopo (Federal Office of Topography swisstopo). Those services are
+This script highly depends on the services from swisstopo (Federal Office of Topography swisstopo). Those services are
 free-of-charge and do not require registration (since 01.03.2021). However, you should follow there "Fair Use" rules.
 More details see [API Documentation](https://api3.geo.admin.ch/services/sdiservices.html)
 and [Terms of Use](https://www.geo.admin.ch/de/geo-dienstleistungen/geodienste/terms-of-use.html).

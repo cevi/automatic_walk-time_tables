@@ -1,10 +1,11 @@
 {
   "name": "automatic-walk-time-tables",
-  "version": "2.2.4",
+  "version": "2.3.1",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
-    "build": "ng build",
+    "start": "angular-build-info && ng serve",
+    "build": "angular-build-info && ng build",
+    "build:docker": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },
@@ -34,6 +35,7 @@
     "@types/jasmine": "~3.8.0",
     "@types/node": "^12.20.42",
     "@types/proj4": "^2.5.2",
+    "angular-build-info": "^2.0.1",
     "jasmine-core": "~3.8.0",
     "karma": "^6.3.14",
     "karma-chrome-launcher": "~3.1.0",

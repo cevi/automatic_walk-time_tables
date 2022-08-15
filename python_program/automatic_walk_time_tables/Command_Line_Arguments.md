@@ -17,7 +17,7 @@
 | `--print-api-base-url`  | `String`      | Base URL of the mapfish server used for creating PDF exports. Default: localhost.                                                                                                                                                                                                                         |
 | `--legend-position`     | `String`      | Position of the legend on the map. Default: bottom-right.                                                                                                                                                                                                                                                 |
 | `--map-layers`          | `String`      | Comma separated list of map layers to be used. Default: "ch.swisstopo.pixelkarte-farbe".                                                                                                                                                                                                                  |
-| `--list-of-pois`        | `String`      | List of POIs, one coordinate pair per line.                                                                                                                                                                                                                                                               | 
+| `--list-of-pois`        | `String`      | List of point of interests. One coordinate (LV03) pair per line separated by comma, line end marked with "\n", e.g. "623345,256023;625345,253023"                                                                                                                                                         | 
 
 ### Enable/Disable Features
 

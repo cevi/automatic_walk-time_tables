@@ -31,16 +31,11 @@ export class MapAnimatorService {
     return Math.sqrt(Math.pow(pkt1.x - pkt2.x, 2) + Math.pow(pkt1.y - pkt2.y, 2));
   }
 
-  async add_route_json(route_as_json: string) {
-
-    const route = JSON.parse(route_as_json.replace(/'/g, '"'));
-
-    const total_distance = route['way_points'].at(-1)['accumulated_distance'];
-    console.log('total_distance', total_distance);
+  async add_route(route_as_array: number[][]) {
 
     // map  route['way_points'] to Point objects
-    const points = route['way_points'].map((way_point: any) => {
-      return {'x': way_point['point']['lat'], 'y': way_point['point']['lon']};
+    const points = route_as_array.map((pkt: any) => {
+      return {'x': pkt[0], 'y': pkt[1]};
     });
 
     this.update_map_center(points);

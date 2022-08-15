@@ -34,7 +34,7 @@ class AutomatedWalkTableGenerator:
         pathlib.Path(self.__output_directory).mkdir(parents=True, exist_ok=True)
 
     def run(self):
-        self.__log_runtime(self.__create_files, "Time used for export")
+        self.__log_runtime(self.__create_files, "Benötigte Zeit für Export")
 
         # Export successfully completed
         self.__logger.log(ExportStateLogger.REQUESTABLE,
@@ -54,15 +54,15 @@ class AutomatedWalkTableGenerator:
         # calc points for walk-time table
         douglas_peucker_transformer = DouglasPeuckerTransformer(number_of_waypoints=21, pois=pois)
         selected_way_points: path.Path = self.__log_runtime(douglas_peucker_transformer.transform,
-                                                            "Time used to compute walk_time_table",
+                                                            "Benötigte Zeit zum Berechnen der Marschzeittabelle",
                                                             self.__path)
 
-        equidistant_transformer = EquidistantTransformer(equidistant_distance=10)
+        equidistant_transformer = EquidistantTransformer(equidistant_distance=1)
         equidistant_way_points: path.Path = equidistant_transformer.transform(self.__path)
 
         self.__logger.log(ExportStateLogger.REQUESTABLE, 'Route wurde berechnet.',
                           {'uuid': self.uuid, 'status': GeneratorStatus.RUNNING,
-                           'route': equidistant_way_points.to_json()})
+                           'route': equidistant_way_points.to_polyline()})
 
         # name points of walk-time table
         if self.args.create_excel or self.args.create_map_pdfs:
@@ -71,7 +71,7 @@ class AutomatedWalkTableGenerator:
 
         if self.args.create_elevation_profile:
             self.__logger.debug('Boolean indicates that we should create the elevation profile.')
-            self.__log_runtime(plot_elevation_profile, "Time used to plot elevation profile excel", self.__path,
+            self.__log_runtime(plot_elevation_profile, "Benötigte Zeit zum Zeichnen des Höhenprofils", self.__path,
                                selected_way_points, pois, file_name=name,
                                open_figure=self.args.open_figure, legend_position=self.args.legend_position)
             self.__logger.log(ExportStateLogger.REQUESTABLE, 'Höhenprofil wurde erstellt.',
@@ -82,12 +82,12 @@ class AutomatedWalkTableGenerator:
             # this is much faster that for every point in the original path. As the swiss_TML_api uses a tolerance
             # of 2_000m anyway the chance to miss a map number is very small.
 
-            map_numbers = self.__log_runtime(fetch_map_numbers, "Time used to fetch map numbers", selected_way_points)
+            map_numbers = self.__log_runtime(fetch_map_numbers, "Benötigte Zeit um die Karten-Nummern zu berechnen", selected_way_points)
             self.__logger.debug("Input File Name: %s", name)
             self.__logger.debug("Map Numbers: %s", map_numbers)
 
             self.__logger.debug('Boolean indicates that we should create walk-time table as Excel file')
-            self.__log_runtime(create_walk_table, "Time used to create walk-time table as Excel",
+            self.__log_runtime(create_walk_table, "Benötigte Zeit zum Erstellen der Excel-Tabelle",
                                self.args.departure_time, self.args.velocity, selected_way_points,
                                route_name=gpx_rout_name,
                                file_name=name, creator_name=self.args.creator_name,
@@ -102,7 +102,7 @@ class AutomatedWalkTableGenerator:
                               {'uuid': self.uuid, 'status': GeneratorStatus.RUNNING})
             map_creator = MapCreator(self.__path, self.uuid)
             self.__log_runtime(map_creator.plot_route_on_map,
-                               "Time used to create map PDFs",
+                               "Benötigte Zeit zum Erstellen der Karten-PDFs",
                                selected_way_points,
                                pois=pois,
                                file_name=name,

@@ -3,6 +3,7 @@ import {environment} from "../../../environments/environment";
 import {ActivatedRoute, Router} from "@angular/router";
 import {StatusManagerService} from 'src/app/services/status-manager.service';
 import {MapAnimatorService} from "../../services/map-animator.service";
+import {decode} from "@googlemaps/polyline-codec";
 
 @Component({
   selector: 'app-download-pending',
@@ -41,21 +42,25 @@ export class DownloadPendingComponent implements OnInit {
         if (res?.route && !route_fetched) {
 
           try {
-            JSON.parse(res?.route.replace(/'/g, '"'));
+
+            const path = decode(res?.route, 0);
+            console.log(path)
+
             route_fetched = true;
-            this.mapAnimator.add_route_json(res.route);
+            this.mapAnimator.add_route(path);
+
           } catch (_) {
             // do nothing
           }
 
         }
 
-        if ('finished' == res.status) {
+        if ('Fertig' == res.status) {
           this.router.navigate(['download', this.uuid]).then();
           return;
         }
 
-        if ('error' == res.status) {
+        if ('Fehler' == res.status) {
           return;
         }
 
@@ -67,7 +72,7 @@ export class DownloadPendingComponent implements OnInit {
   }
 
   private log_network_error(err: Error) {
-    this.statusManager.status = 'error';
+    this.statusManager.status = 'Fehler';
     this.statusManager.status_message = 'Ein Netzwerk-Fehler ist aufgetreten, bitte versuche es erneut.'
     console.error(err);
   }
