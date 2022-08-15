@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
 
-  route_engine:
+  awt-route_engine:
     image: gisops/valhalla:latest
     container_name: valhalla_latest
     ports:
@@ -19,17 +19,20 @@ services:
       - build_tar=True  # build an indexed tar file from the tile_dir for faster graph loading times
       - force_rebuild=False  # forces a rebuild of the routing tiles with "True"
 
-  tile_cache:
+  awt-tile-cache:
+    image: registry.cevi.tools/cevi/awt_tile-caching:latest
     build: tile_caching
 
-  mapfish:
+  awt-mapfish:
+    image: registry.cevi.tools/cevi/awt_mapfish:latest
     build: pdf_map_export/.
     ports:
       - "8080:8080"
     depends_on:
-      - tile_cache
+      - awt-tile-cache
 
-  swiss_tml:
+  awt-swiss-tml:
+    image: registry.cevi.tools/cevi/awt_swiss-tml-api:latest
     build:
       context: swiss_TLM_api/.
     ports:
@@ -38,24 +41,28 @@ services:
       - ./swiss_TLM_api/resources:/app/resources
       - ./swiss_TLM_api/index_cache:/app/index_cache
 
-  backend:
+  awt-backend:
+    image: registry.cevi.tools/cevi/awt_backend:latest
     build:
       context: python_program/.
     ports:
       - "5000:5000"
     depends_on:
-      - mapfish
-      - swiss_tml
+      - awt-mapfish
+      - awt-swiss-tml
     environment:
       TZ: Europe/Zurich
 
-  webinterface:
+  awt-webinterface:
+    image: registry.cevi.tools/cevi/awt_webinterface:latest
     build:
-      context: webinterface/.
+      context: .
+      dockerfile: webinterface/Dockerfile
       args:
         # By default, we build in development mode. You can change the build mode by specifying $ANGULAR_CONFIGURATION.
         - configuration=${ANGULAR_CONFIGURATION:-development}
     ports:
       - "80:80"
     depends_on:
-      - backend
+      - awt-backend
+      - awt-route_engine
