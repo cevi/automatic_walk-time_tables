@@ -209,13 +209,33 @@ export class MapService extends SwisstopoMap {
     });
 
     this._map?.getViewport().addEventListener('contextmenu', (evt) => evt.preventDefault());
-    document.addEventListener('mouseup', () => {
+    document.addEventListener('mouseup', async () => {
 
       if (this.dragging && this.drag_start_before && this.drag_start_after && this.drag_end_point) {
 
         this.path_changes_layer_source.clear();
-        this.drawingHandler([this.drag_start_before, this.drag_end_point], true);
-        this.drawingHandler([this.drag_end_point, this.drag_start_after], false);
+        const [p1, path1] = await this.drawingHandler([this.drag_start_before, this.drag_end_point], true);
+        const [p2, path2] = await this.drawingHandler([this.drag_end_point, this.drag_start_after], false);
+
+        this.map_animator?.path$.pipe(take(1)).subscribe(path => {
+
+          // remove all points between p1 and p2 (using the accumulated distance)
+          const new_path: any[] = path.filter(p => {
+            const dist = p.accumulated_distance;
+            return dist <= p1.accumulated_distance || dist >= p2.accumulated_distance;
+          });
+
+          // insert path1 after p1
+          new_path.splice(new_path.findIndex(p => p.accumulated_distance === p1.accumulated_distance) + 1, 0, ...path1);
+
+          // insert path2 before p2
+          new_path.splice(new_path.findIndex(p => p.accumulated_distance === p2.accumulated_distance), 0, ...path2);
+
+          this.map_animator?.update_path(new_path);
+          this.path_changes_layer_source.clear();
+
+        });
+
 
       }
 
@@ -372,63 +392,71 @@ export class MapService extends SwisstopoMap {
 
   private async drawingHandler(coordinates: LV95_Coordinates[], route_by_start = true) {
 
-    const WGS84 = coordinates.map(c => transform([c.x, c.y], 'EPSG:2056', 'EPSG:4326'));
+    return new Promise<[LV95_Waypoint, LV95_Coordinates[]]>(async (resolve, reject) => {
+      const WGS84 = coordinates.map(c => transform([c.x, c.y], 'EPSG:2056', 'EPSG:4326'));
 
-    if (coordinates.length == 2) {
+      if (coordinates.length == 2) {
 
-      // fetch path from valhalla/valhalla at localhost:8002 with json in url
-      const url = 'http://localhost:8002/route?json=' + encodeURIComponent(JSON.stringify({
-        locations: [
-          {lat: WGS84[0][1], lon: WGS84[0][0]},
-          {lat: WGS84[1][1], lon: WGS84[1][0]},
-        ],
-        costing: 'pedestrian',
-        radius: 25
-      }));
-
-      // fetch path from valhalla/valhalla at localhost:8002
-      const data = await fetch(url, {method: 'POST'}).then(response => response.json());
-      const shape: string = data.trip.legs[0].shape;
-
-      let decoded_path = decode(shape, 6).map(p =>
-        transform([p[1], p[0]], 'EPSG:4326', 'EPSG:2056'));
-
-      this.map_animator?.path$.pipe(take(1)).subscribe(async path => {
-
-        if (route_by_start) decoded_path = decoded_path.reverse();
-
-        let near_path = true;
-        let last_elem = null
-
-        // remove points at the beginning of the path
-        while (decoded_path.length > 0 && near_path) {
-
-          let dist;
-          [last_elem, dist] = await this.get_nearest_way_point(decoded_path[decoded_path.length - 1]);
-          near_path = dist <= 25;
-          decoded_path.pop();
-
-        }
-
-        if (last_elem != null)
-          decoded_path.push([last_elem.x, last_elem.y])
-
-        if (route_by_start) decoded_path = decoded_path.reverse();
-
-
-        const feature = new Feature({
-          geometry: new LineString(decoded_path)
-        });
-
-        feature.setStyle(new Style({
-          stroke: new Stroke({color: '#e127ae', width: 5})
+        // fetch path from valhalla/valhalla at localhost:8002 with json in url
+        const url = 'http://localhost:8002/route?json=' + encodeURIComponent(JSON.stringify({
+          locations: [
+            {lat: WGS84[0][1], lon: WGS84[0][0]},
+            {lat: WGS84[1][1], lon: WGS84[1][0]},
+          ],
+          costing: 'pedestrian',
+          radius: 25
         }));
 
-        this.path_changes_layer_source?.addFeature(feature);
+        // fetch path from valhalla/valhalla at localhost:8002
+        const data = await fetch(url, {method: 'POST'}).then(response => response.json());
+        const shape: string = data.trip.legs[0].shape;
 
-      });
-    }
+        let decoded_path = decode(shape, 6).map(p =>
+          transform([p[1], p[0]], 'EPSG:4326', 'EPSG:2056'));
 
+        this.map_animator?.path$.pipe(take(1)).subscribe(async path => {
+
+          if (route_by_start) decoded_path = decoded_path.reverse();
+
+          let near_path = true;
+          let last_elem: Coordinate | undefined = undefined;
+
+          // remove points at the beginning of the path
+          while (decoded_path.length > 0 && near_path) {
+
+            let [_, dist] = await this.get_nearest_way_point(decoded_path[decoded_path.length - 1]);
+            near_path = dist <= 20;
+            last_elem = decoded_path.pop();
+
+          }
+
+          if (last_elem != null) {
+            let [last_coordinate, _] = await this.get_nearest_way_point(last_elem);
+            if (last_coordinate != null) {
+              decoded_path.push([last_coordinate.x, last_coordinate.y]);
+
+              if (route_by_start) decoded_path = decoded_path.reverse();
+
+              resolve([last_coordinate, decoded_path.map(c => {
+                return {'x': c[0], 'y': c[1]} as LV95_Coordinates;
+              })]);
+
+              const feature = new Feature({
+                geometry: new LineString(decoded_path)
+              });
+
+              feature.setStyle(new Style({
+                stroke: new Stroke({color: '#e127ae', width: 5})
+              }));
+
+              this.path_changes_layer_source?.addFeature(feature);
+
+            }
+          }
+
+        });
+      }
+    });
 
   }
 }

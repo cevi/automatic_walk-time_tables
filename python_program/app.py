@@ -107,9 +107,8 @@ def create_walk_time_table():
                 way_point.point.h = elevation_data[i][1]
                 way_point.accumulated_distance = elevation_data[i][0]
 
-        else:
-            height_fetcher_transformer = HeightFetcherTransformer()
-            path = height_fetcher_transformer.transform(path)
+        height_fetcher_transformer = HeightFetcherTransformer(gabs_only=True)
+        path = height_fetcher_transformer.transform(path)
 
         end = time.time()
         logger.info('Decoding polyline took {} seconds.'.format(end - start))
@@ -133,6 +132,8 @@ def create_walk_time_table():
 
         result_json = {
             'status': GeneratorStatus.SUCCESS,
+            'route': path.to_polyline(),
+            'route_elevation': path.to_elevation_polyline(),
             'selected_way_points': selected_way_points.to_polyline(),
             'selected_way_points_elevation': selected_way_points.to_elevation_polyline(),
             'pois': pois.to_polyline(),

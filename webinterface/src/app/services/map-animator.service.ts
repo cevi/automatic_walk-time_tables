@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {LV95_Coordinates, LV95_Waypoint} from "../helpers/coordinates";
-import {BehaviorSubject, combineLatest, Observable, Subject} from "rxjs";
+import {BehaviorSubject, combineLatest, Observable} from "rxjs";
 import {decode, encode, LatLngTuple} from "@googlemaps/polyline-codec";
 import {environment} from "../../environments/environment";
 import {take} from "rxjs/operators";
@@ -211,7 +211,7 @@ export class MapAnimatorService {
       'route': encode(path.map(p => [p.x, p.y]), 0),
       'elevation_data': encode(path.map(p => [p.accumulated_distance * 1_000, p.h]), 0),
       'pois_distance': pois
-        .sort((a, b)=> a.accumulated_distance - b.accumulated_distance)
+        .sort((a, b) => a.accumulated_distance - b.accumulated_distance)
         .map(p => `${p.accumulated_distance * 1_000}`).join(','),
     };
 
@@ -234,6 +234,10 @@ export class MapAnimatorService {
 
         if (resp?.pois_elevation == undefined)
           throw new Error('No elevation data found!');
+
+        const route = decode(resp?.route, 0);
+        const route_elevation = decode(resp?.route_elevation, 0);
+        this._path$.next(this.create_way_points(route, route_elevation));
 
         const pois = decode(resp?.pois, 0);
         const pois_elevation = decode(resp?.pois_elevation, 0);
@@ -270,6 +274,28 @@ export class MapAnimatorService {
     const way_points = this.create_way_points(path, elevation);
 
     this.update_map_center(way_points);
+    this._path$?.next(way_points);
+    this._pois$?.next([]);
+
+    combineLatest([this._path$, this._pois$]).pipe(take(1))
+      .subscribe(([path, pois]) => this.create_walk_time_table(path, pois));
+
+  }
+
+  public update_path(way_points: LV95_Waypoint[]) {
+
+    // calculate accumulated distance by adding distance between two points
+    let accumulated_distance = 0;
+    way_points.forEach((way_point, index) => {
+      if (index > 0) {
+        const previous_way_point = way_points[index - 1];
+        accumulated_distance += Math.sqrt(Math.pow(way_point.x - previous_way_point.x, 2) + Math.pow(way_point.y - previous_way_point.y, 2));
+      }
+      way_point.accumulated_distance = accumulated_distance / 1_000;
+      way_point.h = way_point.h ? way_point.h : 0.0;
+    });
+
+
     this._path$?.next(way_points);
     this._pois$?.next([]);
 
