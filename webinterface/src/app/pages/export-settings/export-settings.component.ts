@@ -1,5 +1,5 @@
 import {Component} from '@angular/core';
-import {FormBuilder, FormControl, FormGroup} from "@angular/forms";
+import {UntypedFormBuilder, UntypedFormControl, UntypedFormGroup} from "@angular/forms";
 import {MapAnimatorService} from "../../services/map-animator.service";
 import {Router} from "@angular/router";
 
@@ -10,24 +10,24 @@ import {Router} from "@angular/router";
 })
 export class ExportSettingsComponent {
 
-  options: FormGroup;
+  options: UntypedFormGroup;
   route_uploaded: boolean = false;
 
   private pois: string = '';
   public route_file: File | undefined;
 
-  constructor(private mapAnimator: MapAnimatorService, fb: FormBuilder, private router: Router) {
+  constructor(private mapAnimator: MapAnimatorService, fb: UntypedFormBuilder, private router: Router) {
 
     this.options = fb.group({
-      'velocity': new FormControl(4.5),
-      'map-scaling': new FormControl(25_000),
-      'departure-time': new FormControl((new Date()).toISOString().substring(0, 16)),
-      'creator-name': new FormControl(''),
-      'create-map-pdfs': new FormControl(true),
-      'create-excel': new FormControl(true),
-      'legend-position': new FormControl('lower right'),
-      'map-layers': new FormControl('ch.swisstopo.pixelkarte-farbe'),
-      'auto-scale': new FormControl(false),
+      'velocity': new UntypedFormControl(4.5),
+      'map-scaling': new UntypedFormControl(25_000),
+      'departure-time': new UntypedFormControl((new Date()).toISOString().substring(0, 16)),
+      'creator-name': new UntypedFormControl(''),
+      'create-map-pdfs': new UntypedFormControl(true),
+      'create-excel': new UntypedFormControl(true),
+      'legend-position': new UntypedFormControl('lower right'),
+      'map-layers': new UntypedFormControl('ch.swisstopo.pixelkarte-farbe'),
+      'auto-scale': new UntypedFormControl(false),
     });
 
 
