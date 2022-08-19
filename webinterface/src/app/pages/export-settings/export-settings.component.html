@@ -19,8 +19,8 @@
 
         <app-upload-area *ngIf="!route_uploaded" class="upload-area"
                          (file_uploaded)="new_route_uploaded($event)"></app-upload-area>
-        <app-download *ngIf="route_uploaded && route_file" [name]="route_file?.name"
-                      [changeDate]="route_file?.lastModified"></app-download>
+        <app-download *ngIf="route_uploaded && route_file" [name]="route_file.name"
+                      [changeDate]="route_file.lastModified"></app-download>
 
       </div>
 

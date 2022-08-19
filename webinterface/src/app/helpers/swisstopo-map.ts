@@ -127,7 +127,6 @@ export class SwisstopoMap {
           coordinateFormat: createStringXY(4),
           projection: 'EPSG:2056',
           target: mousePosition,
-          undefinedHTML: '&nbsp;'
         })
       ]),
     });
