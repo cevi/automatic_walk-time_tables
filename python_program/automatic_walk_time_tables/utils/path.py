@@ -1,4 +1,5 @@
 import copy
+import re
 from typing import List
 
 import polyline
@@ -123,6 +124,16 @@ class Path:
     def copy(self):
         copy_ = copy.deepcopy(self)
         return copy_
+
+    def get_filename(self):
+
+        """
+        Returns a filename safe variant of the route name.
+        The route name may contain special characters (/, ", '. ?, (, ), etc.),
+        whereas the filename does replace those with a dash.
+        """
+
+        return re.sub(r'[\W_]+', '-', self.route_name).strip().lower()
 
     def __str__(self) -> str:
         return "Path: " + self.route_name + ", points: " + str(self.__way_points)
