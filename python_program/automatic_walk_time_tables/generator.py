@@ -42,7 +42,7 @@ class AutomatedWalkTableGenerator:
                           {'uuid': self.uuid, 'status': GeneratorStatus.SUCCESS})
 
     def __create_files(self):
-        gpx_rout_name = self.__path.route_name
+        gpx_rout_name = self.__path.get_filename()
         self.__logger.debug(str(self.__path))
 
         name = self.__output_directory + 'Route' if gpx_rout_name == "" else self.__output_directory + gpx_rout_name
@@ -89,7 +89,7 @@ class AutomatedWalkTableGenerator:
             self.__logger.debug('Boolean indicates that we should create walk-time table as Excel file')
             self.__log_runtime(create_walk_table, "Benötigte Zeit zum Erstellen der Excel-Tabelle",
                                self.args.departure_time, self.args.velocity, selected_way_points,
-                               route_name=gpx_rout_name,
+                               route_name=self.__path.route_name,
                                file_name=name, creator_name=self.args.creator_name,
                                map_numbers=map_numbers)
 
