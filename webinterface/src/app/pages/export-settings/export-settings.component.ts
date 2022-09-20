@@ -87,8 +87,11 @@ export class ExportSettingsComponent implements OnInit {
       if (option === 'auto-scale')
         continue;
 
-      console.log(this.options.controls[option].value)
-      url += '&--' + option + '=' + this.options.controls[option].value.toString().replaceAll('\n', ';')
+      const setting = this.options.controls[option].value
+        .toString().replaceAll('\n', ';').replaceAll(' ', '');  // remove spaces and linebreaks
+
+      console.log(option + ": " + setting)
+      url += '&--' + option + '=' + setting;
 
     }
 
