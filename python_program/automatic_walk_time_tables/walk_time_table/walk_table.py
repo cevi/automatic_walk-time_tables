@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 
 from automatic_walk_time_tables.utils import path
 from automatic_walk_time_tables.utils.path import Path
-from automatic_walk_time_tables.utils.point import Point_LV03
+from automatic_walk_time_tables.utils.point import Point_LV95
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +108,7 @@ def create_walk_table(time_stamp, speed, way_points: Path, file_name: str,
 
     # get infos about points
     for i, pt in enumerate(way_points.way_points):
-        lv03: Point_LV03 = pt.point.to_LV03()
+        lv95: Point_LV95 = pt.point.to_LV95()
 
         # calc time
         deltaTime = 0.0
@@ -122,14 +122,14 @@ def create_walk_table(time_stamp, speed, way_points: Path, file_name: str,
         logger.debug(
             str(round(abs((oldPoint.accumulated_distance if oldPoint is not None else 0.0) - pt.accumulated_distance),
                       1)) + 'km ' +
-            str(int(lv03.h)) + 'm ü. M. ' +
+            str(int(lv95.h)) + 'm ü. M. ' +
             str(round(deltaTime, 1)) + 'h ' +
             time_stamp.strftime('%H:%M') + 'Uhr ' +
-            str((int(lv03.lat), int(lv03.lon))) + " " + pt.name)
+            str((int(lv95.lat), int(lv95.lon))) + " " + pt.name)
 
         sheet['A' + str(8 + i)] = pt.name + ' (' + str(
-            int(lv03.lat)) + ', ' + str(int(lv03.lon)) + ')'
-        sheet['C' + str(8 + i)] = int(lv03.h)
+            int(lv95.lat)) + ', ' + str(int(lv95.lon)) + ')'
+        sheet['C' + str(8 + i)] = int(lv95.h)
         if i > 0:
             sheet['E' + str(8 + i)] = round(
                 abs((oldPoint.accumulated_distance if oldPoint is not None else 0.0) - pt.accumulated_distance),
