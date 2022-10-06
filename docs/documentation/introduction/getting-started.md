@@ -4,6 +4,8 @@ The aim of this project is to automate and speed up the process of creating a J+
 tour. There are already some tools that provide valuable support for planning. Nevertheless, they are not suitable for
 planning a hike with larger groups, such as in a J+S-camp.
 
+![Claim Image](../../imgs/Claim.png)
+
 The goal of this project is to provide a tool that is suitable for planning hikes with larger groups. This is realised
 with an interactive map that allows to plan a route and to adjust the walk-time table accordingly. All based on an easy
 to user web interface.
@@ -17,11 +19,16 @@ substitute for careful planning.
 
 ## Run it Locally and Start Developing
 
-You can run the application locally with just one command. Now you can open `localhost` in your web browser. For more
-information read [get started guide](https://github.com/cevi/automatic_walk-time_tables/wiki/Get-Started).
+As of version 2.0.0, the application is split into multiple parts, each living in its separate docker container. You
+can launch the application as a bundle using the following command (Note: For all commands in the documentation, we are
+assuming you're running Linux).
+
+Docker Compose is used to launch the application. The following command will launch the application stack:
 
 ```bash
-$ docker-compose up [--build]
+docker-compose up [--build]
 ```
 
-*Note:* `--build` is optional and forces docker to rebuild the containers.
+::: info
+`--build` is optional and forces docker to rebuild the containers.
+:::
