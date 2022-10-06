@@ -22,7 +22,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build the stack
-        run: docker-compose --env-file prod.env build
+        run: docker-compose --env-file .env.prod build
 
       - name: Push containers to registry
         run: docker-compose push

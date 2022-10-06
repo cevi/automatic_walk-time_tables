@@ -3,19 +3,23 @@ version: "3.9"
 services:
 
   awt-tile-cache:
-    image: registry.cevi.tools/cevi/awt_tile-caching:latest
+    image: registry.cevi.tools/cevi/awt_tile-caching:dev
     build: tile_caching
+    env_file:
+      - .env.dev
 
   awt-mapfish:
-    image: registry.cevi.tools/cevi/awt_mapfish:latest
+    image: registry.cevi.tools/cevi/awt_mapfish:dev
     build: pdf_map_export/.
     ports:
       - "8080:8080"
     depends_on:
       - awt-tile-cache
+    env_file:
+      - .env.dev
 
   awt-swiss-tml:
-    image: registry.cevi.tools/cevi/awt_swiss-tml-api:latest
+    image: registry.cevi.tools/cevi/awt_swiss-tml-api:dev
     build:
       context: swiss_TLM_api/.
     ports:
@@ -23,9 +27,11 @@ services:
     volumes:
       - ./swiss_TLM_api/resources:/app/resources
       - ./swiss_TLM_api/index_cache:/app/index_cache
+    env_file:
+      - .env.dev
 
   awt-backend:
-    image: registry.cevi.tools/cevi/awt_backend:latest
+    image: registry.cevi.tools/cevi/awt_backend:dev
     build:
       context: python_program/.
     ports:
@@ -35,9 +41,11 @@ services:
       - awt-swiss-tml
     environment:
       TZ: Europe/Zurich
+    env_file:
+      - .env.dev
 
   awt-webinterface:
-    image: registry.cevi.tools/cevi/awt_webinterface:latest
+    image: registry.cevi.tools/cevi/awt_webinterface:dev
     build:
       context: .
       dockerfile: webinterface/Dockerfile
@@ -48,3 +56,5 @@ services:
       - "80:80"
     depends_on:
       - awt-backend
+    env_file:
+      - .env.dev

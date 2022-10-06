@@ -22,7 +22,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build the stack
-        run: docker-compose -f docker-compose.yml -f docker-compose.dev-build.yml build
+        run: docker-compose -f docker-compose.yml -f docker-compose.prod.yml build
 
       - name: Push containers to registry
-        run: docker-compose -f docker-compose.yml -f docker-compose.dev-build.yml push
+        run: docker-compose -f docker-compose.yml -f docker-compose.prod.yml push
