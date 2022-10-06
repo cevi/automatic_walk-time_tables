@@ -1,4 +1,4 @@
-![Claim Image](documentation/imgs/Claim.png)
+![Claim Image](docs/imgs/Claim.png)
 
 # J+S-Marschzeittabellen automatisiert generieren
 
