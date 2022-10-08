@@ -9,7 +9,7 @@ More information about the topographic landscape model can be found here:
 
 ## API Endpoints
 
-A detailed description of the API endpoint can be found here: [API Endpoints](API_Endpoints.md).
+A detailed description of the API endpoint can be found here: [API Endpoints](API_endpoints.md).
 
 - swiss_name: find names for given points
 - map_number: fetch the map numbers for a given path
@@ -27,16 +27,14 @@ We are using a flask server to expose the python3 module as API endpoints. You c
 commands. Once executed, the API can be accessed over http://localhost:5000/.
 
 ```bash
-$ docker build . -t cevi/swiss_tlm_api:latest
-$ docker run --publish=1848:1848 --mount type=bind,source="$(pwd)"/resources,target=/app/resources \
+docker build . -t cevi/swiss_tlm_api:latest
+docker run --publish=1848:1848 --mount type=bind,source="$(pwd)"/resources,target=/app/resources \
              --mount type=bind,source="$(pwd)"/index_cache,target=/app/index_cache \
              cevi/swiss_tlm_api:latest 
 ```
 
-The full documentation of the API endpoints can be found here: [API Endpoints](API_Endpoints.md).
 
-
-## Prerequisites
+## Prerequisites for Local Execution
 
 Make sure to download the latest version of the topographic landscape model dataset here:
 from https://www.swisstopo.admin.ch/de/geodata/landscape/tlm3d.html.
@@ -52,11 +50,3 @@ from https://www.swisstopo.admin.ch/de/geodata/landscape/tlm3d.html.
    $ unzip swissTLM3D_LV95_data.zip 
    ```
 
-## Testing of Name Finding Algorithm
-
-The name finding algorithm can be tested with a python script. This script creates an image which contains a randomly
-selected point along a very long GPX file path. The point gets annotated using the name finding algorithm.
-
-```bash
-$ python3 test_name_finding.py 
-```

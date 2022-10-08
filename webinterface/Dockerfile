@@ -4,7 +4,7 @@
 FROM node:16 as build
 
 # Set the working directory
-WORKDIR /usr/local/app
+WORKDIR /app
 
 # Install app dependencies
 COPY ./webinterface/package*.json ./
@@ -13,16 +13,20 @@ COPY ./webinterface/package*.json ./
 RUN npm ci
 
 # Add the source code to app
-COPY ./webinterface/ /usr/local/app/
-COPY ./.git/HEAD /usr/local/app/.git/HEAD
-COPY ./.git/refs/heads/ /usr/local/app/.git/refs/heads/
+COPY ./webinterface/ /app/
+COPY ./.git/HEAD /app/.git/HEAD
+COPY ./.git/refs/heads/ /app/.git/refs/heads/
 
-ARG configuration=development
+# Copy environment variables and export enviroment variables
+# This step is necessary as the environment variables are used on build time
+ARG ENVIRONMENT_FILE
+COPY ./${ENVIRONMENT_FILE} /app/${ENVIRONMENT_FILE}
 
 RUN bash create_build_info.sh
 
 # Generate the build of the application
-RUN npm run build:docker -- --configuration $configuration
+RUN export $(grep -v '^#' ./${ENVIRONMENT_FILE} | xargs) && \
+    npm run build:docker
 
 # Stage 2: Serve app with nginx server
 # Use official nginx image as the base image
@@ -32,7 +36,7 @@ FROM nginx:1.23
 COPY ./webinterface/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy the build output txo replace the default nginx contents.
-COPY --from=build /usr/local/app/dist/automatic-walk-time-tables /usr/share/nginx/html
+COPY --from=build /app/dist/automatic-walk-time-tables /usr/share/nginx/html
 
 # Expose port 80
 EXPOSE 80

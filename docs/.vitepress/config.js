@@ -2,7 +2,7 @@ export default {
 
     lang: 'en-US',
 
-    title: ' ',
+    title: 'Cevi.Tools',
     description: 'Automatic Walk-Time Tables',
 
     // TODO: configure nginx to support this!
@@ -17,7 +17,7 @@ export default {
                 text: 'Home', link: '/'
             },
             {
-                text: 'Documentation', link: 'documentation'
+                text: 'Documentation', link: '/documentation/introduction/getting-started'
             }
         ],
 
@@ -32,39 +32,78 @@ export default {
                         text: 'Application Structure', link: '/documentation/introduction/structure'
                     },
                     {
-                        text: 'Environments', link: '/documentation/introduction/environment'
+                        text: 'Runtime Modes & Environments', link: '/documentation/introduction/environment'
                     },
                 ]
             },
             {
                 text: 'Webinterface',
                 collapsible: true,
+                collapsed: true,
                 items: [
-                     {
+                    {
                         text: 'About', link: '/documentation/webinterface/about'
+                    },
+                    {
+                        text: 'Local Setup', link: '/documentation/webinterface/local-setup'
                     },
                 ]
             },
             {
                 text: 'Backend & API',
                 collapsible: true,
-                items: []
+                collapsed: true,
+                items: [
+                    {
+                        text: 'About', link: '/documentation/backend/about'
+                    },
+                    {
+                        text: 'API Endpoints', link: '/documentation/backend/API_endpoints'
+                    },
+                ]
+            },
+            {
+                text: 'Swiss TLM API',
+                collapsible: true,
+                collapsed: true,
+                items: [
+                    {
+                        text: 'About', link: '/documentation/swiss_TLM_API/about'
+                    },
+                    {
+                        text: 'API Endpoints', link: '/documentation/swiss_TLM_API/API_endpoints'
+                    },
+                    {
+                        text: 'Testing', link: '/documentation/swiss_TLM_API/testing'
+                    },
+                ]
             },
             {
                 text: 'PDF Creator',
                 collapsible: true,
-                items: []
-            },
-            {
-                text: 'Route Server',
-                collapsible: true,
-                items: []
-            },
-            {
-                text: 'Route Server',
-                collapsible: true,
+                collapsed: true,
                 items: [
-                      {
+                    {
+                        text: 'About', link: '/documentation/pdf_creator/about'
+                    },
+                ]
+            },
+            {
+                text: 'Route Server',
+                collapsible: true,
+                collapsed: true,
+                items: [
+                    {
+                        text: 'About', link: '/documentation/route_server/about'
+                    },
+                ]
+            },
+            {
+                text: 'Documentation',
+                collapsible: true,
+                collapsed: true,
+                items: [
+                    {
                         text: 'About', link: '/documentation/documentation/about'
                     },
                 ]

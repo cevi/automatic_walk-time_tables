@@ -1,4 +1,4 @@
-# API Documentation
+# Swiss TLM API Endpoints
 
 ## Endpoints
 
@@ -82,6 +82,6 @@ Body of the request:
 
 Possible response:
 
-```String
+```
 Ricken (LK 1113)
 ```

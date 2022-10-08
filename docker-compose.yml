@@ -5,20 +5,20 @@ services:
   docs:
     build:
       context: docs/.
-      dockerfile: dev-live.Dockerfile
+      dockerfile: live.Dockerfile
     ports:
-      - "4000:80"
+      - "4000:4000"
     volumes:
       - ./docs:/app/src
       - /app/src/.vitepress/dist
       - /app/src/node_modules
     env_file:
-      - .env.dev
+      - .env.live
 
   awt-tile-cache:
     build: tile_caching
     env_file:
-      - .env.dev
+      - .env.live
 
   awt-mapfish:
     build: pdf_map_export/.
@@ -27,7 +27,7 @@ services:
     depends_on:
       - awt-tile-cache
     env_file:
-      - .env.dev
+      - .env.live
 
   awt-swiss-tml:
     build:
@@ -38,7 +38,7 @@ services:
       - ./swiss_TLM_api/resources:/app/resources
       - ./swiss_TLM_api/index_cache:/app/index_cache
     env_file:
-      - .env.dev
+      - .env.live
 
   awt-backend:
     build:
@@ -51,18 +51,25 @@ services:
     environment:
       TZ: Europe/Zurich
     env_file:
-      - .env.dev
+      - .env.live
 
   awt-webinterface:
     build:
       context: .
-      dockerfile: webinterface/Dockerfile
+      dockerfile: webinterface/live.Dockerfile
+      # Used in the first stage of the Dockerfile, thus these env vars must be passed as args
       args:
-        # By default, we build in development mode. You can change the build mode by specifying $ANGULAR_CONFIGURATION.
-        - ANGULAR_BUILD_MODE=${ANGULAR_BUILD_MODE:-dev}
+        - ENVIRONMENT_FILE=.env.live
+
+    volumes:
+      - ./webinterface/src:/app/src
+      # Mount git info to container
+      - ./.git/HEAD:/app/.git/HEAD
+      - ./.git/refs/heads/:/app/.git/refs/heads/
+
     ports:
       - "80:80"
     depends_on:
       - awt-backend
     env_file:
-      - .env.dev
+      - .env.live

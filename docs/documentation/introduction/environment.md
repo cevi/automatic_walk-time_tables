@@ -1,92 +1,119 @@
-# Environments
+# Runtime Modes and Environment Variables
 
-The application can be run in different environments, each with its own purpose. Environments may influence the
-behaviour
-of the application. An incomplete list of affected parts consists of the following:
+The application can be run in different runtime modes and with different environment variables.
 
-- the logging level
-- the port and domain the application uses to call the backend
-- the build mode and compression of the Angular frontend
+We distinguish between runtime modes and environment files. The former are defined using
+`docker-compose.yml` files, the latter are defined inside environment files (`.env.*`).
+
+Runtime modes and environment Variables may influence the behaviour of the application.
 
 ::: tip
-The default environment is `dev-live`.
+The default runtime mode is `dev-live` with it's associated configuration file `.env.dev-live`.
 
 It enables live reloading/rebuilding, which is useful to develop the application.
 :::
 
-## Available Environments
+## Available Runtime Modes - How the Application is Launched
 
-The following table lists all environments and their purpose.
+Runtime modes are defined using `docker-compose.yml` files. They define how the application is launched.
 
-| Environment | Purpose                                                                                            | Default Domain Binding |
-|-------------|----------------------------------------------------------------------------------------------------|------------------------|
-| `prod`      | Production environment, as hosted on [map.cevi.tool](https://map.cevi.tool).                       | `map.cevi.tool`        |
-| `dev`       | Development environment                                                                            | `localhost`            |
-| `dev-live`  | Development environment with enabled live reloading/rebuilding usefully to develop the application | `localhost`            |
+Runtime Modes may change the behaviour of the application. An incomplete list of affected parts consists of the
+following:
 
-To specify an environment, you can extend the docker-compose command with the `-f` flag, specifying an additional
-docker-compose file.
+- whether live reloading/rebuilding is enabled or not
+- if the application is run in using a nginx server instead of the angular's built-in development server
 
-For example, to launch the `dev` environment, you can use the following command:
+The following runtime modes are available:
+
+| Environment   | Purpose                                                                                                                                       | Default Domain Binding |
+|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------|------------------------|
+| `prod-latest` | Production runtime environment, as hosted on [map.cevi.tool](https://map.cevi.tool).                                                          | `map.cevi.tool`        |
+| `prod-dev`    | Same as production mode but with different environment variables and image tags. As hosted on [dev.map.cevi.tool](https://dev.map.cevi.tool). | `localhost`            |
+| `live`        | Development runtime environment with enabled live reloading/rebuilding usefully to develop the application                                    | `localhost`            |
+| `test`        | Used to test the application                                                                                                                  | `localhost`            |
+
+To specify a mode, you can extend the docker-compose command with the `-f` flag, specifying an additional
+`docker-compose.*.yml` file.
+
+For example, to launch the `prod-dev` runtime environment, you can use the following command:
 
 ```bash
 docker-compose \
   -f docker-compose.yml \
-  -f docker-compose.dev.yml up [--build]
+  -f docker-compose.prod-dev.yml up [--build]
 ```
 
 ::: info
 `--build` is optional and forces docker to rebuild the containers.
 :::
 
-## Domain Binding - Running on Localhost
+## Environment Variables - How the Application Behaves
 
-Depending on the environment, you must set the environment variable `DOMAIN` to `localhost` if you want to run the
-application on your local machine. Setting the environment variable `DOMAIN` to `localhost` will cause the application
-to bind to `localhost` instead of the default domain binding listed above.
+Each runtime mode has its own environment file assigned. The environment file contains environment variables, which are
+used to configure the application and change its behavior. The environment file is loaded by docker-compose and passed
+to the application.
 
-Alternatively, you can force the application to bind to a specific domain by setting the environment variable `DOMAIN`
-to the domain, you want to bind to. This is useful if you want to run the application on a different domain than the
-default domain binding. E.g. used to host the dev branch in `prod` mode on `dev.map.cevi.tool`.
+Environment variables may change the behaviour of the application. An incomplete list of affected parts consists of the
+following:
 
-For the `prod` environment running on localhost, you can use the following command:
+- the logging level
+- the port and domain the application uses to call the backend
+- the build mode and compression of the Angular frontend
+
+### Domain Binding - Running on Localhost
+
+Depending on the runtime environment, you must overwrite the environment variable `BACKEND_DOMAIN` to `localhost` if you
+want to run the application on your local machine. Setting `BACKEND_DOMAIN` to `http://localhost:5000` will cause the
+application to bind to `localhost:5000` instead of the default domain binding listed above.
+
+Alternatively, you can force the application to bind to a specific domain by setting `BACKEND_DOMAIN` to the domain, you
+want to bind to. This is useful if you want to run the application on a different domain than the
+default domain binding.
+
+::: info
+
+The URL must not contain a trailing slash but include the protocol (e.g. `http://` or `https://`).
+E.g. specified as `http://localhost:5000` or `https://map.cevi.tool`.
+:::
+
+To force the `prod-latest` runtime environment to run on localhost, you can use the following command:
 
 ```bash
 docker-compose \
   -f docker-compose.yml \
-  -f docker-compose.prod.yml \ 
+  -f docker-compose.prod-latest.yml \ 
   -e DOMAIN=localhost up [--build]
 ```
 
-## Production Environment
+## Runtime Modes
+
+### Runtime Mode: `prod-latest`
 
 The production environment is the environment, which is used to host the application
 on [map.cevi.tool](https://map.cevi.tool). You can use the following command to start the application in production
 mode:
 
 ```bash
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up --build
+docker-compose -f docker-compose.yml -f docker-compose.prod-latest.yml up --build
 ```
 
-### Configuration
+In this mode all webservers use a nginx server to serve the application.
+
+#### Environment Variables
 
 The production environment is configured as follows:
 
-#### Optimized Build
+```
+ANGULAR_BUILD_MODE=production
+BACKEND_DOMAIN=https://map.cevi.tools
+```
 
-In the production environment the application runs in optimized mode, which means that the frontend
-is compressed and minified.
+Which causes the following behaviour:
 
-#### Logging Level
-
-::: warning
-Not yet standardized!
-:::
-
-#### Domain Binding
-
-If the environment variable `DOMAIN` is not set, the application will bind to `*.map.cevi.tool`.
-This means that the frontend is calling `backend.map.cevi.tool` to access the backend.
+- **Optimized Build:** In the production environment the application runs in optimized mode, which means that the
+  frontend is compressed and minified.
+- **Logging Level:** The logging level is set to `warn`.
+- **Domain Binding:** The backend domain is set to `https://map.cevi.tools`.
 
 ::: tip
 You can force the application to bind to a specific domain by setting the environment variable `DOMAIN`.
@@ -100,4 +127,37 @@ The docker images are tagged in the following way:
 ```
 registry.cevi.tools/cevi/awt_{{service name}}>:latest
 ```
+
+### Runtime Mode: `prod-latest`
+
+Similar to the production environment, but with different environment `BACKEND_DOMAIN` and image tags.
+
+#### Docker Image Tags
+
+The docker images are tagged in the following way:
+
+```
+registry.cevi.tools/cevi/awt_{{service name}}>:dev
+```
+
+### Runtime Mode: `live`
+
+In this mode the application is run using the Angular development server. This mode is useful to develop the application
+and enables live reloading/rebuilding. Reloading is also enabled for the backend and documentation server.
+
+To start the application in live mode, you can use the following command:
+
+```bash
+docker-compose up --build
+```
+
+#### Docker Image Tags
+
+Docker images are not tagged in this mode.
+
+### Runtime Mode: `test`
+
+:::warning
+NOT yet available!
+:::
 

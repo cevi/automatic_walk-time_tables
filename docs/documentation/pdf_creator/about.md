@@ -9,8 +9,8 @@ exports. We relay on the default `camptocamp/mapfish_print` docker container, wh
 Once you have Docker installed on your system, you can start the MapFish print server by calling:
 
 ```bash
-$ docker build . -t cevi/walktable_mapfish:latest
-$ docker run --publish=8080:8080  cevi/walktable_mapfish:latest
+docker build . -t cevi/walktable_mapfish:latest
+docker run --publish=8080:8080  cevi/walktable_mapfish:latest
 ```
 
 ## Test your MapFish Instance

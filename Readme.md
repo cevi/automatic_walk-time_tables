@@ -73,12 +73,12 @@ substitute for careful planning.
 ## Run it Locally and Start Developing
 
 You can run the application locally with just one command. Now you can open `localhost` in your web browser. For more
-information take a look at our documentation: [Get Started Guide](https://github.com/cevi/automatic_walk-time_tables/wiki/Get-Started).
+information take a look at our documentation: [Getting Started](https://docs.map.cevi.tools/).
+
+This will serve the documentation of this project, you can access it by opening `localhost:4000` in your web browser.
 
 ```bash
 $ docker-compose up [--build]
 ```
 
 *Note:* `--build` is optional and forces docker to rebuild the containers.
-
-
