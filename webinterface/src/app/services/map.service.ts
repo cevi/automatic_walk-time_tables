@@ -150,7 +150,7 @@ export class MapService extends SwisstopoMap {
 
   }
 
-  public draw_map(layerLabel: string = 'pixelkarte') {
+  public draw_map(layerLabel: string = 'pixelkarte', target_canvas: string = 'map-canvas') {
 
     // get base layers
     const wmtsLayer = this.get_base_WMTS_layer(layerLabel);
@@ -163,7 +163,7 @@ export class MapService extends SwisstopoMap {
       wmtsLayer_overlay,
       new VectorLayer({source: this.pointer_layer_source}),
       new VectorLayer({source: this.way_points_layer_source}),
-    ]);
+    ], target_canvas);
 
     this.render_pointer(wmtsLayer_overlay);
     this.register_listeners();
