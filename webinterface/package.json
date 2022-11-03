@@ -1,6 +1,6 @@
 {
   "name": "automatic-walk-time-tables",
-  "version": "2.3.2",
+  "version": "2.3.3",
   "scripts": {
     "ng": "ng",
     "start": "angular-build-info && ng serve",
@@ -22,6 +22,8 @@
     "@angular/platform-browser-dynamic": "~12.2.0",
     "@angular/router": "~12.2.0",
     "@googlemaps/polyline-codec": "^1.0.28",
+    "echarts": "^5.3.3",
+    "ngx-echarts": "6.0.1",
     "ol": "^6.15.1",
     "proj4": "^2.8.0",
     "rxjs": "~6.6.0",

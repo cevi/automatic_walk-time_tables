@@ -1,4 +1,5 @@
 import copy
+import re
 from typing import List
 
 import polyline
@@ -124,6 +125,16 @@ class Path:
         copy_ = copy.deepcopy(self)
         return copy_
 
+    def get_filename(self):
+
+        """
+        Returns a filename safe variant of the route name.
+        The route name may contain special characters (/, ", '. ?, (, ), etc.),
+        whereas the filename does replace those with a dash.
+        """
+
+        return re.sub(r'[\W_]+', '-', self.route_name).strip().lower()
+
     def __str__(self) -> str:
         return "Path: " + self.route_name + ", points: " + str(self.__way_points)
 
@@ -139,6 +150,11 @@ class Path:
 
     def to_polyline(self):
         return polyline.encode(
-            list(map(lambda pkt: (pkt.point.to_LV95().lat, pkt.point.to_LV95().lon), self.__way_points)),
-            0
-        )
+            list(map(lambda pkt: (pkt.point.to_LV95().lat, pkt.point.to_LV95().lon), self.__way_points)), 0)
+
+    def to_elevation_polyline(self):
+        return polyline.encode(
+            list(map(lambda pkt: (pkt.accumulated_distance, pkt.point.h), self.__way_points)), 0)
+
+    def get_names(self):
+        return [wp.name for wp in self.__way_points]

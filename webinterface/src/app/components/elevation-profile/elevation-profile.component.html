@@ -1,0 +1,8 @@
+<div class="elevation-map" *ngIf="plot_options != {}">
+  <h3>Höhenprofil:</h3>
+  <p>Mit einem Klick ins Höhenprofil kannst du zusätzliche Wegpunkte einfügen. Diese werden falls
+    möglich berücksichtigt. </p>
+  <div id="chart" (click)="mouseClick()" (mousemove)="mouseMove()" (mouseout)="mouseOut()" echarts
+       [options]="plot_options"></div>
+  <span> Anzahl Wegpunkte: {{number_of_way_points}} / max 21 | Anzahl Point-of-Interest: {{number_of_pois}}</span>
+</div>
