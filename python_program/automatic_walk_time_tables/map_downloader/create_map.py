@@ -7,6 +7,7 @@ from typing import List
 
 import numpy as np
 import requests
+from PyPDF2 import PdfFileReader, PdfFileMerger
 from pyclustering.cluster.kmeans import kmeans
 from pyclustering.utils.metric import type_metric, distance_metric
 
@@ -184,6 +185,15 @@ class MapCreator:
 
             self.logger.info("Saved map to {}_{}_map.pdf".format(file_name, index))
 
+        # combine the PDFs into a single file
+        merger = PdfFileMerger()
+        for index, map_center in enumerate(map_centers):
+            merger.append(PdfFileReader('{}_{}_map.pdf'.format(file_name, index), 'rb'))
+            os.remove('{}_{}_map.pdf'.format(file_name, index))
+
+        merger.write('{}_maps.pdf'.format(file_name))
+
+
     def create_mapfish_query(self, map_layers, map_scaling, center, way_points: path.Path, pois: path.Path):
         """
 
@@ -351,7 +361,7 @@ class MapCreator:
             image_type = 'png'
 
         return {
-            "baseURL": "http://wmts.geo.admin.ch/1.0.0/{Layer}/{style}/{Time}/{TileMatrixSet}/{TileMatrix}/{TileCol}/{TileRow}." + image_type,
+            "baseURL": "https://wmts.geo.admin.ch/1.0.0/{Layer}/{style}/{Time}/{TileMatrixSet}/{TileMatrix}/{TileCol}/{TileRow}." + image_type,
             "dimensions": ["Time"],
             "dimensionParams": {"Time": "current"},
             "name": layer,

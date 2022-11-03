@@ -18,7 +18,7 @@ from server_logging.status_handler import ExportStateLogger
 
 class AutomatedWalkTableGenerator:
 
-    def __init__(self, args: argparse.Namespace, uuid: str, options: dict, file_content: str = ''):
+    def __init__(self, args: argparse.Namespace, uuid: str = ''):
 
         self.args = args
         self.uuid = uuid
@@ -27,14 +27,8 @@ class AutomatedWalkTableGenerator:
         for arg in vars(self.args):
             self.__logger.debug("  %s: %s", arg, getattr(self.args, arg))
 
-        if 'file_type' not in options or options['file_type'] is None:
-            raise Exception('No file ending provided.')
-
-        if file_content is None:
-            raise Exception('No GPX/KML file provided with the POST request.')
-
-        geo_file_parser = GeoFileParser(fetch_elevation=False)
-        self.__path = geo_file_parser.parse(file_content=file_content, extension=options['file_type'])
+        geo_file_parser = GeoFileParser()
+        self.__path = geo_file_parser.parse(self.args.file_name)
 
         self.__output_directory = args.output_directory
         pathlib.Path(self.__output_directory).mkdir(parents=True, exist_ok=True)
@@ -48,7 +42,7 @@ class AutomatedWalkTableGenerator:
                           {'uuid': self.uuid, 'status': GeneratorStatus.SUCCESS})
 
     def __create_files(self):
-        gpx_rout_name = self.__path.route_name
+        gpx_rout_name = self.__path.get_filename()
         self.__logger.debug(str(self.__path))
 
         name = self.__output_directory + 'Route' if gpx_rout_name == "" else self.__output_directory + gpx_rout_name
@@ -88,15 +82,14 @@ class AutomatedWalkTableGenerator:
             # this is much faster that for every point in the original path. As the swiss_TML_api uses a tolerance
             # of 2_000m anyway the chance to miss a map number is very small.
 
-            map_numbers = self.__log_runtime(fetch_map_numbers, "Benötigte Zeit um die Karten-Nummern zu berechnen",
-                                             selected_way_points)
+            map_numbers = self.__log_runtime(fetch_map_numbers, "Benötigte Zeit um die Karten-Nummern zu berechnen", selected_way_points)
             self.__logger.debug("Input File Name: %s", name)
             self.__logger.debug("Map Numbers: %s", map_numbers)
 
             self.__logger.debug('Boolean indicates that we should create walk-time table as Excel file')
             self.__log_runtime(create_walk_table, "Benötigte Zeit zum Erstellen der Excel-Tabelle",
                                self.args.departure_time, self.args.velocity, selected_way_points,
-                               route_name=gpx_rout_name,
+                               route_name=self.__path.route_name,
                                file_name=name, creator_name=self.args.creator_name,
                                map_numbers=map_numbers)
 
