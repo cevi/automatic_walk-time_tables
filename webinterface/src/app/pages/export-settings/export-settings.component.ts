@@ -1,20 +1,23 @@
-import {Component} from '@angular/core';
+import {Component, OnInit} from '@angular/core';
+import {environment} from "../../../environments/environment";
 import {FormBuilder, FormControl, FormGroup} from "@angular/forms";
 import {MapAnimatorService} from "../../services/map-animator.service";
 import {Router} from "@angular/router";
-import {decode, encode} from "@googlemaps/polyline-codec";
+import {decode} from "@googlemaps/polyline-codec";
 
 @Component({
   selector: 'app-export-settings',
   templateUrl: './export-settings.component.html',
   styleUrls: ['./export-settings.component.scss']
 })
-export class ExportSettingsComponent {
+export class ExportSettingsComponent implements OnInit {
+
+  static baseURL = environment.API_URL;
+  uuid: string = '';
 
   options: FormGroup;
   route_uploaded: boolean = false;
-
-  public route_file: File | undefined;
+  public route_file: File | undefined = undefined;
 
   constructor(private mapAnimator: MapAnimatorService, fb: FormBuilder, private router: Router) {
 
@@ -27,6 +30,7 @@ export class ExportSettingsComponent {
       'create-excel': new FormControl(true),
       'legend-position': new FormControl('lower right'),
       'map-layers': new FormControl('ch.swisstopo.pixelkarte-farbe'),
+      'list-of-pois': new FormControl(''),
       'auto-scale': new FormControl(false),
     });
 
@@ -46,34 +50,7 @@ export class ExportSettingsComponent {
 
   }
 
-
-  public new_route_uploaded(route_file: File) {
-
-    this.route_file = route_file;
-    this.route_uploaded = true;
-    this.mapAnimator.replace_route(route_file).then();
-
-  }
-
-
-  public delete_route_file() {
-
-    this.route_uploaded = false;
-    this.mapAnimator.clear();
-
-  }
-
-  public download_map() {
-
-    console.log('Downloading map...')
-    this.mapAnimator.download_map(this.options.value).then(
-      (uuid) => this.router.navigate(['pending', uuid])
-      );
-
-
-  }
-
-  private isJsonString(str: string): boolean {
+  isJsonString(str: string): boolean {
     try {
       JSON.parse(str);
     } catch (e) {
@@ -82,5 +59,95 @@ export class ExportSettingsComponent {
     return true;
   }
 
+  ngOnInit(): void {
+  }
+
+
+  download_map() {
+
+    localStorage['form_values'] = JSON.stringify(this.options.value);
+
+    if (!this.route_uploaded || !this.route_file)
+      return
+
+    let formData = new FormData();
+
+    formData.append("file", this.route_file);
+
+    let url = ExportSettingsComponent.baseURL + 'create?';
+
+    for (const option in this.options.controls) {
+
+      if (['creator-name', 'list-of-pois'].includes(option) && !this.options.controls[option].value.length)
+        continue;
+
+      if (option === 'map-scaling' && this.options.controls['auto-scale'].value)
+        continue;
+
+      if (option === 'auto-scale')
+        continue;
+
+      console.log(this.options.controls[option].value)
+      url += '&--' + option + '=' + this.options.controls[option].value.toString().replaceAll('\n', ';')
+
+    }
+
+
+    fetch(url, {
+      method: "POST",
+      headers: {
+        Accept: 'text/plain',
+      },
+      body: formData
+    })
+      .then(response => response.text())
+      .then((resp: any) => {
+        const response = JSON.parse(resp)
+        this.uuid = response['uuid'];
+      })
+      .finally(() => this.router.navigate(['pending', this.uuid]));
+
+  }
+
+
+  new_route_uploaded(route_file: File) {
+
+    this.route_uploaded = true;
+    this.route_file = route_file
+
+  }
+
+
+  delete_route_file() {
+
+    this.route_uploaded = false;
+
+  }
+
+  fetch_route() {
+
+    if (!this.route_uploaded || !this.route_file)
+      return
+
+    let formData = new FormData();
+    formData.append("file", this.route_file);
+
+    let url = ExportSettingsComponent.baseURL + 'parse_route';
+
+    fetch(url, {
+      method: "POST",
+      headers: {
+        Accept: 'text/plain',
+      },
+      body: formData
+    })
+      .then(response => response.json())
+      .then((resp: any) => {
+        console.log(resp)
+        const path = decode(resp?.route, 0);
+        this.mapAnimator.add_route(path).then();
+      });
+
+  }
 
 }

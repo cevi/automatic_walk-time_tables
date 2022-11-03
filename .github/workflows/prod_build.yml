@@ -1,4 +1,4 @@
-name: DevBuild
+name: Productiv / Deployment Build
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - 'master'
 
 env:
-  ANGULAR_CONFIGURATION: dev_build
+  ANGULAR_CONFIGURATION: production
 
 jobs:
   prodBuild:
