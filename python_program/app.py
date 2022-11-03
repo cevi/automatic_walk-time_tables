@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import argparse
 import functools
 import io
 import json
@@ -17,6 +16,7 @@ import polyline
 from flask import Flask, request, send_file
 from flask_cors import CORS
 
+from automatic_walk_time_tables.arg_parser import get_parser
 from automatic_walk_time_tables.path_transformers.douglas_peucker_transformer import DouglasPeuckerTransformer
 from automatic_walk_time_tables.path_transformers.equidistant_transfomer import EquidistantTransformer
 from automatic_walk_time_tables.path_transformers.heigth_fetcher_transfomer import HeightFetcherTransformer
@@ -33,7 +33,6 @@ setup_recursive_logger(logging.INFO, stateLogger)
 from automatic_walk_time_tables.generator import AutomatedWalkTableGenerator
 from automatic_walk_time_tables.utils.file_parser import GeoFileParser
 
-from automatic_walk_time_tables.arg_parser import get_parser
 from automatic_walk_time_tables.generator_status import GeneratorStatus
 
 logger = logging.getLogger(__name__)
@@ -98,21 +97,11 @@ def create_walk_time_table():
 
         start = time.time()
 
-        path = Path(list(map(lambda pkt: Point_LV95(lat=pkt[0], lon=pkt[1]), polyline.decode(options['route'], 0))))
-
-        if 'elevation_data' in options:
-
-            elevation_data = polyline.decode(options['elevation_data'], 0)
-            for i, way_point in enumerate(path.way_points):
-                way_point.point.h = elevation_data[i][1]
-                way_point.accumulated_distance = elevation_data[i][0]
-
-        else:
-            height_fetcher_transformer = HeightFetcherTransformer()
-            path = height_fetcher_transformer.transform(path)
+        path = extract_path(options)
 
         end = time.time()
         logger.info('Decoding polyline took {} seconds.'.format(end - start))
+
         start = time.time()
 
         # calc POIs for the path
@@ -145,43 +134,37 @@ def create_walk_time_table():
             response=json.dumps({'status': GeneratorStatus.ERROR, 'message': 'Invalid Encoding of route.'}),
             status=500, mimetype='application/json')
 
-    return app.response_class(
-        response=json.dumps({'status': GeneratorStatus.SUCCESS}),
-        status=200, mimetype='application/json')
+
+def extract_path(options, coords_field='route', elevation_field='elevation_data'):
+    path = Path(list(map(lambda pkt: Point_LV95(lat=pkt[0], lon=pkt[1]), polyline.decode(options[coords_field], 0))))
+    if elevation_field in options:
+
+        elevation_data = polyline.decode(options[elevation_field], 0)
+        for i, way_point in enumerate(path.way_points):
+            way_point.point.h = elevation_data[i][1]
+            way_point.accumulated_distance = elevation_data[i][0]
+
+    else:
+        height_fetcher_transformer = HeightFetcherTransformer()
+        path = height_fetcher_transformer.transform(path)
+
+    return path
 
 
-@app.route('/create', methods=['POST'])
+@app.route('/create_map', methods=['POST'])
 def create_map():
     uuid = str(uuid_factory.uuid4().hex)
 
-    logger.debug('New request to create_map().', {'uuid': uuid})
+    if request.is_json:
+        options = request.get_json()
+    elif 'options' in request.form:
+        options = json.loads(request.form['options'])
+    else:
+        return app.response_class(
+            response=json.dumps({'status': GeneratorStatus.ERROR, 'message': 'Invalid request format.'}),
+            status=500, mimetype='application/json')
 
-    # Save file to input directory
-    result = save_file(uuid)
-
-    # check result of save_file function
-    if isinstance(result, Response):
-        return result
-    file_name = result
-
-    output_directory = 'output/' + uuid + '/'
-
-    logger.log(ExportStateLogger.REQUESTABLE, 'Export wird vorbereitet.',
-               {'uuid': uuid, 'status': GeneratorStatus.RUNNING})
-
-    parser = get_parser()
-    args_as_dict = request.args.to_dict(flat=True)
-    args = list(functools.reduce(lambda x, y: x + y, args_as_dict.items()))
-    args = list(filter(lambda x: x != '', args))
-    args = parser.parse_args(['-fn', '', '--output_directory', output_directory, '--print-api-base-url',
-                              os.environ['PRINT_API_BASE_URL']] + args)
-
-    options = json.loads(request.form['options'])
-    logger.info('Options: {}'.format(options))
-    file_content = request.form['file_content']
-
-    thread = Thread(target=create_export,
-                    kwargs={'uuid': uuid, 'args': args, 'options': options, 'file_content': file_content})
+    thread = Thread(target=create_export, kwargs={'options': options, 'uuid': uuid})
     thread.start()
 
     # Send the download link to the user
@@ -192,8 +175,68 @@ def create_map():
     return response
 
 
+def create_export(options, uuid):
+    path, way_points, pois = None, None, None
+
+    # Decode options['route'] form polyline
+    if 'encoding' in options and options['encoding'] == 'polyline':
+        start = time.time()
+
+        path = extract_path(options, 'route', 'route_elevation')
+        way_points = extract_path(options, 'way_points', 'way_points_elevation')
+
+        # calc POIs for the path
+        pois_transformer = POIsTransformer(
+            pois_list_as_str=options['pois'] if 'pois' in options else '',
+            pois_distance_str=options['pois_distance'] if 'pois_distance' in options else '')
+        pois: Path = pois_transformer.transform(path)
+
+        end = time.time()
+        logger.info('Decoding polylines took {} seconds.'.format(end - start))
+
+    output_directory = 'output/' + uuid + '/'
+
+    logger.log(ExportStateLogger.REQUESTABLE, 'Export wird vorbereitet.',
+               {'uuid': uuid, 'status': GeneratorStatus.RUNNING})
+
+    options['print-api-base-url'] = os.environ['PRINT_API_BASE_URL']
+    options['output_directory'] = output_directory
+    print('UUID: {}'.format(uuid))
+
+    parser = get_parser()
+
+    # load settings
+    args_as_dict = options['settings']
+    args = args_as_dict.items()
+    args = map(lambda arg: ('--' + arg[0], str(arg[1])), args)
+    args = list(functools.reduce(lambda x, y: x + y, args))
+
+    # load flags
+    args.extend(map(lambda arg: '--' + arg, options['flags']))
+    logger.info('Args: {}'.format(args))
+
+    args, _ = parser.parse_known_args(['-fn', '', '--output_directory', output_directory, '--print-api-base-url',
+                                       os.environ['PRINT_API_BASE_URL']] + args)
+
+    # TODO: Remove args form generator and replace with options JSON (everywhere inside the generator code)
+
+    generator = None
+
+    try:
+        generator = AutomatedWalkTableGenerator(args, uuid, options, manual_mode=True)
+        generator.set_data(path, way_points, pois)
+        generator.run()
+
+    finally:
+        export_state = stateHandler.get_status(uuid)['status']
+        if not generator or export_state == GeneratorStatus.RUNNING:
+            logger.log(ExportStateLogger.REQUESTABLE,
+                       'Der Export ist fehlgeschlagen. Ein unbekannter Fehler ist aufgetreten!',
+                       {'uuid': uuid, 'status': GeneratorStatus.ERROR})
+
+
 @app.route('/status/<uuid>')
-def return_status(uuid):
+def status(uuid):
     response = app.response_class(
         response=json.dumps(stateHandler.get_status(uuid)),
         status=200, mimetype='application/json')
@@ -201,7 +244,7 @@ def return_status(uuid):
 
 
 @app.route('/download/<uuid>')
-def request_zip(uuid):
+def download(uuid):
     # Check if export is completed and still present in the 'output' folder
     base_path = pathlib.Path('./output/' + uuid + '/')
     state = stateHandler.get_status(uuid)
@@ -231,26 +274,6 @@ def request_zip(uuid):
             as_attachment=True,
             attachment_filename='Download.zip'
         )
-
-
-def create_export(uuid: str, args: argparse.Namespace, options, file_content):
-    logger.log(ExportStateLogger.REQUESTABLE, 'Der Export wurde gestartet.',
-               {'uuid': uuid, 'status': GeneratorStatus.RUNNING})
-
-    generator = None
-
-    try:
-        generator = AutomatedWalkTableGenerator(args, uuid, options, file_content)
-        generator.run()
-
-    finally:
-
-        export_state = stateHandler.get_status(uuid)['status']
-
-        if not generator or export_state == GeneratorStatus.RUNNING:
-            logger.log(ExportStateLogger.REQUESTABLE,
-                       'Der Export ist fehlgeschlagen. Ein unbekannter Fehler ist aufgetreten!',
-                       {'uuid': uuid, 'status': GeneratorStatus.ERROR})
 
 
 if __name__ == "__main__":

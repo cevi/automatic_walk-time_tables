@@ -38,20 +38,6 @@ export class DownloadPendingComponent implements OnInit {
         this.statusManager.last_change = res.last_change
         this.statusManager.history = res.history
 
-
-        if (res?.route && !route_fetched) {
-
-
-          const path = decode(res?.route, 0);
-          console.log(path)
-
-          route_fetched = true;
-          // this.mapAnimator.set_route(path);
-          throw new Error('Not implemented yet');
-
-
-        }
-
         if ('success' == res.status) {
           this.router.navigate(['download', this.uuid]).then();
           return;
