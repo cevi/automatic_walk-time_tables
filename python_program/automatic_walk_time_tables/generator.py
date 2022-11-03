@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import logging
 import pathlib
@@ -18,20 +20,41 @@ from server_logging.status_handler import ExportStateLogger
 
 class AutomatedWalkTableGenerator:
 
-    def __init__(self, args: argparse.Namespace, uuid: str = ''):
+    def __init__(self,
+                 args: argparse.Namespace,
+                 uuid: str,
+                 options: dict,
+                 file_content: str = '',
+                 manual_mode=False):
+
+        self.__path: path.Path | None = None
+        self.__pois: path.Path | None = None
+        self.__way_points: path.Path | None = None
 
         self.args = args
         self.uuid = uuid
         self.__logger = logging.getLogger(__name__)
 
+        self.__output_directory = args.output_directory if args else 'output/' + uuid + '/'
+        pathlib.Path(self.__output_directory).mkdir(parents=True, exist_ok=True)
+
+        # Do nothing in manual mode
+        if manual_mode:
+            return
+
         for arg in vars(self.args):
             self.__logger.debug("  %s: %s", arg, getattr(self.args, arg))
 
-        geo_file_parser = GeoFileParser()
-        self.__path = geo_file_parser.parse(self.args.file_name)
+        if 'file_type' not in options or options['file_type'] is None:
+            raise Exception('No file ending provided.')
 
-        self.__output_directory = args.output_directory
-        pathlib.Path(self.__output_directory).mkdir(parents=True, exist_ok=True)
+        if file_content is None:
+            raise Exception('No GPX/KML file provided with the POST request.')
+
+        geo_file_parser = GeoFileParser(fetch_elevation=False)
+        self.__path = geo_file_parser.parse(file_content=file_content, extension=options['file_type'])
+
+
 
     def run(self):
         self.__log_runtime(self.__create_files, "Benötigte Zeit für Export")
@@ -42,20 +65,21 @@ class AutomatedWalkTableGenerator:
                           {'uuid': self.uuid, 'status': GeneratorStatus.SUCCESS})
 
     def __create_files(self):
-        gpx_rout_name = self.__path.get_filename()
-        self.__logger.debug(str(self.__path))
+        gpx_rout_name = self.__path.route_name
 
         name = self.__output_directory + 'Route' if gpx_rout_name == "" else self.__output_directory + gpx_rout_name
 
         # calc POIs for the path
-        pois_transformer = POIsTransformer(self.args.list_of_pois)
-        pois: path.Path = pois_transformer.transform(self.__path)
+        if self.__pois is None:
+            pois_transformer = POIsTransformer(self.args.list_of_pois)
+            self.__pois: path.Path = pois_transformer.transform(self.__path)
 
         # calc points for walk-time table
-        douglas_peucker_transformer = DouglasPeuckerTransformer(number_of_waypoints=21, pois=pois)
-        selected_way_points: path.Path = self.__log_runtime(douglas_peucker_transformer.transform,
-                                                            "Benötigte Zeit zum Berechnen der Marschzeittabelle",
-                                                            self.__path)
+        if self.__way_points is None:
+            douglas_peucker_transformer = DouglasPeuckerTransformer(number_of_waypoints=21, pois=self.__pois)
+            self.__way_points: path.Path = self.__log_runtime(douglas_peucker_transformer.transform,
+                                                              "Benötigte Zeit zum Berechnen der Marschzeittabelle",
+                                                              self.__path)
 
         equidistant_transformer = EquidistantTransformer(equidistant_distance=1)
         equidistant_way_points: path.Path = equidistant_transformer.transform(self.__path)
@@ -67,12 +91,12 @@ class AutomatedWalkTableGenerator:
         # name points of walk-time table
         if self.args.create_excel or self.args.create_map_pdfs:
             naming_fetcher = NamingTransformer()
-            selected_way_points = naming_fetcher.transform(selected_way_points)
+            self.__way_points = naming_fetcher.transform(self.__way_points)
 
         if self.args.create_elevation_profile:
             self.__logger.debug('Boolean indicates that we should create the elevation profile.')
             self.__log_runtime(plot_elevation_profile, "Benötigte Zeit zum Zeichnen des Höhenprofils", self.__path,
-                               selected_way_points, pois, file_name=name,
+                               self.__way_points, self.__pois, file_name=name,
                                open_figure=self.args.open_figure, legend_position=self.args.legend_position)
             self.__logger.log(ExportStateLogger.REQUESTABLE, 'Höhenprofil wurde erstellt.',
                               {'uuid': self.uuid, 'status': GeneratorStatus.RUNNING})
@@ -82,14 +106,15 @@ class AutomatedWalkTableGenerator:
             # this is much faster that for every point in the original path. As the swiss_TML_api uses a tolerance
             # of 2_000m anyway the chance to miss a map number is very small.
 
-            map_numbers = self.__log_runtime(fetch_map_numbers, "Benötigte Zeit um die Karten-Nummern zu berechnen", selected_way_points)
+            map_numbers = self.__log_runtime(fetch_map_numbers, "Benötigte Zeit um die Karten-Nummern zu berechnen",
+                                             self.__way_points)
             self.__logger.debug("Input File Name: %s", name)
             self.__logger.debug("Map Numbers: %s", map_numbers)
 
             self.__logger.debug('Boolean indicates that we should create walk-time table as Excel file')
             self.__log_runtime(create_walk_table, "Benötigte Zeit zum Erstellen der Excel-Tabelle",
-                               self.args.departure_time, self.args.velocity, selected_way_points,
-                               route_name=self.__path.route_name,
+                               self.args.departure_time, self.args.velocity, self.__way_points,
+                               route_name=gpx_rout_name,
                                file_name=name, creator_name=self.args.creator_name,
                                map_numbers=map_numbers)
 
@@ -103,8 +128,8 @@ class AutomatedWalkTableGenerator:
             map_creator = MapCreator(self.__path, self.uuid)
             self.__log_runtime(map_creator.plot_route_on_map,
                                "Benötigte Zeit zum Erstellen der Karten-PDFs",
-                               selected_way_points,
-                               pois=pois,
+                               self.__way_points,
+                               pois=self.__pois,
                                file_name=name,
                                map_scaling=self.args.map_scaling,
                                map_layers=list(map(lambda layer: layer.strip(), self.args.map_layers.split(','))),
@@ -120,3 +145,14 @@ class AutomatedWalkTableGenerator:
                           log_string + ': %ss' % round((time.time() - start), 2),
                           {'uuid': self.uuid, 'status': GeneratorStatus.RUNNING})
         return results
+
+    def set_data(self, path_data: path.Path, way_points: path.Path, pois: path.Path):
+
+        self.__logger.debug('Setting data for the generator.')
+        self.__logger.debug('Length of pois: %s', pois)
+        self.__logger.debug('Length of way_points: %s', way_points)
+        self.__logger.debug('Length of path_data: %s', path_data)
+
+        self.__path = path_data
+        self.__way_points = way_points
+        self.__pois = pois
