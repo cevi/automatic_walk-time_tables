@@ -43,8 +43,13 @@ services:
   awt-backend:
     build:
       context: python_program/.
+      dockerfile: live.Dockerfile
     ports:
       - "5000:5000"
+
+    volumes:
+      - ./python_program:/app
+
     depends_on:
       - awt-mapfish
       - awt-swiss-tml
