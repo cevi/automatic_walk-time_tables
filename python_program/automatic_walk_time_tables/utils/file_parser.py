@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import logging
 import pathlib
-from typing import List, TextIO
+from typing import List
 
 import gpxpy
 
@@ -16,25 +18,58 @@ class GeoFileParser(object):
     """
 
     def __init__(self, fetch_elevation=True):
+        """
+        Constructor for GeoFileParser. This class can parse GPX and KML files.
+
+        :param fetch_elevation: If true, the parser will fetch the elevation for all
+        points (if not already present in the parsed file)
+
+        """
         self.__logger = logging.getLogger(__file__)
         self.height_fetcher = HeightFetcherTransformer(min_number_of_points=2500)
         self.fetch_elevation = fetch_elevation
 
-    def parse(self, file_name: str) -> path.Path:
-        route_file = open(file_name, 'r')
-        self.__logger.debug("Reading %s", file_name)
+    def parse(self, file_path: str = None, file_content: str = '', extension: str | None = None) -> path.Path:
 
-        # get the extension of the file
-        extension = pathlib.Path(file_name).suffix
+        """
+        Parses a file and returns a path.Path object. As an input, the file_path or file_content parameter must be set.
+        If both the file_path and file_content parameters are set, the file_path parameter is used.
 
-        if extension == '.gpx':
-            return self.__parse_gpx_file(route_file)
-        elif extension == '.kml':
-            return self.parse_kml_file__(route_file)
+        Supported file types: GPX and KML
+
+        :param file_path: Path to a local file. The parser will open and parse that file.
+        :param file_content: Content of a file. The parser will parse this content.
+        :param extension: Must be set if the file_content is passed.
+
+        :return: path.Path object.
+
+        """
+
+        # Check if file is valid
+        if file_content == '' and extension is None:
+            raise Exception('No file extension provided.')
+
+        self.__logger.debug("File Extension: %s", extension)
+
+        if file_path is not None:
+
+            self.__logger.info("Reading %s", file_path)
+
+            file_io = open(file_path, 'r')
+            if file_io is None:
+                raise Exception("Could not open file " + file_path)
+
+            file_content = file_io.read()
+            extension = pathlib.Path(file_path).suffix[1:]
+
+        if extension == 'gpx':
+            return self.__parse_gpx_file(file_content)
+        elif extension == 'kml':
+            return self.parse_kml_file__(file_content)
         else:
             raise Exception('Unsupported file format')
 
-    def __parse_gpx_file(self, gpx_raw_data: TextIO) -> path.Path:
+    def __parse_gpx_file(self, gpx_raw_data: str) -> path.Path:
         gpx: gpxpy.gpx = gpxpy.parse(gpx_raw_data)
         paths: List[path.Path] = []
         for track in gpx.tracks:
@@ -61,8 +96,7 @@ class GeoFileParser(object):
 
         return path_
 
-    def parse_kml_file__(self, file_path: TextIO) -> path.Path:
-        raw_data = file_path.read()
+    def parse_kml_file__(self, raw_data: str) -> path.Path:
 
         # find <LineString> and </LineString>
         start_index = raw_data.find('<LineString>')
