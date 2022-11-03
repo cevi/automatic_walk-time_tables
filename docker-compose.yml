@@ -32,11 +32,11 @@ services:
   awt-swiss-tml:
     build:
       context: swiss_TLM_api/.
+      dockerfile: live.Dockerfile
     ports:
       - "1848:1848"
     volumes:
-      - ./swiss_TLM_api/resources:/app/resources
-      - ./swiss_TLM_api/index_cache:/app/index_cache
+      - ./swiss_TLM_api:/app
     env_file:
       - .env.live
 

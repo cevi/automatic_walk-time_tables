@@ -20,7 +20,13 @@ services:
       - .env.prod-latest
 
   awt-swiss-tml:
+    build:
+      context: swiss_TLM_api/.
+      dockerfile: Dockerfile
     image: registry.cevi.tools/cevi/awt_swiss-tml-api:latest
+    volumes:
+      - ./swiss_TLM_api/resources:/app/resources
+      - ./swiss_TLM_api/index_cache:/app/index_cache
     env_file:
       - .env.prod-latest
 
