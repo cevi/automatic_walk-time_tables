@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {LV95_Coordinates, LV95_Waypoint} from "../helpers/coordinates";
-import {BehaviorSubject, combineLatest, Observable, Subject} from "rxjs";
+import {BehaviorSubject, combineLatest, Observable} from "rxjs";
 import {decode, encode, LatLngTuple} from "@googlemaps/polyline-codec";
 import {environment} from "../../environments/environment";
 import {take} from "rxjs/operators";
@@ -78,61 +78,59 @@ export class MapAnimatorService {
     this._pointer$.next(coordinates);
   }
 
-  public async download_map() {
+  public async download_map(settings: any): Promise<number> {
 
-    /*
-    localStorage['form_values'] = JSON.stringify(this.options.value);
+    console.log('settings', settings);
+    localStorage['form_values'] = JSON.stringify(settings);
 
-    if (!this.route_uploaded || !this.route_file)
-      return
-*/
-    // minify XML data
-    // let xml_string = (await this.route_file.text()).toString()
-    // xml_string = xml_string.replace(/>\s*/g, '>');  // Remove space after >
-    // xml_string = xml_string.replace(/\s*</g, '<');  // Remove space before <
+    return new Promise<number>((resolve, reject) =>
+      combineLatest([this.path$, this.pois$, this.way_points$]).pipe(take(1))
+        .subscribe(([path, pois, way_points]) => {
 
-    /*
-    let formData = new FormData();
-    formData.append("options", JSON.stringify({
-      'file_type': this.route_file.name.split('.').pop()
-    }));
-    formData.append("file_content", xml_string);
+          const export_request = {
+            'settings': settings,
+            'flags': [], // TODO: implement flags
 
-    let url = ExportSettingsComponent.baseURL + 'create?';
-    url += '--list-of-pois=' + this.pois + 'create-elevation-profile';
-    for (const option in this.options.controls) {
+            'encoding': 'polyline',
 
-      if (['creator-name'].includes(option) && !this.options.controls[option].value.length)
-        continue;
+            'route': encode(path.map(p => [p.x, p.y]), 0),
+            'route_elevation': encode(path.map(p => [p.accumulated_distance * 1_000, p.h]), 0),
 
-      if (option === 'map-scaling' && this.options.controls['auto-scale'].value)
-        continue;
+            'way_points': encode(way_points.map(p => [p.x, p.y]), 0),
+            'way_points_elevation': encode(way_points.map(p => [p.accumulated_distance * 1_000, p.h]), 0),
 
-      if (option === 'auto-scale')
-        continue;
+            'pois_distance': pois
+              .sort((a, b) => a.accumulated_distance - b.accumulated_distance)
+              .map(p => `${p.accumulated_distance * 1_000}`).join(',')
 
-      console.log(this.options.controls[option].value)
-      url += '&--' + option + '=' + this.options.controls[option].value.toString().replaceAll('\n', ';')
+          }
+
+          const url = MapAnimatorService.BASE_URL + 'create_map';
+
+          let formData = new FormData();
+          formData.append("options", JSON.stringify(export_request));
+
+          fetch(url, {
+            method: "POST",
+            headers: {
+              ContentType: 'multipart/form-data',
+              Accept: 'application/json',
+            },
+            body: formData
+          })
+            .then(response => response.json())
+            .then((resp: any) => {
+              console.log('resp', resp);
+
+              if (resp.status === 'running')
+                resolve(resp.uuid);
+              else
+                reject(resp);
+            });
+
+        }));
 
 
-    }
-
-
-    fetch(url, {
-      method: "POST",
-      headers: {
-        ContentType: 'multipart/form-data',
-        Accept: 'application/json',
-      },
-      body: formData
-    })
-      .then(response => response.text())
-      .then((resp: any) => {
-        const response = JSON.parse(resp)
-        this.uuid = response['uuid'];
-      })
-      .finally(() => this.router.navigate(['pending', this.uuid]));
- */
   }
 
   public async replace_route(route_file: File | undefined) {
@@ -211,7 +209,7 @@ export class MapAnimatorService {
       'route': encode(path.map(p => [p.x, p.y]), 0),
       'elevation_data': encode(path.map(p => [p.accumulated_distance * 1_000, p.h]), 0),
       'pois_distance': pois
-        .sort((a, b)=> a.accumulated_distance - b.accumulated_distance)
+        .sort((a, b) => a.accumulated_distance - b.accumulated_distance)
         .map(p => `${p.accumulated_distance * 1_000}`).join(','),
     };
 

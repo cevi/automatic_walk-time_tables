@@ -2,6 +2,7 @@ import {Component} from '@angular/core';
 import {FormBuilder, FormControl, FormGroup} from "@angular/forms";
 import {MapAnimatorService} from "../../services/map-animator.service";
 import {Router} from "@angular/router";
+import {decode, encode} from "@googlemaps/polyline-codec";
 
 @Component({
   selector: 'app-export-settings',
@@ -13,7 +14,6 @@ export class ExportSettingsComponent {
   options: FormGroup;
   route_uploaded: boolean = false;
 
-  private pois: string = '';
   public route_file: File | undefined;
 
   constructor(private mapAnimator: MapAnimatorService, fb: FormBuilder, private router: Router) {
@@ -64,6 +64,12 @@ export class ExportSettingsComponent {
   }
 
   public download_map() {
+
+    console.log('Downloading map...')
+    this.mapAnimator.download_map(this.options.value).then(
+      (uuid) => this.router.navigate(['pending', uuid])
+      );
+
 
   }
 
