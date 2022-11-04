@@ -22,8 +22,6 @@ COPY ./.git/refs/heads/ /app/.git/refs/heads/
 ARG ENVIRONMENT_FILE
 COPY ./${ENVIRONMENT_FILE} /app/${ENVIRONMENT_FILE}
 
-RUN bash create_build_info.sh
-
 # Generate the build of the application
 RUN export $(grep -v '^#' ./${ENVIRONMENT_FILE} | xargs) && \
     npm run build:docker

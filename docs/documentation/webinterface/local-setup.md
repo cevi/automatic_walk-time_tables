@@ -11,7 +11,7 @@ For development without docker, you can run the following commands.
    npm start # start local server
    ```
    If you run the application locally, Angular assumes the backend server is running
-   at http://localhost:5000 (see
+   at <a href="http://localhost:5000" target="_blank" rel="noreferrer">localhost:5000</a> (see
    [Environment Variables - How the Application Behaves](/documentation/introduction/environment.html#environment-variables-how-the-application-behaves)).
 
    ```bash

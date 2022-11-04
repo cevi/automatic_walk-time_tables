@@ -15,6 +15,7 @@ docker run --publish=8080:8080  cevi/walktable_mapfish:latest
 
 ## Test your MapFish Instance
 
-You can test if the container is running properly by opening [http://localhost:8080](http://localhost:8080/). Now you
+You can test if the container is running properly by
+opening <a href="http://localhost:8080/" target="_blank" rel="noreferrer">localhost:8080</a>. Now you
 can copy-past the content of the `test_query.json` file and click on `Create And Get Print`. If the test PDF gets
 created properly, your installation was successfully.

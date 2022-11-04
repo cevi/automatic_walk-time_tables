@@ -15,16 +15,17 @@ A detailed description of the API endpoint can be found here: [API Endpoints](AP
 - map_number: fetch the map numbers for a given path
 
 **Future Endpoints**:
+
 - route calculation, given two points, the API returns a list of points describing a route between the two.
 - calc POIs for a given route, i.g. for a given route the API returns a list along the path with POIs. We understand
   PIOs as points with a special / precise naming, e.g. the peak of a mounten, a river crossing, a fire place, etc.
 - API Endpoint to query street type: Wanderweg-Kategorie, Street Type and Belagtype
 
-
 ## Run the Wrapper as a Web-API using Docker
 
 We are using a flask server to expose the python3 module as API endpoints. You can start the server with the following
-commands. Once executed, the API can be accessed over http://localhost:5000/.
+commands. Once executed, the API can be accessed
+over  <a href="http://localhost:5000/" target="_blank" rel="noreferrer">localhost:5000</a>.
 
 ```bash
 docker build . -t cevi/swiss_tlm_api:latest
@@ -32,7 +33,6 @@ docker run --publish=1848:1848 --mount type=bind,source="$(pwd)"/resources,targe
              --mount type=bind,source="$(pwd)"/index_cache,target=/app/index_cache \
              cevi/swiss_tlm_api:latest 
 ```
-
 
 ## Prerequisites for Local Execution
 
