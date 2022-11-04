@@ -5,7 +5,7 @@
 !webinterface
 !.git/HEAD
 !.git/refs/heads/*
+!.env.*
 
 # Folders to ignore
-webinterface/node_modules/*
-webinterface/src/build.ts
+webinterface/node_modules

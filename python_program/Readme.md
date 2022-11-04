@@ -34,7 +34,7 @@ The full documentation of the API endpoints can be found here: [API Endpoints](A
 2) In order to create PDF-map exports, you need to set up a docker container. Please follow
    the [instructions](../pdf_map_export/README.md) inside the `../pdf_map_export` folder. You can disable the PDF export
    feature with the `--create-map-pdfs False` argument,
-   see [Command Line Arguments](automatic_walk_time_tables/Command_Line_Arguments.md) for further details.
+   see [Command Line Arguments](docs/documentation/backend/command_line_arguments.md) for further details.
 
 ### Launch the script
 
@@ -47,7 +47,7 @@ $ python3 main.py --file-name <file_name>
 Where the `file-name` flag specifies the path to your route file (GPX- or KML-file). Once the script has terminated, the
 produced files (Excel, PDFs...) are stored in the directory specified with the argument `--output_directory`; default
 is `./output/`. A full documentation of all command line arguments can be found
-here: [Command Line Arguments](automatic_walk_time_tables/Command_Line_Arguments.md).
+here: [Command Line Arguments](docs/documentation/backend/command_line_arguments.md).
 
 ## Test and Debug Tools
 

@@ -6,7 +6,7 @@
 from automatic_walk_time_tables import arg_parser
 from automatic_walk_time_tables.generator import AutomatedWalkTableGenerator
 
-# parse the command line arguments, see documentation
+# parse the command line arguments, see docs
 args = arg_parser.get_parser().parse_args()
 
 gen = AutomatedWalkTableGenerator(args)

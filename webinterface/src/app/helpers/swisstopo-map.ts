@@ -102,14 +102,14 @@ export class SwisstopoMap {
     });
   };
 
-  protected create_map_from_layers(layers: Layer[]) {
+  protected create_map_from_layers(layers: Layer[], target_canvas: string = 'map-canvas') {
 
     const mousePosition = document.getElementById('mousePosition');
     if (mousePosition == null) return;
 
     return new Map({
       layers: layers,
-      target: 'map-canvas',
+      target: target_canvas,
       view: new View({
         center: [2719640, 1216329],
         projection: this.get_projection(),
