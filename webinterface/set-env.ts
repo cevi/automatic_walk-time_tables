@@ -10,6 +10,7 @@ require('dotenv').load();
 const envConfigFile = `export const environment = {
    production: ${process.env.ANGULAR_BUILD_MODE == 'production' ? 'true' : 'false'},
    API_URL: '${process.env.BACKEND_DOMAIN}/',
+   DOCS_URL: '${process.env.DOCS_DOMAIN}/',
 };
 `;
 
