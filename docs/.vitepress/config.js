@@ -99,12 +99,12 @@ export default {
                     ]
                 },
                 {
-                    text: 'Route Server',
+                    text: 'Route Engine',
                     collapsible: true,
                     collapsed: true,
                     items: [
                         {
-                            text: 'About', link: '/documentation/route_server/about'
+                            text: 'About', link: '/documentation/route_engine/about'
                         },
                     ]
                 },

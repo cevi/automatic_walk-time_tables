@@ -42,13 +42,13 @@ Source in `./swiss_TLM_api` folder.
 
 More info can be found here: [Swiss TLM API](../swiss_TLM_API/about.md).
 
-## Route Server
+## Route Engine
 
 ::: info
-Source in `./route_server` folder.
+Source in `./route_engine` folder.
 :::
 
-More info can be found here: [Route Server](../route_server/about.md).
+More info can be found here: [Route Engine](../route_engine/about.md).
 
 ## Documentation
 
