@@ -2,7 +2,8 @@ version: "3.9"
 
 services:
 
-  docs:
+  awt-docs:
+    image: registry.cevi.tools/cevi/awt_docs:dev
     build:
       context: docs/.
       dockerfile: Dockerfile
