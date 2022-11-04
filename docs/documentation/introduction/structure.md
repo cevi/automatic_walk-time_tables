@@ -18,7 +18,8 @@ Source in `./python_program` folder.
 :::
 
 The backend is used by the web interface, it's an API wrapping a python script, which generates the walk-time table form
-a GPX- or KML-file.
+a GPX- or KML-file. There exists both endpoints for fully automated and for interactive generation of the walk-time
+table.
 
 More info can be found here: [Backend](../backend/about.md).
 
@@ -32,7 +33,6 @@ We use MapFish 3 with a custom template to create PDF reports containing maps, i
 the route are created by this service. MapFish 3 is open source, see https://github.com/mapfish/mapfish-print.
 
 More info can be found here: [MapFish PDF Creator](../pdf_creator/about.md).
-
 
 ## Swiss TLM API
 

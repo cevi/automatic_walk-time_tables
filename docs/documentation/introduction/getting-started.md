@@ -19,11 +19,12 @@ substitute for careful planning.
 
 ## Run it Locally and Start Developing
 
-As of version 2.0.0, the application is split into multiple parts, each living in its separate docker container. You
-can launch the application as a bundle using the following command (Note: For all commands in the documentation, we are
-assuming you're running Linux).
+As of [version 2.0.0](/changelog/changelog#version-2-0-0), the application is split into multiple parts, each living in
+its separate docker container. You can launch the application as a bundle using the following command:
 
-Docker Compose is used to launch the application. The following command will launch the application stack:
+::: warning
+For all commands in the documentation, we are assuming you're running Linux (Mac or WSL should work as well).
+:::
 
 ```bash
 docker-compose up [--build]
@@ -31,4 +32,7 @@ docker-compose up [--build]
 
 ::: info
 `--build` is optional and forces docker to rebuild the containers.
+
+By default, the application is served locally. It will rebuild/reload the container automatically if you make changes to
+the code (except for configuration files, e.g. `docker-compose.yml`, `package.json`, etc.).
 :::
