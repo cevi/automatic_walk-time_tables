@@ -8,7 +8,7 @@ We distinguish between runtime modes and environment files. The former are defin
 Runtime modes and environment Variables may influence the behaviour of the application.
 
 ::: tip
-The default runtime mode is `dev-live` with it's associated configuration file `.env.dev-live`.
+The default runtime mode is `live` with it's associated configuration file `.env.live`.
 
 It enables live reloading/rebuilding, which is useful to develop the application.
 :::
