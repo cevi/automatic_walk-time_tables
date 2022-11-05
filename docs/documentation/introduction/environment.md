@@ -28,7 +28,7 @@ The following runtime modes are available:
 | Environment   | Purpose                                                                                                                                       | Default Domain Binding |
 |---------------|-----------------------------------------------------------------------------------------------------------------------------------------------|------------------------|
 | `prod-latest` | Production runtime environment, as hosted on [map.cevi.tool](https://map.cevi.tool).                                                          | `map.cevi.tool`        |
-| `prod-dev`    | Same as production mode but with different environment variables and image tags. As hosted on [dev.map.cevi.tool](https://dev.map.cevi.tool). | `localhost`            |
+| `prod-dev`    | Same as production mode but with different environment variables and image tags. As hosted on [dev.map.cevi.tool](https://dev.map.cevi.tool). | `dev.map.cevi.tool`    |
 | `live`        | Development runtime environment with enabled live reloading/rebuilding usefully to develop the application                                    | `localhost`            |
 | `test`        | Used to test the application                                                                                                                  | `localhost`            |
 
