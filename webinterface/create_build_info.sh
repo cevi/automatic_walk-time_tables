@@ -5,8 +5,16 @@
 timestamp=$(date "+%a %b %d %Y %H:%M:%S GMT%z (%Z)")
 
 version=$(node -pe "require('./package.json').version")
-git_commit=$(cat .git/$(cat .git/HEAD | cut -d' ' -f2))
-git_branch=$(cat .git/HEAD | cut -d'/' -f3)
+
+# check if .git directory exists and contains a HEAD file
+if [ -f ".git/HEAD" ]; then
+  git_commit=$(cat .git/$(cat .git/HEAD | cut -d' ' -f2))
+  git_branch=$(cat .git/HEAD | cut -d'/' -f3)
+else # set default values
+  git_commit="unknown"
+  git_branch="unknown"
+fi
+
 
 build_info="
 const build = {
