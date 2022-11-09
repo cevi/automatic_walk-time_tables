@@ -14,5 +14,8 @@ RUN npm install -g typescript
 # Copy project directory
 COPY ./webinterface/ /app/
 
+# Prebuilds the angular application
+RUN npm run build:docker
+
 # Generate the build of the application. Note how we copy the node-context folder
 CMD ls && npm run start:docker
