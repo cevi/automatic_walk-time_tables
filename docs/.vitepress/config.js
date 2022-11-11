@@ -78,13 +78,13 @@ export default {
                     collapsed: true,
                     items: [
                         {
-                            text: 'About', link: '/documentation/swiss_TLM_API/about'
+                            text: 'About', link: '/documentation/swiss_TLM_api/about'
                         },
                         {
-                            text: 'API Endpoints', link: '/documentation/swiss_TLM_API/API_endpoints'
+                            text: 'API Endpoints', link: '/documentation/swiss_TLM_api/API_endpoints'
                         },
                         {
-                            text: 'Testing', link: '/documentation/swiss_TLM_API/testing'
+                            text: 'Testing', link: '/documentation/swiss_TLM_api/testing'
                         },
                     ]
                 },

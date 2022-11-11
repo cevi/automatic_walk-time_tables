@@ -20,7 +20,7 @@ services:
     env_file:
       - .env.prod-dev
 
-  awt-swiss-tml:
+  awt-swiss-tml-api:
     build:
       context: swiss_TLM_api/.
       dockerfile: Dockerfile

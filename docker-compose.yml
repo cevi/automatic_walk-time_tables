@@ -29,7 +29,7 @@ services:
     env_file:
       - .env.local-dev
 
-  awt-swiss-tml:
+  awt-swiss-tml-api:
     build:
       context: swiss_TLM_api/.
       dockerfile: local-dev.Dockerfile
@@ -52,7 +52,7 @@ services:
 
     depends_on:
       - awt-mapfish-print-server
-      - awt-swiss-tml
+      - awt-swiss-tml-api
     environment:
       TZ: Europe/Zurich
     env_file:
