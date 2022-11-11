@@ -80,5 +80,5 @@ services:
       - .env.live
 
 volumes:
-  vitepress_dist:
-  node_modules:
+  vitepress_dist: {}
+  node_modules: {}
