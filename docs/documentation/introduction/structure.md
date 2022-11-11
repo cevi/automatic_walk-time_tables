@@ -14,7 +14,7 @@ More info can be found here: [Frontend/Webinterface](../frontend/about.md).
 ## Backend & API
 
 ::: info
-Source in `./python_program` folder.
+Source in `./backend` folder.
 :::
 
 The backend is used by the web interface, it's an API wrapping a python script, which generates the walk-time table form

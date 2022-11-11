@@ -42,13 +42,13 @@ services:
 
   awt-backend:
     build:
-      context: python_program/.
+      context: backend/.
       dockerfile: local-dev.Dockerfile
     ports:
       - "5000:5000"
 
     volumes:
-      - ./python_program:/app
+      - ./backend:/app
 
     depends_on:
       - awt-mapfish

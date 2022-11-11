@@ -33,7 +33,7 @@ services:
 
   awt-backend:
     build:
-      context: python_program/.
+      context: backend/.
       dockerfile: Dockerfile
     image: registry.cevi.tools/cevi/awt_backend:latest
     env_file:
