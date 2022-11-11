@@ -5,7 +5,7 @@ services:
   awt-docs:
     build:
       context: docs/.
-      dockerfile: live.Dockerfile
+      dockerfile: local-dev.Dockerfile
     ports:
       - "4000:4000"
     volumes:
@@ -13,12 +13,12 @@ services:
       - /app/src/.vitepress/dist
       - /app/src/node_modules
     env_file:
-      - .env.live
+      - .env.local-dev
 
   awt-tile-cache:
     build: tile_caching
     env_file:
-      - .env.live
+      - .env.local-dev
 
   awt-mapfish:
     build: pdf_map_export/.
@@ -27,23 +27,23 @@ services:
     depends_on:
       - awt-tile-cache
     env_file:
-      - .env.live
+      - .env.local-dev
 
   awt-swiss-tml:
     build:
       context: swiss_TLM_api/.
-      dockerfile: live.Dockerfile
+      dockerfile: local-dev.Dockerfile
     ports:
       - "1848:1848"
     volumes:
       - ./swiss_TLM_api:/app
     env_file:
-      - .env.live
+      - .env.local-dev
 
   awt-backend:
     build:
       context: python_program/.
-      dockerfile: live.Dockerfile
+      dockerfile: local-dev.Dockerfile
     ports:
       - "5000:5000"
 
@@ -56,15 +56,15 @@ services:
     environment:
       TZ: Europe/Zurich
     env_file:
-      - .env.live
+      - .env.local-dev
 
   awt-webinterface:
     build:
       context: .
-      dockerfile: webinterface/live.Dockerfile
+      dockerfile: webinterface/local-dev.Dockerfile
       # Used in the first stage of the Dockerfile, thus these env vars must be passed as args
       args:
-        - ENVIRONMENT_FILE=.env.live
+        - ENVIRONMENT_FILE=.env.local-dev
 
     volumes:
       - ./webinterface/src:/app/src
@@ -77,4 +77,4 @@ services:
     depends_on:
       - awt-backend
     env_file:
-      - .env.live
+      - .env.local-dev
