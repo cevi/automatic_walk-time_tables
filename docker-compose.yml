@@ -20,8 +20,8 @@ services:
     env_file:
       - .env.local-dev
 
-  awt-mapfish:
-    build: pdf_map_export/.
+  awt-mapfish-print-server:
+    build: mapfish_print_server/.
     ports:
       - "8080:8080"
     depends_on:
@@ -51,7 +51,7 @@ services:
       - ./backend:/app
 
     depends_on:
-      - awt-mapfish
+      - awt-mapfish-print-server
       - awt-swiss-tml
     environment:
       TZ: Europe/Zurich

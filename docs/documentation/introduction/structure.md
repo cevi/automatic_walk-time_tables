@@ -23,16 +23,16 @@ table.
 
 More info can be found here: [Backend](../backend/about.md).
 
-## MapFish PDF Creator
+## MapFish Print Server
 
 ::: info
-Source in `./pdf_map_export` folder.
+Source in `./mapfish_print_server` folder.
 :::
 
 We use MapFish 3 with a custom template to create PDF reports containing maps, i.g. the PDF files containing the map of
 the route are created by this service. MapFish 3 is open source, see https://github.com/mapfish/mapfish-print.
 
-More info can be found here: [MapFish PDF Creator](../pdf_creator/about.md).
+More info can be found here: [MapFish Print Server](../mapfish_print_server/about.md).
 
 ## Swiss TLM API
 

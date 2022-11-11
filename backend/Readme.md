@@ -32,7 +32,7 @@ The full documentation of the API endpoints can be found here: [API Endpoints](A
    ```
 
 2) In order to create PDF-map exports, you need to set up a docker container. Please follow
-   the [instructions](../pdf_map_export/README.md) inside the `../pdf_map_export` folder. You can disable the PDF export
+   the [instructions](mapfish_print_server/README.md) inside the `../mapfish_print_server` folder. You can disable the PDF export
    feature with the `--create-map-pdfs False` argument,
    see [Command Line Arguments](docs/documentation/backend/command_line_arguments.md) for further details.
 

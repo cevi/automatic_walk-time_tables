@@ -94,7 +94,7 @@ export default {
                     collapsed: true,
                     items: [
                         {
-                            text: 'About', link: '/documentation/pdf_creator/about'
+                            text: 'About', link: '/documentation/mapfish_print_server/about'
                         },
                     ]
                 },
