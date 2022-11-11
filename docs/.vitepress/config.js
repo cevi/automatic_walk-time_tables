@@ -41,15 +41,15 @@ export default {
                     ]
                 },
                 {
-                    text: 'Webinterface',
+                    text: 'Frontend/Webinterface',
                     collapsible: true,
                     collapsed: true,
                     items: [
                         {
-                            text: 'About', link: '/documentation/webinterface/about'
+                            text: 'About', link: '/documentation/frontend/about'
                         },
                         {
-                            text: 'Local Setup', link: '/documentation/webinterface/local-setup'
+                            text: 'Local Setup', link: '/documentation/frontend/local-setup'
                         },
                     ]
                 },

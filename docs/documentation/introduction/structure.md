@@ -1,15 +1,15 @@
 # Application Structure
 
-## Frontend / Webinterface
+## Frontend/Webinterface
 
 ::: info
-Source in `./webinterface` folder.
+Source in `./frontend` folder.
 :::
 
 A simple angular application served as a webpage. It allows for users to call the automatic walk-time generator with
 a graphical user interface.
 
-More info can be found here: [Webinterface](../webinterface/about.md).
+More info can be found here: [Frontend/Webinterface](../frontend/about.md).
 
 ## Backend & API
 

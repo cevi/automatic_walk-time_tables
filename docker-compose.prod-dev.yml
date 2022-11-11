@@ -39,13 +39,13 @@ services:
     env_file:
       - .env.prod-dev
 
-  awt-webinterface:
+  awt-frontend:
     build:
       context: .
-      dockerfile: webinterface/Dockerfile
+      dockerfile: frontend/Dockerfile
       # Used in the first stage of the Dockerfile, thus these env vars must be passed as args
       args:
         - ENVIRONMENT_FILE=.env.prod-dev
-    image: registry.cevi.tools/cevi/awt_webinterface:dev
+    image: registry.cevi.tools/cevi/awt_frontend:dev
     env_file:
       - .env.prod-dev

@@ -5,14 +5,14 @@ FROM node:16
 WORKDIR /app
 
 # Install app dependencies
-COPY ./webinterface/*.json /app/
+COPY ./frontend/*.json /app/
 
 # Install all the dependencies from package-lock.json
 RUN npm ci
 RUN npm install -g typescript
 
 # Copy project directory
-COPY ./webinterface/ /app/
+COPY ./frontend/ /app/
 
 # Prebuilds the angular application
 RUN npm run build:docker
