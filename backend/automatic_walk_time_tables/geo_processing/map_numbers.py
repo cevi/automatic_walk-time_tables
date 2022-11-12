@@ -6,7 +6,7 @@ from automatic_walk_time_tables.utils import path
 
 
 def fetch_map_numbers(path_: path.Path) -> str:
-    url = "http://awt-swiss-tml:1848/map_numbers"
+    url = "http://awt-swiss-tml-api:1848/map_numbers"
 
     # Convert path to LV95 and save the coordinates in an array
     coordinates = [pkt.point.to_LV95() for pkt in path_.way_points]

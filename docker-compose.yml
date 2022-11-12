@@ -5,69 +5,69 @@ services:
   awt-docs:
     build:
       context: docs/.
-      dockerfile: live.Dockerfile
+      dockerfile: local-dev.Dockerfile
     ports:
       - "4000:4000"
     volumes:
       - ./docs:/app/src
-      - /app/src/.vitepress/dist
-      - /app/src/node_modules
+      - vitepress_dist:/app/src/.vitepress/dist
+      - node_modules:/app/src/node_modules
     env_file:
-      - .env.live
+      - .env.local-dev
 
   awt-tile-cache:
     build: tile_caching
     env_file:
-      - .env.live
+      - .env.local-dev
 
-  awt-mapfish:
-    build: pdf_map_export/.
+  awt-mapfish-print-server:
+    build: mapfish_print_server/.
     ports:
       - "8080:8080"
     depends_on:
       - awt-tile-cache
     env_file:
-      - .env.live
+      - .env.local-dev
 
-  awt-swiss-tml:
+  awt-swiss-tml-api:
     build:
       context: swiss_TLM_api/.
-      dockerfile: live.Dockerfile
+      dockerfile: local-dev.Dockerfile
     ports:
       - "1848:1848"
     volumes:
       - ./swiss_TLM_api:/app
     env_file:
-      - .env.live
+      - .env.local-dev
 
   awt-backend:
     build:
-      context: python_program/.
-      dockerfile: live.Dockerfile
+      context: backend/.
+      dockerfile: local-dev.Dockerfile
     ports:
       - "5000:5000"
 
     volumes:
-      - ./python_program:/app
+      - ./backend:/app
 
     depends_on:
-      - awt-mapfish
-      - awt-swiss-tml
+      - awt-mapfish-print-server
+      - awt-swiss-tml-api
     environment:
       TZ: Europe/Zurich
     env_file:
-      - .env.live
+      - .env.local-dev
 
-  awt-webinterface:
+  awt-frontend:
     build:
       context: .
-      dockerfile: webinterface/live.Dockerfile
+      dockerfile: frontend/local-dev.Dockerfile
       # Used in the first stage of the Dockerfile, thus these env vars must be passed as args
       args:
-        - ENVIRONMENT_FILE=.env.live
+        - ENVIRONMENT_FILE=.env.local-dev
 
     volumes:
-      - ./webinterface/src:/app/src
+      - ./frontend/src:/app/src
       # Mount git info to container
       - ./.git/HEAD:/app/.git/HEAD
       - ./.git/refs/heads/:/app/.git/refs/heads/
@@ -77,4 +77,8 @@ services:
     depends_on:
       - awt-backend
     env_file:
-      - .env.live
+      - .env.local-dev
+
+volumes:
+  vitepress_dist: {}
+  node_modules: {}

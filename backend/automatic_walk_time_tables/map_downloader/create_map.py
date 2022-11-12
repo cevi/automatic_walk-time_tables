@@ -124,14 +124,14 @@ class MapCreator:
             try:
                 response_obj = requests.post(url, data=json.dumps(query_json))
             except requests.exceptions.ConnectionError:
-                self.logger.error("Could not connect to mapfish server. Is the server running?")
+                self.logger.error("Could not connect to mapfish print server. Is the server running?")
                 if self.logger.getEffectiveLevel() == logging.DEBUG:
-                    raise Exception("Could not connect to mapfish server. Is the server running?")
+                    raise Exception("Could not connect to mapfish print server. Is the server running?")
                 else:
                     exit(1)
 
             if response_obj is None or response_obj.status_code != 200:
-                logging.error("Error while posting to mapfish: " + str(response_obj.status_code))
+                logging.error("Error while posting to mapfish print server: " + str(response_obj.status_code))
                 if self.logger.getEffectiveLevel() == logging.DEBUG:
                     raise Exception('Can not fetch map. Status Code: {}'.format(response_obj.status_code))
                 else:

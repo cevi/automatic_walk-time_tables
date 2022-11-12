@@ -1,10 +1,10 @@
-# Run the Webinterface Locally
+# Run the Frontend/Webinterface Locally
 
 For development without docker, you can run the following commands.
 
 1) Install node version 16, e.g. by using the [Node Version Manager](https://github.com/nvm-sh/nvm).
 
-2) Launch the application by running the following command inside the `./webinterface` directory.
+2) Launch the application by running the following command inside the `./frontend` directory.
 
    ```bash
    npm install # install dependencies
@@ -20,7 +20,7 @@ For development without docker, you can run the following commands.
 
 ## Update Dependencies
 
-To update the dependencies, run the following command inside the `./webinterface` directory.
+To update the dependencies, run the following command inside the `./frontend` directory.
 
 ```bash
 npm update

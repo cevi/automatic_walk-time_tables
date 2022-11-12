@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This script extracts the build information from the webinterface
+# This script extracts the build information from the frontend
 
 timestamp=$(date "+%a %b %d %Y %H:%M:%S GMT%z (%Z)")
 

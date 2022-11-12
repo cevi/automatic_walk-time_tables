@@ -1,20 +1,20 @@
 # Application Structure
 
-## Frontend / Webinterface
+## Frontend/Webinterface
 
 ::: info
-Source in `./webinterface` folder.
+Source in `./frontend` folder.
 :::
 
 A simple angular application served as a webpage. It allows for users to call the automatic walk-time generator with
 a graphical user interface.
 
-More info can be found here: [Webinterface](../webinterface/about.md).
+More info can be found here: [Frontend/Webinterface](../frontend/about.md).
 
 ## Backend & API
 
 ::: info
-Source in `./python_program` folder.
+Source in `./backend` folder.
 :::
 
 The backend is used by the web interface, it's an API wrapping a python script, which generates the walk-time table form
@@ -23,16 +23,16 @@ table.
 
 More info can be found here: [Backend](../backend/about.md).
 
-## MapFish PDF Creator
+## MapFish Print Server
 
 ::: info
-Source in `./pdf_map_export` folder.
+Source in `./mapfish_print_server` folder.
 :::
 
 We use MapFish 3 with a custom template to create PDF reports containing maps, i.g. the PDF files containing the map of
 the route are created by this service. MapFish 3 is open source, see https://github.com/mapfish/mapfish-print.
 
-More info can be found here: [MapFish PDF Creator](../pdf_creator/about.md).
+More info can be found here: [MapFish Print Server](../mapfish_print_server/about.md).
 
 ## Swiss TLM API
 
@@ -40,15 +40,15 @@ More info can be found here: [MapFish PDF Creator](../pdf_creator/about.md).
 Source in `./swiss_TLM_api` folder.
 :::
 
-More info can be found here: [Swiss TLM API](../swiss_TLM_API/about.md).
+More info can be found here: [Swiss TLM API](../swiss_TLM_api/about.md).
 
-## Route Engine
+## Routing Engine
 
 ::: info
-Source in `./route_engine` folder.
+Source in `./routing_engine` folder.
 :::
 
-More info can be found here: [Route Engine](../route_engine/about.md).
+More info can be found here: [Routing Engine](../routing_engine/about.md).
 
 ## Documentation
 
