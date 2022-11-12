@@ -7,13 +7,13 @@ FROM node:16 as build
 WORKDIR /app
 
 # Install app dependencies
-COPY ./webinterface/package*.json ./
+COPY ./frontend/package*.json ./
 
 # Install all the dependencies from package-lock.json
 RUN npm ci
 
 # Add the source code to app
-COPY ./webinterface/ /app/
+COPY ./frontend/ /app/
 COPY ./.git/HEAD /app/.git/HEAD
 COPY ./.git/refs/heads/ /app/.git/refs/heads/
 
@@ -31,7 +31,7 @@ RUN export $(grep -v '^#' ./${ENVIRONMENT_FILE} | xargs) && \
 FROM nginx:1.23
 
 # copy the nginx configuration file to the container
-COPY ./webinterface/nginx.conf /etc/nginx/conf.d/default.conf
+COPY ./frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy the build output txo replace the default nginx contents.
 COPY --from=build /app/dist/automatic-walk-time-tables /usr/share/nginx/html
