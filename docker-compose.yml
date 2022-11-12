@@ -10,8 +10,8 @@ services:
       - "4000:4000"
     volumes:
       - ./docs:/app/src
-      - /app/src/.vitepress/dist
-      - /app/src/node_modules
+      - vitepress_dist:/app/src/.vitepress/dist
+      - node_modules:/app/src/node_modules
     env_file:
       - .env.local-dev
 
@@ -78,3 +78,7 @@ services:
       - awt-backend
     env_file:
       - .env.local-dev
+
+volumes:
+  vitepress_dist: {}
+  node_modules: {}
