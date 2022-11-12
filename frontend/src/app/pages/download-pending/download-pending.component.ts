@@ -3,7 +3,6 @@ import {environment} from "../../../environments/environment";
 import {ActivatedRoute, Router} from "@angular/router";
 import {StatusManagerService} from 'src/app/services/status-manager.service';
 import {MapAnimatorService} from "../../services/map-animator.service";
-import {decode} from "@googlemaps/polyline-codec";
 
 @Component({
   selector: 'app-download-pending',
@@ -29,7 +28,12 @@ export class DownloadPendingComponent implements OnInit {
     const baseURL = DownloadPendingComponent.baseURL + "status/"
     let route_fetched = false;
 
-    fetch(baseURL + this.uuid)
+    fetch(baseURL + this.uuid, {
+      headers: new Headers({
+        'content-type': 'application/json',
+        Accept: 'application/json'
+      })
+    })
       .then(response => response.json())
       .then(res => {
 

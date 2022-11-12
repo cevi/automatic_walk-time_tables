@@ -78,7 +78,7 @@ def parse_route():
 
         return app.response_class(
             response=json.dumps({'status': GeneratorStatus.ERROR, 'message': str(e)}),
-            status=500, mimetype='application/json')
+            status=400, mimetype='application/json')
 
 
 @app.route('/create-walk-time-table', methods=['POST'])
@@ -90,7 +90,7 @@ def create_walk_time_table():
     else:
         return app.response_class(
             response=json.dumps({'status': GeneratorStatus.ERROR, 'message': 'Invalid request format.'}),
-            status=500, mimetype='application/json')
+            status=400, mimetype='application/json')
 
     # Decode options['route'] form polyline
     if 'encoding' in options and options['encoding'] == 'polyline':
@@ -132,7 +132,7 @@ def create_walk_time_table():
     else:
         return app.response_class(
             response=json.dumps({'status': GeneratorStatus.ERROR, 'message': 'Invalid Encoding of route.'}),
-            status=500, mimetype='application/json')
+            status=400, mimetype='application/json')
 
 
 def extract_path(options, coords_field='route', elevation_field='elevation_data'):
@@ -162,7 +162,7 @@ def create_map():
     else:
         return app.response_class(
             response=json.dumps({'status': GeneratorStatus.ERROR, 'message': 'Invalid request format.'}),
-            status=500, mimetype='application/json')
+            status=400, mimetype='application/json')
 
     thread = Thread(target=create_export, kwargs={'options': options, 'uuid': uuid})
     thread.start()
@@ -237,9 +237,11 @@ def create_export(options, uuid):
 
 @app.route('/status/<uuid>')
 def status(uuid):
+    message = stateHandler.get_status(uuid)
+    status_code = 200 if message['status'] != GeneratorStatus.ERROR else 400
     response = app.response_class(
-        response=json.dumps(stateHandler.get_status(uuid)),
-        status=200, mimetype='application/json')
+        response=json.dumps(message),
+        status=status_code, mimetype='application/json')
     return response
 
 
@@ -250,7 +252,11 @@ def download(uuid):
     state = stateHandler.get_status(uuid)
 
     if (state and state['status'] != GeneratorStatus.SUCCESS) or not os.path.exists(base_path):
-        return "Die angefragten Daten sind nicht (mehr) verfügbar."
+        return app.response_class(
+            response=json.dumps({
+                'status': GeneratorStatus.ERROR,
+                'message': 'Requested data is not available anymore.'
+            }), status=404, mimetype='application/json')
 
     # Return Zip with data
     data = io.BytesIO()
