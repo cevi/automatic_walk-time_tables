@@ -24,7 +24,7 @@ class NameFinder(NameIndex):
         super().__init__(force_rebuild, reduced)
         end = time.time()
 
-        logger.info('Index loaded (after {}s)'.format(str(end - start)))
+        logger.info('Name Index loaded (after {}s)'.format(str(end - start)))
 
     def __del__(self):
         self.index.close()
