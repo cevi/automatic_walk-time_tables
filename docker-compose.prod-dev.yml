@@ -1,0 +1,51 @@
+version: "3.9"
+
+services:
+
+  awt-docs:
+    image: registry.cevi.tools/cevi/awt_docs:dev
+    build:
+      context: docs/.
+      dockerfile: Dockerfile
+    env_file:
+      - .env.prod-dev
+
+  awt-tile-cache:
+    image: registry.cevi.tools/cevi/awt_tile-caching:dev
+    env_file:
+      - .env.prod-dev
+
+  awt-mapfish-print-server:
+    image: registry.cevi.tools/cevi/awt_mapfish-print-server:dev
+    env_file:
+      - .env.prod-dev
+
+  awt-swiss-tml-api:
+    build:
+      context: swiss_TLM_api/.
+      dockerfile: Dockerfile
+    image: registry.cevi.tools/cevi/awt_swiss-tml-api:dev
+    volumes:
+      - ./swiss_TLM_api/resources:/app/resources
+      - ./swiss_TLM_api/index_cache:/app/index_cache
+    env_file:
+      - .env.prod-dev
+
+  awt-backend:
+    build:
+      context: backend/.
+      dockerfile: Dockerfile
+    image: registry.cevi.tools/cevi/awt_backend:dev
+    env_file:
+      - .env.prod-dev
+
+  awt-frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      # Used in the first stage of the Dockerfile, thus these env vars must be passed as args
+      args:
+        - ENVIRONMENT_FILE=.env.prod-dev
+    image: registry.cevi.tools/cevi/awt_frontend:dev
+    env_file:
+      - .env.prod-dev

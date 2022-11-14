@@ -1,7 +1,0 @@
-{
-    "pluginsFile": false,
-    "supportFile": "cypress/support/index.js",
-    "chromeWebSecurity": false,
-    "pageLoadTimeout": 5000,
-    "video": false
-}

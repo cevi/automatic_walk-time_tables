@@ -1,8 +1,10 @@
-FROM cypress/included:9.4.1
+FROM cypress/included:11.0.1
 
 WORKDIR /opt
 
-RUN npm i cypress-file-upload
+COPY package.json .
+COPY package-lock.json .
+RUN npm ci
 
 WORKDIR /opt/e2e
 RUN npx cypress verify

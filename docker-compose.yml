@@ -2,55 +2,86 @@ version: "3.9"
 
 services:
 
-  tile_cache:
-    build: tile_caching
+  awt-docs:
+    build:
+      context: docs/.
+      dockerfile: local-dev.Dockerfile
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./docs:/app/src
+      - vitepress_dist:/app/src/.vitepress/dist
+      - node_modules:/app/src/node_modules
+    env_file:
+      - .env.local-dev
 
-  mapfish:
-    build: pdf_map_export/.
+  awt-tile-cache:
+    build: tile_caching
+    env_file:
+      - .env.local-dev
+
+  awt-mapfish-print-server:
+    build: mapfish_print_server/.
     ports:
       - "8080:8080"
     depends_on:
-      - tile_cache
-    healthcheck:
-      test: "curl -f http://localhost:8080"
-      interval: 2s
-      timeout: 1s
-      retries: 60
+      - awt-tile-cache
+    env_file:
+      - .env.local-dev
 
-  swiss_tml:
+  awt-swiss-tml-api:
     build:
       context: swiss_TLM_api/.
+      dockerfile: local-dev.Dockerfile
     ports:
       - "1848:1848"
     volumes:
-      - ./swiss_TLM_api/resources:/app/resources
-      - ./swiss_TLM_api/index_cache:/app/index_cache
-    healthcheck:
-      test: "curl -f http://localhost:1848/ready | grep 'ready'"
-      interval: 2s
-      timeout: 1s
-      retries: 60
+      - ./swiss_TLM_api:/app
+    env_file:
+      - .env.local-dev
 
-  backend:
+  awt-backend:
     build:
-      context: python_program/.
+      context: backend/.
+      dockerfile: local-dev.Dockerfile
     ports:
       - "5000:5000"
+
+    volumes:
+      - ./backend:/app
+
     depends_on:
-      swiss_tml:
-        condition: service_healthy
-      mapfish:
-        condition: service_healthy
+      - awt-mapfish-print-server
+      - awt-swiss-tml-api
+
     environment:
       TZ: Europe/Zurich
+    env_file:
+      - .env.local-dev
 
-  webinterface:
+  awt-frontend:
     build:
-      context: webinterface/.
+      context: .
+      dockerfile: frontend/local-dev.Dockerfile
+      # Used in the first stage of the Dockerfile, thus these env vars must be passed as args
       args:
-        # By default, we build in development mode. You can change the build mode by specifying $ANGULAR_CONFIGURATION.
-        - configuration=${ANGULAR_CONFIGURATION:-development}
+        - ENVIRONMENT_FILE=.env.local-dev
+
+    volumes:
+      - ./frontend/src:/app/src
+      # Mount git info to container
+      - ./.git/HEAD:/app/.git/HEAD
+      - ./.git/refs/heads/:/app/.git/refs/heads/
+
     ports:
       - "80:80"
+
     depends_on:
-      - backend
+      - awt-backend
+
+    env_file:
+      - .env.local-dev
+
+volumes:
+  vitepress_dist: {}
+  node_modules: {}

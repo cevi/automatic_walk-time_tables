@@ -38,8 +38,10 @@ class MapNumberIndex:
 
         base_url = "https://api3.geo.admin.ch/rest/services/all/MapServer/identify?geometryFormat=geojson" \
                    "&geometryType=esriGeometryPoint&lang=de&sr=2056&layers=all:ch.swisstopo.pixelkarte-pk25.metadata" \
-                   "&limit=50&returnGeometry=true&tolerance=10000&&imageDisplay=1283,937,96&mapExtent=400000,000000," \
-                   f"900000,300000&offset=200&geometry={base_coordinates[0]},{base_coordinates[1]}"
+                   "&limit=50&returnGeometry=true&tolerance=10000&imageDisplay=1283,937,96&mapExtent=400000,000000," \
+                   f"900000,300000&geometry={base_coordinates[0]},{base_coordinates[1]}"
+
+        logger.info("Fetching " + base_url)
 
         for i in range(0, 250, 50):
             url = base_url + f"&offset={i}"

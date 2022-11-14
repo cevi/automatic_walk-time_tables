@@ -1,0 +1,9 @@
+{
+  "name": "e2e",
+  "scripts": {
+    "start": "CYPRESS_baseUrl=http://localhost:80 npx cypress open"
+  },
+  "devDependencies": {
+    "cypress-file-upload": "^5.0.8"
+  }
+}

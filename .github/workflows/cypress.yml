@@ -1,17 +1,13 @@
 name: End2End Testing with Cypress
 on: push
-env:
-  ANGULAR_CONFIGURATION: cypress
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Build the stack
-        run: docker-compose -f docker-compose.yml -f docker-compose.test.yml build 
-      - name: Start the containers except cypress
-        run: docker-compose -f docker-compose.yml -f docker-compose.test.yml up -d webinterface
-      - name: Run cypress
-        run: docker-compose -f docker-compose.yml -f docker-compose.test.yml up --exit-code-from cypress cypress
-        
-    
+        run: docker-compose -f docker-compose.yml -f docker-compose.ci-testing.yml build
+
+      - name: Run cypress (e2e tests)
+        run: docker-compose -f docker-compose.yml -f docker-compose.ci-testing.yml up \
+             --exit-code-from --abort-on-container-exit awt-cypress
