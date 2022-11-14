@@ -18,11 +18,17 @@ it('detects server', () => {
 it('Test small GPX file without change', () => {
     cy.visit('/')
     cy.get('#uploader').selectFile("cypress/fixtures/test_small.gpx");
+    cy.get('#goto-step-2', {
+        timeout: 10_000
+    }).should('be.enabled');
     cy.get('#goto-step-2').click();
     cy.get('#goto-step-3').click();
     cy.get('#goto-step-4').click();
     cy.get('#goto-step-5').click();
 
+    cy.get('#export-button', {
+        timeout: 10_000
+    }).should('be.enabled');
     cy.get('#export-button').click();
 
     cy.url({ timeout: 10000 }).should('contain', '/pending');
@@ -41,7 +47,12 @@ it('Test small GPX file without change', () => {
 it('Test small GPX file with UI change', () => {
     cy.visit('/');
     cy.get('#uploader').selectFile("cypress/fixtures/test_small.gpx");
+
+    cy.get('#goto-step-2', {
+        timeout: 10_000
+    }).should('be.enabled');
     cy.get('#goto-step-2').click();
+
     cy.get('#goto-step-3').click();
     cy.get('[formControlName="create-map-pdfs"]').click(); // no map
 
@@ -50,6 +61,9 @@ it('Test small GPX file with UI change', () => {
 
     cy.get('#goto-step-4').click();
     cy.get('#goto-step-5').click();
+    cy.get('#export-button', {
+        timeout: 10_000
+    }).should('be.enabled');
     cy.get('#export-button').click();
 
     cy.url({ timeout: 10000 }).should('contain', '/pending');
