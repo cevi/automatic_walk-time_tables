@@ -148,9 +148,9 @@ def extract_path(options, coords_field='route', elevation_field='elevation_data'
         height_fetcher_transformer = HeightFetcherTransformer()
         path = height_fetcher_transformer.transform(path)
 
-    # TODO: fix webinterface
-    # path.route_name = options["route_name"]
-
+    if "settings" in options and "route-name" in options["settings"]:
+        path.route_name = options["settings"]["route-name"]
+        logger.info("Route loaded with name: {}".format(path.route_name))
     return path
 
 
