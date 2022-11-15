@@ -55,7 +55,6 @@ class AutomatedWalkTableGenerator:
         self.__path = geo_file_parser.parse(file_content=file_content, extension=options['file_type'])
 
 
-
     def run(self):
         self.__log_runtime(self.__create_files, "Benötigte Zeit für Export")
 

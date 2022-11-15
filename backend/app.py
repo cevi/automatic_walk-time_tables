@@ -148,6 +148,9 @@ def extract_path(options, coords_field='route', elevation_field='elevation_data'
         height_fetcher_transformer = HeightFetcherTransformer()
         path = height_fetcher_transformer.transform(path)
 
+    # TODO: fix webinterface
+    # path.route_name = options["route_name"]
+
     return path
 
 

@@ -120,6 +120,12 @@ class GeoFileParser(object):
         # remove <coordinates> and </coordinates>
         raw_data = raw_data[start_index + len('<coordinates>'):end_index]
 
+        # see if <name>...</name> is present
+        start_index = raw_data.find('<name>')
+        end_index = raw_data.find('</name>')
+        if start_index != -1 and end_index != -1:
+            route_name = raw_data[end_index + len('</name>'):]
+
         coordinates = raw_data.split(' ')
         coordinates = [c.split(',') for c in coordinates]
         has_elevation = len(coordinates[0]) == 3
@@ -143,6 +149,8 @@ class GeoFileParser(object):
             if self.fetch_elevation:
                 path_ = self.height_fetcher.transform(path_)
 
+            path_.route_name = route_name if route_name else ""
+
             return path_
 
         c1 = float(coordinates[0][0])
@@ -153,4 +161,6 @@ class GeoFileParser(object):
         else:
             coordinates = [point.Point_WGS84(float(c[0]), float(c[1]), float(c[2])) for c in coordinates]
 
-        return path.Path(coordinates)
+        path_ = path.Path(coordinates)
+        path_.route_name = route_name if route_name else ""
+        return path_
