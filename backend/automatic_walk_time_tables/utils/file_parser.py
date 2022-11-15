@@ -98,6 +98,14 @@ class GeoFileParser(object):
 
     def parse_kml_file__(self, raw_data: str) -> path.Path:
 
+        # see if <name>...</name> is present
+        start_index = raw_data.find('<name>')
+        end_index = raw_data.find('</name>')
+        route_name = ''
+        if start_index != -1 and end_index != -1:
+            route_name = raw_data[start_index + len('<name>'):end_index]
+            self.__logger.debug('Route name: %s', route_name )
+
         # find <LineString> and </LineString>
         start_index = raw_data.find('<LineString>')
         end_index = raw_data.find('</LineString>')
@@ -119,13 +127,6 @@ class GeoFileParser(object):
 
         # remove <coordinates> and </coordinates>
         raw_data = raw_data[start_index + len('<coordinates>'):end_index]
-
-        # see if <name>...</name> is present
-        start_index = raw_data.find('<name>')
-        end_index = raw_data.find('</name>')
-        route_name = ''
-        if start_index != -1 and end_index != -1:
-            route_name = raw_data[end_index + len('</name>'):]
 
         coordinates = raw_data.split(' ')
         coordinates = [c.split(',') for c in coordinates]
