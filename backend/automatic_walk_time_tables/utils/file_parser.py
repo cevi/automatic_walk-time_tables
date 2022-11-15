@@ -123,6 +123,7 @@ class GeoFileParser(object):
         # see if <name>...</name> is present
         start_index = raw_data.find('<name>')
         end_index = raw_data.find('</name>')
+        route_name = ''
         if start_index != -1 and end_index != -1:
             route_name = raw_data[end_index + len('</name>'):]
 
