@@ -21,6 +21,11 @@ services:
       - ./e2e:/opt/e2e
 
   awt-docs:
+
+    build:
+      context: docs/.
+      dockerfile: Dockerfile
+
     env_file:
       - .env.ci-testing
 
@@ -41,6 +46,10 @@ services:
 
   awt-swiss-tml-api:
 
+    build:
+      context: swiss_TLM_api/.
+      dockerfile: Dockerfile
+
     healthcheck:
       test: "curl -f http://localhost:1848/ready | grep 'ready'"
       interval: 2s
@@ -52,6 +61,10 @@ services:
 
   awt-backend:
 
+    build:
+      context: backend/.
+      dockerfile: Dockerfile
+
     depends_on:
       awt-mapfish-print-server:
         condition: service_healthy
@@ -62,6 +75,13 @@ services:
       - .env.ci-testing
 
   awt-frontend:
+
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      # Used in the first stage of the Dockerfile, thus these env vars must be passed as args
+      args:
+        - ENVIRONMENT_FILE=.env.ci-testing
 
     healthcheck:
       test: "curl -f http://localhost:80"

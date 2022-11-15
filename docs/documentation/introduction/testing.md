@@ -3,7 +3,7 @@
 The application is tested using `cypress`. Make sure to include the `cypress` container with
 
 ```bash
-docker-compose -f docker-compose.yml -f docker-compose.interactive-testing.yml up -d
+docker-compose -f docker-compose.yml -f docker-compose.ci-testing.yml up --build --exit-code-from awt-cypress
 ```
 
 At boot, this container will run the `cypress` tests.
