@@ -1,4 +1,4 @@
-pillow==9.2.0
+pillow==9.3.0
 rtree==1.0.0
 fiona==1.8.21
 grequests==0.6.0
