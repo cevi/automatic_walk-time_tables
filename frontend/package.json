@@ -5,8 +5,8 @@
     "ng": "ng",
     "start": "tsc set-env.ts && BACKEND_DOMAIN=http://localhost:5000 node set-env.js && angular-build-info && ng serve",
     "build": "tsc set-env.ts && BACKEND_DOMAIN=http://localhost:5000 node set-env.js && angular-build-info && ng build",
-    "build:docker": "sed -i 's/\\r//g' create_build_info.sh && bash ./create_build_info.sh && tsc set-env.ts && node set-env.js && ng build",
-    "start:docker": "sed -i 's/\\r//g' create_build_info.sh && bash ./create_build_info.sh && tsc ./set-env.ts && node ./set-env.js && ng serve --port 80 --host 0.0.0.0",
+    "build:docker": "sed -i 's/\\r//g' create_build_info.sh && sh ./create_build_info.sh && tsc set-env.ts && node set-env.js && ng build",
+    "start:docker": "sed -i 's/\\r//g' create_build_info.sh && sh ./create_build_info.sh && tsc ./set-env.ts && node ./set-env.js && ng serve --port 80 --host 0.0.0.0",
     "watch": "tsc set-env.ts && BACKEND_DOMAIN=http://localhost:5000 node set-env.js && ng build --watch --configuration development",
     "test": "ng test"
   },
