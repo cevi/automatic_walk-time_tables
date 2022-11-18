@@ -3109,12 +3109,6 @@
 					<swisstopo:routepoint_id>2114442010</swisstopo:routepoint_id>
 				</extensions>
 			</trkpt>
-			<trkpt lat="46.7387119044" lon="10.3621254036">
-				<ele>46.7</ele>
-				<extensions>
-					<swisstopo:routepoint_id>136791151</swisstopo:routepoint_id>
-				</extensions>
-			</trkpt>
 			<trkpt lat="46.7388045468" lon="10.3621107944">
 				<ele>2345.2</ele>
 				<extensions>
@@ -5381,12 +5375,6 @@
 				<ele>1863.8</ele>
 				<extensions>
 					<swisstopo:routepoint_id>1076989589</swisstopo:routepoint_id>
-				</extensions>
-			</trkpt>
-			<trkpt lat="46.7737814192" lon="10.4154706754">
-				<ele>46.8</ele>
-				<extensions>
-					<swisstopo:routepoint_id>805781812</swisstopo:routepoint_id>
 				</extensions>
 			</trkpt>
 			<trkpt lat="46.7739153331" lon="10.4148229627">
