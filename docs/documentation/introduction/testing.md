@@ -25,3 +25,8 @@ npm run cypress:open
 ```
 
 to open the Cypress GUI. From there, you can run the tests or develop new ones.
+
+::: info
+Some test cases are copied form [ckolin/marschzeittabelle](https://github.com/ckolin/marschzeittabelle) where they got
+released under MIT license.
+:::
