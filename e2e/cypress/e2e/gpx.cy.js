@@ -10,15 +10,6 @@ it('detects server', () => {
     cy.get('.mat-button-wrapper').should('contain', 'So funktioniert es!');
 })
 
-
-it('Test small GPX file with UI change', () => {
-
-    const file = "cypress/fixtures/test_small.gpx";
-    export_with_interaction(file);
-    test_and_save_download(file);
-
-})
-
 describe('[Batch Test] of all GPX files', async () => {
 
     const gpx_files = Cypress.env('gpx_files');

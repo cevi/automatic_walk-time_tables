@@ -10,15 +10,6 @@ it('detects server', () => {
     cy.get('.mat-button-wrapper').should('contain', 'So funktioniert es!');
 })
 
-
-it('Test small KML file with UI change', () => {
-
-    const file = "cypress/fixtures/test_small.kml";
-    export_with_interaction(file);
-    test_and_save_download(file);
-
-})
-
 describe('[Batch Test] of all KML files', async () => {
 
     const kml_files = Cypress.env('kml_files');
