@@ -1,4 +1,8 @@
-import {export_with_interaction, test_and_save_download, test_without_interaction} from './utils.js';
+import {export_with_interaction, test_and_save_download} from './utils.js';
+
+before(() => {
+    cy.exec('rm -rf cypress/downloads/*');
+});
 
 
 it('Test small GPX file with UI change', () => {
