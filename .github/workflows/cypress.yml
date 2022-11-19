@@ -1,0 +1,20 @@
+name: End2End Testing with Cypress
+on:
+  push:
+    branches:
+      - master
+      - dev
+  pull_request:
+    branches:
+      - dev
+      - master
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build the stack
+        run: docker-compose -f docker-compose.yml -f docker-compose.ci-testing.yml build
+
+      - name: Run cypress (e2e tests)
+        run: docker-compose -f docker-compose.yml -f docker-compose.ci-testing.yml up --exit-code-from awt-cypress

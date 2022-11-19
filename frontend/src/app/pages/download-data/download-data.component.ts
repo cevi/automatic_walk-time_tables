@@ -19,7 +19,7 @@ export class DownloadDataComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    window.location.href = DownloadDataComponent.baseURL + 'download/' + this.uuid;
+    window.open(DownloadDataComponent.baseURL + 'download/' + this.uuid, '_blank');
   }
 
 }

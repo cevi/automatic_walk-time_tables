@@ -30,7 +30,7 @@ The following runtime modes are available:
 | `prod-latest` | Production runtime environment, as hosted on [map.cevi.tool](https://map.cevi.tool).                                                          | `map.cevi.tool`        |
 | `prod-dev`    | Same as production mode but with different environment variables and image tags. As hosted on [dev.map.cevi.tool](https://dev.map.cevi.tool). | `dev.map.cevi.tool`    |
 | `local-dev`   | Development runtime environment with enabled hot reloading/rebuilding usefully to develop the application                                     | `localhost`            |
-| `test`        | Used to test the application                                                                                                                  | `localhost`            |
+| `ci-testing`  | Used to test the application. We are using  [cypress](https://www.cypress.io/) for testing.                                                   | `localhost`            |
 
 To specify a mode, you can extend the docker-compose command with the `-f` flag, specifying an additional
 `docker-compose.*.yml` file.
