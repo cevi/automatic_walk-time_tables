@@ -38,6 +38,9 @@ export default {
                         {
                             text: 'Runtime Modes & Environments', link: '/documentation/introduction/environment'
                         },
+                        {
+                            text: 'Testing', link: '/documentation/introduction/testing'
+                        },
                     ]
                 },
                 {

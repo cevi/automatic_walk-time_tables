@@ -154,6 +154,7 @@ export class MapAnimatorService {
 
     const url = MapAnimatorService.BASE_URL + 'parse_route';
 
+    return new Promise<void>((resolve) => {
     fetch(url, {
       method: "POST",
       headers: {
@@ -163,8 +164,11 @@ export class MapAnimatorService {
       body: formData
     })
       .then(response => response.json())
-      .then((resp: any) => this.set_route(resp));
-
+      .then((resp: any) => {
+        this.set_route(resp);
+        resolve();
+      });
+    })
 
   }
 

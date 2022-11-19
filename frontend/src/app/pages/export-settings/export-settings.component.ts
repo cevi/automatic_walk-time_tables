@@ -50,8 +50,7 @@ export class ExportSettingsComponent {
   public new_route_uploaded(route_file: File) {
 
     this.route_file = route_file;
-    this.route_uploaded = true;
-    this.mapAnimator.replace_route(route_file).then();
+    this.mapAnimator.replace_route(route_file).then(() => this.route_uploaded = true);
 
   }
 

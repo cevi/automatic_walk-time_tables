@@ -66,6 +66,7 @@ class AutomatedWalkTableGenerator:
 
     def __create_files(self):
         gpx_rout_name = self.__path.route_name
+        self.__logger.debug(str(self.__path))
 
         name = self.__output_directory + 'Route' if gpx_rout_name == "" else self.__output_directory + gpx_rout_name
 
