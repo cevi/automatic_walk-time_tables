@@ -133,11 +133,17 @@ export class MapAnimatorService {
 
   }
 
-  public async replace_route(route_file: File | undefined) {
+  /**
+   *
+   * @param route_file
+   * @returns {Promise<string>} the name of the route
+   *
+   */
+  public async replace_route(route_file: File | undefined): Promise<string> {
 
     if (!route_file) {
       this.clear();
-      return;
+      return '';
     }
 
     // minify XML data
@@ -154,16 +160,22 @@ export class MapAnimatorService {
 
     const url = MapAnimatorService.BASE_URL + 'parse_route';
 
-    fetch(url, {
-      method: "POST",
-      headers: {
-        ContentType: 'multipart/form-data',
-        Accept: 'application/json',
-      },
-      body: formData
-    })
-      .then(response => response.json())
-      .then((resp: any) => this.set_route(resp));
+    return new Promise<string>((resolve, reject) =>
+      fetch(url, {
+        method: "POST",
+        headers: {
+          ContentType: 'multipart/form-data',
+          Accept: 'application/json',
+        },
+        body: formData
+      })
+        .then(response => response.json())
+        .then((resp: any) => {
+          this.set_route(resp);
+          resolve(resp.route_name);
+        })
+    );
+
 
 
   }

@@ -27,6 +27,7 @@ export class ExportSettingsComponent {
       'legend-position': new FormControl('lower right'),
       'map-layers': new FormControl('ch.swisstopo.pixelkarte-farbe'),
       'auto-scale': new FormControl(false),
+      'route-name': new FormControl(''),
     });
 
 
@@ -34,7 +35,7 @@ export class ExportSettingsComponent {
     try {
 
       if (localStorage['form_values'] && this.isJsonString(localStorage['form_values'])) {
-        this.options.setValue(JSON.parse(localStorage['form_values']))
+        this.options.patchValue(JSON.parse(localStorage['form_values']))
         console.log('Loaded form values from local storage')
       }
 
@@ -50,7 +51,9 @@ export class ExportSettingsComponent {
 
     this.route_file = route_file;
     this.route_uploaded = true;
-    this.mapAnimator.replace_route(route_file).then();
+    this.mapAnimator.replace_route(route_file).then(route_name =>
+      this.options.patchValue({'route-name': route_name})
+    );
 
   }
 
@@ -66,7 +69,6 @@ export class ExportSettingsComponent {
 
     console.log('Downloading map...')
     const settings = this.options.value;
-    settings['route-name'] = this.route_file?.name;
     this.mapAnimator.download_map(settings).then(
       (uuid) => this.router.navigate(['pending', uuid])
     );

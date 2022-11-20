@@ -68,7 +68,7 @@ Request:
 curl 'http://localhost:5000/parse_route' \
   -H 'Accept: application/json' \
   -H 'Content-Type: multipart/form-data; boundary=----WebKitFormBoundary' \
-  --data-raw $'------WebKitFormBoundary\r\nContent-Disposition: form-data; name="options"\r\n\r\n{"encoding":"polyline","file_type":"kml"}\r\n------WebKitFormBoundary\r\nContent-Disposition: form-data; name="file_content"\r\n\r\n<kml><Document><Placemark><ExtendedData><Data name="type"><value>linepolygon</value></Data></ExtendedData><LineString><coordinates>8.618027327171838,47.33919699571174 8.651468773480518,47.32415372661812</coordinates></LineString></Placemark></Document></kml>\r\n------WebKitFormBoundary--\r\n' \
+  --data-raw $'------WebKitFormBoundary\r\nContent-Disposition: form-data; name="options"\r\n\r\n{"encoding":"polyline","file_type":"kml"}\r\n------WebKitFormBoundary\r\nContent-Disposition: form-data; name="file_content"\r\n\r\n<kml><Document><Placemark><ExtendedData><Data name="type"><value>linepolygon</value></Data></ExtendedData><LineString><coordinates>8.618027327171838,47.33919699571174 8.651468773480518,47.32415372661812</coordinates></LineString></Placemark></Document></kml>\r\n------WebKitFormBoundary--\r\n'
 ```
 
 Response:
@@ -77,7 +77,8 @@ Response:
 {
   "status": "success",
   "route": "...",
-  "elevation_data": "..."
+  "elevation_data": "...",
+  "route_name": "..."
 }
 ```
 

@@ -65,6 +65,7 @@ def parse_route():
         result_json = {
             'status': GeneratorStatus.SUCCESS,
             'route': route,
+            'route_name': path.route_name
         }
 
         if path.has_elevation_for_all_points():
