@@ -17,6 +17,8 @@ services:
 
   awt-tile-cache:
     build: tile_caching
+    volumes:
+      - ./tile_caching/cache:/data/nginx/cache
     env_file:
       - .env.local-dev
 
