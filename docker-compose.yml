@@ -53,6 +53,7 @@ services:
     depends_on:
       - awt-mapfish-print-server
       - awt-swiss-tml-api
+
     environment:
       TZ: Europe/Zurich
     env_file:
@@ -74,8 +75,10 @@ services:
 
     ports:
       - "80:80"
+
     depends_on:
       - awt-backend
+
     env_file:
       - .env.local-dev
 

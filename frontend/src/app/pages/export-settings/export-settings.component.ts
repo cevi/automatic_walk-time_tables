@@ -51,9 +51,10 @@ export class ExportSettingsComponent {
 
     this.route_file = route_file;
     this.route_uploaded = true;
-    this.mapAnimator.replace_route(route_file).then(route_name =>
+    this.mapAnimator.replace_route(route_file).then(route_name => {
       this.options.patchValue({'route-name': route_name})
-    );
+      this.route_uploaded = true
+    });
 
   }
 

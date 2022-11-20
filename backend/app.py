@@ -28,7 +28,10 @@ from server_logging.status_handler import ExportStateHandler, ExportStateLogger
 
 stateHandler = ExportStateHandler()
 stateLogger = ExportStateLogger(stateHandler)
-setup_recursive_logger(logging.INFO, stateLogger)
+
+# Set logging level from environment variable
+log_level = os.environ['LOG_LEVEL'] if 'LOG_LEVEL' in os.environ else 'INFO'
+setup_recursive_logger(log_level, stateLogger)
 
 from automatic_walk_time_tables.generator import AutomatedWalkTableGenerator
 from automatic_walk_time_tables.utils.file_parser import GeoFileParser

@@ -41,6 +41,12 @@ def _load_indexes():
 thread = Thread(target=_load_indexes)
 thread.start()
 
+@app.route('/ready', methods=['GET'])
+def ready():
+    global name_index, map_number_index
+    if name_index is None or map_number_index is None:
+        return jsonify({'status': 'loading'})
+    return jsonify({'status': 'ready'})
 
 @app.route('/swiss_name', methods=['GET'])
 def get_name():

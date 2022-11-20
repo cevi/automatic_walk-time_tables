@@ -64,6 +64,20 @@
               "extractLicenses": false,
               "sourceMap": true,
               "namedChunks": true
+            },
+            "cypress": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.cypress.ts"
+                }
+              ],
+              "buildOptimizer": false,
+              "optimization": false,
+              "vendorChunk": true,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "namedChunks": true
             }
           },
           "defaultConfiguration": "production"
@@ -79,6 +93,9 @@
             },
             "development": {
               "browserTarget": "automatic-walk-time-tables:build:development"
+            },
+            "cypress": {
+              "browserTarget": "automatic-walk-time-tables:build:cypress"
             }
           },
           "defaultConfiguration": "development"
