@@ -72,4 +72,6 @@ class HeightFetcherTransformer(PathTransformer):
             else:
                 raise Exception("Unknown coordinate type")
 
-        return Path(points)
+        new_path = Path(points)
+        new_path.route_name = path_.route_name
+        return new_path

@@ -17,6 +17,7 @@ class EquidistantTransformer(PathTransformer):
         """
 
         equidistant_path = Path()
+        equidistant_path.route_name = path_.route_name
         equidistant_path.append(path_.way_points[0])
 
         accumulated_distance = 0

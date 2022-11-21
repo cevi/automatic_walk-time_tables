@@ -2,7 +2,6 @@ import {Component} from '@angular/core';
 import {FormBuilder, FormControl, FormGroup} from "@angular/forms";
 import {MapAnimatorService} from "../../services/map-animator.service";
 import {Router} from "@angular/router";
-import {decode, encode} from "@googlemaps/polyline-codec";
 
 @Component({
   selector: 'app-export-settings',
@@ -28,6 +27,7 @@ export class ExportSettingsComponent {
       'legend-position': new FormControl('lower right'),
       'map-layers': new FormControl('ch.swisstopo.pixelkarte-farbe'),
       'auto-scale': new FormControl(false),
+      'route-name': new FormControl(''),
     });
 
 
@@ -35,7 +35,7 @@ export class ExportSettingsComponent {
     try {
 
       if (localStorage['form_values'] && this.isJsonString(localStorage['form_values'])) {
-        this.options.setValue(JSON.parse(localStorage['form_values']))
+        this.options.patchValue(JSON.parse(localStorage['form_values']))
         console.log('Loaded form values from local storage')
       }
 
@@ -50,7 +50,11 @@ export class ExportSettingsComponent {
   public new_route_uploaded(route_file: File) {
 
     this.route_file = route_file;
-    this.mapAnimator.replace_route(route_file).then(() => this.route_uploaded = true);
+    this.route_uploaded = true;
+    this.mapAnimator.replace_route(route_file).then(route_name => {
+      this.options.patchValue({'route-name': route_name})
+      this.route_uploaded = true
+    });
 
   }
 
@@ -65,7 +69,8 @@ export class ExportSettingsComponent {
   public download_map() {
 
     console.log('Downloading map...')
-    this.mapAnimator.download_map(this.options.value).then(
+    const settings = this.options.value;
+    this.mapAnimator.download_map(settings).then(
       (uuid) => this.router.navigate(['pending', uuid])
     );
 

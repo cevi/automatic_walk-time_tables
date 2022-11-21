@@ -68,6 +68,7 @@ def parse_route():
         result_json = {
             'status': GeneratorStatus.SUCCESS,
             'route': route,
+            'route_name': path.route_name
         }
 
         if path.has_elevation_for_all_points():
@@ -151,6 +152,9 @@ def extract_path(options, coords_field='route', elevation_field='elevation_data'
         height_fetcher_transformer = HeightFetcherTransformer()
         path = height_fetcher_transformer.transform(path)
 
+    if "settings" in options and "route-name" in options["settings"]:
+        path.route_name = options["settings"]["route-name"]
+        logger.info("Route loaded with name: {}".format(path.route_name))
     return path
 
 
