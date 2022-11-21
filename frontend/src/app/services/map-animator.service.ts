@@ -137,7 +137,7 @@ export class MapAnimatorService {
 
     if (!route_file) {
       this.clear();
-      return;
+      throw new Error('No route file selected');
     }
 
     // minify XML data
@@ -154,20 +154,22 @@ export class MapAnimatorService {
 
     const url = MapAnimatorService.BASE_URL + 'parse_route';
 
-    return new Promise<void>((resolve) => {
-    fetch(url, {
-      method: "POST",
-      headers: {
-        ContentType: 'multipart/form-data',
-        Accept: 'application/json',
-      },
-      body: formData
-    })
-      .then(response => response.json())
-      .then((resp: any) => {
-        this.set_route(resp);
-        resolve();
-      });
+    return new Promise<void>((resolve, reject) => {
+      fetch(url, {
+        method: "POST",
+        headers: {
+          ContentType: 'multipart/form-data',
+          Accept: 'application/json',
+        },
+        body: formData
+      })
+        .then(response => response.json())
+        .then((resp: any) => {
+          this.set_route(resp)
+            .then(() => resolve())
+            .catch(err => reject(err));
+        })
+        .catch(err => reject(err));
     })
 
   }
