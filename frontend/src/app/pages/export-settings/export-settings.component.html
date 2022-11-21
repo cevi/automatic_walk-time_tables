@@ -29,8 +29,9 @@
 
         <div *ngIf="parse_error">
           <p class="error">
-            Die Route konnte nicht verarbeitet werden. Bitte lade eine andere Datei hoch.
-          </p>
+            Die Route konnte nicht verarbeitet werden. Bitte lade eine andere Datei hoch. Falls du der Meinung bist, das
+            deine Route im Tool funktionieren sollte, melde dich bitte <a
+            href="https://github.com/cevi/automatic_walk-time_tables">via Github</a>. </p>
           <button mat-stroked-button color="warn" (click)="parse_error = false">
             Neuer Export Starten
           </button>
