@@ -361,7 +361,7 @@ class MapCreator:
             image_type = 'png'
 
         return {
-            "baseURL": "https://wmts.geo.admin.ch/1.0.0/{Layer}/{style}/{Time}/{TileMatrixSet}/{TileMatrix}/{TileCol}/{TileRow}." + image_type,
+            "baseURL": "http://awt-tile-cache/1.0.0/{Layer}/{style}/{Time}/{TileMatrixSet}/{TileMatrix}/{TileCol}/{TileRow}." + image_type,
             "dimensions": ["Time"],
             "dimensionParams": {"Time": "current"},
             "name": layer,

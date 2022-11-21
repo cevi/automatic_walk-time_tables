@@ -1,13 +1,3 @@
-# proxies:
-#   - !proxy
-#     scheme: http
-#     host: awt-tile-cache
-#     port: 8080
-#     matchers:
-#       - !localMatch
-#         reject: true
-#       - !acceptAll { }
-
 templates:
 
   #===========================================================================

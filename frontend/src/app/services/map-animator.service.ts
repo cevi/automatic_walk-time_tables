@@ -133,7 +133,13 @@ export class MapAnimatorService {
 
   }
 
-  public async replace_route(route_file: File | undefined) {
+  /**
+   *
+   * @param route_file
+   * @returns {Promise<string>} the name of the route
+   *
+   */
+  public async replace_route(route_file: File | undefined): Promise<string> {
 
     if (!route_file) {
       this.clear();
@@ -154,7 +160,7 @@ export class MapAnimatorService {
 
     const url = MapAnimatorService.BASE_URL + 'parse_route';
 
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<string>((resolve, reject) => {
       fetch(url, {
         method: "POST",
         headers: {
@@ -166,11 +172,10 @@ export class MapAnimatorService {
         .then(response => response.json())
         .then((resp: any) => {
           this.set_route(resp)
-            .then(() => resolve())
+            .then(() => resolve(resp.route_name))
             .catch(err => reject(err));
-        })
-        .catch(err => reject(err));
-    })
+        }).catch(err => reject(err));
+    });
 
   }
 
