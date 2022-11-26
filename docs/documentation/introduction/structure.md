@@ -40,7 +40,7 @@ More info can be found here: [MapFish Print Server](../mapfish_print_server/abou
 Source in `./swiss_TLM_api` folder.
 :::
 
-More info can be found here: [Swiss TLM API](../swiss_TLM_api/about.md).
+More info can be found here: [Swiss TLM API](../swiss_TLM_API/about.md).
 
 ## Routing Engine
 
