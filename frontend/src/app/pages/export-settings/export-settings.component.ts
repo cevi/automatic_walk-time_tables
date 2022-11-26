@@ -2,7 +2,6 @@ import {Component} from '@angular/core';
 import {FormBuilder, FormControl, FormGroup} from "@angular/forms";
 import {MapAnimatorService} from "../../services/map-animator.service";
 import {Router} from "@angular/router";
-import {decode, encode} from "@googlemaps/polyline-codec";
 
 @Component({
   selector: 'app-export-settings',
@@ -12,9 +11,11 @@ import {decode, encode} from "@googlemaps/polyline-codec";
 export class ExportSettingsComponent {
 
   options: FormGroup;
-  route_uploaded: boolean = false;
+  parse_error: boolean = false;
 
   public route_file: File | undefined;
+  public route_uploaded: boolean = false;
+  public loading = false;
 
   constructor(private mapAnimator: MapAnimatorService, fb: FormBuilder, private router: Router) {
 
@@ -28,6 +29,7 @@ export class ExportSettingsComponent {
       'legend-position': new FormControl('lower right'),
       'map-layers': new FormControl('ch.swisstopo.pixelkarte-farbe'),
       'auto-scale': new FormControl(false),
+      'route-name': new FormControl(''),
     });
 
 
@@ -35,7 +37,7 @@ export class ExportSettingsComponent {
     try {
 
       if (localStorage['form_values'] && this.isJsonString(localStorage['form_values'])) {
-        this.options.setValue(JSON.parse(localStorage['form_values']))
+        this.options.patchValue(JSON.parse(localStorage['form_values']))
         console.log('Loaded form values from local storage')
       }
 
@@ -49,8 +51,19 @@ export class ExportSettingsComponent {
 
   public new_route_uploaded(route_file: File) {
 
+    this.loading = true;
+
     this.route_file = route_file;
-    this.mapAnimator.replace_route(route_file).then(() => this.route_uploaded = true);
+    this.mapAnimator.replace_route(route_file)
+      .then((route_name) => {
+        this.options.patchValue({'route-name': route_name})
+        this.route_uploaded = true;
+        this.loading = false;
+      })
+      .catch(() => {
+        this.parse_error = true;
+        this.loading = false;
+      });
 
   }
 
@@ -65,7 +78,8 @@ export class ExportSettingsComponent {
   public download_map() {
 
     console.log('Downloading map...')
-    this.mapAnimator.download_map(this.options.value).then(
+    const settings = this.options.value;
+    this.mapAnimator.download_map(settings).then(
       (uuid) => this.router.navigate(['pending', uuid])
     );
 

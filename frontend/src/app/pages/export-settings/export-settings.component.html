@@ -17,10 +17,25 @@
           kannst du eine KML-Datei hochladen, die du sie vom Kartenviewer von Swisstopo exportieren kannst.
         </p>
 
-        <app-upload-area *ngIf="!route_uploaded" class="upload-area"
+        <app-upload-area *ngIf="!route_uploaded && !parse_error && !loading" class="upload-area"
                          (file_uploaded)="new_route_uploaded($event)"></app-upload-area>
-        <app-download *ngIf="route_uploaded && route_file" [name]="route_file?.name"
+        <app-download *ngIf="route_uploaded && route_file && !parse_error" [name]="route_file?.name"
                       [changeDate]="route_file?.lastModified"></app-download>
+
+        <div *ngIf="loading">
+          <p>Route wird verarbeitet...</p>
+          <mat-progress-bar mode="query"></mat-progress-bar>
+        </div>
+
+        <div *ngIf="parse_error">
+          <p class="error">
+            Die Route konnte nicht verarbeitet werden. Bitte lade eine andere Datei hoch. Falls du der Meinung bist, das
+            deine Route im Tool funktionieren sollte, melde dich bitte <a
+            href="https://github.com/cevi/automatic_walk-time_tables">via Github</a>. </p>
+          <button mat-stroked-button color="warn" (click)="parse_error = false">
+            Neuer Export Starten
+          </button>
+        </div>
 
       </div>
 
@@ -29,7 +44,8 @@
       </button>
       <button mat-stroked-button color="warn" *ngIf="route_uploaded" (click)="delete_route_file()"> Datei löschen
       </button>
-      <button mat-stroked-button color="primary" matStepperNext [disabled]="!route_uploaded" id="goto-step-2">Weiter</button>
+      <button mat-stroked-button color="primary" matStepperNext [disabled]="!route_uploaded" id="goto-step-2">Weiter
+      </button>
 
     </mat-step>
 

@@ -98,6 +98,14 @@ class GeoFileParser(object):
 
     def parse_kml_file__(self, raw_data: str) -> path.Path:
 
+        # see if <name>...</name> is present
+        start_index = raw_data.find('<name>')
+        end_index = raw_data.find('</name>')
+        route_name = ''
+        if start_index != -1 and end_index != -1:
+            route_name = raw_data[start_index + len('<name>'):end_index]
+            self.__logger.debug('Route name: %s', route_name )
+
         # find <LineString> and </LineString>
         start_index = raw_data.find('<LineString>')
         end_index = raw_data.find('</LineString>')
@@ -143,6 +151,8 @@ class GeoFileParser(object):
             if self.fetch_elevation:
                 path_ = self.height_fetcher.transform(path_)
 
+            path_.route_name = route_name if route_name else ""
+
             return path_
 
         c1 = float(coordinates[0][0])
@@ -153,4 +163,6 @@ class GeoFileParser(object):
         else:
             coordinates = [point.Point_WGS84(float(c[0]), float(c[1]), float(c[2])) for c in coordinates]
 
-        return path.Path(coordinates)
+        path_ = path.Path(coordinates)
+        path_.route_name = route_name if route_name else ""
+        return path_

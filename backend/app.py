@@ -13,7 +13,7 @@ import zipfile
 from threading import Thread
 
 import polyline
-from flask import Flask, request, send_file
+from flask import Flask, request, send_file, redirect
 from flask_cors import CORS
 
 from automatic_walk_time_tables.arg_parser import get_parser
@@ -68,6 +68,7 @@ def parse_route():
         result_json = {
             'status': GeneratorStatus.SUCCESS,
             'route': route,
+            'route_name': path.route_name
         }
 
         if path.has_elevation_for_all_points():
@@ -151,6 +152,9 @@ def extract_path(options, coords_field='route', elevation_field='elevation_data'
         height_fetcher_transformer = HeightFetcherTransformer()
         path = height_fetcher_transformer.transform(path)
 
+    if "settings" in options and "route-name" in options["settings"]:
+        path.route_name = options["settings"]["route-name"]
+        logger.info("Route loaded with name: {}".format(path.route_name))
     return path
 
 
@@ -255,6 +259,12 @@ def download(uuid):
     state = stateHandler.get_status(uuid)
 
     if (state and state['status'] != GeneratorStatus.SUCCESS) or not os.path.exists(base_path):
+
+        # check if content type is HTML
+        if 'text/html' in request.headers.get('Accept', ''):
+            frontend_url = os.environ['FRONTEND_DOMAIN']
+            return redirect(frontend_url, code=302)
+
         return app.response_class(
             response=json.dumps({
                 'status': GeneratorStatus.ERROR,
