@@ -6,7 +6,7 @@ WORKDIR /app
 
 # Needed for RTree pip package
 RUN apt update
-RUN apt -y install libspatialindex-dev
+RUN apt -y install libspatialindex-dev curl
 
 # Install requirements
 COPY ./requirements.txt /app
