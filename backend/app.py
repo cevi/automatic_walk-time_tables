@@ -291,7 +291,7 @@ def download(uuid):
             data,
             mimetype='application/zip',
             as_attachment=True,
-            attachment_filename='Download.zip'
+            download_name='Download.zip'
         )
 
 

@@ -1,4 +1,6 @@
-FROM python:3.9
+FROM python:3.11.0-slim
+
+ENV PIP_ROOT_USER_ACTION=ignore
 
 WORKDIR /app
 

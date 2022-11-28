@@ -1,5 +1,5 @@
 # Build Stage
-FROM node:16 as builder
+FROM node:18.12-alpine3.16 as builder
 
 WORKDIR /app
 
@@ -12,7 +12,7 @@ COPY . ./
 RUN npm run docs:build
 
 
-FROM nginx:alpine
+FROM nginx:1.23.2-alpine
 
 # Copy the builded docs
 COPY --from=builder /app/.vitepress/dist /usr/share/nginx/html

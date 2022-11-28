@@ -77,7 +77,14 @@ class NameIndex:
     def __download_resources(self, url: str, destination: str):
         # Download a zip from url and extract it
         output = destination + 'swissTLM3D_LV95_raw.zip'
-        gdown.download(url, output, quiet=False)
+
+        # download the zip file and save it in output
+        req = requests.get(url, stream=True)
+        with open(output, 'wb') as f:
+            for chunk in req.iter_content(chunk_size=1024):
+                if chunk:
+                    f.write(chunk)
+
         shutil.unpack_archive(filename=output, extract_dir=destination)
 
         for directory in os.listdir(destination):

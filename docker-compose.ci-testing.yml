@@ -54,7 +54,7 @@ services:
       test: "curl -f http://localhost:1848/ready | grep 'ready'"
       interval: 2s
       timeout: 1s
-      retries: 60
+      retries: 180
 
     env_file:
       - .env.ci-testing
@@ -87,7 +87,7 @@ services:
       test: "curl -f http://localhost:80"
       interval: 2s
       timeout: 1s
-      retries: 60
+      retries: 180
 
     env_file:
       - .env.ci-testing
