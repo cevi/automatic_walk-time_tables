@@ -20,6 +20,9 @@ services:
     volumes:
       - ./e2e:/opt/e2e
 
+    env_file:
+      - .env.ci-testing
+
   awt-docs:
 
     build:

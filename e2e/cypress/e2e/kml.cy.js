@@ -27,6 +27,7 @@ describe('[Batch Test] of all KML files', async () => {
 
 
 it('test backend availability', () => {
-    cy.visit("http://awt-backend:5000", {failOnStatusCode: false});
+    const backend_domain = Cypress.env('BACKEND_DOMAIN');
+    cy.visit(backend_domain, {failOnStatusCode: false});
 })
 
