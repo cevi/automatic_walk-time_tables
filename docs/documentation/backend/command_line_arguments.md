@@ -1,3 +1,5 @@
+# Command Line Arguments
+
 ## Required Arguments
 
 | Name                | arguments | Description                                                                |

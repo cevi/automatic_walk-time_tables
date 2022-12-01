@@ -10,14 +10,14 @@ Jugend+Sport. The wrapper can be run in two configurations:
 ## Run the Wrapper as a Web-API using Docker
 
 We are using a flask server to expose the python3 module as API endpoints. You can start the server with the following
-commands. Once executed, the API can be accessed over http://localhost:5000/.
+commands. Once executed, the API can be accessed at <a href="http://localhost:5000/" target="_blank" rel="noreferrer">localhost:5000</a>.
 
 ```bash
 $ docker build . -t cevi/walktable_backend:latest
 $ docker run --publish=5000:5000  cevi/walktable_backend:latest
 ```
 
-The full documentation of the API endpoints can be found here: [API Endpoints](API_Endpoints.md).
+The full documentation of the API endpoints can be found here: [API Endpoints](./API_endpoints.md).
 
 ## Run it locally using Python3
 
@@ -37,10 +37,10 @@ flask API to communicate with the backend.
    ```
 
 2) In order to create PDF-map exports, you need to set up a docker container. Please follow
-   the [instructions](mapfish_print_server/README.md) inside the `../mapfish_print_server` folder. You can disable the
+   the [instructions](../mapfish_print_server/about.md) inside the `../mapfish_print_server` folder. You can disable the
    PDF export
    feature with the `--create-map-pdfs False` argument,
-   see [Command Line Arguments](docs/documentation/backend/command_line_arguments.md) for further details.
+   see [Command Line Arguments](command_line_arguments.md) for further details.
 
 ### Launch the script
 
@@ -53,7 +53,7 @@ $ python3 main.py --file-name <file_name>
 Where the `file-name` flag specifies the path to your route file (GPX- or KML-file). Once the script has terminated, the
 produced files (Excel, PDFs...) are stored in the directory specified with the argument `--output_directory`; default
 is `./output/`. A full documentation of all command line arguments can be found
-here: [Command Line Arguments](docs/documentation/backend/command_line_arguments.md).
+here: [Command Line Arguments](command_line_arguments.md).
 
 ## Test and Debug Tools
 
