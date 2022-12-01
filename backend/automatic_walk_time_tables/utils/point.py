@@ -4,6 +4,14 @@ from automatic_walk_time_tables.geo_processing import coord_transformation
 
 
 class PointType:
+    """
+    Point type class
+
+    Describes the type of coordinate used in the point class. We use EPSG numbers to describe the coordinate system.
+    See https://en.wikipedia.org/wiki/EPSG_Geodetic_Parameter_Dataset
+
+    """
+
     NONE = "NONE"
     LV03 = "21781"
     LV95 = "2056"
