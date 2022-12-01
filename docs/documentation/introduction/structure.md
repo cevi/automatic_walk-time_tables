@@ -23,6 +23,15 @@ table.
 
 More info can be found here: [Backend](../backend/about.md).
 
+## Tile Cache
+
+::: info
+Source in `./tile_caching` folder.
+:::
+
+We use a simple nginx proxy to cache the fetched map tiles. This speeds up the printing time of the MapFish print
+service. For that nginx is configured to cache the JPEG images (tiles) retrieved from the swisstopo servers.
+
 ## MapFish Print Server
 
 ::: info
