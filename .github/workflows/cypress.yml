@@ -1,0 +1,23 @@
+name: End2End Testing with Cypress
+on:
+  push:
+    {}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the source code
+      - name: 🛎️  Checkout
+        uses: actions/checkout@v2
+
+      # Restores the cache if it exists.
+      - name: ⛏ Restore docker image from cache
+        uses: satackey/action-docker-layer-caching@v0.0.11
+        continue-on-error: true
+
+      - name: 🏗️ Build the stack
+        run: docker-compose -f docker-compose.yml -f docker-compose.ci-testing.yml build
+
+      - name: 🚀 Run cypress (e2e tests)
+        run: docker-compose -f docker-compose.yml -f docker-compose.ci-testing.yml up --exit-code-from awt-cypress

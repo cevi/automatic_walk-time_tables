@@ -2,10 +2,10 @@
 *
 
 # Allow files and directories
-!webinterface
+!frontend
 !.git/HEAD
 !.git/refs/heads/*
+!.env.*
 
 # Folders to ignore
-webinterface/node_modules/*
-webinterface/src/build.ts
+frontend/node_modules

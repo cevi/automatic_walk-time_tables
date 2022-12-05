@@ -1,8 +1,9 @@
 import logging
 import os
 from typing import List
-
 import requests
+import time
+
 from rtree.exceptions import RTreeError
 from rtree.index import Index as RTreeIndex
 
@@ -16,30 +17,41 @@ class MapNumberIndex:
 
     index_file_path = './index_cache/map_numbers_index'
 
-    def __init__(self):
+    def __init__(self, force_rebuild=False):
+        start = time.time()
+        
+        if force_rebuild:
+            self.__download_map_numbers()
+            end = time.time()
+            logger.info('Map numbers index created (after {}s)'.format(str(end - start)))
+            return
 
+        # try to load the index
         try:
             self.index = RTreeIndex(self.index_file_path)
         except RTreeError as e:
             logger.error("Could not load index file for map numbers. " + str(e))
 
-            # delete corrupted file (index_file_path) and retry
+            # recreate the index.
+            self.__download_map_numbers()
+        end = time.time()
+        logger.info('Map numbers index loaded (after {}s)'.format(str(end - start)))
+            
+    def __download_map_numbers(self):
+        try:
             os.remove(self.index_file_path + '.dat')
             os.remove(self.index_file_path + '.idx')
-            self.index = RTreeIndex(self.index_file_path)
-
-            if self.index and self.index.get_size() > 0:
-                logger.info(
-                    'MapNumber index of size {} found at {}'.format(self.index.get_size(), self.index_file_path))
-                return
-
+        except FileNotFoundError:
+            pass
+        self.index = RTreeIndex(self.index_file_path)
+        
         # Build index using the swisstopo api
         base_coordinates = [2650000, 1200000]
 
         base_url = "https://api3.geo.admin.ch/rest/services/all/MapServer/identify?geometryFormat=geojson" \
                    "&geometryType=esriGeometryPoint&lang=de&sr=2056&layers=all:ch.swisstopo.pixelkarte-pk25.metadata" \
-                   "&limit=50&returnGeometry=true&tolerance=10000&&imageDisplay=1283,937,96&mapExtent=400000,000000," \
-                   f"900000,300000&offset=200&geometry={base_coordinates[0]},{base_coordinates[1]}"
+                   "&limit=50&returnGeometry=true&tolerance=10000&imageDisplay=1283,937,96&mapExtent=400000,000000," \
+                   f"900000,300000&geometry={base_coordinates[0]},{base_coordinates[1]}"
 
         for i in range(0, 250, 50):
             url = base_url + f"&offset={i}"
@@ -52,6 +64,8 @@ class MapNumberIndex:
                 self.index.insert(id=0,
                                   coordinates=map_['bbox'],
                                   obj="{} ({})".format(map_["properties"]['lk_name'], map_["properties"]['tileid']))
+            self.index.flush() # save the index to disk
+        logger.info("Map numbers index created.")
 
     def fetch_map_numbers(self, coordinates: List[List[int]]) -> str:
 

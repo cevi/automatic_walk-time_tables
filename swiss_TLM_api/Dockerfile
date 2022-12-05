@@ -1,10 +1,12 @@
-FROM python:3.9
+FROM python:3.11.0-slim
+
+ENV PIP_ROOT_USER_ACTION=ignore
 
 WORKDIR /app
 
 # Needed for RTree pip package
 RUN apt update
-RUN apt -y install libspatialindex-dev
+RUN apt -y install libspatialindex-dev curl
 
 # Install requirements
 COPY ./requirements.txt /app

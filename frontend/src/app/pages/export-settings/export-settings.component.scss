@@ -1,0 +1,70 @@
+#export-button {
+
+  margin-top: 25px;
+
+}
+
+.mat-select {
+  background-color: rgba(0, 0, 0, 0.04);
+  padding: 15px 5px;
+
+}
+
+.mat-form-field {
+  width: 100%;
+}
+
+.slider {
+  margin: 25px 0 0;
+  display: grid;
+
+}
+
+.help-button {
+  margin: 0 20px 0 0;
+}
+
+@media (min-width: 600px) {
+  .slider {
+    grid-template-columns: 220px auto;
+    margin-top: 10px;
+  }
+}
+
+.mat-stepper-vertical {
+  background-color: transparent;
+}
+
+
+.slider label {
+
+  line-height: 45px;
+
+}
+
+.content-block {
+  margin-bottom: 20px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.help-button {
+  display: block;
+  width: 200px;
+  margin: 0 auto;
+}
+
+.upload-area {
+  margin: 20px 0;
+  display: block;
+}
+
+.error {
+  color: red;
+}
+
+.mat-stroked-button {
+  margin: 0 10px 0 0;
+}

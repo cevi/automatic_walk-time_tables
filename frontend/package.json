@@ -1,0 +1,53 @@
+{
+  "name": "automatic-walk-time-tables",
+  "version": "3.0.0",
+  "scripts": {
+    "ng": "ng",
+    "start": "tsc set-env.ts && BACKEND_DOMAIN=http://localhost:5000 node set-env.js && angular-build-info && ng serve",
+    "build": "tsc set-env.ts && BACKEND_DOMAIN=http://localhost:5000 node set-env.js && angular-build-info && ng build",
+    "build:docker": "sed -i 's/\\r//g' create_build_info.sh && sh ./create_build_info.sh && tsc set-env.ts && node set-env.js && ng build",
+    "start:docker": "sed -i 's/\\r//g' create_build_info.sh && sh ./create_build_info.sh && tsc ./set-env.ts && node ./set-env.js && ng serve --port 80 --host 0.0.0.0 --disable-host-check",
+    "watch": "tsc set-env.ts && BACKEND_DOMAIN=http://localhost:5000 node set-env.js && ng build --watch --configuration development",
+    "test": "ng test"
+  },
+  "private": true,
+  "dependencies": {
+    "@angular/animations": "~13.3.11",
+    "@angular/cdk": "^13.3.9",
+    "@angular/common": "~13.3.11",
+    "@angular/compiler": "~13.3.11",
+    "@angular/core": "~13.3.11",
+    "@angular/forms": "~13.3.11",
+    "@angular/material": "^13.3.9",
+    "@angular/platform-browser": "~13.3.11",
+    "@angular/platform-browser-dynamic": "~13.3.11",
+    "@angular/router": "~13.3.11",
+    "@googlemaps/polyline-codec": "^1.0.28",
+    "echarts": "^5.3.3",
+    "ngx-echarts": "6.0.1",
+    "ol": "^6.15.1",
+    "proj4": "^2.8.0",
+    "rxjs": "~6.6.0",
+    "tslib": "^2.3.0",
+    "zone.js": "~0.11.4",
+    "colors": "^1.1.2",
+    "dotenv": "^5.0.0"
+  },
+  "devDependencies": {
+    "@angular-devkit/build-angular": "^13.3.9",
+    "@angular/cli": "^13.3.9",
+    "@angular/compiler-cli": "~13.3.11",
+    "@types/jasmine": "~3.8.0",
+    "@types/node": "^12.20.55",
+    "@types/proj4": "^2.5.2",
+    "angular-build-info": "^2.0.1",
+    "jasmine-core": "~3.8.0",
+    "karma": "^6.3.14",
+    "karma-chrome-launcher": "~3.1.0",
+    "karma-coverage": "~2.0.3",
+    "karma-jasmine": "~4.0.0",
+    "karma-jasmine-html-reporter": "~1.7.0",
+    "typescript": "~4.6.4",
+    "ts-node": "~5.0.1"
+  }
+}

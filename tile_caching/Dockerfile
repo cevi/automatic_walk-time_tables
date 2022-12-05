@@ -1,12 +1,6 @@
-FROM mendlik/nginx:1.0.0
+FROM nginx:1.23.2-alpine
 
-ARG BUILD_DATE
-ARG VERSION
-ARG VCS_REF
-ARG VCS_URL
-LABEL org.label-schema.build-date=$BUILD_DATE \
-      org.label-schema.vcs-ref=$VCS_REF \
-      org.label-schema.vcs-url=$VCS_URL \
-      org.label-schema.version=$VERSION
+ADD nginx.conf /etc/nginx/nginx.conf
 
-COPY nginx.conf /etc/nginx/nginx.conf
+# make dir /data/nginx/cache
+RUN mkdir -p /data/nginx/cache

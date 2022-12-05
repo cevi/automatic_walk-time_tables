@@ -1,0 +1,169 @@
+<h2>J+S-Marschzeittabellen automatisiert generieren</h2>
+
+<button mat-stroked-button color="primary" class="help-button" routerLink="guide">So funktioniert es!
+</button>
+
+<form [formGroup]="options">
+
+  <mat-stepper orientation="vertical">
+
+    <mat-step [hasError]="!route_uploaded" errorMessage="Route fehlt! Bitte Datei hochladen.">
+
+      <ng-template matStepLabel>Route Hochladen</ng-template>
+
+      <div class="content-block">
+        <p>
+          Lade eine GPX-Datei hoch, diese kannst du aus SchweizMobil oder der Swisstopo-App exportieren. Alternativ
+          kannst du eine KML-Datei hochladen, die du sie vom Kartenviewer von Swisstopo exportieren kannst.
+        </p>
+
+        <app-upload-area *ngIf="!route_uploaded && !parse_error && !loading" class="upload-area"
+                         (file_uploaded)="new_route_uploaded($event)"></app-upload-area>
+        <app-download *ngIf="route_uploaded && route_file && !parse_error" [name]="route_file?.name"
+                      [changeDate]="route_file?.lastModified"></app-download>
+
+        <div *ngIf="loading">
+          <p>Route wird verarbeitet...</p>
+          <mat-progress-bar mode="query"></mat-progress-bar>
+        </div>
+
+        <div *ngIf="parse_error">
+          <p class="error">
+            Die Route konnte nicht verarbeitet werden. Bitte lade eine andere Datei hoch. Falls du der Meinung bist, das
+            deine Route im Tool funktionieren sollte, melde dich bitte <a
+            href="https://github.com/cevi/automatic_walk-time_tables">via Github</a>. </p>
+          <button mat-stroked-button color="warn" (click)="parse_error = false">
+            Neuer Export Starten
+          </button>
+        </div>
+
+      </div>
+
+      <button mat-stroked-button color="primary" *ngIf="!route_uploaded" routerLink="guide" fragment="get-gpx-file"> Wie
+        erhalte ich eine GPX- oder KML-Datei?
+      </button>
+      <button mat-stroked-button color="warn" *ngIf="route_uploaded" (click)="delete_route_file()"> Datei löschen
+      </button>
+      <button mat-stroked-button color="primary" matStepperNext [disabled]="!route_uploaded" id="goto-step-2">Weiter
+      </button>
+
+    </mat-step>
+
+    <mat-step>
+      <ng-template matStepLabel>Einstellungen zum Höhenprofil</ng-template>
+
+      <app-elevation-profile></app-elevation-profile>
+
+      <div class="content-block">
+
+        <p>
+          Hier kannst du einstellen, wo die Legende im Höhenprofil angezeigt wird.
+          Das Höhenprofil wird deinem Export als Bild beigefügt.
+        </p>
+
+        <mat-select appearance="fill" placeholder="Position der Legende" formControlName="legend-position">
+          <mat-option value="upper left">Oben Links</mat-option>
+          <mat-option value="lower left">Unten Links</mat-option>
+          <mat-option value="upper right">Oben Rechts</mat-option>
+          <mat-option value="lower right">Unten Rechts</mat-option>
+        </mat-select>
+
+      </div>
+
+      <button mat-stroked-button color="primary" matStepperNext id="goto-step-3">Weiter</button>
+
+    </mat-step>
+
+
+    <mat-step>
+      <ng-template matStepLabel>Einstellungen zur Karte</ng-template>
+
+      <div class="content-block">
+        <mat-slide-toggle formControlName="create-map-pdfs">Karte als PDF beifügen</mat-slide-toggle>
+        <br>
+        <mat-slide-toggle formControlName="auto-scale">Massstab automatisch wählen</mat-slide-toggle>
+
+        <div class="slider">
+          <label>Kartenmassstab: 1:{{scale.value}}</label>
+          <mat-slider #scale min="10000" max="100000" step="5000" [disabled]="this.options.controls['auto-scale'].value"
+                      (change)="options.controls['map-scaling'].setValue($event.value)"
+                      [value]="options.controls['map-scaling'].value"></mat-slider>
+        </div>
+      </div>
+
+      <div class="content-block">
+
+        <p>
+          Kartenlayer auswählen:
+        </p>
+
+        <mat-select appearance="fill" placeholder="Kartenlayer" formControlName="map-layers">
+          <mat-option value="ch.swisstopo.pixelkarte-farbe">Basiskarte Farbig</mat-option>
+          <mat-option value="ch.swisstopo.swissimage-product">Luftbild</mat-option>
+          <mat-option
+            value="ch.swisstopo.pixelkarte-farbe,ch.bafu.wrz-wildruhezonen_portal,ch.bafu.bundesinventare-auen,ch.bafu.bundesinventare-hochmoore,ch.bafu.bundesinventare-flachmoore,ch.bafu.bundesinventare-jagdbanngebiete,ch.bafu.schutzgebiete-schweizerischer_nationalpark,ch.bafu.bundesinventare-trockenwiesen_trockenweiden">
+            Wildruhezonen
+          </mat-option>
+          <mat-option
+            value="ch.swisstopo.vec200-miscellaneous,ch.swisstopo.vec200-names-namedlocation,ch.swisstopo.vec25-gebaeude,ch.swisstopo.swisstlm3d-eisenbahnnetz,ch.swisstopo.swisstlm3d-gewaessernetz,ch.swisstopo.swisstlm3d-uebrigerverkehr,ch.swisstopo.swisstlm3d-wald,ch.swisstopo.swisstlm3d-strassen,ch.swisstopo.swisstlm3d-wanderwege,ch.swisstopo.vec25-heckenbaeume,ch.swisstopo.geologie-geotope">
+            Minimale Karte
+          </mat-option>
+        </mat-select>
+
+      </div>
+
+      <button mat-stroked-button color="primary" matStepperNext id="goto-step-4">Weiter</button>
+
+    </mat-step>
+
+    <mat-step>
+
+      <ng-template matStepLabel>Einstellungen zur Marschzeittabelle</ng-template>
+
+
+      <div class="content-block">
+        <mat-slide-toggle formControlName="create-excel">Marschzeittabelle als Excel beifügen</mat-slide-toggle>
+
+        <div class="slider">
+          <label>Geschwindigkeit: {{velocity.value}} km/h</label>
+          <mat-slider #velocity min="0.5" max="20" step="0.25"
+                      (change)="options.controls['velocity'].setValue($event.value)"
+                      [value]="options.controls['velocity'].value"
+          ></mat-slider>
+        </div>
+
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Dein Name</mat-label>
+          <input matInput type="text" formControlName="creator-name">
+        </mat-form-field>
+
+        <br>
+
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Abmarsch Zeit</mat-label>
+          <input matInput type="datetime-local" formControlName="departure-time">
+        </mat-form-field>
+      </div>
+
+      <button mat-stroked-button color="primary" matStepperNext id="goto-step-5">Weiter</button>
+
+    </mat-step>
+
+
+    <mat-step>
+      <ng-template matStepLabel>Marschzeittabelle Erstellen</ng-template>
+      <div class="content-block">
+
+        <p>Nun sind wir bereit deine Marschzeittabelle zu erstellen:</p>
+        <button mat-stroked-button color="primary" [disabled]="!route_uploaded" id="export-button"
+                (click)="download_map()">
+          Generieren lassen
+        </button>
+      </div>
+
+    </mat-step>
+
+  </mat-stepper>
+
+</form>
+

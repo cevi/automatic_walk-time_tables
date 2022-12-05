@@ -1,4 +1,4 @@
-![Claim Image](imgs/Claim.png)
+![Claim Image](docs/imgs/Claim.png)
 
 # J+S-Marschzeittabellen automatisiert generieren
 
@@ -10,12 +10,12 @@ Velo-Tour zu automatisieren und zu beschleunigen.
 Heute gibt es bereits verschiedenste Online-Tool, die J+S-Leiter*innen und Wanderfreudigen das Planen einer Wanderung
 erleichtern:
 
-- Die kostenpflichtige Online-Karte von SchweizMobil. SchweizMobil ist Dank den magnetischen Wegen (d.h. die
+- Die kostenpflichtige Online-Karte von SchweizMobil. SchweizMobil ist Dank der magnetischen Wege (d.h. die
   eingezeichnete Route folgt automatisch dem Wanderweg/der Strasse) und der Zeitberechnung (gemäss der Formel der
   Schweizer Wanderwege) bereits eine grosse Hilfe beim Planen.
 
 - Für mobile Endgeräte eignet sich ebenfalls die offizielle App des Bundesamts für Landestopografie swisstopo. Analog
-  zur App SchweizMobil, bietet auch die swisstopo App eine Funktion zur Routenplanung mit magnetischen Wegen.
+  zur App SchweizMobil bietet auch die swisstopo App eine Funktion zur Routenplanung mit magnetischen Wegen.
 
 Ist man mit einer grösseren Gruppe unterwegs (so zum Beispiel in einem J+S-Lager), ist eine ausführliche Planung
 unumgänglich. Doch genau in diesen Szenarien stossen die existierenden Tools an ihr Grenzen. Dieses Projekt setzt genau
@@ -28,16 +28,20 @@ für einen durchschnittlichen Wanderer eine geeignete Approximation an die tats�
 einer Gruppe unterwegs ist, die wohl möglich noch viel Gepäck trägt, möchte die Marschgeschwindigkeit manuell
 anpassen (siehe auch J+S-Broschüre Berg).
 
-## Umfang dieses Projektes
+## Umfang dieses Projektes - Roadmap
 
-In einem ersten Schritt ist es mein Ziel, das Generieren einer Marschzeittabelle (anhand der Excel-Vorlage von
-Jugend+Sport) zu automatisieren. Eine aus SchweizMobil exportierte Route (bzw. ein beliebiges GPX-File) dient dabei als
-Grundlage.
+- [x] In einem ersten Schritt ist es unser Ziel, das Generieren einer Marschzeittabelle (anhand der Excel-Vorlage von
+  Jugend+Sport) zu automatisieren. Eine aus SchweizMobil oder der Swisstopo App exportierte Route (bzw. ein beliebiges
+  GPX-File) dient dabei als Grundlage.
+- [x] In einem nächsten Schritt soll es möglich sein, die gewählten Punkte auf der einer interaktiven Karte zu
+  visualisieren und bei Bedarf zu verschieben.
+- [ ] Das Zeichnen neuer Routen soll direkt in unserem Webinterface möglich sein (damit entfällt der GPX-Export). Herzu
+  werden magnetische Wege verwendet. D.h. die Route soll dabei automatisch an den nächsten Weg angepasst werden.
 
-Weitere Funktionalitäten sind in Planung und können gerne auch per Enhancement-Issue besprochen werden.
+Weitere Funktionalitäten können gerne auch per Enhancement-Issue gewünscht werden.
 
 **Wichtig:** Die manuelle Planung bleibt ein grundlegender Bestandteil der Vorbereitung auf eine Wanderung. Dieses
-Projekt zielt lediglich auf die Beschleunigung mechanische, sich wiederholender Prozesse wie die Erstellung einer
+Projekt zielt lediglich auf die Beschleunigung mechanischer, sich wiederholender Prozesse wie die Erstellung einer
 Marschzeittabelle auf der Grundlage einer bestehenden Route. Dabei wird das sorgfältige Planen und Durchdenken einer
 Aktivität in keinerlei Hinsicht ersetzt!
 
@@ -55,24 +59,26 @@ The aim of this project is to automate and speed up the process of creating a J+
 tour. There are already some tools that provide valuable support for planning. Nevertheless, they are not suitable for
 planning a hike with larger groups, such as in a J+S-camp.
 
-In a first step, my goal is to automate the generation of a walk-time table (using the Excel template from Jugend+Sport)
-. The walk-table is generated based on an GPX file (for example exported from SchweizMobil or from the swisstopo app
-). A python script then generates an Excel file and a map of the route for further
-manually planning by the J+S-leader.
+The goal of this project is to provide a tool that is suitable for planning hikes with larger groups. This is realised
+with an interactive map that allows to plan a route and to adjust the walk-time table accordingly. All based on an easy
+to user web interface.
+
+In the end the user should be able to create a walk-time table for a hike with a few clicks and export it as a PDF as
+well as an Excel file containing the walk-time table based on the J+S template.
 
 **Important:** Manual planning remains a fundamental part of preparing for a hike. This project only aims to speed up
 mechanical, repetitive processes like creating a walk-time table based on an existing route. This programm is no
 substitute for careful planning.
 
-## Run it Locally and Start Developing
+## Run it locally and Start Developing
 
-You can run the application locally with just one command. Now you can open `localhost` in your web browser. For more
-information read the [get started guide](/GetStarted.md).
+You can run the application locally using just one command.
 
-```bash
-$ docker-compose up [--build]
+```
+docker-compose up [--build]
 ```
 
 *Note:* `--build` is optional and forces docker to rebuild the containers.
 
-
+Simply take a look at the documentation [Getting Started](https://docs.map.cevi.tools/). The docs can also be accessed
+from your local build by visiting `localhost:4000` (once the containers are running).
