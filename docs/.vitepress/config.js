@@ -5,12 +5,7 @@ export default {
     title: 'Cevi.Tools',
     description: 'Automatic Walk-Time Tables',
 
-    // TODO: configure nginx to support this!
-    // cleanUrls: 'without-subfolders',
-
     themeConfig: {
-
-        // logo: '/imgs/logo.svg',
 
         nav: [
             {

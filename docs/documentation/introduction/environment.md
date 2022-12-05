@@ -157,7 +157,18 @@ Docker images are not tagged in this mode.
 
 ### Runtime Mode: `test`
 
-:::warning
-NOT yet available!
-:::
+This mode is used to test the application. We are using [cypress](https://www.cypress.io/) for testing.
+More information about testing can be found in the [testing section](/documentation/introduction/testing).
 
+To start the application in `test` mode, you can use the following command:
+
+```bash
+docker-compose \
+  -f docker-compose.yml \
+  -f docker-compose.ci-testing.yml \
+  up --build
+```
+
+#### Docker Image Tags
+
+Docker images are not tagged in this mode.
