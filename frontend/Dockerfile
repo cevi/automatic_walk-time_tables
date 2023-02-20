@@ -1,7 +1,7 @@
 
 # Stage 1: Compile and Build angular codebase
 # Use official node image as the base image
-FROM node:18.12-alpine3.16 as build
+FROM node:18.14-alpine3.17 as build
 
 # Set the working directory
 WORKDIR /app
@@ -28,7 +28,7 @@ RUN export $(grep -v '^#' ./${ENVIRONMENT_FILE} | xargs) && \
 
 # Stage 2: Serve app with nginx server
 # Use official nginx image as the base image
-FROM nginx:1.23.2-alpine
+FROM nginx:1.23.3-alpine
 
 # copy the nginx configuration file to the container
 COPY ./frontend/nginx.conf /etc/nginx/conf.d/default.conf
