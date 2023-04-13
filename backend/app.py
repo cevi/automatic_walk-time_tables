@@ -256,10 +256,10 @@ def status(uuid):
         status=status_code, mimetype='application/json')
     return response
 
-def __delete_after_delay(base_path: str, uuid: str, delay = 300):
+def __delete_after_delay(base_path: str, uuid: str, delay = 720):
         logger.info('Waiting for %s seconds before deleting folder %s' % (delay, base_path))
 
-        # Wait for 5 minutes (300 seconds)
+        # Wait for 12 minutes (720 seconds)
         time.sleep(delay)
 
         # delete and return files
