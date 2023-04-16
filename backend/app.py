@@ -7,6 +7,7 @@ import logging
 import os
 import pathlib
 import shutil
+import threading
 import time
 import uuid as uuid_factory
 import zipfile
@@ -234,6 +235,10 @@ def create_export(options, uuid):
         generator.set_data(path, way_points, pois)
         generator.run()
 
+        # Create a new thread and start it
+        t = threading.Thread(target=__delete_after_delay, args=(output_directory, uuid,))
+        t.start()
+
     finally:
         export_state = stateHandler.get_status(uuid)['status']
         if not generator or export_state == GeneratorStatus.RUNNING:
@@ -251,6 +256,22 @@ def status(uuid):
         status=status_code, mimetype='application/json')
     return response
 
+def __delete_after_delay(base_path: str, uuid: str, delay = 720):
+        logger.info('Waiting for %s seconds before deleting folder %s' % (delay, base_path))
+
+        # Wait for 12 minutes (720 seconds)
+        time.sleep(delay)
+
+        # delete and return files
+        try:
+            # Execute the remaining code
+            stateHandler.remove_status(uuid)
+            shutil.rmtree(base_path)
+
+        except OSError as e:
+            logger.error("Cannot delete files in folder %s : %s" % (base_path, e.strerror))
+
+        logger.info('Deleted folder %s' % base_path)
 
 @app.route('/download/<uuid>')
 def download(uuid):
@@ -280,19 +301,15 @@ def download(uuid):
             z.write(f_name, only_name)
     data.seek(0)
 
-    # delete and return files
-    try:
-        stateHandler.remove_status(uuid)
-        shutil.rmtree(base_path)
-    except OSError as e:
-        logger.error("Cannot delete files in folder %s : %s" % (base_path, e.strerror))
-    finally:
-        return send_file(
-            data,
-            mimetype='application/zip',
-            as_attachment=True,
-            download_name='Download.zip'
-        )
+    # Define a function to run in the new thread
+
+
+    return send_file(
+        data,
+        mimetype='application/zip',
+        as_attachment=True,
+        download_name='Download.zip'
+    )
 
 
 if __name__ == "__main__":

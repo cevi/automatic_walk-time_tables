@@ -6,6 +6,7 @@ A complete, technical changelog is available at [GitHub](https://github.com/cevi
 - Interactive exports: modify the selected waypoints using points of interest (POI) (3.0.0)
 - Improved Documentation and Changelog (on this page) (3.0.0)
 - combine all maps in a single PDF file (3.0.0)
+- Add download button (for cases where the auto download does not work) (3.1.0)
 - Bug fixes
 - Dependency updates
 
