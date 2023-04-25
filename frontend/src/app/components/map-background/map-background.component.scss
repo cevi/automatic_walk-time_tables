@@ -29,23 +29,15 @@
 }
 
 .content {
-
-  margin: 180px auto 50px auto;
-
   background-color: #ffffffe3;
   padding: 50px 50px;
   max-width: 700px;
   overflow: auto;
-
-  max-height: calc(100vh - 330px);
-  position: relative;
-
 }
 
-@media (min-height: 1500px), (min-width: 1500px) {
+@media (min-height: 750px), (min-width: 750px) {
 
   .content {
-    margin: 0;
     position: fixed;
     right: 0;
     background-color: #ffffff;
@@ -69,7 +61,7 @@
   display: none;
 }
 
-@media (max-height: 1000px), (max-width: 750px) {
+@media (max-height: 1000px), (max-width: 749px) {
   .content {
     margin: 45px auto 20px auto;
     max-height: calc(100% - 140px);
