@@ -1,11 +1,18 @@
+<div id="view-element" class="compressed-view">
+  <div id="map-canvas" class="map"></div>
+  <div id="mousePosition"></div>
 
-<div id="map-canvas" class="map"></div>
-<div id="mousePosition"></div>
+  <img routerLink="/" id="logo" src="../../../assets/logo_with_claim.png"/>
+  <img routerLink="/" id="logo_small" src="../../../assets/logo.png"/>
 
-<img routerLink="/" id="logo" src="../../../assets/logo_with_claim.png"/>
-<img routerLink="/" id="logo_small" src="../../../assets/logo.png"/>
+  <div class="content">
 
-<div class="content">
-  <ng-content>
-  </ng-content>
+
+    <div class="size-adjuster">
+      <div></div>
+    </div>
+
+    <ng-content>
+    </ng-content>
+  </div>
 </div>
