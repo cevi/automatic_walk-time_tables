@@ -17,8 +17,9 @@
 }
 
 #mousePosition {
+  // TODO: bring this feature back
+  display: none;
   position: fixed;
-  display: block;
   bottom: 0;
   left: 65px;
   font-size: 11px;
@@ -36,36 +37,6 @@
   height: calc(100vh - 20px);
   overflow: hidden;
   text-align: center;
-}
-
-.compressed-view {
-  .content {
-    height: calc(8% - 20px);
-  }
-
-  #map-canvas {
-    height: 92%
-  }
-}
-
-.one-third-view {
-  .content {
-    height: calc(33% - 20px);
-  }
-
-  #map-canvas {
-    height: 66%
-  }
-}
-
-.expanded-view {
-  .content {
-    height: calc(85% - 20px);
-  }
-
-  #map-canvas {
-    height: 15%
-  }
 }
 
 #logo {
