@@ -1,18 +1,31 @@
-<div id="view-element" class="compressed-view">
-  <div id="map-canvas" class="map"></div>
-  <div id="mousePosition"></div>
+<div class="main-content">
 
-  <img routerLink="/" id="logo" src="../../../assets/logo_with_claim.png"/>
-  <img routerLink="/" id="logo_small" src="../../../assets/logo.png"/>
-
-  <div class="content">
+  <ng-container *ngIf="setHorizontal; else setVertical">
+    <ng-container *ngTemplateOutlet="splitterContent; context: {direction: 'horizontal', width: 450}"></ng-container>
+  </ng-container>
 
 
-    <div class="size-adjuster">
-      <div></div>
-    </div>
+  <ng-template #setVertical>
+    <as-split direction="vertical" [unit]="'pixel'">
+      <ng-container *ngTemplateOutlet="splitterContent; context: {direction: 'vertical', width: 35}"></ng-container>
+    </as-split>
+  </ng-template>
 
-    <ng-content>
-    </ng-content>
-  </div>
+  <ng-template #splitterContent let-direction="direction" let-width="width">
+    <as-split [direction]="direction" [unit]="'pixel'">
+      <div as-split-area id="map-area" [className]="'splitView-' + direction">
+
+        <div id="map-canvas" class="map"></div>
+
+        <img routerLink="/" id="logo" src="../../../assets/logo_with_claim.png"/>
+        <img routerLink="/" id="logo_small" src="../../../assets/logo.png"/>
+
+      </div>
+
+      <div as-split-area id="control-area" [className]="'splitView-' + direction" [size]="width" [minSize]="width">
+        <ng-content></ng-content>
+      </div>
+    </as-split>
+  </ng-template>
+
 </div>
