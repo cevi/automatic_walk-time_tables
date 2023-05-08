@@ -68,7 +68,7 @@ Request:
 curl 'http://localhost:5000/parse_route' \
   -H 'Accept: application/json' \
   -H 'Content-Type: multipart/form-data; boundary=----WebKitFormBoundary' \
-  --data-raw $'------WebKitFormBoundary\r\nContent-Disposition: form-data; name="options"\r\n\r\n{"encoding":"polyline","file_type":"kml"}\r\n------WebKitFormBoundary\r\nContent-Disposition: form-data; name="file_content"\r\n\r\n<kml><Document><Placemark><ExtendedData><Data name="type"><value>linepolygon</value></Data></ExtendedData><LineString><coordinates>8.618027327171838,47.33919699571174 8.651468773480518,47.32415372661812</coordinates></LineString></Placemark></Document></kml>\r\n------WebKitFormBoundary--\r\n' \
+  --data-raw $'------WebKitFormBoundary\r\nContent-Disposition: form-data; name="options"\r\n\r\n{"encoding":"polyline","file_type":"kml"}\r\n------WebKitFormBoundary\r\nContent-Disposition: form-data; name="file_content"\r\n\r\n<kml><Document><Placemark><ExtendedData><Data name="type"><value>linepolygon</value></Data></ExtendedData><LineString><coordinates>8.618027327171838,47.33919699571174 8.651468773480518,47.32415372661812</coordinates></LineString></Placemark></Document></kml>\r\n------WebKitFormBoundary--\r\n'
 ```
 
 Response:
@@ -77,7 +77,8 @@ Response:
 {
   "status": "success",
   "route": "...",
-  "elevation_data": "..."
+  "elevation_data": "...",
+  "route_name": "..."
 }
 ```
 
@@ -125,7 +126,8 @@ The settings/flags are the same as for the command line version (see [here](./co
 passed as JSON without a leading `-` resp. `--`. See example below.
 
 ::: info
-Contrary to the command line version, the argument `--file-name` is neither required nor supported.
+Contrary to the command line version, the argument `--file-name` is neither required nor supported. Use `route-name`
+instead to specify the name of the route.
 :::
 
 ```json
@@ -139,7 +141,8 @@ Contrary to the command line version, the argument `--file-name` is neither requ
     "create-excel": true,
     "legend-position": "lower right",
     "map-layers": "ch.swisstopo.pixelkarte-farbe",
-    "auto-scale": false
+    "auto-scale": false,
+    "route-name": "My Route"
   },
   "flags": [],
   "encoding": "polyline",

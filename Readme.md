@@ -34,7 +34,7 @@ anpassen (siehe auch J+S-Broschüre Berg).
   Jugend+Sport) zu automatisieren. Eine aus SchweizMobil oder der Swisstopo App exportierte Route (bzw. ein beliebiges
   GPX-File) dient dabei als Grundlage.
 - [x] In einem nächsten Schritt soll es möglich sein, die gewählten Punkte auf der einer interaktiven Karte zu
-  visualisieren und bei Bedarf zu verschieben. Kleinere Anpassungen der Route sollten direkt in der Karte möglich sein.
+  visualisieren und bei Bedarf zu verschieben.
 - [ ] Das Zeichnen neuer Routen soll direkt in unserem Webinterface möglich sein (damit entfällt der GPX-Export). Herzu
   werden magnetische Wege verwendet. D.h. die Route soll dabei automatisch an den nächsten Weg angepasst werden.
 
@@ -70,15 +70,15 @@ well as an Excel file containing the walk-time table based on the J+S template.
 mechanical, repetitive processes like creating a walk-time table based on an existing route. This programm is no
 substitute for careful planning.
 
-## Run it Locally and Start Developing
+## Run it locally and Start Developing
 
-You can run the application locally with just one command. Now you can open `localhost` in your web browser. For more
-information take a look at our documentation: [Getting Started](https://docs.map.cevi.tools/).
+You can run the application locally using just one command.
 
-This will serve the documentation of this project, you can access it by opening `localhost:4000` in your web browser.
-
-```bash
-$ docker-compose up [--build]
+```
+docker-compose up [--build]
 ```
 
 *Note:* `--build` is optional and forces docker to rebuild the containers.
+
+Simply take a look at the documentation [Getting Started](https://docs.map.cevi.tools/). The docs can also be accessed
+from your local build by visiting `localhost:4000` (once the containers are running).

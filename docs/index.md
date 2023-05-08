@@ -8,7 +8,7 @@ titleTemplate: J+S-Marschzeittabellen automatisiert generieren
 hero:
   name: Marschzeittabellen
   text: automatisiert generieren
-  tagline: Simple, powerful, and performant. Meet the modern SSG framework you've always wanted.
+  tagline: Read the documentation about the tool.
   actions:
     - theme: brand
       text: Get Started

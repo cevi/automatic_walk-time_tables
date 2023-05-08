@@ -8,9 +8,9 @@ We distinguish between runtime modes and environment files. The former are defin
 Runtime modes and environment Variables may influence the behaviour of the application.
 
 ::: tip
-The default runtime mode is `dev-live` with it's associated configuration file `.env.dev-live`.
+The default runtime mode is `local-dev` with it's associated configuration file `.env.local-dev`.
 
-It enables live reloading/rebuilding, which is useful to develop the application.
+It enables hot reloading/rebuilding, which is useful to develop the application.
 :::
 
 ## Available Runtime Modes - How the Application is Launched
@@ -20,7 +20,7 @@ Runtime modes are defined using `docker-compose.yml` files. They define how the 
 Runtime Modes may change the behaviour of the application. An incomplete list of affected parts consists of the
 following:
 
-- whether live reloading/rebuilding is enabled or not
+- whether hot reloading/rebuilding is enabled or not
 - if the application is run in using a nginx server instead of the angular's built-in development server
 
 The following runtime modes are available:
@@ -28,9 +28,9 @@ The following runtime modes are available:
 | Environment   | Purpose                                                                                                                                       | Default Domain Binding |
 |---------------|-----------------------------------------------------------------------------------------------------------------------------------------------|------------------------|
 | `prod-latest` | Production runtime environment, as hosted on [map.cevi.tool](https://map.cevi.tool).                                                          | `map.cevi.tool`        |
-| `prod-dev`    | Same as production mode but with different environment variables and image tags. As hosted on [dev.map.cevi.tool](https://dev.map.cevi.tool). | `localhost`            |
-| `live`        | Development runtime environment with enabled live reloading/rebuilding usefully to develop the application                                    | `localhost`            |
-| `test`        | Used to test the application                                                                                                                  | `localhost`            |
+| `prod-dev`    | Same as production mode but with different environment variables and image tags. As hosted on [dev.map.cevi.tool](https://dev.map.cevi.tool). | `dev.map.cevi.tool`    |
+| `local-dev`   | Development runtime environment with enabled hot reloading/rebuilding usefully to develop the application                                     | `localhost`            |
+| `ci-testing`  | Used to test the application. We are using  [cypress](https://www.cypress.io/) for testing.                                                   | `localhost`            |
 
 To specify a mode, you can extend the docker-compose command with the `-f` flag, specifying an additional
 `docker-compose.*.yml` file.
@@ -140,12 +140,12 @@ The docker images are tagged in the following way:
 registry.cevi.tools/cevi/awt_{{service name}}>:dev
 ```
 
-### Runtime Mode: `live`
+### Runtime Mode: `local-dev`
 
 In this mode the application is run using the Angular development server. This mode is useful to develop the application
-and enables live reloading/rebuilding. Reloading is also enabled for the backend and documentation server.
+and enables hot reloading/rebuilding. Reloading is also enabled for the backend and documentation server.
 
-To start the application in live mode, you can use the following command:
+To start the application in `local-dev` mode, you can use the following command:
 
 ```bash
 docker-compose up --build
@@ -157,7 +157,18 @@ Docker images are not tagged in this mode.
 
 ### Runtime Mode: `test`
 
-:::warning
-NOT yet available!
-:::
+This mode is used to test the application. We are using [cypress](https://www.cypress.io/) for testing.
+More information about testing can be found in the [testing section](/documentation/introduction/testing).
 
+To start the application in `test` mode, you can use the following command:
+
+```bash
+docker-compose \
+  -f docker-compose.yml \
+  -f docker-compose.ci-testing.yml \
+  up --build
+```
+
+#### Docker Image Tags
+
+Docker images are not tagged in this mode.

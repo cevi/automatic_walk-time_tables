@@ -5,12 +5,7 @@ export default {
     title: 'Cevi.Tools',
     description: 'Automatic Walk-Time Tables',
 
-    // TODO: configure nginx to support this!
-    // cleanUrls: 'without-subfolders',
-
     themeConfig: {
-
-        // logo: '/imgs/logo.svg',
 
         nav: [
             {
@@ -38,18 +33,21 @@ export default {
                         {
                             text: 'Runtime Modes & Environments', link: '/documentation/introduction/environment'
                         },
+                        {
+                            text: 'Testing', link: '/documentation/introduction/testing'
+                        },
                     ]
                 },
                 {
-                    text: 'Webinterface',
+                    text: 'Frontend/Webinterface',
                     collapsible: true,
                     collapsed: true,
                     items: [
                         {
-                            text: 'About', link: '/documentation/webinterface/about'
+                            text: 'About', link: '/documentation/frontend/about'
                         },
                         {
-                            text: 'Local Setup', link: '/documentation/webinterface/local-setup'
+                            text: 'Local Setup', link: '/documentation/frontend/local-setup'
                         },
                     ]
                 },
@@ -78,13 +76,13 @@ export default {
                     collapsed: true,
                     items: [
                         {
-                            text: 'About', link: '/documentation/swiss_TLM_API/about'
+                            text: 'About', link: '/documentation/swiss_TLM_api/about'
                         },
                         {
-                            text: 'API Endpoints', link: '/documentation/swiss_TLM_API/API_endpoints'
+                            text: 'API Endpoints', link: '/documentation/swiss_TLM_api/API_endpoints'
                         },
                         {
-                            text: 'Testing', link: '/documentation/swiss_TLM_API/testing'
+                            text: 'Testing', link: '/documentation/swiss_TLM_api/testing'
                         },
                     ]
                 },
@@ -94,17 +92,17 @@ export default {
                     collapsed: true,
                     items: [
                         {
-                            text: 'About', link: '/documentation/pdf_creator/about'
+                            text: 'About', link: '/documentation/mapfish_print_server/about'
                         },
                     ]
                 },
                 {
-                    text: 'Route Server',
+                    text: 'Route Engine',
                     collapsible: true,
                     collapsed: true,
                     items: [
                         {
-                            text: 'About', link: '/documentation/route_server/about'
+                            text: 'About', link: '/documentation/route_engine/about'
                         },
                     ]
                 },

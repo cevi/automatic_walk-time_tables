@@ -23,7 +23,8 @@ As of [version 2.0.0](/changelog/changelog#version-2-0-0), the application is sp
 its separate docker container. You can launch the application as a bundle using the following command:
 
 ::: warning
-For all commands in the documentation, we are assuming you're running Linux (Mac or WSL should work as well).
+For all commands in the documentation, we are assuming you're running Linux
+(nevertheless Mac, Windows or WSL should work as well).
 :::
 
 ```bash

@@ -1,0 +1,71 @@
+templates:
+
+  #===========================================================================
+  A4 landscape: !template
+    #===========================================================================
+
+    reportTemplate: report.jrxml
+    attributes:
+
+      scale: !string { }
+
+      map: !map
+        maxDpi: 250
+        width: 813
+        height: 566
+
+      northArrow: !northArrow
+        size: 50
+        default:
+          graphic: "north_arrow.png"
+
+      overlayLayers: !staticLayers
+        default:
+          layers:
+            - type: grid
+              origin: [ 2700000, 1200000 ]
+              spacing: [ 1000, 1000 ]
+              renderAsSvg: true
+              gridColor: "#FFFFFF"
+              rotateLabels: False
+              labelColor: black
+              valueFormat: "###,###"
+              formatGroupingSeparator: " "
+              font:
+                name:
+                  - Liberation Sans
+                  - Helvetica
+                  - Nimbus Sans L
+                  - Liberation Sans
+                  - FreeSans
+                  - Sans-serif
+                size: 6
+              style:
+                version: 2
+                "*":
+                  symbolizers:
+                    - type: "line"
+                      strokeWidth: 0.1
+                      strokeOpacity: 0.5
+                      strokeColor: gray
+
+      scalebar: !scalebar
+        width: 200
+        height: 25
+        default:
+          fontSize: 8
+          renderAsSvg: True
+          unit: m
+          type: line
+
+    processors:
+      - !addOverlayLayers
+        inputMapper:
+          overlayLayers: staticLayers
+          map: map
+      - !reportBuilder # compile all reports in current directory
+        directory: '.'
+      - !createMap { }
+      - !createScalebar { }
+      - !createNorthArrow { }
+

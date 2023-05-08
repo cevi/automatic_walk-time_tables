@@ -26,15 +26,27 @@ map_number_index: MapNumberIndex | None = None
 
 # The NameFinder is a shared object, thus the index get only loaded once
 def _load_indexes():
+    logger.info("Loading indexes...")
     global name_index, map_number_index
-    name_index = NameFinder(force_rebuild=False, reduced=False)
-    map_number_index = MapNumberIndex()
+    try:
+        name_index = NameFinder(force_rebuild=False, reduced=False)
+        map_number_index = MapNumberIndex(force_rebuild=False)
+    except:
+        logger.error("Error while loading indexes. Forcing rebuild")
+        name_index = NameFinder(force_rebuild=True, reduced=False)
+        map_number_index = MapNumberIndex(force_rebuild=True)
 
 
 # We load the indexes in a separate thread to avoid blocking the main thread and running into the timeout errors
 thread = Thread(target=_load_indexes)
 thread.start()
 
+@app.route('/ready', methods=['GET'])
+def ready():
+    global name_index, map_number_index
+    if name_index is None or map_number_index is None:
+        return jsonify({'status': 'loading'})
+    return jsonify({'status': 'ready'})
 
 @app.route('/swiss_name', methods=['GET'])
 def get_name():
