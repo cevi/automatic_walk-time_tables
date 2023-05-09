@@ -1,17 +1,19 @@
 <div class="main-content">
 
   <ng-container *ngIf="setHorizontal; else setVertical">
-    <ng-container *ngTemplateOutlet="splitterContent; context: {direction: 'horizontal', width: 450}"></ng-container>
+    <ng-container
+      *ngTemplateOutlet="splitterContent; context: {direction: 'horizontal', width: 450, minWidth:450}"></ng-container>
   </ng-container>
 
 
   <ng-template #setVertical>
     <as-split direction="vertical" [unit]="'pixel'">
-      <ng-container *ngTemplateOutlet="splitterContent; context: {direction: 'vertical', width: 35}"></ng-container>
+      <ng-container
+        *ngTemplateOutlet="splitterContent; context: {direction: 'vertical', width: 35, minWidth: 35}"></ng-container>
     </as-split>
   </ng-template>
 
-  <ng-template #splitterContent let-direction="direction" let-width="width" >
+  <ng-template #splitterContent let-direction="direction" let-width="width" let-minWidth="minWidth">
     <as-split [direction]="direction" [unit]="'pixel'">
       <div as-split-area id="map-area" [className]="'splitView-' + direction">
 
@@ -22,7 +24,7 @@
 
       </div>
 
-      <div as-split-area id="control-area" [className]="'splitView-' + direction" [size]="width" [minSize]="width">
+      <div as-split-area id="control-area" [className]="'splitView-' + direction" [size]="width" [minSize]="minWidth">
         <ng-content></ng-content>
       </div>
     </as-split>
