@@ -30,6 +30,7 @@ export class ExportSettingsComponent {
       'map-layers': new UntypedFormControl('ch.swisstopo.pixelkarte-farbe'),
       'auto-scale': new UntypedFormControl(false),
       'route-name': new UntypedFormControl(''),
+      'name-points-in-export': new UntypedFormControl(true),
     });
 
 
