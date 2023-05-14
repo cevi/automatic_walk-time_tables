@@ -104,9 +104,6 @@ export class SwisstopoMap {
 
   protected create_map_from_layers(layers: Layer[], target_canvas: string = 'map-canvas') {
 
-    const mousePosition = document.getElementById('mousePosition');
-    if (mousePosition == null) return;
-
     return new Map({
       layers: layers,
       target: target_canvas,
@@ -122,12 +119,6 @@ export class SwisstopoMap {
       }).extend([
         new ScaleLine({
           units: 'metric'
-        }),
-        new MousePosition({
-          coordinateFormat: createStringXY(4),
-          projection: 'EPSG:2056',
-          target: mousePosition,
-          undefinedHTML: '&nbsp;'
         })
       ]),
     });

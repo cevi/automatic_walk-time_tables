@@ -7,6 +7,7 @@ A complete, technical changelog is available at [GitHub](https://github.com/cevi
 - Improved Documentation and Changelog (on this page) (3.0.0)
 - combine all maps in a single PDF file (3.0.0)
 - Add download button (for cases where the auto download does not work) (3.1.0)
+- New [Split Screen and Mobile View](https://github.com/cevi/automatic_walk-time_tables/issues/182) (3.3.0)
 - Bug fixes
 - Dependency updates
 
