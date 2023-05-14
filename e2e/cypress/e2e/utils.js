@@ -57,23 +57,21 @@ export function export_with_interaction(file) {
     // Interaction with the map
     // ****************************
     require('cypress-xpath')
-    cy.xpath('/html/body/app-root/app-map-background/div[1]/div/div[1]/div/canvas').then(($canvas) => {
+    cy.xpath('//*[@id="map-canvas"]/div[1]/div[1]/div/canvas').then(($canvas) => {
 
         const canvas = $canvas[$canvas.length - 1];
         const wrapper = cy.wrap(canvas);
 
         // Zoom into the map
         for (let i = 0; i < 8; i++) {
-            wrapper.click(500, 600);
-
+            wrapper.click(625, 600);
         }
 
         cy.wait(2500)
-        wrapper.click(460, 460);
+        wrapper.click(625, 540);
 
         cy.wait(1000)
-        wrapper.click(460, 690);
-
+        wrapper.click(625, 690);
 
     });
 

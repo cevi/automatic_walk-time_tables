@@ -26,6 +26,7 @@ import {MatOptionModule} from "@angular/material/core";
 import {NgxEchartsModule} from 'ngx-echarts';
 import {ElevationProfileComponent} from './components/elevation-profile/elevation-profile.component';
 import {MatProgressSpinnerModule} from "@angular/material/progress-spinner";
+import {AngularSplitModule} from 'angular-split';
 
 @NgModule({
   declarations: [
@@ -39,27 +40,28 @@ import {MatProgressSpinnerModule} from "@angular/material/progress-spinner";
     UploadAreaComponent,
     ElevationProfileComponent
   ],
-    imports: [
-        BrowserModule,
-        AppRoutingModule,
-        BrowserAnimationsModule,
-        MatInputModule,
-        MatButtonModule,
-        MatProgressBarModule,
-        MatSlideToggleModule,
-        MatSliderModule,
-        MatStepperModule,
-        ReactiveFormsModule,
-        MatSnackBarModule,
-        MatIconModule,
-        DownloadModule,
-        MatSelectModule,
-        MatOptionModule,
-        NgxEchartsModule.forRoot({
-            echarts: () => import('echarts')
-        }),
-        MatProgressSpinnerModule
-    ],
+  imports: [
+    BrowserModule,
+    AppRoutingModule,
+    AngularSplitModule,
+    BrowserAnimationsModule,
+    MatInputModule,
+    MatButtonModule,
+    MatProgressBarModule,
+    MatSlideToggleModule,
+    MatSliderModule,
+    MatStepperModule,
+    ReactiveFormsModule,
+    MatSnackBarModule,
+    MatIconModule,
+    DownloadModule,
+    MatSelectModule,
+    MatOptionModule,
+    NgxEchartsModule.forRoot({
+      echarts: () => import('echarts')
+    }),
+    MatProgressSpinnerModule
+  ],
   providers: [],
   bootstrap: [AppComponent]
 })

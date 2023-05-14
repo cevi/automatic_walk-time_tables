@@ -1,8 +1,25 @@
 /* You can add global styles to this file, and also import other style files */
 
-html, body { height: 100%; overflow: hidden}
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+html, body {
+  height: 100%;
+  overflow: hidden
+}
+
+body {
+  margin: 0;
+  font-family: "Helvetica Neue", sans-serif;
+}
 
 .mat-vertical-content {
   padding: 24px !important;
+}
+
+h2 {
+  margin: 8px 0 14px 0
+}
+
+
+.as-vertical > .as-split-gutter .as-split-gutter-icon {
+  position: absolute;
+  height: 100px !important;
 }

@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {AfterViewInit, Component, OnInit} from '@angular/core';
 import {MapAnimatorService} from "../../services/map-animator.service";
 import {MapService} from "../../services/map.service";
 
@@ -10,7 +10,9 @@ import {MapService} from "../../services/map.service";
     {provide: Window, useValue: window}
   ]
 })
-export class MapBackgroundComponent implements OnInit {
+export class MapBackgroundComponent implements OnInit, AfterViewInit {
+
+  public setHorizontal: boolean = true;
 
 
   constructor(
@@ -19,10 +21,21 @@ export class MapBackgroundComponent implements OnInit {
   }
 
   ngOnInit(): void {
-
-    this.mapService.draw_map()
     this.mapService.link_animator(this.mapAnimator);
 
+    // sets horizontal to true if the window is wider than it is tall
+    this.setHorizontal = window.innerWidth > window.innerHeight;
+
+    // set action listener for window resize
+    window.addEventListener('resize', () => {
+      this.setHorizontal = window.innerWidth > window.innerHeight;
+      this.mapService?.draw_map();
+    });
+
+  }
+
+  ngAfterViewInit() {
+    this.mapService?.draw_map();
   }
 
 

@@ -1,3 +1,4 @@
+import argparse
 import json
 import logging
 import os
@@ -40,10 +41,12 @@ class MapCreator:
     `A4_WIDTH_FACTOR * map_scale` gives you the number of km displayed on one A4 paper.
     """
 
-    def __init__(self, path_: path.Path, uuid: str):
+    def __init__(self, path_: path.Path, uuid: str, args: argparse.Namespace):
         self.logger = logging.getLogger(__name__)
         self.path_ = path_
         self.uuid = uuid
+
+        self.name_points_in_export = args.name_points_in_export if 'name_points_in_export' in args else False
 
     def auto_select_map_scaling(self) -> int:
         """
@@ -193,7 +196,6 @@ class MapCreator:
 
         merger.write('{}_maps.pdf'.format(file_name))
 
-
     def create_mapfish_query(self, map_layers, map_scaling, center, way_points: path.Path, pois: path.Path):
         """
 
@@ -257,7 +259,7 @@ class MapCreator:
         for i, point in enumerate(way_points.way_points):
             lv95 = point.point.to_LV95()
 
-            point_layer = self.create_point_json(lv95, point, label=True)
+            point_layer = self.create_point_json(lv95, point, label=self.name_points_in_export)
             point_layers.append(point_layer)
 
         for i, point in enumerate(pois.way_points):

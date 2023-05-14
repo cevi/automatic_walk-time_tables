@@ -301,9 +301,6 @@ def download(uuid):
             z.write(f_name, only_name)
     data.seek(0)
 
-    # Define a function to run in the new thread
-
-
     return send_file(
         data,
         mimetype='application/zip',

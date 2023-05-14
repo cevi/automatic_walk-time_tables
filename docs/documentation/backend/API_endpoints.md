@@ -142,7 +142,8 @@ instead to specify the name of the route.
     "legend-position": "lower right",
     "map-layers": "ch.swisstopo.pixelkarte-farbe",
     "auto-scale": false,
-    "route-name": "My Route"
+    "route-name": "My Route",
+    "name-points-in-export": true
   },
   "flags": [],
   "encoding": "polyline",
