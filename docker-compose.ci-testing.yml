@@ -10,9 +10,6 @@ services:
       awt-frontend:
         condition: service_healthy
 
-    environment:
-      - CYPRESS_baseUrl=http://awt-frontend
-
     entrypoint: cypress run --browser chrome
 
     # share the current folder as volume to avoid copying
