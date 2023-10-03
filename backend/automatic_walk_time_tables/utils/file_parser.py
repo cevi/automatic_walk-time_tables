@@ -110,9 +110,12 @@ class GeoFileParser(object):
         start_index = raw_data.find('<LineString>')
         end_index = raw_data.find('</LineString>')
 
+        is_circular = False
+
         # check if <LineString> and </LineString> are found
         if start_index == -1 or end_index == -1:
-            self.__logger.debug('No <LineString> or </LineString> found')
+            self.__logger.info('No <LineString> or </LineString> found --> circular path')
+            is_circular = True
 
             # check for circular path
             start_index = raw_data.find('<LinearRing>')
@@ -141,6 +144,10 @@ class GeoFileParser(object):
         coordinates = raw_data.split(' ')
         coordinates = [c.split(',') for c in coordinates]
         has_elevation = len(coordinates[0]) == 3
+
+        if is_circular:
+            # if circular, add the first point again in the end (close circuit)
+            coordinates.append(coordinates[0])
 
         self.__logger.debug("Loaded KML file with " + str(len(coordinates)) + " coordinates.")
 

@@ -33,9 +33,10 @@ def _load_indexes():
         map_number_index = MapNumberIndex(force_rebuild=False)
     except:
         logger.error("Error while loading indexes. Forcing rebuild")
+        name_index = None
+        map_number_index = None
         name_index = NameFinder(force_rebuild=True, reduced=False)
         map_number_index = MapNumberIndex(force_rebuild=True)
-
 
 # We load the indexes in a separate thread to avoid blocking the main thread and running into the timeout errors
 thread = Thread(target=_load_indexes)
@@ -50,41 +51,50 @@ def ready():
 
 @app.route('/swiss_name', methods=['GET'])
 def get_name():
-    lv95_coords = request.json
-    response = []
+    global name_index
+    global map_number_index
+    try:
+        lv95_coords = request.json
+        response = []
 
-    for (lat, lon) in lv95_coords:
+        for (lat, lon) in lv95_coords:
 
-        req_pkt = Point((lat, lon))
+            req_pkt = Point((lat, lon))
 
-        swiss_names = name_index.get_names(lat, lon, 3)
-        swiss_name: SwissName = swiss_names[0]
+            swiss_names = name_index.get_names(lat, lon, 3)
+            swiss_name: SwissName = swiss_names[0]
 
-        # If object_type is of type 'Weggabelung' and there exists a Hauptgipfel nearby, we take the Hauptgipfel
-        if swiss_name.object_type == 'Weggabelung' and len(swiss_names) > 1:
-            for n in swiss_names[1:]:
+            # If object_type is of type 'Weggabelung' and there exists a Hauptgipfel nearby, we take the Hauptgipfel
+            if swiss_name.object_type == 'Weggabelung' and len(swiss_names) > 1:
+                for n in swiss_names[1:]:
 
-                tlm_pkt = Point((n.x, n.y))
-                if n.object_type == 'Hauptgipfel' and round(req_pkt.distance(tlm_pkt)) <= 250:
-                    swiss_name.name = 'Weggabelung bei ' + n.name
-                    break
+                    tlm_pkt = Point((n.x, n.y))
+                    if n.object_type == 'Hauptgipfel' and round(req_pkt.distance(tlm_pkt)) <= 250:
+                        swiss_name.name = 'Weggabelung bei ' + n.name
+                        break
 
-        response.append({
-            "lv95_coord": (swiss_name.x, swiss_name.y),
-            "offset": round(req_pkt.distance(Point((swiss_name.x, swiss_name.y)))),
-            "swiss_name": swiss_name.name,
-            "object_type": swiss_name.object_type
-        })
+            response.append({
+                "lv95_coord": (swiss_name.x, swiss_name.y),
+                "offset": round(req_pkt.distance(Point((swiss_name.x, swiss_name.y)))),
+                "swiss_name": swiss_name.name,
+                "object_type": swiss_name.object_type
+            })
 
-    return jsonify(response)
-
+        return jsonify(response)
+    except Exception as e:
+        logger.info("Exception:" + e)
+        raise e
 
 # TODO: add an endpoint for POI calculation
 
 @app.route('/map_numbers', methods=['GET'])
 def get_map_numbers():
-    lv95_coords = request.json
-    return map_number_index.fetch_map_numbers(lv95_coords)
+    try:
+        lv95_coords = request.json
+        return map_number_index.fetch_map_numbers(lv95_coords)
+    except Exception as e:
+        logger.info("Exception:" + e)
+        raise e
 
 
 if __name__ == "__main__":
