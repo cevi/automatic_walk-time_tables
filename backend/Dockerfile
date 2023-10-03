@@ -15,7 +15,5 @@ COPY . /app
 
 EXPOSE 5000
 
-ENV PRINT_API_BASE_URL=awt-mapfish-print-server
-
 # Entrypoint
 CMD gunicorn --bind :5000 --workers 1 --threads 2 --timeout 60 app:app
