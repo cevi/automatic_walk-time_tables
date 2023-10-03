@@ -112,10 +112,20 @@ class GeoFileParser(object):
 
         # check if <LineString> and </LineString> are found
         if start_index == -1 or end_index == -1:
-            raise Exception('No <LineString> or </LineString> found')
+            self.__logger.debug('No <LineString> or </LineString> found')
 
-        # remove <LineString> and </LineString>
-        raw_data = raw_data[start_index + len('<LineString>'):end_index]
+            # check for circular path
+            start_index = raw_data.find('<LinearRing>')
+            end_index = raw_data.find('</LinearRing>')
+
+            if start_index == -1 or end_index == -1:
+                raise Exception('No <LinearRing> or </LinearRing> found')
+            
+            # remove <LinearRing> and </LinearRing>
+            raw_data = raw_data[start_index + len('<LinearRing>'):end_index]
+        else:
+            # remove <LineString> and </LineString>
+            raw_data = raw_data[start_index + len('<LineString>'):end_index]
 
         # carve out contents of <coordinates>...</coordinates>
         start_index = raw_data.find('<coordinates>')
