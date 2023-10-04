@@ -39,8 +39,7 @@ class POIsTransformer(PathTransformer):
 
         index = 0
         for i, point in enumerate(path.way_points):
-
-            if point.accumulated_distance - int(poi_distances[index]) >= 0:
+            if point.accumulated_distance - int(float(poi_distances[index])) >= 0: # fix bug where poi_distances contained a non-int value
                 pois.append(point)
                 index += 1
 
