@@ -81,9 +81,7 @@ class AutomatedWalkTableGenerator:
 
         # calc POIs for the path
         if self.__pois is None:
-            pois_transformer = POIsTransformer(
-                self.options["settings"]["list_of_pois"]
-            )
+            pois_transformer = POIsTransformer(self.options["settings"]["list_of_pois"])
             self.__pois: path.Path = pois_transformer.transform(self.__path)
 
         # calc points for walk-time table
@@ -180,9 +178,7 @@ class AutomatedWalkTableGenerator:
                 "Karten werden erstellt...",
                 {"uuid": self.uuid, "status": GeneratorStatus.RUNNING},
             )
-            map_creator = MapCreator(
-                self.__path, self.uuid, self.options["settings"]
-            )
+            map_creator = MapCreator(self.__path, self.uuid, self.options["settings"])
             self.__log_runtime(
                 map_creator.plot_route_on_map,
                 "Benötigte Zeit zum Erstellen der Karten-PDFs",
