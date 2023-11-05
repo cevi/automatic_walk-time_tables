@@ -233,7 +233,6 @@ def create_map():
         options = request.get_json()
     elif "options" in request.form:
         options = json.loads(request.form["options"])
-        
     else:
         return app.response_class(
             response=json.dumps(
