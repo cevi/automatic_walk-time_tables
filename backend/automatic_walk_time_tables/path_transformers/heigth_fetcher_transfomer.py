@@ -27,16 +27,17 @@ class HeightFetcherTransformer(PathTransformer):
         self.min_number_of_points = min_number_of_points
 
     def transform(self, path_: Path) -> Path:
-
         # check that the path does not have more than 5000 points
         if len(path_.way_points) > 5000:
-            raise UserException("Deine Datei hat zu viele Wegpunkte. Bitte reduziere die Anzahl Punkte und probier es erneut.")
+            raise UserException(
+                "Deine Datei hat zu viele Wegpunkte. Bitte reduziere die Anzahl Punkte und probier es erneut."
+            )
 
         geom_data = {
             "type": "LineString",
             "coordinates": [
                 [round(pt.point.lat), round(pt.point.lon)] for pt in path_.way_points
-            ]
+            ],
         }
 
         coord_type = path_.way_points[0].point.type
@@ -46,13 +47,15 @@ class HeightFetcherTransformer(PathTransformer):
             "nb_points": max(path_.number_of_waypoints, self.min_number_of_points),
             "distinct_points": True,
             "smart_filling": True,
-            "sr": coord_type
+            "sr": coord_type,
         }
 
         r = requests.get(self.PATH_URL, params=params)
         self.__logger.info(r.url)
 
-        self.__logger.debug("Fetched elevation for path part and got " + str(r.status_code))
+        self.__logger.debug(
+            "Fetched elevation for path part and got " + str(r.status_code)
+        )
 
         if r.status_code not in (200, 203):
             self.__logger.debug("Status Code: " + str(r.status_code))
@@ -63,13 +66,30 @@ class HeightFetcherTransformer(PathTransformer):
         points: List[Point] = []
 
         for entry in r.json():
-
             if coord_type == PointType.LV03:
-                points.append(point.Point_LV03(entry["easting"], entry["northing"], float(entry["alts"]["COMB"])))
+                points.append(
+                    point.Point_LV03(
+                        entry["easting"],
+                        entry["northing"],
+                        float(entry["alts"]["COMB"]),
+                    )
+                )
             elif coord_type == PointType.LV95:
-                points.append(point.Point_LV95(entry["easting"], entry["northing"], float(entry["alts"]["COMB"])))
+                points.append(
+                    point.Point_LV95(
+                        entry["easting"],
+                        entry["northing"],
+                        float(entry["alts"]["COMB"]),
+                    )
+                )
             elif coord_type == PointType.WGS84:
-                points.append(point.Point_WGS84(entry["easting"], entry["northing"], float(entry["alts"]["COMB"])))
+                points.append(
+                    point.Point_WGS84(
+                        entry["easting"],
+                        entry["northing"],
+                        float(entry["alts"]["COMB"]),
+                    )
+                )
             else:
                 raise Exception("Unknown coordinate type")
 
