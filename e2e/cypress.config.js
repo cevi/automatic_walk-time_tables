@@ -10,7 +10,7 @@ const getFiles = (path) => {
 
 module.exports = defineConfig({
     "chromeWebSecurity": false,
-    "pageLoadTimeout": 60_000,
+    "pageLoadTimeout": 90_000,
     "video": false,
     e2e: {
         setupNodeEvents(on, config) {

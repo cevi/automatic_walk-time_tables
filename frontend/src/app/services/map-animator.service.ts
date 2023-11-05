@@ -17,6 +17,7 @@ export class MapAnimatorService {
   private readonly _way_points$: BehaviorSubject<LV95_Waypoint[]>;
   private readonly _pois$: BehaviorSubject<LV95_Waypoint[]>;
   private readonly _map_center$: BehaviorSubject<LV95_Coordinates>;
+  private _error_handler: (err: string) => void;
 
 
   private readonly _pointer$: BehaviorSubject<LV95_Coordinates | null>;
@@ -29,7 +30,12 @@ export class MapAnimatorService {
     this._pois$ = new BehaviorSubject<LV95_Waypoint[]>([]);
     this._map_center$ = new BehaviorSubject<LV95_Coordinates>(MapAnimatorService.DEFAULT_MAP_CENTER)
     this._pointer$ = new BehaviorSubject<LV95_Coordinates | null>(null);
+    this._error_handler = (err: string) => console.error(err);
 
+  }
+
+  public set_error_handler(handler: (err: string) => void) {
+    this._error_handler = handler;
   }
 
   public get path$(): Observable<LV95_Waypoint[]> {
@@ -70,7 +76,9 @@ export class MapAnimatorService {
     });
 
     combineLatest([this._path$, this._pois$]).pipe(take(1))
-      .subscribe(([path, pois]) => this.create_walk_time_table(path, pois));
+      .subscribe(([path, pois]) =>
+        this.create_walk_time_table(path, pois).catch(err => this._error_handler(err))
+      );
 
   }
 
@@ -227,7 +235,7 @@ export class MapAnimatorService {
     let formData = new FormData();
     formData.append("options", JSON.stringify(data));
 
-    fetch(MapAnimatorService.BASE_URL + 'create-walk-time-table', {
+    return fetch(MapAnimatorService.BASE_URL + 'create-walk-time-table', {
       method: "POST",
       headers: {
         ContentType: 'application/json',
@@ -238,11 +246,14 @@ export class MapAnimatorService {
       .then(response => response.json())
       .then((resp: any) => {
 
+        if (resp?.status === 'error')
+          throw new Error(resp.message)
+
         if (resp?.pois == undefined)
-          throw new Error('File cannot be parsed!');
+          throw new Error('Die Datei konnte nicht gelesen werden!');
 
         if (resp?.pois_elevation == undefined)
-          throw new Error('No elevation data found!');
+          throw new Error('Keine Höhendaten gefunden!');
 
         const pois = decode(resp?.pois, 0);
         const pois_elevation = decode(resp?.pois_elevation, 0);
@@ -258,11 +269,14 @@ export class MapAnimatorService {
 
   private async set_route(resp: any) {
 
+    if (resp?.status == 'error')
+      throw new Error(resp.message);
+
     if (resp?.route == undefined)
-      throw new Error('File cannot be parsed!');
+      throw new Error('Die Datei konnte nicht gelesen werden!');
 
     if (resp?.elevation_data == undefined)
-      throw new Error('No elevation data found!');
+      throw new Error('Keine Höhendaten gefunden!');
 
     const path = decode(resp?.route, 0);
     const elevation = decode(resp?.elevation_data, 0);
@@ -274,7 +288,7 @@ export class MapAnimatorService {
     }
 
     if (path.length != elevation.length)
-      throw new Error('Route and elevation arrays have different length');
+      throw new Error('Die Route und die Höhendaten haben unterschiedliche Länge!');
 
     const way_points = this.create_way_points(path, elevation);
 
@@ -282,8 +296,12 @@ export class MapAnimatorService {
     this._path$?.next(way_points);
     this._pois$?.next([]);
 
-    combineLatest([this._path$, this._pois$]).pipe(take(1))
-      .subscribe(([path, pois]) => this.create_walk_time_table(path, pois));
+    return new Promise<void>((resolve, reject) =>
+      combineLatest([this._path$, this._pois$]).pipe(take(1))
+        .subscribe(([path, pois]) =>
+          this.create_walk_time_table(path, pois).then(() => resolve()).catch(err => reject(err))
+        )
+    );
 
   }
 

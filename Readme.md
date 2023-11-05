@@ -91,3 +91,12 @@ docker-compose up [--build]
 
 Simply take a look at the documentation [Getting Started](https://docs.map.cevi.tools/). The docs can also be accessed
 from your local build by visiting `localhost:4000` (once the containers are running).
+
+## Coding Style
+
+We use `black` as a python formatter and linter. Install via 
+```
+pip install black
+```
+
+Format your code with `black .` in the top-level directory.

@@ -3,6 +3,7 @@ import logging
 import os
 import shutil
 import time
+import requests
 
 import gdown
 from rtree.index import Index as RTreeIndex
@@ -31,15 +32,13 @@ def delete_file(pattern):
 
 
 class NameIndex:
-
     def __init__(self, force_rebuild, reduced):
-
-        self.index_file_path = './index_cache/swissname_data_index'
+        self.index_file_path = "./index_cache/swissname_data_index"
 
         # Check if index files exist
         # If the index does not exist and force_rebuild is False,
         # we download the index from Google Drive
-        if not force_rebuild and not os.path.isfile(self.index_file_path + '.dat'):
+        if not force_rebuild and not os.path.isfile(self.index_file_path + ".dat"):
             file_id = "1gESYkWDCrAJ06ADBwM-c2SrEpri6I5P0"
             output = "./index_cache/index_cache.tar.xz"
             gdown.download(id=file_id, output=output, quiet=False)
@@ -47,40 +46,51 @@ class NameIndex:
 
         # If force_rebuild is enabled, we recreate the index file.
         if force_rebuild:
-            delete_file('./index_cache/*.dat')
-            delete_file('./index_cache/*.idx')
+            delete_file("./index_cache/*.dat")
+            delete_file("./index_cache/*.idx")
 
         self.index = RTreeIndex(self.index_file_path)
 
         if self.index.get_size() > 0:
-            logger.debug('Index of size {} found  at {}'.format(self.index.get_size(), self.index_file_path))
+            logger.debug(
+                "Index of size {} found  at {}".format(
+                    self.index.get_size(), self.index_file_path
+                )
+            )
             return
 
-        if reduced and not any(fname.endswith('.shp') for fname in os.listdir('resources/swissTLM3D_LV95_data/')):
-            logger.info('SHP files not found. Downloading them from Swisstopo')
+        if reduced and not any(
+            fname.endswith(".shp")
+            for fname in os.listdir("resources/swissTLM3D_LV95_data/")
+        ):
+            logger.info("SHP files not found. Downloading them from Swisstopo")
 
-            url = 'https://cms.geo.admin.ch/Topo/swisstlm3d/LV95/swissTLM3D_1.9_LV95_LN02_shp3d.zip'
-            folder = './resources/swissTLM3D_LV95_data/'
+            url = "https://cms.geo.admin.ch/Topo/swisstlm3d/LV95/swissTLM3D_1.9_LV95_LN02_shp3d.zip"
+            folder = "./resources/swissTLM3D_LV95_data/"
             self.__download_resources(url, folder)
 
-        if not reduced and not any(fname.endswith('.shp')
-                                   for fname in os.listdir('resources/swissTLM3D_LV95_data_full/')):
-            logger.info('SHP files not found. Downloading them from Swisstopo')
+        if not reduced and not any(
+            fname.endswith(".shp")
+            for fname in os.listdir("resources/swissTLM3D_LV95_data_full/")
+        ):
+            logger.info("SHP files not found. Downloading them from Swisstopo")
 
-            url = 'https://data.geo.admin.ch/ch.swisstopo.swisstlm3d/swisstlm3d_2022-03/' \
-                  'swisstlm3d_2022-03_2056_5728.shp.zip '
-            folder = './resources/swissTLM3D_LV95_data_full/'
+            url = (
+                "https://data.geo.admin.ch/ch.swisstopo.swisstlm3d/swisstlm3d_2022-03/"
+                "swisstlm3d_2022-03_2056_5728.shp.zip"
+            )
+            folder = "./resources/swissTLM3D_LV95_data_full/"
             self.__download_resources(url, folder)
 
         self.generate_index(reduced)
 
     def __download_resources(self, url: str, destination: str):
         # Download a zip from url and extract it
-        output = destination + 'swissTLM3D_LV95_raw.zip'
+        output = destination + "swissTLM3D_LV95_raw.zip"
 
         # download the zip file and save it in output
         req = requests.get(url, stream=True)
-        with open(output, 'wb') as f:
+        with open(output, "wb") as f:
             for chunk in req.iter_content(chunk_size=1024):
                 if chunk:
                     f.write(chunk)
@@ -88,8 +98,7 @@ class NameIndex:
         shutil.unpack_archive(filename=output, extract_dir=destination)
 
         for directory in os.listdir(destination):
-
-            if any(ext in directory for ext in ('.zip', '.gitkeep')):
+            if any(ext in directory for ext in (".zip", ".gitkeep")):
                 continue
 
             for file in os.listdir(os.path.join(destination, directory)):
@@ -100,9 +109,11 @@ class NameIndex:
         os.remove(output)
 
     def generate_index(self, reduced):
-
         logger.info(
-            'Start Creating Index: Save index in {}. This might take a few minutes.'.format(self.index_file_path))
+            "Start Creating Index: Save index in {}. This might take a few minutes.".format(
+                self.index_file_path
+            )
+        )
 
         # TODO: Missing Entries:
         #   -   Kreuzung mit Seilbahnen usw.
@@ -117,8 +128,16 @@ class NameIndex:
         #   -   Druckleitung bzw. Fliessgewaesser als Kreuzung mit Weg aus TLM_FLIESSGEWAESSER
         #   -   Add intersections with river that have no bridge (e.g. 2720398, 1178367)
 
-        index_parts = (ForestBorders, TLM_Streets, StopsAndStations, LeisureAreals, Flurnamen, Versorgungsbauten,
-                       Einzelobjekte, PKTNames)
+        index_parts = (
+            ForestBorders,
+            TLM_Streets,
+            StopsAndStations,
+            LeisureAreals,
+            Flurnamen,
+            Versorgungsbauten,
+            Einzelobjekte,
+            PKTNames,
+        )
         for index_part in index_parts:
             start = time.time()
             logger.info("\tInsertion of {} started...".format(index_part.__name__))
@@ -129,6 +148,6 @@ class NameIndex:
             end = time.time()
             logger.info("\tInsertion completed. Time needed: {}s".format(end - start))
 
-        logger.info('Creation of index completed')
+        logger.info("Creation of index completed")
         self.index.flush()
-        logger.info('Index flushed!')
+        logger.info("Index flushed!")

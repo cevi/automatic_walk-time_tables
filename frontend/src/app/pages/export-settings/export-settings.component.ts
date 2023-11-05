@@ -16,21 +16,27 @@ export class ExportSettingsComponent {
   public route_file: File | undefined;
   public route_uploaded: boolean = false;
   public loading = false;
+  public error_message: string = '';
+  protected readonly location = location;
 
   constructor(private mapAnimator: MapAnimatorService, fb: UntypedFormBuilder, private router: Router) {
 
+    this.mapAnimator.set_error_handler((err) => {
+      this.error_message = err;
+    })
+
     this.options = fb.group({
       'velocity': new UntypedFormControl(4.5),
-      'map-scaling': new UntypedFormControl(25_000),
-      'departure-time': new UntypedFormControl((new Date()).toISOString().substring(0, 16)),
-      'creator-name': new UntypedFormControl(''),
-      'create-map-pdfs': new UntypedFormControl(true),
-      'create-excel': new UntypedFormControl(true),
-      'legend-position': new UntypedFormControl('lower right'),
-      'map-layers': new UntypedFormControl('ch.swisstopo.pixelkarte-farbe'),
-      'auto-scale': new UntypedFormControl(false),
-      'route-name': new UntypedFormControl(''),
-      'name-points-in-export': new UntypedFormControl(true),
+      'map_scaling': new UntypedFormControl(25_000),
+      'departure_time': new UntypedFormControl((new Date()).toISOString().substring(0, 16)),
+      'creator_name': new UntypedFormControl(''),
+      'create_map_pdfs': new UntypedFormControl(true),
+      'create_excel': new UntypedFormControl(true),
+      'legend_position': new UntypedFormControl('lower right'),
+      'map_layers': new UntypedFormControl('ch.swisstopo.pixelkarte-farbe'),
+      'auto_scale': new UntypedFormControl(false),
+      'route_name': new UntypedFormControl(''),
+      'name_points_in_export': new UntypedFormControl(true),
     });
 
 
@@ -57,7 +63,7 @@ export class ExportSettingsComponent {
     this.route_file = route_file;
     this.mapAnimator.replace_route(route_file)
       .then((route_name) => {
-        this.options.patchValue({'route-name': route_name})
+        this.options.patchValue({'route_name': route_name})
         this.route_uploaded = true;
         this.loading = false;
       })
@@ -82,8 +88,7 @@ export class ExportSettingsComponent {
     const settings = this.options.value;
     this.mapAnimator.download_map(settings).then(
       (uuid) => this.router.navigate(['pending', uuid])
-    );
-
+    ).catch((err) => this.error_message = err);
 
   }
 

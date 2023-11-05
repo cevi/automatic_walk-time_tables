@@ -21,7 +21,6 @@ class Path:
     """
 
     def __init__(self, points: List[Point] = None) -> None:
-
         self.__way_points: List[WayPoint] = []
         self.__total_distance = 0.0
 
@@ -41,7 +40,6 @@ class Path:
             return
 
         for i, pkt in enumerate(points):
-
             if i == 0 and len(self.__way_points) == 0:
                 self.__way_points.append(WayPoint(0.0, pkt.to_LV03()))
                 continue
@@ -74,15 +72,19 @@ class Path:
 
         """
 
-        if (index is None and way_point.accumulated_distance >= self.__total_distance) \
-                or (index is not None and index >= self.number_of_waypoints):
+        if (
+            index is None and way_point.accumulated_distance >= self.__total_distance
+        ) or (index is not None and index >= self.number_of_waypoints):
             self.append(way_point)
             return
 
         # Insert in correct place
         if index is None:
-            index = next(i for i, pkt in enumerate(self.__way_points) if
-                         pkt.accumulated_distance >= way_point.accumulated_distance)
+            index = next(
+                i
+                for i, pkt in enumerate(self.__way_points)
+                if pkt.accumulated_distance >= way_point.accumulated_distance
+            )
 
         self.__way_points.insert(index, way_point)
 
@@ -126,14 +128,13 @@ class Path:
         return copy_
 
     def get_filename(self):
-
         """
         Returns a filename safe variant of the route name.
         The route name may contain special characters (/, ", '. ?, (, ), etc.),
         whereas the filename does replace those with a dash.
         """
 
-        return re.sub(r'[\W_]+', '-', self.route_name).strip().lower()
+        return re.sub(r"[\W_]+", "-", self.route_name).strip().lower()
 
     def __str__(self) -> str:
         return "Path: " + self.route_name + ", points: " + str(self.__way_points)
@@ -142,19 +143,32 @@ class Path:
         return self.__str__()
 
     def to_json(self):
-
         return {
             "route_name": self.route_name,
-            "way_points": [wp.to_json() for wp in self.__way_points]
+            "way_points": [wp.to_json() for wp in self.__way_points],
         }
 
     def to_polyline(self):
         return polyline.encode(
-            list(map(lambda pkt: (pkt.point.to_LV95().lat, pkt.point.to_LV95().lon), self.__way_points)), 0)
+            list(
+                map(
+                    lambda pkt: (pkt.point.to_LV95().lat, pkt.point.to_LV95().lon),
+                    self.__way_points,
+                )
+            ),
+            0,
+        )
 
     def to_elevation_polyline(self):
         return polyline.encode(
-            list(map(lambda pkt: (pkt.accumulated_distance, pkt.point.h), self.__way_points)), 0)
+            list(
+                map(
+                    lambda pkt: (pkt.accumulated_distance, pkt.point.h),
+                    self.__way_points,
+                )
+            ),
+            0,
+        )
 
     def get_names(self):
         return [wp.name for wp in self.__way_points]

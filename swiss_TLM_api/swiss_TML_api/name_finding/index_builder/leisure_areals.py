@@ -11,20 +11,30 @@ class LeisureAreals(IndexBuilder):
     """
 
     def load(self):
-        shp_file = self.base_path + 'swissTLM3D_TLM_FREIZEITAREAL.shp'
+        shp_file = self.base_path + "swissTLM3D_TLM_FREIZEITAREAL.shp"
 
         with fiona.open(shp_file) as src:
             for obj in src:
-                geo = obj["geometry"]['coordinates'][0]
+                geo = obj["geometry"]["coordinates"][0]
 
                 geo = list(map(lambda p: p[:-1], geo))  # remove elevation information
                 polygon = Polygon(geo)
 
                 coord = polygon.centroid
 
-                obj_type = obj['properties']['OBJEKTART']
-                name = obj['properties']['NAME']
+                obj_type = obj["properties"]["OBJEKTART"]
+                name = obj["properties"]["NAME"]
 
-                height = sum([pkt[2] for pkt in obj["geometry"]['coordinates'][0]]) / len(geo)  # get mean height
-                swiss_name = SwissName(name=name, object_type=obj_type, x=int(coord.x), y=int(coord.y), h=height)
+                height = sum(
+                    [pkt[2] for pkt in obj["geometry"]["coordinates"][0]]
+                ) / len(
+                    geo
+                )  # get mean height
+                swiss_name = SwissName(
+                    name=name,
+                    object_type=obj_type,
+                    x=int(coord.x),
+                    y=int(coord.y),
+                    h=height,
+                )
                 self.index.insert(id=0, coordinates=(coord.x, coord.y), obj=swiss_name)

@@ -14,6 +14,8 @@ describe('[Batch Test] of all KML files', async () => {
 
     const kml_files = Cypress.env('kml_files');
 
+    cy.wait(60_000)
+
     kml_files.forEach(file => {
         it("Testing file: " + file, () => {
 

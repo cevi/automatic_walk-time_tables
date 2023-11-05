@@ -7,7 +7,9 @@ class SwissName:
         self.h = int(h)
 
     def __str__(self):
-        return "{} ({} | {}, {}, {})".format(self.name, self.object_type, self.x, self.y, self.h)
+        return "{} ({} | {}, {}, {})".format(
+            self.name, self.object_type, self.x, self.y, self.h
+        )
 
     def __repr__(self):
         return self.__str__()
