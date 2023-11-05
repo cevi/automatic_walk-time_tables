@@ -88,56 +88,66 @@ def parse_route():
 
 @app.route('/create-walk-time-table', methods=['POST'])
 def create_walk_time_table():
-    if request.is_json:
-        options = request.get_json()
-    elif 'options' in request.form:
-        options = json.loads(request.form['options'])
-    else:
-        return app.response_class(
-            response=json.dumps({'status': GeneratorStatus.ERROR, 'message': 'Invalid request format.'}),
-            status=400, mimetype='application/json')
+    try:
+        if request.is_json:
+            options = request.get_json()
+        elif 'options' in request.form:
+            options = json.loads(request.form['options'])
+        else:
+            return app.response_class(
+                response=json.dumps({'status': GeneratorStatus.ERROR, 'message': 'Invalid request format.'}),
+                status=400, mimetype='application/json')
 
-    # Decode options['route'] form polyline
-    if 'encoding' in options and options['encoding'] == 'polyline':
+        # Decode options['route'] form polyline
+        if 'encoding' in options and options['encoding'] == 'polyline':
 
-        start = time.time()
+            start = time.time()
 
-        path = extract_path(options)
+            path = extract_path(options)
 
-        end = time.time()
-        logger.info('Decoding polyline took {} seconds.'.format(end - start))
+            end = time.time()
+            logger.info('Decoding polyline took {} seconds.'.format(end - start))
 
-        start = time.time()
+            start = time.time()
 
-        # calc POIs for the path
-        pois_transformer = POIsTransformer(
-            pois_list_as_str=options['pois'] if 'pois' in options else '',
-            pois_distance_str=options['pois_distance'] if 'pois_distance' in options else '')
-        pois: Path = pois_transformer.transform(path)
+            # calc POIs for the path
+            pois_transformer = POIsTransformer(
+                pois_list_as_str=options['pois'] if 'pois' in options else '',
+                pois_distance_str=options['pois_distance'] if 'pois_distance' in options else '')
+            pois: Path = pois_transformer.transform(path)
 
-        end = time.time()
-        logger.info('Calculating POIs took {} seconds.'.format(end - start))
-        start = time.time()
+            end = time.time()
+            logger.info('Calculating POIs took {} seconds.'.format(end - start))
+            start = time.time()
 
-        douglas_peucker_transformer = DouglasPeuckerTransformer(number_of_waypoints=21, pois=pois)
-        selected_way_points = douglas_peucker_transformer.transform(path)
+            douglas_peucker_transformer = DouglasPeuckerTransformer(number_of_waypoints=21, pois=pois)
+            selected_way_points = douglas_peucker_transformer.transform(path)
 
-        end = time.time()
-        logger.info('Calculating Douglas-Peucker took {} seconds.'.format(end - start))
+            end = time.time()
+            logger.info('Calculating Douglas-Peucker took {} seconds.'.format(end - start))
 
-        result_json = {
-            'status': GeneratorStatus.SUCCESS,
-            'selected_way_points': selected_way_points.to_polyline(),
-            'selected_way_points_elevation': selected_way_points.to_elevation_polyline(),
-            'pois': pois.to_polyline(),
-            'pois_elevation': pois.to_elevation_polyline(),
-        }
-        return app.response_class(response=json.dumps(result_json), status=200, mimetype='application/json')
+            result_json = {
+                'status': GeneratorStatus.SUCCESS,
+                'selected_way_points': selected_way_points.to_polyline(),
+                'selected_way_points_elevation': selected_way_points.to_elevation_polyline(),
+                'pois': pois.to_polyline(),
+                'pois_elevation': pois.to_elevation_polyline(),
+            }
+            return app.response_class(response=json.dumps(result_json), status=200, mimetype='application/json')
 
-    else:
-        return app.response_class(
-            response=json.dumps({'status': GeneratorStatus.ERROR, 'message': 'Invalid Encoding of route.'}),
-            status=400, mimetype='application/json')
+        else:
+            return app.response_class(
+                response=json.dumps({'status': GeneratorStatus.ERROR, 'message': 'Invalid Encoding of route.'}),
+                status=400, mimetype='application/json')
+    except UserException as e:
+        logger.error(e)
+        response = json.dumps({'status': GeneratorStatus.ERROR, 'message': str(e)})
+        return app.response_class(response = response, status=500, mimetype="application/json")
+
+    except Exception as e:
+        logger.error(e)
+        response = json.dumps({'status': GeneratorStatus.ERROR, 'message': str(e)})
+        return app.response_class(response = response, status=500, mimetype="application/json")
 
 
 def extract_path(options, coords_field='route', elevation_field='elevation_data'):
@@ -226,16 +236,18 @@ def create_export(options, uuid):
         t.start()
 
     except UserException as e:
+        logger.error(e)
         logger.log(ExportStateLogger.REQUESTABLE, str(e), {'uuid': uuid, 'status': GeneratorStatus.ERROR})
 
     except Exception as e:
-        raise e
+        logger.error(e)
         logger.log(ExportStateLogger.REQUESTABLE,
                        'Der Export ist fehlgeschlagen. Ein unbekannter Fehler ist aufgetreten!',
                        {'uuid': uuid, 'status': GeneratorStatus.ERROR})
     finally:
         export_state = stateHandler.get_status(uuid)['status']
         if export_state == GeneratorStatus.RUNNING:
+            logger.error("Generator did not stop.")
             logger.log(ExportStateLogger.REQUESTABLE,
                        'Der Export wurde nicht erfolgreich fertig. Ein unbekannter Fehler ist aufgetreten!',
                        {'uuid': uuid, 'status': GeneratorStatus.ERROR})
