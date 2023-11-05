@@ -16,8 +16,14 @@ export class ExportSettingsComponent {
   public route_file: File | undefined;
   public route_uploaded: boolean = false;
   public loading = false;
+  public error_message: string = '';
+  protected readonly location = location;
 
   constructor(private mapAnimator: MapAnimatorService, fb: UntypedFormBuilder, private router: Router) {
+
+    this.mapAnimator.set_error_handler((err) => {
+      this.error_message = err;
+    })
 
     this.options = fb.group({
       'velocity': new UntypedFormControl(4.5),
@@ -82,8 +88,7 @@ export class ExportSettingsComponent {
     const settings = this.options.value;
     this.mapAnimator.download_map(settings).then(
       (uuid) => this.router.navigate(['pending', uuid])
-    );
-
+    ).catch((err) => this.error_message = err);
 
   }
 

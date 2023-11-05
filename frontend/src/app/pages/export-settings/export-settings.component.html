@@ -3,7 +3,14 @@
 
   <button mat-stroked-button color="primary" class="help-button" routerLink="guide">So funktioniert es!</button>
 
-  <form [formGroup]="options">
+  <ng-container *ngIf="error_message != ''">
+    <p id="status_message" class="error_message">
+      {{error_message}}
+    </p>
+    <button mat-stroked-button color="warn" (click)="location.reload()">Neuer Versuch starten</button>
+  </ng-container>
+
+  <form [formGroup]="options" *ngIf="error_message == ''">
 
     <mat-stepper orientation="vertical">
 
