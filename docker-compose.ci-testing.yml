@@ -29,9 +29,15 @@ services:
     env_file:
       - .env.ci-testing
 
+    logging:
+      driver: none
+
   awt-tile-cache:
     env_file:
       - .env.ci-testing
+
+    logging:
+      driver: none
 
   awt-mapfish-print-server:
 
@@ -43,6 +49,9 @@ services:
 
     env_file:
       - .env.ci-testing
+    
+    logging:
+      driver: none
 
   awt-swiss-tml-api:
 
@@ -59,6 +68,9 @@ services:
     env_file:
       - .env.ci-testing
 
+    logging:
+      driver: none
+
   awt-backend:
 
     build:
@@ -73,6 +85,9 @@ services:
 
     env_file:
       - .env.ci-testing
+
+    logging:
+      driver: none
 
   awt-frontend:
 
@@ -91,3 +106,6 @@ services:
 
     env_file:
       - .env.ci-testing
+
+    logging:
+      driver: none
