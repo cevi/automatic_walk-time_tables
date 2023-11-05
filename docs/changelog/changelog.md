@@ -7,6 +7,7 @@ A complete, technical changelog is available at [GitHub](https://github.com/cevi
 - CLI support is fully dropped (4.0.0)
 - Map numbers computation uses less API requests (4.0.0)
 - Healthcheck for docker containers at startup (4.0.0)
+- Linting (PEP8), (4.0.0)
 - Bug fixes
 - Dependency updates
 
