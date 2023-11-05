@@ -38,7 +38,7 @@
     "@angular-devkit/build-angular": "^14.2.11",
     "@angular/cli": "^14.2.11",
     "@angular/compiler-cli": "^14.3.0",
-    "@types/jasmine": "~3.8.0",
+    "@types/jasmine": "~5.1.1",
     "@types/node": "^12.20.55",
     "@types/proj4": "^2.5.2",
     "angular-build-info": "^2.0.1",
