@@ -76,14 +76,14 @@ def parse_route():
             result_json['elevation_data'] = path.to_elevation_polyline()
 
         return app.response_class(response=json.dumps(result_json), status=200, mimetype='application/json')
-
+    except UserException as e:
+        logger.error(e)
+        return app.response_class(response=json.dumps({'status':GeneratorStatus.ERROR, 'message': str(e) }))
     except Exception as e:
-
         logger.error('Exception while parsing file: {}'.format(e))
-
         return app.response_class(
-            response=json.dumps({'status': GeneratorStatus.ERROR, 'message': str(e)}),
-            status=400, mimetype='application/json')
+            response=json.dumps({'status': GeneratorStatus.ERROR, 'message': 'Ein Fehler beim Einlesen der Route ist aufgetreten.'}),
+            status=500, mimetype='application/json')
 
 
 @app.route('/create-walk-time-table', methods=['POST'])
@@ -95,7 +95,7 @@ def create_walk_time_table():
             options = json.loads(request.form['options'])
         else:
             return app.response_class(
-                response=json.dumps({'status': GeneratorStatus.ERROR, 'message': 'Invalid request format.'}),
+                response=json.dumps({'status': GeneratorStatus.ERROR, 'message': 'Die Optionen fehlen.'}),
                 status=400, mimetype='application/json')
 
         # Decode options['route'] form polyline
@@ -137,7 +137,7 @@ def create_walk_time_table():
 
         else:
             return app.response_class(
-                response=json.dumps({'status': GeneratorStatus.ERROR, 'message': 'Invalid Encoding of route.'}),
+                response=json.dumps({'status': GeneratorStatus.ERROR, 'message': 'Die Route kann leider nicht eingelesen werden.'}),
                 status=400, mimetype='application/json')
     except UserException as e:
         logger.error(e)
@@ -146,7 +146,7 @@ def create_walk_time_table():
 
     except Exception as e:
         logger.error(e)
-        response = json.dumps({'status': GeneratorStatus.ERROR, 'message': str(e)})
+        response = json.dumps({'status': GeneratorStatus.ERROR, 'message': 'Ein Fehler ist aufgetreten.'})
         return app.response_class(response = response, status=500, mimetype="application/json")
 
 
@@ -179,7 +179,7 @@ def create_map():
         options = json.loads(request.form['options'])
     else:
         return app.response_class(
-            response=json.dumps({'status': GeneratorStatus.ERROR, 'message': 'Invalid request format.'}),
+            response=json.dumps({'status': GeneratorStatus.ERROR, 'message': 'Die Optionen fehlen.'}),
             status=400, mimetype='application/json')
 
     thread = Thread(target=create_export, kwargs={'options': options, 'uuid': uuid})
@@ -295,7 +295,7 @@ def download(uuid):
         return app.response_class(
             response=json.dumps({
                 'status': GeneratorStatus.ERROR,
-                'message': 'Requested data is not available anymore.'
+                'message': 'Die angeforderten Daten sind nicht verfügbar.'
             }), status=404, mimetype='application/json')
 
     # Return Zip with data
