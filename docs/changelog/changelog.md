@@ -3,6 +3,7 @@
 A complete, technical changelog is available at [GitHub](https://github.com/cevi/automatic_walk-time_tables/releases).
 
 ## Version 3 - Interactive Exports
+- Circular Paths are now supported (3.3.2)
 - Interactive exports: modify the selected waypoints using points of interest (POI) (3.0.0)
 - Improved Documentation and Changelog (on this page) (3.0.0)
 - combine all maps in a single PDF file (3.0.0)
