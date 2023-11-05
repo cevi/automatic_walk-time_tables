@@ -27,7 +27,7 @@ class ForestBorders(IndexBuilder):
                 ['swissTLM3D_TLM_BODENBEDECKUNG.shp'])
         else:
             self.insert_forest_intersections(
-                ['swissTLM3D_TLM_BODENBEDECKUNG_west.shp', 'swissTLM3D_TLM_BODENBEDECKUNG_ost.shp'])
+                ['swissTLM3D_TLM_BODENBEDECKUNG_WEST.shp', 'swissTLM3D_TLM_BODENBEDECKUNG_OST.shp'])
 
     def calc_intersection(self, path_index, obj):
         geo = obj["geometry"]['coordinates'][0]
