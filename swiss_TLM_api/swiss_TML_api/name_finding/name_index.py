@@ -3,6 +3,7 @@ import logging
 import os
 import shutil
 import time
+import requests
 
 import gdown
 from rtree.index import Index as RTreeIndex
@@ -68,7 +69,7 @@ class NameIndex:
             logger.info('SHP files not found. Downloading them from Swisstopo')
 
             url = 'https://data.geo.admin.ch/ch.swisstopo.swisstlm3d/swisstlm3d_2022-03/' \
-                  'swisstlm3d_2022-03_2056_5728.shp.zip '
+                  'swisstlm3d_2022-03_2056_5728.shp.zip'
             folder = './resources/swissTLM3D_LV95_data_full/'
             self.__download_resources(url, folder)
 
