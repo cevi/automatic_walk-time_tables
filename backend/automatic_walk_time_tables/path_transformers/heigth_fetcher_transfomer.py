@@ -10,6 +10,7 @@ from automatic_walk_time_tables.path_transformers.path_transfomer import PathTra
 from automatic_walk_time_tables.utils import point
 from automatic_walk_time_tables.utils.path import Path
 from automatic_walk_time_tables.utils.point import Point, PointType
+from automatic_walk_time_tables.utils.error import UserException
 
 
 class HeightFetcherTransformer(PathTransformer):
@@ -29,7 +30,7 @@ class HeightFetcherTransformer(PathTransformer):
 
         # check that the path does not have more than 5000 points
         if len(path_.way_points) > 5000:
-            raise Exception("Path has more than 5000 points, above rate limit.")
+            raise UserException("Deine Datei hat zu viele Wegpunkte. Bitte reduziere die Anzahl Punkte und probier es erneut.")
 
         geom_data = {
             "type": "LineString",

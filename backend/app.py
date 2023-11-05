@@ -24,6 +24,7 @@ from automatic_walk_time_tables.path_transformers.heigth_fetcher_transfomer impo
 from automatic_walk_time_tables.path_transformers.pois_transfomer import POIsTransformer
 from automatic_walk_time_tables.utils.path import Path
 from automatic_walk_time_tables.utils.point import Point_LV95
+from automatic_walk_time_tables.utils.error import UserException
 from server_logging.log_helper import setup_recursive_logger
 from server_logging.status_handler import ExportStateHandler, ExportStateLogger
 
@@ -238,6 +239,9 @@ def create_export(options, uuid):
         # Create a new thread and start it
         t = threading.Thread(target=__delete_after_delay, args=(output_directory, uuid,))
         t.start()
+
+    except UserException as e:
+        logger.log(ExportStateLogger.REQUESTABLE, str(e), {'uuid': uuid, 'status': GeneratorStatus.ERROR})
 
     finally:
         export_state = stateHandler.get_status(uuid)['status']

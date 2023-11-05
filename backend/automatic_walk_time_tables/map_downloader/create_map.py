@@ -17,6 +17,7 @@ from automatic_walk_time_tables.generator_status import GeneratorStatus
 from automatic_walk_time_tables.utils import path
 from automatic_walk_time_tables.utils.point import Point_LV95
 from server_logging.status_handler import ExportStateLogger
+from automatic_walk_time_tables.utils.error import UserException
 
 
 def GetSpacedElements(array, numElems=4):
@@ -104,14 +105,7 @@ class MapCreator:
         map_centers = self.create_map_centers(map_scaling)
 
         if len(map_centers) > 10:
-            self.logger.log(ExportStateLogger.REQUESTABLE,
-                            f"Eine Anfrage würde {len(map_centers)} PDFs generieren, wir haben die Anzahl aber auf 10 beschränkt. Bitte vergrössere deinen Kartenmassstab und probiere es erneut.",
-                            {'uuid': self.uuid, 'status': GeneratorStatus.ERROR})
-            logging.error(f'Too many map centers (exceeding faire use limit).')
-            if self.logger.getEffectiveLevel() == logging.DEBUG:
-                raise Exception("You should respect the faire use limit!")
-            else:
-                exit(1)
+            raise UserException(f"Diese Anfrage würde {len(map_centers)} PDFs generieren, wir haben die Anzahl aber auf 10 beschränkt. Bitte vergrössere deinen Kartenmassstab und probiere es erneut.")
 
         for index, map_center in enumerate(map_centers):
 

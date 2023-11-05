@@ -7,7 +7,7 @@ from multiprocessing import Process
 import openpyxl
 from matplotlib import pyplot as plt
 
-from automatic_walk_time_tables.utils import path
+from automatic_walk_time_tables.utils import path, error
 from automatic_walk_time_tables.utils.path import Path
 from automatic_walk_time_tables.utils.point import Point_LV03
 
@@ -107,6 +107,10 @@ def create_walk_table(time_stamp, speed, way_points: Path, file_name: str,
     sheet['K8'] = time_stamp.strftime('%H:%M')
 
     # get infos about points
+    if len(way_points.way_points) >= 22:
+        logger.error("Too many waypoints.")
+        raise error.UserException("Zu viele Wegpunkte im Excel vorhanden.")
+
     for i, pt in enumerate(way_points.way_points):
         lv95: Point_LV95 = pt.point.to_LV95()
 
