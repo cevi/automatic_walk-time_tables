@@ -20,20 +20,17 @@ class MapNumberIndex:
     def __init__(self, force_rebuild=False):
         start = time.time()
         
-        if force_rebuild:
+        if force_rebuild: # force_rebuild
             self.__download_map_numbers()
             end = time.time()
             logger.info('Map numbers index created (after {}s)'.format(str(end - start)))
             return
 
         # try to load the index
-        try:
-            self.index = RTreeIndex(self.index_file_path)
-        except RTreeError as e:
-            logger.error("Could not load index file for map numbers. " + str(e))
-
-            # recreate the index.
+        if not os.path.isfile(self.index_file_path + '.dat'):
             self.__download_map_numbers()
+        self.index = RTreeIndex(self.index_file_path)
+
         end = time.time()
         logger.info('Map numbers index loaded (after {}s)'.format(str(end - start)))
             
@@ -43,28 +40,28 @@ class MapNumberIndex:
             os.remove(self.index_file_path + '.idx')
         except FileNotFoundError:
             pass
+
         self.index = RTreeIndex(self.index_file_path)
         
         # Build index using the swisstopo api
-        base_coordinates = [2650000, 1200000]
+        base_url = "https://shop.swisstopo.admin.ch/de/api/geojson/814"
+        response = requests.get(base_url)
+        for feature in response.json()['features']:
+            coords = feature["geometry"]["coordinates"][0] # get coords dict
+            coords_x = coords[0][0], coords[2][0]
+            coords_y = coords[0][1], coords[2][1]
+            min_x = min(coords_x[0], coords_x[1])
+            max_x = max(coords_x[0], coords_x[1])
+            min_y = min(coords_y[0], coords_y[1])
+            max_y = max(coords_y[0], coords_y[1])
+            bbox = min_x, min_y, max_x, max_y # build bbox list
+            tit = feature["properties"]["title"]
+            num = feature["properties"]["map_number"]
 
-        base_url = "https://api3.geo.admin.ch/rest/services/all/MapServer/identify?geometryFormat=geojson" \
-                   "&geometryType=esriGeometryPoint&lang=de&sr=2056&layers=all:ch.swisstopo.pixelkarte-pk25.metadata" \
-                   "&limit=50&returnGeometry=true&tolerance=10000&imageDisplay=1283,937,96&mapExtent=400000,000000," \
-                   f"900000,300000&geometry={base_coordinates[0]},{base_coordinates[1]}"
-
-        for i in range(0, 250, 50):
-            url = base_url + f"&offset={i}"
-            response = requests.get(url)
-            if response.status_code != 200:
-                logger.error("Could not get map numbers from swisstopo. Status code: {}".format(response.status_code))
-                return
-
-            for map_ in response.json()['results']:
-                self.index.insert(id=0,
-                                  coordinates=map_['bbox'],
-                                  obj="{} ({})".format(map_["properties"]['lk_name'], map_["properties"]['tileid']))
-            self.index.flush() # save the index to disk
+            self.index.insert(id=0,
+                            coordinates=bbox,
+                            obj="{} ({})".format(tit, num))
+        self.index.flush() # save the index to disk
         logger.info("Map numbers index created.")
 
     def fetch_map_numbers(self, coordinates: List[List[int]]) -> str:
