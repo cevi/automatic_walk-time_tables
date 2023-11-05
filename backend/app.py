@@ -17,7 +17,6 @@ import polyline
 from flask import Flask, request, send_file, redirect
 from flask_cors import CORS
 
-from automatic_walk_time_tables.arg_parser import get_parser
 from automatic_walk_time_tables.path_transformers.douglas_peucker_transformer import DouglasPeuckerTransformer
 from automatic_walk_time_tables.path_transformers.equidistant_transfomer import EquidistantTransformer
 from automatic_walk_time_tables.path_transformers.heigth_fetcher_transfomer import HeightFetcherTransformer
@@ -154,8 +153,8 @@ def extract_path(options, coords_field='route', elevation_field='elevation_data'
         height_fetcher_transformer = HeightFetcherTransformer()
         path = height_fetcher_transformer.transform(path)
 
-    if "settings" in options and "route-name" in options["settings"]:
-        path.route_name = options["settings"]["route-name"]
+    if "settings" in options and "route_name" in options["settings"]:
+        path.route_name = options["settings"]["route_name"]
         logger.info("Route loaded with name: {}".format(path.route_name))
     return path
 
@@ -210,28 +209,15 @@ def create_export(options, uuid):
         logger.log(ExportStateLogger.REQUESTABLE, 'Export wird vorbereitet.',
                 {'uuid': uuid, 'status': GeneratorStatus.RUNNING})
 
-        options['print-api-base-url'] = os.environ['PRINT_API_BASE_URL']
+        options['print_api_base_url'] = os.environ['PRINT_API_BASE_URL']
         options['output_directory'] = output_directory
-        print('UUID: {}'.format(uuid))
 
-        parser = get_parser()
+        options['settings']['create_elevation_profile'] = True
+        options['settings']['name_points_in_export'] = True
 
-        # load settings
-        args_as_dict = options['settings']
-        args = args_as_dict.items()
-        args = map(lambda arg: ('--' + arg[0], str(arg[1])), args)
-        args = list(functools.reduce(lambda x, y: x + y, args))
+        logger.info("OPTIONS:" + str(options))
 
-        # load flags
-        args.extend(map(lambda arg: '--' + arg, options['flags']))
-        logger.info('Args: {}'.format(args))
-
-        args, _ = parser.parse_known_args(['-fn', '', '--output_directory', output_directory, '--print-api-base-url',
-                                        os.environ['PRINT_API_BASE_URL']] + args)
-
-        # TODO: Remove args form generator and replace with options JSON (everywhere inside the generator code)
-
-        generator = AutomatedWalkTableGenerator(args, uuid, options, manual_mode=True)
+        generator = AutomatedWalkTableGenerator(uuid, options, manual_mode=True)
         generator.set_data(path, way_points, pois)
         generator.run()
 
@@ -242,7 +228,8 @@ def create_export(options, uuid):
     except UserException as e:
         logger.log(ExportStateLogger.REQUESTABLE, str(e), {'uuid': uuid, 'status': GeneratorStatus.ERROR})
 
-    except:
+    except Exception as e:
+        raise e
         logger.log(ExportStateLogger.REQUESTABLE,
                        'Der Export ist fehlgeschlagen. Ein unbekannter Fehler ist aufgetreten!',
                        {'uuid': uuid, 'status': GeneratorStatus.ERROR})

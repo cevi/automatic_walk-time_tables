@@ -42,12 +42,12 @@ class MapCreator:
     `A4_WIDTH_FACTOR * map_scale` gives you the number of km displayed on one A4 paper.
     """
 
-    def __init__(self, path_: path.Path, uuid: str, args: argparse.Namespace):
+    def __init__(self, path_: path.Path, uuid: str, args):
         self.logger = logging.getLogger(__name__)
         self.path_ = path_
         self.uuid = uuid
 
-        self.name_points_in_export = args.name_points_in_export if 'name_points_in_export' in args else False
+        self.name_points_in_export = args["name_points_in_export"] if 'name_points_in_export' in args else False
 
     def auto_select_map_scaling(self) -> int:
         """

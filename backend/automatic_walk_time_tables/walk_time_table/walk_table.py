@@ -1,6 +1,6 @@
 import logging
 import os
-from datetime import timedelta
+from datetime import timedelta, datetime
 from math import log
 from multiprocessing import Process
 
@@ -18,7 +18,6 @@ def plot_elevation_profile(path_: path.Path,
                            way_points: path.Path,
                            pois: path.Path,
                            file_name: str,
-                           open_figure: bool,
                            legend_position: str):
     """
 
@@ -29,12 +28,12 @@ def plot_elevation_profile(path_: path.Path,
 
     """
 
-    p = Process(target=_plot_elevation_profile, args=(file_name, legend_position, open_figure, path_, pois, way_points))
+    p = Process(target=_plot_elevation_profile, args=(file_name, legend_position, path_, pois, way_points))
     p.start()
     p.join()
 
 
-def _plot_elevation_profile(file_name, legend_position, open_figure, path_, pois, way_points):
+def _plot_elevation_profile(file_name, legend_position, path_, pois, way_points):
     # clear the plot, plot heights of exported data from SchweizMobil
     plt.clf()
     distances = [p.accumulated_distance for p in path_.way_points]
@@ -69,12 +68,9 @@ def _plot_elevation_profile(file_name, legend_position, open_figure, path_, pois
     # show the plot and save image
     plt.savefig(file_name + '_elevation_profile.png', dpi=750)
     logger.info("Elevation profile plot saved as " + file_name + '_elevation_profile.png')
-    if open_figure:
-        logger.debug("Opening figure as specified by the user.")
-        plt.show()
 
 
-def create_walk_table(time_stamp, speed, way_points: Path, file_name: str,
+def create_walk_table(time_stamp_iso, speed, way_points: Path, file_name: str,
                       route_name: str, creator_name: str,
                       map_numbers: str):
     """
@@ -91,6 +87,7 @@ def create_walk_table(time_stamp, speed, way_points: Path, file_name: str,
         except:
             logger.error("Could not find template file for walk table.")
             raise FileNotFoundError
+    time_stamp = datetime.fromisoformat(time_stamp_iso)
 
     sheet = xfile.worksheets[0]
     oldPoint = None

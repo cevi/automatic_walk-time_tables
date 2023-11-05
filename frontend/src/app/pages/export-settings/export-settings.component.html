@@ -63,7 +63,7 @@
             Das Höhenprofil wird deinem Export als Bild beigefügt.
           </p>
 
-          <mat-select appearance="fill" placeholder="Position der Legende" formControlName="legend-position">
+          <mat-select appearance="fill" placeholder="Position der Legende" formControlName="legend_position">
             <mat-option value="upper left">Oben Links</mat-option>
             <mat-option value="lower left">Unten Links</mat-option>
             <mat-option value="upper right">Oben Rechts</mat-option>
@@ -81,18 +81,18 @@
         <ng-template matStepLabel>Einstellungen zur Karte</ng-template>
 
         <div class="content-block">
-          <mat-slide-toggle formControlName="create-map-pdfs">Karte als PDF beifügen</mat-slide-toggle>
+          <mat-slide-toggle formControlName="create_map_pdfs">Karte als PDF beifügen</mat-slide-toggle>
           <br>
-          <mat-slide-toggle formControlName="auto-scale">Massstab automatisch wählen</mat-slide-toggle>
+          <mat-slide-toggle formControlName="auto_scale">Massstab automatisch wählen</mat-slide-toggle>
           <br>
-          <mat-slide-toggle formControlName="name-points-in-export">Punkte beschriften</mat-slide-toggle>
+          <mat-slide-toggle formControlName="name_points_in_export">Punkte beschriften</mat-slide-toggle>
 
           <div class="slider">
             <label>Kartenmassstab: 1:{{scale.value}}</label>
             <mat-slider #scale min="10000" max="100000" step="5000"
-                        [disabled]="this.options.controls['auto-scale'].value"
-                        (change)="options.controls['map-scaling'].setValue($event.value)"
-                        [value]="options.controls['map-scaling'].value"></mat-slider>
+                        [disabled]="this.options.controls['auto_scale'].value"
+                        (change)="options.controls['map_scaling'].setValue($event.value)"
+                        [value]="options.controls['map_scaling'].value"></mat-slider>
           </div>
         </div>
 
@@ -102,7 +102,7 @@
             Kartenlayer auswählen:
           </p>
 
-          <mat-select appearance="fill" placeholder="Kartenlayer" formControlName="map-layers">
+          <mat-select appearance="fill" placeholder="Kartenlayer" formControlName="map_layers">
             <mat-option value="ch.swisstopo.pixelkarte-farbe">Basiskarte Farbig</mat-option>
             <mat-option value="ch.swisstopo.swissimage-product">Luftbild</mat-option>
             <mat-option
@@ -127,7 +127,7 @@
 
 
         <div class="content-block">
-          <mat-slide-toggle formControlName="create-excel">Marschzeittabelle als Excel beifügen</mat-slide-toggle>
+          <mat-slide-toggle formControlName="create_excel">Marschzeittabelle als Excel beifügen</mat-slide-toggle>
 
           <div class="slider">
             <label>Geschwindigkeit: {{velocity.value}} Lkm/h</label>
@@ -139,21 +139,21 @@
 
           <mat-form-field appearance="fill" class="full-width">
             <mat-label>Routen-Name</mat-label>
-            <input matInput type="text" formControlName="route-name">
+            <input matInput type="text" formControlName="route_name">
           </mat-form-field>
 
           <br>
 
           <mat-form-field appearance="fill" class="full-width">
             <mat-label>Dein Name</mat-label>
-            <input matInput type="text" formControlName="creator-name">
+            <input matInput type="text" formControlName="creator_name">
           </mat-form-field>
 
           <br>
 
           <mat-form-field appearance="fill" class="full-width">
             <mat-label>Abmarsch Zeit</mat-label>
-            <input matInput type="datetime-local" formControlName="departure-time">
+            <input matInput type="datetime-local" formControlName="departure_time">
           </mat-form-field>
         </div>
 
