@@ -14,8 +14,6 @@ describe('[Batch Test] of all GPX files', async () => {
 
     const gpx_files = Cypress.env('gpx_files');
 
-    cy.wait(60_000)
-
     gpx_files.forEach(file => {
         it("Testing file: " + file, () => {
 

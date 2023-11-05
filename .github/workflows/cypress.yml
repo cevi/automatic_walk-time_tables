@@ -5,6 +5,9 @@ on:
       - dev
       - master
 
+env:
+  MY_REF: ${{ format('refs/heads/{0}', github.event.pull_request.head.ref) }}
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -12,6 +15,10 @@ jobs:
       # Checkout the source code
       - name: 🛎️  Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ MY_REF }}
+          fetch-depth: 1
+
 
       # Restores the cache if it exists.
       - name: ⛏ Restore docker image from cache
