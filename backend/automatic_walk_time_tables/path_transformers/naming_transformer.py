@@ -20,14 +20,14 @@ class NamingTransformer(PathTransformer):
 
             lv95 = pt.point.to_LV95()
             payload = json.dumps([[lv95.lat, lv95.lon]])
-            headers = {'Content-Type': 'application/json'}
+            headers = {"Content-Type": "application/json"}
             req = requests.request("GET", url, headers=headers, data=payload)
             resp = req.json()
 
             # Use coordinate if next name is more than 100 meters away
-            if resp[0]['offset'] <= 100:
-                pt.name = resp[0]['swiss_name']
+            if resp[0]["offset"] <= 100:
+                pt.name = resp[0]["swiss_name"]
             else:
-                pt.name = ''
+                pt.name = ""
 
         return path_

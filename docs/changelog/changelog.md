@@ -2,6 +2,15 @@
 
 A complete, technical changelog is available at [GitHub](https://github.com/cevi/automatic_walk-time_tables/releases).
 
+## Version 4 - Improved Error handling & drop CLI support
+- Error messages are better shown to the user (4.0.0)
+- CLI support is fully dropped (4.0.0)
+- Map numbers computation uses less API requests (4.0.0)
+- Healthcheck for docker containers at startup (4.0.0)
+- Linting (PEP8), (4.0.0)
+- Bug fixes
+- Dependency updates
+
 ## Version 3 - Interactive Exports
 - Circular Paths are now supported (3.3.2)
 - Interactive exports: modify the selected waypoints using points of interest (POI) (3.0.0)

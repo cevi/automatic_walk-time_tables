@@ -1,0 +1,32 @@
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/backend"
+    schedule:
+      interval: "daily"
+    target-branch: "dev"
+  - package-ecosystem: "npm"
+    directory: "/docs"
+    schedule:
+      interval: "daily"
+    target-branch: "dev"
+  - package-ecosystem: "npm"
+    directory: "/e2e"
+    schedule:
+      interval: "daily"
+    target-branch: "dev"
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "daily"
+    target-branch: "dev"
+  - package-ecosystem: "pip"
+    directory: "/swiss_TML_api"
+    schedule:
+      interval: "daily"
+    target-branch: "dev"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    target-branch: "dev"

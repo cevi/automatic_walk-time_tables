@@ -34,8 +34,8 @@ export function test_without_interaction(file) {
     }).should('be.enabled');
     cy.get('#export-button').click();
 
-    cy.url({timeout: 10000}).should('contain', '/pending');
-    cy.url({timeout: 60000}).should('contain', '/download');
+    cy.url({timeout: 10_000}).should('contain', '/pending');
+    cy.url({timeout: 90_000}).should('contain', '/download');
 
     cy.get('h2').should('contain', 'Deine Route wurde erfolgreich exportiert!');
 }
@@ -78,7 +78,7 @@ export function export_with_interaction(file) {
     cy.wait(500)
 
     cy.get('#goto-step-3').click();
-    cy.get('[formControlName="create-map-pdfs"]').click(); // no map
+    cy.get('[formControlName="create_map_pdfs"]').click(); // no map
 
     // check if unchecked
     cy.get('#mat-slide-toggle-1-input').should('not.be.checked');
@@ -90,8 +90,8 @@ export function export_with_interaction(file) {
     }).should('be.enabled');
     cy.get('#export-button').click();
 
-    cy.url({timeout: 10000}).should('contain', '/pending');
-    cy.url({timeout: 30000}).should('contain', '/download');
+    cy.url({timeout: 10_000}).should('contain', '/pending');
+    cy.url({timeout: 90_000}).should('contain', '/download');
 
     cy.get('h2').should('contain', 'Deine Route wurde erfolgreich exportiert!');
 }

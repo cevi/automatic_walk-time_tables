@@ -53,4 +53,6 @@ def calc_perimeter(path_: path.Path) -> Tuple[point.Point_LV03, point.Point_LV03
         if max_longitude is None or p.lon > max_longitude:
             max_longitude = p.lon
 
-    return point.Point_LV03(min_latitude, min_longitude), point.Point_LV03(max_latitude, max_longitude)
+    return point.Point_LV03(min_latitude, min_longitude), point.Point_LV03(
+        max_latitude, max_longitude
+    )

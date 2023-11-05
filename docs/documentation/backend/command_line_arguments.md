@@ -1,4 +1,4 @@
-# Command Line Arguments
+# Command Line Arguments [DEPRECATED]
 
 ## Required Arguments
 

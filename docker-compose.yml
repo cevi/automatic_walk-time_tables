@@ -30,6 +30,11 @@ services:
       - awt-tile-cache
     env_file:
       - .env.local-dev
+    healthcheck:
+      test: "curl -f http://localhost:8080"
+      interval: 2s
+      timeout: 1s
+      retries: 60
 
   awt-swiss-tml-api:
     build:
@@ -41,6 +46,11 @@ services:
       - ./swiss_TLM_api:/app
     env_file:
       - .env.local-dev
+    healthcheck:
+      test: "curl -f http://localhost:1848/ready | grep 'ready'"
+      interval: 5s
+      timeout: 1s
+      retries: 180
 
   awt-backend:
     build:
@@ -53,8 +63,10 @@ services:
       - ./backend:/app
 
     depends_on:
-      - awt-mapfish-print-server
-      - awt-swiss-tml-api
+      awt-mapfish-print-server:
+        condition: service_healthy
+      awt-swiss-tml-api:
+        condition: service_healthy
 
     environment:
       TZ: Europe/Zurich
@@ -68,21 +80,22 @@ services:
       # Used in the first stage of the Dockerfile, thus these env vars must be passed as args
       args:
         - ENVIRONMENT_FILE=.env.local-dev
-
     volumes:
       - ./frontend/src:/app/src
       # Mount git info to container
       - ./.git/HEAD:/app/.git/HEAD
       - ./.git/refs/heads/:/app/.git/refs/heads/
-
     ports:
       - "80:80"
-
     depends_on:
       - awt-backend
-
     env_file:
       - .env.local-dev
+    healthcheck:
+      test: "wget --no-verbose --tries=1 --spider http://localhost || exit 1"
+      interval: 5s
+      timeout: 1s
+      retries: 180
 
 volumes:
   vitepress_dist: {}
