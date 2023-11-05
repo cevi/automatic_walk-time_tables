@@ -53,6 +53,15 @@ Aktivität in keinerlei Hinsicht ersetzt!
 | Marschzeittabelle | Tabelle zum Abschätzen der Marschzeit einer Wanderung. Enthält oft auch Angaben zu Pausen und ein Höhenprofil. J+S empfehlt für jede Wanderung eine Marschzeittabelle zu erstellen. |
 | SchweizMobil      | Ermöglicht das Planen von Wanderungen und Velo-Touren der digitalen Landeskarte. Die magnetischen Wege beschleunigen den Prozess des Einzeichnens einer Route.                      |
 
+## Lokal ausführen und entwickeln
+Das Projekt ist Docker-basiert. Aus diesem Grund ist es ganz einfach, die Container zu builden:
+```
+docker-compose up [--build]
+```
+*Notiz:* `--build` ist optional und führt dazu, dass die Container neu gebuildet werden.
+
+Durchsuche auch die Dokumentation unter [Getting Started](https://docs.map.cevi.tools/) (momentan nur auf Englisch verfügbar). Die Dokumentation kann auch bei einer lokal laufenden Instanz unter folgender URL abgerufen werden: `localhost:4000` (bei laufenden Containern).
+
 # Generating J+S-Walk-Time-Tables
 
 The aim of this project is to automate and speed up the process of creating a J+S walk-time table for a hike or bike
