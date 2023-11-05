@@ -185,53 +185,52 @@ def create_map():
 
 
 def create_export(options, uuid):
-    path, way_points, pois = None, None, None
-
-    # Decode options['route'] form polyline
-    if 'encoding' in options and options['encoding'] == 'polyline':
-        start = time.time()
-
-        path = extract_path(options, 'route', 'route_elevation')
-        way_points = extract_path(options, 'way_points', 'way_points_elevation')
-
-        # calc POIs for the path
-        pois_transformer = POIsTransformer(
-            pois_list_as_str=options['pois'] if 'pois' in options else '',
-            pois_distance_str=options['pois_distance'] if 'pois_distance' in options else '')
-        pois: Path = pois_transformer.transform(path)
-
-        end = time.time()
-        logger.info('Decoding polylines took {} seconds.'.format(end - start))
-
-    output_directory = 'output/' + uuid + '/'
-
-    logger.log(ExportStateLogger.REQUESTABLE, 'Export wird vorbereitet.',
-               {'uuid': uuid, 'status': GeneratorStatus.RUNNING})
-
-    options['print-api-base-url'] = os.environ['PRINT_API_BASE_URL']
-    options['output_directory'] = output_directory
-    print('UUID: {}'.format(uuid))
-
-    parser = get_parser()
-
-    # load settings
-    args_as_dict = options['settings']
-    args = args_as_dict.items()
-    args = map(lambda arg: ('--' + arg[0], str(arg[1])), args)
-    args = list(functools.reduce(lambda x, y: x + y, args))
-
-    # load flags
-    args.extend(map(lambda arg: '--' + arg, options['flags']))
-    logger.info('Args: {}'.format(args))
-
-    args, _ = parser.parse_known_args(['-fn', '', '--output_directory', output_directory, '--print-api-base-url',
-                                       os.environ['PRINT_API_BASE_URL']] + args)
-
-    # TODO: Remove args form generator and replace with options JSON (everywhere inside the generator code)
-
     generator = None
-
     try:
+        path, way_points, pois = None, None, None
+
+        # Decode options['route'] form polyline
+        if 'encoding' in options and options['encoding'] == 'polyline':
+            start = time.time()
+
+            path = extract_path(options, 'route', 'route_elevation')
+            way_points = extract_path(options, 'way_points', 'way_points_elevation')
+
+            # calc POIs for the path
+            pois_transformer = POIsTransformer(
+                pois_list_as_str=options['pois'] if 'pois' in options else '',
+                pois_distance_str=options['pois_distance'] if 'pois_distance' in options else '')
+            pois: Path = pois_transformer.transform(path)
+
+            end = time.time()
+            logger.info('Decoding polylines took {} seconds.'.format(end - start))
+
+        output_directory = 'output/' + uuid + '/'
+
+        logger.log(ExportStateLogger.REQUESTABLE, 'Export wird vorbereitet.',
+                {'uuid': uuid, 'status': GeneratorStatus.RUNNING})
+
+        options['print-api-base-url'] = os.environ['PRINT_API_BASE_URL']
+        options['output_directory'] = output_directory
+        print('UUID: {}'.format(uuid))
+
+        parser = get_parser()
+
+        # load settings
+        args_as_dict = options['settings']
+        args = args_as_dict.items()
+        args = map(lambda arg: ('--' + arg[0], str(arg[1])), args)
+        args = list(functools.reduce(lambda x, y: x + y, args))
+
+        # load flags
+        args.extend(map(lambda arg: '--' + arg, options['flags']))
+        logger.info('Args: {}'.format(args))
+
+        args, _ = parser.parse_known_args(['-fn', '', '--output_directory', output_directory, '--print-api-base-url',
+                                        os.environ['PRINT_API_BASE_URL']] + args)
+
+        # TODO: Remove args form generator and replace with options JSON (everywhere inside the generator code)
+
         generator = AutomatedWalkTableGenerator(args, uuid, options, manual_mode=True)
         generator.set_data(path, way_points, pois)
         generator.run()
@@ -243,11 +242,15 @@ def create_export(options, uuid):
     except UserException as e:
         logger.log(ExportStateLogger.REQUESTABLE, str(e), {'uuid': uuid, 'status': GeneratorStatus.ERROR})
 
+    except:
+        logger.log(ExportStateLogger.REQUESTABLE,
+                       'Der Export ist fehlgeschlagen. Ein unbekannter Fehler ist aufgetreten!',
+                       {'uuid': uuid, 'status': GeneratorStatus.ERROR})
     finally:
         export_state = stateHandler.get_status(uuid)['status']
-        if not generator or export_state == GeneratorStatus.RUNNING:
+        if export_state == GeneratorStatus.RUNNING:
             logger.log(ExportStateLogger.REQUESTABLE,
-                       'Der Export ist fehlgeschlagen. Ein unbekannter Fehler ist aufgetreten!',
+                       'Der Export wurde nicht erfolgreich fertig. Ein unbekannter Fehler ist aufgetreten!',
                        {'uuid': uuid, 'status': GeneratorStatus.ERROR})
 
 
