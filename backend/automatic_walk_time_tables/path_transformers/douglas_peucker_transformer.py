@@ -7,7 +7,10 @@ from typing import List
 import numpy as np
 
 from automatic_walk_time_tables.path_transformers.path_transfomer import PathTransformer
-from automatic_walk_time_tables.utils.geometry_utils import calc_secant_line, calc_secant_elevation
+from automatic_walk_time_tables.utils.geometry_utils import (
+    calc_secant_line,
+    calc_secant_elevation,
+)
 from automatic_walk_time_tables.utils.path import Path
 from automatic_walk_time_tables.utils.way_point import WayPoint
 
@@ -48,16 +51,20 @@ class DouglasPeuckerTransformer(PathTransformer):
         self.pois = pois
 
     def transform(self, path: Path):
-
         way_points = self.douglas_peucker(path.copy())
-        self.__logger.debug("%d way point selected for final walk time table", way_points.number_of_waypoints)
+        self.__logger.debug(
+            "%d way point selected for final walk time table",
+            way_points.number_of_waypoints,
+        )
         self.__logger.debug("Total distance: %f km", path.total_distance)
 
         way_points = self.replace_with_close_by_pois(way_points, path)
 
         return way_points
 
-    def replace_with_close_by_pois(self, way_points: Path, original_waypoints: Path) -> Path:
+    def replace_with_close_by_pois(
+        self, way_points: Path, original_waypoints: Path
+    ) -> Path:
         """
 
         Replace points close to a POI with the POI if secant elevation allows it.
@@ -70,25 +77,32 @@ class DouglasPeuckerTransformer(PathTransformer):
         final_way_points = Path()
 
         for i, p in enumerate(way_points.way_points):
-
             # We always use the start and end point of a route
             if i == 0 or i == len(way_points.way_points) - 1:
                 final_way_points.append(p)
                 continue
 
             # find closest poi
-            closest_poi = min(pois.way_points, key=lambda poi: abs(poi.accumulated_distance - p.accumulated_distance))
+            closest_poi = min(
+                pois.way_points,
+                key=lambda poi: abs(poi.accumulated_distance - p.accumulated_distance),
+            )
 
             # check if poi is nearer to p rather than to way_points.way_points[i + 1]
-            if abs(closest_poi.accumulated_distance - p.accumulated_distance) >= \
-                    abs(closest_poi.accumulated_distance - way_points.way_points[i + 1].accumulated_distance):
+            if abs(closest_poi.accumulated_distance - p.accumulated_distance) >= abs(
+                closest_poi.accumulated_distance
+                - way_points.way_points[i + 1].accumulated_distance
+            ):
                 final_way_points.append(p)
                 continue
 
             # Check if the poi lies between way_points[i - 1] and way_points[i + 1]
             # if not we can safely add p and continue
-            if not (way_points.way_points[i - 1].accumulated_distance < closest_poi.accumulated_distance <
-                    way_points.way_points[i + 1].accumulated_distance):
+            if not (
+                way_points.way_points[i - 1].accumulated_distance
+                < closest_poi.accumulated_distance
+                < way_points.way_points[i + 1].accumulated_distance
+            ):
                 final_way_points.insert(p)
                 continue
 
@@ -98,19 +112,29 @@ class DouglasPeuckerTransformer(PathTransformer):
             m, b = calc_secant_line(way_points.way_points[i - 1], closest_poi)
             original_m, original_b = calc_secant_line(way_points.way_points[i - 1], p)
 
-            points_between_poi = self.points_between(way_points.way_points[i - 1], closest_poi,
-                                                     original_waypoints.way_points)
-            can_replace = self.check_poi_replacement(b, can_replace, m, original_b, original_m, points_between_poi)
+            points_between_poi = self.points_between(
+                way_points.way_points[i - 1], closest_poi, original_waypoints.way_points
+            )
+            can_replace = self.check_poi_replacement(
+                b, can_replace, m, original_b, original_m, points_between_poi
+            )
 
             # Check points after the poi
             m, b = calc_secant_line(closest_poi, way_points.way_points[i + 1])
-            points_between_poi = self.points_between(closest_poi, way_points.way_points[i + 1],
-                                                     original_waypoints.way_points)
-            can_replace = self.check_poi_replacement(b, can_replace, m, original_b, original_m, points_between_poi)
+            points_between_poi = self.points_between(
+                closest_poi, way_points.way_points[i + 1], original_waypoints.way_points
+            )
+            can_replace = self.check_poi_replacement(
+                b, can_replace, m, original_b, original_m, points_between_poi
+            )
 
             if can_replace:
-                self.__logger.debug("Replace point #%d (%s) with POI (%s)", i, way_points.way_points[i].point.__str__(),
-                                    closest_poi.point.__str__())
+                self.__logger.debug(
+                    "Replace point #%d (%s) with POI (%s)",
+                    i,
+                    way_points.way_points[i].point.__str__(),
+                    closest_poi.point.__str__(),
+                )
                 final_way_points.insert(closest_poi)
                 pois.remove(closest_poi)
                 continue
@@ -119,8 +143,10 @@ class DouglasPeuckerTransformer(PathTransformer):
 
         # add additional pois if they are at least 100 meters apart from any other point
         for poi in pois.way_points:
-            if any(abs(poi.accumulated_distance - p.accumulated_distance) < 50 for p in
-                   final_way_points.way_points):
+            if any(
+                abs(poi.accumulated_distance - p.accumulated_distance) < 50
+                for p in final_way_points.way_points
+            ):
                 continue
             final_way_points.insert(poi)
 
@@ -128,16 +154,21 @@ class DouglasPeuckerTransformer(PathTransformer):
         self.drop_points(5, Path(), final_way_points, True)
         return final_way_points
 
-    def check_poi_replacement(self, b, can_replace, m, original_b, original_m, points_between_poi):
-
+    def check_poi_replacement(
+        self, b, can_replace, m, original_b, original_m, points_between_poi
+    ):
         for original_point in points_between_poi:
             secant_elev = calc_secant_elevation(m, b, original_point)
-            original_elev = calc_secant_elevation(original_m, original_b, original_point)
+            original_elev = calc_secant_elevation(
+                original_m, original_b, original_point
+            )
 
             offset = abs(secant_elev - original_point.point.h)
             original_offset = abs(original_elev - original_point.point.h)
 
-            can_replace &= offset < self.maximum_poi_error or offset <= original_offset + 20
+            can_replace &= (
+                offset < self.maximum_poi_error or offset <= original_offset + 20
+            )
 
         return can_replace
 
@@ -156,8 +187,10 @@ class DouglasPeuckerTransformer(PathTransformer):
 
         keep_pois = True
 
-        while way_points.number_of_waypoints > self.number_of_waypoints or self.closeness_criteria(way_points):
-
+        while (
+            way_points.number_of_waypoints > self.number_of_waypoints
+            or self.closeness_criteria(way_points)
+        ):
             # increase drv_limit if no points as been dropped in the last pass
             if not pt_dropped:
                 log_length = math.log(way_points.number_of_waypoints)
@@ -169,7 +202,9 @@ class DouglasPeuckerTransformer(PathTransformer):
                 keep_pois = False
                 drv_limit = 0
 
-            pt_dropped = self.drop_points(drv_limit, dropped_pts_archive, way_points, keep_pois)
+            pt_dropped = self.drop_points(
+                drv_limit, dropped_pts_archive, way_points, keep_pois
+            )
 
             # if no points have been dropped,
             # we don't allow for a poi to be dropped until drv_limit is reached 50m again
@@ -178,7 +213,9 @@ class DouglasPeuckerTransformer(PathTransformer):
 
         return way_points
 
-    def drop_points(self, drv_limit, pts_dropped: Path, way_points: Path, keep_pois: bool):
+    def drop_points(
+        self, drv_limit, pts_dropped: Path, way_points: Path, keep_pois: bool
+    ):
         """
 
         Remove WayPoint by the secant criteria.
@@ -206,7 +243,6 @@ class DouglasPeuckerTransformer(PathTransformer):
         pt_dropped = False
 
         for pt_c in way_points.way_points:
-
             # after moving point B we skip one iteration
             if pt_b == pt_c:
                 continue
@@ -215,12 +251,10 @@ class DouglasPeuckerTransformer(PathTransformer):
                 continue
 
             if pt_a is not None and pt_b is not None:
-
                 m, b = calc_secant_line(pt_a, pt_c)
                 secant_elev = calc_secant_elevation(m, b, pt_b)
 
                 if abs(secant_elev - pt_b.point.h) < drv_limit:
-
                     # Check if B must be replaced by a previously dropped point D
                     pt_d = None
                     for pt in self.points_between(pt_a, pt_c, pts_dropped.way_points):
@@ -231,8 +265,11 @@ class DouglasPeuckerTransformer(PathTransformer):
 
                     if pt_d is not None:  # Replace B with point D
                         way_points.remove(pt_b)
-                        index = next(x for x, val in enumerate(way_points.way_points) if
-                                     val.accumulated_distance > pt_d.accumulated_distance)
+                        index = next(
+                            x
+                            for x, val in enumerate(way_points.way_points)
+                            if val.accumulated_distance > pt_d.accumulated_distance
+                        )
                         way_points.insert(pt_d, index)
                         pts_dropped.insert(pt_b)
 
@@ -248,16 +285,22 @@ class DouglasPeuckerTransformer(PathTransformer):
             pt_b = pt_c
         return pt_dropped
 
-    def points_between(self, pt_start: WayPoint, pt_end: WayPoint, original_waypoints: List[WayPoint]) -> \
-            List[WayPoint]:
+    def points_between(
+        self, pt_start: WayPoint, pt_end: WayPoint, original_waypoints: List[WayPoint]
+    ) -> List[WayPoint]:
         """
 
         Returns all way points between to way points.
 
         """
-        return list(filter(
-            lambda p: pt_start.accumulated_distance < p.accumulated_distance < pt_end.accumulated_distance,
-            original_waypoints))
+        return list(
+            filter(
+                lambda p: pt_start.accumulated_distance
+                < p.accumulated_distance
+                < pt_end.accumulated_distance,
+                original_waypoints,
+            )
+        )
 
     def closeness_criteria(self, path_: Path) -> bool:
         """
@@ -267,18 +310,25 @@ class DouglasPeuckerTransformer(PathTransformer):
 
         """
 
-        distance_threshold = self.closeness_threshold * path_.way_points[-1].accumulated_distance
-        self.__logger.debug('Total distance {}, distance_threshold {}'
-                            .format(path_.way_points[-1].accumulated_distance, distance_threshold))
+        distance_threshold = (
+            self.closeness_threshold * path_.way_points[-1].accumulated_distance
+        )
+        self.__logger.debug(
+            "Total distance {}, distance_threshold {}".format(
+                path_.way_points[-1].accumulated_distance, distance_threshold
+            )
+        )
 
         heights = [p.point.h for p in path_.way_points]
-        elevation_delta = (np.max(heights) - np.min(heights))
+        elevation_delta = np.max(heights) - np.min(heights)
         elevation_threshold = self.closeness_threshold * elevation_delta
         self.__logger.debug(
-            'Total elevation_delta {}, elevation_threshold {}'.format(elevation_delta, elevation_threshold))
+            "Total elevation_delta {}, elevation_threshold {}".format(
+                elevation_delta, elevation_threshold
+            )
+        )
 
         for p1, p2 in zip(path_.way_points[:-1], path_.way_points[1:]):
-
             delta_dist = p2.accumulated_distance - p1.accumulated_distance
             delta_height = abs(p2.point.h - p1.point.h)
 
@@ -287,11 +337,20 @@ class DouglasPeuckerTransformer(PathTransformer):
 
             if delta_dist < distance_threshold and delta_height < elevation_threshold:
                 self.__logger.debug(
-                    'delta_height {} vs elevation_threshold {}'.format(delta_height, elevation_threshold))
-                self.__logger.debug('delta_dist {} vs distance_threshold {}'.format(delta_dist, distance_threshold))
+                    "delta_height {} vs elevation_threshold {}".format(
+                        delta_height, elevation_threshold
+                    )
+                )
                 self.__logger.debug(
-                    "Points found, which are to close to each other: {} and {}".format(p1.point.__str__(),
-                                                                                       p2.point.__str__()))
+                    "delta_dist {} vs distance_threshold {}".format(
+                        delta_dist, distance_threshold
+                    )
+                )
+                self.__logger.debug(
+                    "Points found, which are to close to each other: {} and {}".format(
+                        p1.point.__str__(), p2.point.__str__()
+                    )
+                )
                 return True
 
         return False

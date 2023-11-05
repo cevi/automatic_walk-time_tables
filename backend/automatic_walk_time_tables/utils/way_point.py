@@ -2,14 +2,20 @@ from automatic_walk_time_tables.utils.point import Point
 
 
 class WayPoint:
-
-    def __init__(self, accumulated_distance: float, point: Point, name: str = None) -> None:
+    def __init__(
+        self, accumulated_distance: float, point: Point, name: str = None
+    ) -> None:
         self.accumulated_distance = accumulated_distance
         self.point = point
         self.__name = name
 
     def __str__(self) -> str:
-        return "WayPoint at " + str(self.accumulated_distance) + " with coordinates: " + str(self.point)
+        return (
+            "WayPoint at "
+            + str(self.accumulated_distance)
+            + " with coordinates: "
+            + str(self.point)
+        )
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -29,5 +35,5 @@ class WayPoint:
         return {
             "accumulated_distance": self.accumulated_distance,
             "point": self.point.to_json(),
-            "name": self.name
+            "name": self.name,
         }

@@ -17,7 +17,7 @@ from swiss_TML_api.name_finding.name_finder import NameFinder
 def get_random_coordinates_along_path():
     # TODO: use the route for producing random coordinate points.
 
-    with open('longpath.json', 'r') as f:
+    with open("longpath.json", "r") as f:
         lv03_path = json.load(f)
         length = len(lv03_path)
         pkt = lv03_path[random.randint(0, length - 1)]

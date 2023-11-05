@@ -13,7 +13,7 @@ def fetch_map_numbers(path_: path.Path) -> str:
     coordinates = [[pkt.lat, pkt.lon] for pkt in coordinates]
 
     payload = json.dumps(coordinates)
-    headers = {'Content-Type': 'application/json'}
+    headers = {"Content-Type": "application/json"}
     req = requests.request("GET", url, headers=headers, data=payload)
 
     return req.text

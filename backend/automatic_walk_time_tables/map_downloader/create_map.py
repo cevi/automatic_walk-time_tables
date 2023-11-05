@@ -47,7 +47,9 @@ class MapCreator:
         self.path_ = path_
         self.uuid = uuid
 
-        self.name_points_in_export = args["name_points_in_export"] if 'name_points_in_export' in args else False
+        self.name_points_in_export = (
+            args["name_points_in_export"] if "name_points_in_export" in args else False
+        )
 
     def auto_select_map_scaling(self) -> int:
         """
@@ -59,28 +61,35 @@ class MapCreator:
 
         """
 
-        lower_left, upper_right = automatic_walk_time_tables.utils.geometry_utils.calc_perimeter(self.path_)
+        (
+            lower_left,
+            upper_right,
+        ) = automatic_walk_time_tables.utils.geometry_utils.calc_perimeter(self.path_)
 
         # List of most common map scales
         common_map_scales = [10_000, 25_000, 50_000, 100_000, 200_000]
 
         for map_scale in common_map_scales:
-            if self.A4_HEIGHT_FACTOR * map_scale >= upper_right.lon - lower_left.lon and \
-                    self.A4_WIDTH_FACTOR * map_scale >= lower_left.lon - upper_right.lat:
+            if (
+                self.A4_HEIGHT_FACTOR * map_scale >= upper_right.lon - lower_left.lon
+                and self.A4_WIDTH_FACTOR * map_scale >= lower_left.lon - upper_right.lat
+            ):
                 break
 
-        self.logger.info(f'Map scaling automatically set to 1:{map_scale}')
+        self.logger.info(f"Map scaling automatically set to 1:{map_scale}")
         return map_scale
 
-    def plot_route_on_map(self,
-                          way_points: path.Path,
-                          pois: path.Path,
-                          file_name: str,
-                          map_scaling: int,
-                          map_layers: List[str] = None,
-                          print_api_base_url: str = 'localhost',
-                          print_api_port: int = 8080,
-                          print_api_protocol: str = 'http'):
+    def plot_route_on_map(
+        self,
+        way_points: path.Path,
+        pois: path.Path,
+        file_name: str,
+        map_scaling: int,
+        map_layers: List[str] = None,
+        print_api_base_url: str = "localhost",
+        print_api_port: int = 8080,
+        print_api_protocol: str = "http",
+    ):
         """
 
         Creates a map of the route and marking the selected way points on it.
@@ -97,7 +106,7 @@ class MapCreator:
 
         # Set default map layer
         if map_layers is None:
-            map_layers = ['ch.swisstopo.pixelkarte-farbe']
+            map_layers = ["ch.swisstopo.pixelkarte-farbe"]
 
         if map_scaling is None:
             map_scaling = self.auto_select_map_scaling()
@@ -105,14 +114,19 @@ class MapCreator:
         map_centers = self.create_map_centers(map_scaling)
 
         if len(map_centers) > 10:
-            raise UserException(f"Diese Anfrage würde {len(map_centers)} PDFs generieren, wir haben die Anzahl aber auf 10 beschränkt. Bitte vergrössere deinen Kartenmassstab und probiere es erneut.")
+            raise UserException(
+                f"Diese Anfrage würde {len(map_centers)} PDFs generieren, wir haben die Anzahl aber auf 10 beschränkt. Bitte vergrössere deinen Kartenmassstab und probiere es erneut."
+            )
 
         for index, map_center in enumerate(map_centers):
+            query_json = self.create_mapfish_query(
+                map_layers, map_scaling, map_center, way_points, pois
+            )
 
-            query_json = self.create_mapfish_query(map_layers, map_scaling, map_center, way_points, pois)
-
-            base_url = "{}://{}:{}".format(print_api_protocol, print_api_base_url, print_api_port)
-            url = '{}/print/default/report.pdf'.format(base_url)
+            base_url = "{}://{}:{}".format(
+                print_api_protocol, print_api_base_url, print_api_port
+            )
+            url = "{}/print/default/report.pdf".format(base_url)
 
             self.logger.debug("Posting to mapfish: " + url)
 
@@ -121,63 +135,96 @@ class MapCreator:
             try:
                 response_obj = requests.post(url, data=json.dumps(query_json))
             except requests.exceptions.ConnectionError:
-                self.logger.error("Could not connect to mapfish print server. Is the server running?")
+                self.logger.error(
+                    "Could not connect to mapfish print server. Is the server running?"
+                )
                 if self.logger.getEffectiveLevel() == logging.DEBUG:
-                    raise Exception("Could not connect to mapfish print server. Is the server running?")
+                    raise Exception(
+                        "Could not connect to mapfish print server. Is the server running?"
+                    )
                 else:
                     exit(1)
 
             if response_obj is None or response_obj.status_code != 200:
-                logging.error("Error while posting to mapfish print server: " + str(response_obj.status_code))
+                logging.error(
+                    "Error while posting to mapfish print server: "
+                    + str(response_obj.status_code)
+                )
                 if self.logger.getEffectiveLevel() == logging.DEBUG:
-                    raise Exception('Can not fetch map. Status Code: {}'.format(response_obj.status_code))
+                    raise Exception(
+                        "Can not fetch map. Status Code: {}".format(
+                            response_obj.status_code
+                        )
+                    )
                 else:
                     exit(1)
 
             response_json = json.loads(response_obj.content)
 
-            pdf_status = requests.get(base_url + response_json['statusURL'])
+            pdf_status = requests.get(base_url + response_json["statusURL"])
             loop_idx = 0
-            while pdf_status.status_code == 200 and not json.loads(pdf_status.content)['done']:
+            while (
+                pdf_status.status_code == 200
+                and not json.loads(pdf_status.content)["done"]
+            ):
                 time.sleep(0.5)
-                pdf_status = requests.get(base_url + response_json['statusURL'])
-                self.logger.debug(f"Waiting for PDF {index + 1} out of {len(map_centers)}. ({loop_idx * 0.5}s)")
+                pdf_status = requests.get(base_url + response_json["statusURL"])
+                self.logger.debug(
+                    f"Waiting for PDF {index + 1} out of {len(map_centers)}. ({loop_idx * 0.5}s)"
+                )
                 loop_idx += 1
                 self.logger.info(
-                    f"PDF Status: {json.loads(pdf_status.content)['done']}: {json.loads(pdf_status.content)['status']}")
+                    f"PDF Status: {json.loads(pdf_status.content)['done']}: {json.loads(pdf_status.content)['status']}"
+                )
 
             self.logger.info(
-                f"PDF Status: {json.loads(pdf_status.content)['done']}: {json.loads(pdf_status.content)['status']}")
+                f"PDF Status: {json.loads(pdf_status.content)['done']}: {json.loads(pdf_status.content)['status']}"
+            )
 
             self.logger.info(f"Received PDF {index + 1} out of {len(map_centers)}.")
-            self.logger.log(ExportStateLogger.REQUESTABLE,
-                            f"Karte {index + 1} von insgesamt {len(map_centers)} wurde erstellt.",
-                            {'uuid': self.uuid, 'status': GeneratorStatus.RUNNING})
+            self.logger.log(
+                ExportStateLogger.REQUESTABLE,
+                f"Karte {index + 1} von insgesamt {len(map_centers)} wurde erstellt.",
+                {"uuid": self.uuid, "status": GeneratorStatus.RUNNING},
+            )
 
-            if pdf_status.status_code != 200 or json.loads(pdf_status.content)['status'] != 'finished':
+            if (
+                pdf_status.status_code != 200
+                or json.loads(pdf_status.content)["status"] != "finished"
+            ):
                 logging.error("Can not fetch the map: " + str(response_obj.status_code))
-                if (self.logger.getEffectiveLevel() == logging.DEBUG):
-                    raise Exception('Can not fetch map. Status Code: {}'.format(response_obj.status_code))
+                if self.logger.getEffectiveLevel() == logging.DEBUG:
+                    raise Exception(
+                        "Can not fetch map. Status Code: {}".format(
+                            response_obj.status_code
+                        )
+                    )
                 else:
                     exit(1)
 
             # Wait for the PDF to be ready
             time.sleep(0.5)
 
-            fetched_pdf = requests.get(base_url + response_json['downloadURL'])
+            fetched_pdf = requests.get(base_url + response_json["downloadURL"])
 
             if response_obj.status_code != 200:
-                logging.error("Error fetching the map: " + str(response_obj.status_code))
-                if (self.logger.getEffectiveLevel() == logging.DEBUG):
-                    raise Exception('Can not fetch map. Status Code: {}'.format(response_obj.status_code))
+                logging.error(
+                    "Error fetching the map: " + str(response_obj.status_code)
+                )
+                if self.logger.getEffectiveLevel() == logging.DEBUG:
+                    raise Exception(
+                        "Can not fetch map. Status Code: {}".format(
+                            response_obj.status_code
+                        )
+                    )
                 else:
                     exit(1)
 
             # Check if output directory exists, if not, create it.
-            if (not os.path.exists('output')):
-                os.mkdir('output')
+            if not os.path.exists("output"):
+                os.mkdir("output")
 
-            with open('{}_{}_map.pdf'.format(file_name, index), 'wb') as f:
+            with open("{}_{}_map.pdf".format(file_name, index), "wb") as f:
                 f.write(fetched_pdf.content)
 
             self.logger.info("Saved map to {}_{}_map.pdf".format(file_name, index))
@@ -185,12 +232,14 @@ class MapCreator:
         # combine the PDFs into a single file
         merger = PdfFileMerger()
         for index, map_center in enumerate(map_centers):
-            merger.append(PdfFileReader('{}_{}_map.pdf'.format(file_name, index), 'rb'))
-            os.remove('{}_{}_map.pdf'.format(file_name, index))
+            merger.append(PdfFileReader("{}_{}_map.pdf".format(file_name, index), "rb"))
+            os.remove("{}_{}_map.pdf".format(file_name, index))
 
-        merger.write('{}_maps.pdf'.format(file_name))
+        merger.write("{}_maps.pdf".format(file_name))
 
-    def create_mapfish_query(self, map_layers, map_scaling, center, way_points: path.Path, pois: path.Path):
+    def create_mapfish_query(
+        self, map_layers, map_scaling, center, way_points: path.Path, pois: path.Path
+    ):
         """
 
         Returns the JSON-Object used for querying
@@ -203,7 +252,9 @@ class MapCreator:
             path_coordinates.append([pt_lv95.lat, pt_lv95.lon])  # convert to LV95
 
         # load the default map matrices, used to inform mapfish about the available map scales and tile size
-        with open(str(Path(__file__).resolve().parent) + '/default_map_matrices.json') as json_file:
+        with open(
+            str(Path(__file__).resolve().parent) + "/default_map_matrices.json"
+        ) as json_file:
             default_matrices = json.load(json_file)
 
         path_layer = {
@@ -214,14 +265,12 @@ class MapCreator:
                         "type": "Feature",
                         "geometry": {
                             "type": "LineString",
-                            "coordinates": path_coordinates
+                            "coordinates": path_coordinates,
                         },
-                        "properties": {
-                            "_ngeo_style": "1,2"
-                        },
-                        "id": 7772936
+                        "properties": {"_ngeo_style": "1,2"},
+                        "id": 7772936,
                     }
-                ]
+                ],
             },
             "opacity": 1,
             "style": {
@@ -232,28 +281,36 @@ class MapCreator:
                             "type": "line",
                             "strokeColor": "#E88615",
                             "strokeOpacity": 0.5,
-                            "strokeWidth": 2.5
+                            "strokeWidth": 2.5,
                         },
                         {
                             "type": "line",
                             "strokeColor": "#E88615",
                             "strokeOpacity": 0.75,
-                            "strokeWidth": .5
-                        }
+                            "strokeWidth": 0.5,
+                        },
                     ]
-                }
+                },
             },
             "type": "geojson",
-            "name": "selected track"
+            "name": "selected track",
         }
         map_layers = list(
-            map(lambda layer: self.create_map_layer(layer, default_matrices=default_matrices), map_layers))
+            map(
+                lambda layer: self.create_map_layer(
+                    layer, default_matrices=default_matrices
+                ),
+                map_layers,
+            )
+        )
 
         point_layers = []
         for i, point in enumerate(way_points.way_points):
             lv95 = point.point.to_LV95()
 
-            point_layer = self.create_point_json(lv95, point, label=self.name_points_in_export)
+            point_layer = self.create_point_json(
+                lv95, point, label=self.name_points_in_export
+            )
             point_layers.append(point_layer)
 
         for i, point in enumerate(pois.way_points):
@@ -261,14 +318,14 @@ class MapCreator:
 
             # TODO: currently, we convert to LV95, is there a way to stick to LV03 also for mapfish?
 
-            point_layer = self.create_point_json(lv95, point, '#00BFFF', pointRadius=7)
+            point_layer = self.create_point_json(lv95, point, "#00BFFF", pointRadius=7)
             point_layers.append(point_layer)
 
         query_json = {
             "layout": "A4 landscape",
             "outputFormat": "pdf",
             "attributes": {
-                "scale": "Massstab: 1:" + f"{map_scaling:,}".replace(',', "'"),
+                "scale": "Massstab: 1:" + f"{map_scaling:,}".replace(",", "'"),
                 "map": {
                     "center": center,
                     "scale": map_scaling,
@@ -276,14 +333,16 @@ class MapCreator:
                     "pdfA": True,
                     "projection": "EPSG:2056",
                     "rotation": 0,
-                    "layers": point_layers + ([path_layer] + map_layers)
-                }
-            }
+                    "layers": point_layers + ([path_layer] + map_layers),
+                },
+            },
         }
 
         return query_json
 
-    def create_point_json(self, lv95, point, color='#FF0000', pointRadius=5, label=False):
+    def create_point_json(
+        self, lv95, point, color="#FF0000", pointRadius=5, label=False
+    ):
         point_layer = {
             "geoJson": {
                 "type": "FeatureCollection",
@@ -292,14 +351,12 @@ class MapCreator:
                         "type": "Feature",
                         "geometry": {
                             "type": "Point",
-                            "coordinates": [lv95.lat, lv95.lon]
+                            "coordinates": [lv95.lat, lv95.lon],
                         },
-                        "properties": {
-                            "_ngeo_style": "1"
-                        },
-                        "id": 1596274
+                        "properties": {"_ngeo_style": "1"},
+                        "id": 1596274,
                     }
-                ]
+                ],
             },
             "opacity": 1,
             "style": {
@@ -311,11 +368,9 @@ class MapCreator:
                             "fillColor": color,
                             "fillOpacity": 0,
                             "rotation": "30",
-
                             "graphicName": "circle",
                             "graphicOpacity": 0.4,
                             "pointRadius": pointRadius,
-
                             "strokeColor": color,
                             "strokeOpacity": 1,
                             "strokeWidth": 2,
@@ -331,33 +386,37 @@ class MapCreator:
                             "haloColor": "#ffffff",
                             "haloOpacity": "0.5",
                             "haloRadius": ".5",
-                            "label": point.name if label else '',
+                            "label": point.name if label else "",
                             "fillColor": color,
                             "fillOpacity": 0,
                             "labelAlign": "cm",
                             "labelRotation": "0",
                             "labelXOffset": "0",
-                            "labelYOffset": "-12"
-                        }
+                            "labelYOffset": "-12",
+                        },
                     ]
-                }
+                },
             },
             "type": "geojson",
-            "name": "selected track pois"
+            "name": "selected track pois",
         }
         return point_layer
 
     def create_map_layer(self, layer, default_matrices):
-
-        image_type = 'jpeg'
+        image_type = "jpeg"
 
         if layer not in (
-                'ch.swisstopo.pixelkarte-farbe', 'ch.swisstopo.pixelkarte-grau', 'ch.swisstopo.pixelkarte-farbe-pk25',
-                'ch.swisstopo.pixelkarte-grau-pk25', 'ch.swisstopo.swissimage-product'):
-            image_type = 'png'
+            "ch.swisstopo.pixelkarte-farbe",
+            "ch.swisstopo.pixelkarte-grau",
+            "ch.swisstopo.pixelkarte-farbe-pk25",
+            "ch.swisstopo.pixelkarte-grau-pk25",
+            "ch.swisstopo.swissimage-product",
+        ):
+            image_type = "png"
 
         return {
-            "baseURL": "http://awt-tile-cache/1.0.0/{Layer}/{style}/{Time}/{TileMatrixSet}/{TileMatrix}/{TileCol}/{TileRow}." + image_type,
+            "baseURL": "http://awt-tile-cache/1.0.0/{Layer}/{style}/{Time}/{TileMatrixSet}/{TileMatrix}/{TileCol}/{TileRow}."
+            + image_type,
             "dimensions": ["Time"],
             "dimensionParams": {"Time": "current"},
             "name": layer,
@@ -369,7 +428,7 @@ class MapCreator:
             "matrices": default_matrices,
             "style": "default",
             "type": "WMTS",
-            "version": "1.0.0"
+            "version": "1.0.0",
         }
 
     def create_map_centers(self, map_scaling: int) -> List[np.array]:
@@ -396,13 +455,17 @@ class MapCreator:
             n = n + 1
             points_for_clustering = GetSpacedElements(points_as_array, n_points)
 
-            user_function = lambda point1, point2: max(abs(point1[0] - point2[0]) / (w / 2),
-                                                       abs(point1[1] - point2[1]) / (h / 2))
+            user_function = lambda point1, point2: max(
+                abs(point1[0] - point2[0]) / (w / 2),
+                abs(point1[1] - point2[1]) / (h / 2),
+            )
             metric = distance_metric(type_metric.USER_DEFINED, func=user_function)
 
             # create K-Means algorithm with specific distance metric
             start_centers = GetSpacedElements(points_for_clustering, n)
-            kmeans_instance = kmeans(points_for_clustering, start_centers, metric=metric)
+            kmeans_instance = kmeans(
+                points_for_clustering, start_centers, metric=metric
+            )
 
             # Run cluster analysis and obtain results.
             kmeans_instance.process()
@@ -414,7 +477,6 @@ class MapCreator:
             path_covered = True
 
             for pkt in points_as_array:
-
                 point_covered = False
                 for center in final_centers:
                     d = user_function(center, pkt)

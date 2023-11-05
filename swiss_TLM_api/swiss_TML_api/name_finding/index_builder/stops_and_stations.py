@@ -7,5 +7,5 @@ class StopsAndStations(IndexBuilder):
     """
 
     def load(self):
-        shp_file = self.base_path + 'swissTLM3D_TLM_HALTESTELLE.shp'
+        shp_file = self.base_path + "swissTLM3D_TLM_HALTESTELLE.shp"
         self.add_pkt_file(shp_file)

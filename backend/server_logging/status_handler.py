@@ -16,7 +16,6 @@ class ExportStateHandler:
     """
 
     def __init__(self):
-
         self.states = {}
         self.lock = threading.Lock()
 
@@ -36,18 +35,18 @@ class ExportStateHandler:
             # Update History
             history = []
             if uuid in self.states.keys():
-                history = self.states[uuid]['history']
+                history = self.states[uuid]["history"]
 
                 old_state = self.states[uuid].copy()
-                del old_state['history']
+                del old_state["history"]
                 history.append(old_state)
 
             self.states[uuid] = {
-                'status': status,
-                'message': msg,
-                'last_change': datetime.now().strftime("%H:%M:%S"),
-                'route': {} if route is None else route,
-                'history': history
+                "status": status,
+                "message": msg,
+                "last_change": datetime.now().strftime("%H:%M:%S"),
+                "route": {} if route is None else route,
+                "history": history,
             }
 
         finally:
@@ -65,9 +64,9 @@ class ExportStateHandler:
                 raise Exception("Invalid uuid")
             if uuid not in self.states.keys():
                 return {
-                    'status': GeneratorStatus.ERROR,
-                    'message': 'Status zu dieser ID ist unbekannt.',
-                    'last_change': datetime.now().strftime("%H:%M:%S")
+                    "status": GeneratorStatus.ERROR,
+                    "message": "Status zu dieser ID ist unbekannt.",
+                    "last_change": datetime.now().strftime("%H:%M:%S"),
                 }
             return self.states[uuid]
         finally:
@@ -111,25 +110,25 @@ class ExportStateLogger(logging.StreamHandler):
         self.status_handler = status_handler
 
     def emit(self, record):
-
         try:
-
             if record.levelno is not ExportStateLogger.REQUESTABLE:
                 return
 
-            if 'uuid' not in record.args.keys() or type(record.args['uuid']) is not str:
+            if "uuid" not in record.args.keys() or type(record.args["uuid"]) is not str:
                 return
 
-            status = 'unknown'
-            if 'status' in record.args.keys() and type(record.args['status']) is str:
-                status = str(record.args['status'])
+            status = "unknown"
+            if "status" in record.args.keys() and type(record.args["status"]) is str:
+                status = str(record.args["status"])
 
             route = None
-            if 'route' in record.args.keys():
-                route = str(record.args['route'])
+            if "route" in record.args.keys():
+                route = str(record.args["route"])
 
             msg = self.format(record)
-            self.status_handler.update_status(str(record.args['uuid']), status, msg, route=route)
+            self.status_handler.update_status(
+                str(record.args["uuid"]), status, msg, route=route
+            )
 
         except:
             self.handleError(record)

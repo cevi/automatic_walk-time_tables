@@ -24,7 +24,10 @@ class EquidistantTransformer(PathTransformer):
 
         # select a point every 10 meters
         for p in path_.way_points:
-            if p.accumulated_distance - accumulated_distance > self.equidistant_distance:
+            if (
+                p.accumulated_distance - accumulated_distance
+                > self.equidistant_distance
+            ):
                 equidistant_path.append(p)
                 accumulated_distance = p.accumulated_distance
 
