@@ -7,4 +7,6 @@ grequests==0.7.0
 argparse==1.4.0
 pyclustering==0.10.1.2
 polyline==1.4.0
-PyPDF2==3.0.1
+pypdf==3.17.0
+
+
