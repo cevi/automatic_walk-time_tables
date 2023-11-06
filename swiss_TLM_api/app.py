@@ -17,6 +17,11 @@ from swiss_TML_api.name_finding.name_finder import NameFinder
 from swiss_TML_api.name_finding.swiss_name import SwissName
 from swiss_TML_api.map_numbers.map_numbers_fetcher import MapNumberIndex
 
+# check if FAULTHANDLER env var is set
+if os.environ.get("FAULTHANDLER", "False").lower() in ("true", "1", "t"):
+    import faulthandler
+    faulthandler.enable()
+
 app = Flask(__name__)
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
 

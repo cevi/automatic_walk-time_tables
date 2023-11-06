@@ -42,7 +42,11 @@ class NameIndex:
             file_id = "1gESYkWDCrAJ06ADBwM-c2SrEpri6I5P0"
             output = "./index_cache/index_cache.tar.xz"
             gdown.download(id=file_id, output=output, quiet=False)
+            logger.info("Downloading index from Google Drive completed")
+            logger.info(f"Files: {os.listdir('./index_cache/')}")
             shutil.unpack_archive(output, "./index_cache/")
+            logger.info("Extracting index completed")
+            os.remove(output)
 
         # If force_rebuild is enabled, we recreate the index file.
         if force_rebuild:
@@ -83,6 +87,13 @@ class NameIndex:
             self.__download_resources(url, folder)
 
         self.generate_index(reduced)
+
+    
+
+    def __del__(self):
+        if hasattr(self, 'index'):
+            self.index.close()
+
 
     def __download_resources(self, url: str, destination: str):
         # Download a zip from url and extract it

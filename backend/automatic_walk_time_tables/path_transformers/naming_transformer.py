@@ -2,6 +2,9 @@ import json
 
 import requests
 
+import logging
+logger = logging.getLogger(__name__) 
+
 from automatic_walk_time_tables.path_transformers.path_transfomer import PathTransformer
 from automatic_walk_time_tables.utils.path import Path
 
@@ -16,18 +19,25 @@ class NamingTransformer(PathTransformer):
 
     def transform(self, path_: Path) -> Path:
         for pt in path_.way_points:
+            pt.name = ""  # set default name to empty string
+
             url = "http://awt-swiss-tml-api:1848/swiss_name"
 
             lv95 = pt.point.to_LV95()
             payload = json.dumps([[lv95.lat, lv95.lon]])
             headers = {"Content-Type": "application/json"}
-            req = requests.request("GET", url, headers=headers, data=payload)
-            resp = req.json()
+            
 
-            # Use coordinate if next name is more than 100 meters away
-            if resp[0]["offset"] <= 100:
-                pt.name = resp[0]["swiss_name"]
-            else:
-                pt.name = ""
+            try:
+                req = requests.request("GET", url, headers=headers, data=payload)
+                resp = req.json()
+
+                # Use coordinate if next name is more than 100 meters away          
+                if resp[0]["offset"] <= 100:
+                    pt.name = resp[0]["swiss_name"]       
+
+            except requests.exceptions.ConnectionError:
+                logger.error("Connection error while fetching names from awt-swiss-tml-api")
+                continue  # TODO: we skip connection errors (see https://github.com/cevi/automatic_walk-time_tables/issues/247)
 
         return path_
