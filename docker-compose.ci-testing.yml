@@ -41,12 +41,6 @@ services:
 
   awt-mapfish-print-server:
 
-    healthcheck:
-      test: "curl -f http://localhost:8080"
-      interval: 2s
-      timeout: 1s
-      retries: 60
-
     env_file:
       - .env.ci-testing
     
@@ -59,12 +53,6 @@ services:
       context: swiss_TLM_api/.
       dockerfile: Dockerfile
 
-    healthcheck:
-      test: "curl -f http://localhost:1848/ready | grep 'ready'"
-      interval: 2s
-      timeout: 1s
-      retries: 180
-
     env_file:
       - .env.ci-testing
 
@@ -76,12 +64,6 @@ services:
     build:
       context: backend/.
       dockerfile: Dockerfile
-
-    depends_on:
-      awt-mapfish-print-server:
-        condition: service_healthy
-      awt-swiss-tml-api:
-        condition: service_healthy
 
     env_file:
       - .env.ci-testing
@@ -97,12 +79,6 @@ services:
       # Used in the first stage of the Dockerfile, thus these env vars must be passed as args
       args:
         - ENVIRONMENT_FILE=.env.ci-testing
-
-    healthcheck:
-      test: "curl -f http://localhost:80"
-      interval: 2s
-      timeout: 1s
-      retries: 180
 
     env_file:
       - .env.ci-testing
