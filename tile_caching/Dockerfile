@@ -1,4 +1,4 @@
-FROM nginx:1.23.2-alpine
+FROM nginx:1.25.3-alpine
 
 ADD nginx.conf /etc/nginx/nginx.conf
 
