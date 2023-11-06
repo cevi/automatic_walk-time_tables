@@ -88,12 +88,9 @@ class NameIndex:
 
         self.generate_index(reduced)
 
-    
-
     def __del__(self):
-        if hasattr(self, 'index'):
+        if hasattr(self, "index"):
             self.index.close()
-
 
     def __download_resources(self, url: str, destination: str):
         # Download a zip from url and extract it

@@ -20,6 +20,7 @@ from swiss_TML_api.map_numbers.map_numbers_fetcher import MapNumberIndex
 # check if FAULTHANDLER env var is set
 if os.environ.get("FAULTHANDLER", "False").lower() in ("true", "1", "t"):
     import faulthandler
+
     faulthandler.enable()
 
 app = Flask(__name__)
@@ -117,4 +118,4 @@ def create_app():
     #    debug=(os.environ.get("DEBUG", "False").lower() in ("true", "1", "t")),
     #    host="0.0.0.0",
     #    port=int(os.environ.get("PORT", 1848)),
-    #)
+    # )

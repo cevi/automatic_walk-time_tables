@@ -22,5 +22,7 @@ def fetch_map_numbers(path_: path.Path) -> str:
         req = requests.request("GET", url, headers=headers, data=payload)
         return req.text
     except requests.exceptions.ConnectionError:
-        logger.error("Connection error while fetching map numbers from awt-swiss-tml-api")
+        logger.error(
+            "Connection error while fetching map numbers from awt-swiss-tml-api"
+        )
         return ""  # TODO: we ignore errors for now, see https://github.com/cevi/automatic_walk-time_tables/issues/247
