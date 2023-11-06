@@ -239,7 +239,6 @@ class MapCreator:
         merger.close()
 
     def create_mapfish_query(
-
         self, map_layers, map_scaling, center, way_points: path.Path, pois: path.Path
     ):
         """
