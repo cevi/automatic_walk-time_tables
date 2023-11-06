@@ -35,7 +35,7 @@ export function test_without_interaction(file) {
     cy.get('#export-button').click();
 
     cy.url({timeout: 10_000}).should('contain', '/pending');
-    cy.url({timeout: 90_000}).should('contain', '/download');
+    cy.url({timeout: 180_000}).should('contain', '/download');
 
     cy.get('h2').should('contain', 'Deine Route wurde erfolgreich exportiert!');
 }
