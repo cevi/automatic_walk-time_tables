@@ -29,7 +29,7 @@
     "echarts": "^5.3.3",
     "ngx-echarts": "6.0.1",
     "ol": "^6.15.1",
-    "proj4": "^2.8.0",
+    "proj4": "^2.9.2",
     "rxjs": "~6.6.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.11.4"
@@ -40,7 +40,7 @@
     "@angular/compiler-cli": "^14.3.0",
     "@types/jasmine": "~5.1.1",
     "@types/node": "^12.20.55",
-    "@types/proj4": "^2.5.2",
+    "@types/proj4": "^2.5.5",
     "angular-build-info": "^2.0.1",
     "jasmine-core": "~3.8.0",
     "karma": "^6.3.14",
