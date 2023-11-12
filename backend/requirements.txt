@@ -7,7 +7,6 @@ geopy==2.4.0
 openpyxl==3.0.10
 matplotlib==3.8.1
 grequests==0.7.0
-argparse==1.4.0
 pyclustering==0.10.1.2
 polyline==1.4.0
 pypdf==3.17.0
