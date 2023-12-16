@@ -5,9 +5,6 @@ ENV PIP_ROOT_USER_ACTION=ignore
 WORKDIR /app
 
 # Install requirements
-COPY ./automatic_walk_time_tables/requirements.txt /app/automatic_walk_time_tables/
-RUN pip install --no-cache-dir -r automatic_walk_time_tables/requirements.txt
-
 COPY ./requirements.txt /app
 RUN pip install --no-cache-dir -r requirements.txt
 
