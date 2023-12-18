@@ -5,7 +5,7 @@ gpxpy==1.6.1
 numpy==1.26.2
 geopy==2.4.0
 openpyxl==3.1.2
-matplotlib==3.8.1
+matplotlib==3.8.2
 grequests==0.7.0
 pyclustering==0.10.1.2
 polyline==2.0.1
