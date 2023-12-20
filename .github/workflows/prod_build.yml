@@ -1,4 +1,4 @@
-name: Productiv / Deployment Build
+name: Productive / Deployment Build
 
 on:
   push:
