@@ -61,12 +61,9 @@ export default {
                         },
                         {
                             text: 'API Endpoints', link: '/documentation/backend/API_endpoints'
-                        },
+                        },,
                         {
-                            text: 'Utilities and Helper Scripts', link: '/documentation/backend/helper_scripts'
-                        },
-                        {
-                            text: 'Command Line Arguments', link: '/documentation/backend/command_line_arguments'
+                            text: 'DEPRECATED! Command Line Arguments', link: '/documentation/backend/command_line_arguments'
                         }
                     ]
                 },

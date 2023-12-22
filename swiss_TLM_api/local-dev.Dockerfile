@@ -15,4 +15,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 1848
 
 # Entrypoint
-CMD gunicorn --bind :1848 --workers 1 --threads 2 --timeout 60 --reload app:app
+CMD gunicorn --bind :1848 --workers 1 --threads 2 --timeout 180 --reload 'app:create_app()'

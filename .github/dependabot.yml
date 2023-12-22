@@ -3,30 +3,30 @@ updates:
   - package-ecosystem: "pip"
     directory: "/backend"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     target-branch: "dev"
   - package-ecosystem: "npm"
     directory: "/docs"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     target-branch: "dev"
   - package-ecosystem: "npm"
     directory: "/e2e"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     target-branch: "dev"
   - package-ecosystem: "npm"
     directory: "/frontend"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     target-branch: "dev"
   - package-ecosystem: "pip"
     directory: "/swiss_TML_api"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     target-branch: "dev"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     target-branch: "dev"

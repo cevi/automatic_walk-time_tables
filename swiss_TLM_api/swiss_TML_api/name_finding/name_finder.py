@@ -25,9 +25,6 @@ class NameFinder(NameIndex):
 
         logger.info("Name Index loaded (after {}s)".format(str(end - start)))
 
-    def __del__(self):
-        self.index.close()
-
     def get_names(self, lat: float, lon: float, n=1):
         """
         See also https://api3.geo.admin.ch/api/faq/index.html#which-layers-have-a-tooltip

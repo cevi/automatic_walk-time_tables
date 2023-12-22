@@ -17,6 +17,12 @@ from swiss_TML_api.name_finding.name_finder import NameFinder
 from swiss_TML_api.name_finding.swiss_name import SwissName
 from swiss_TML_api.map_numbers.map_numbers_fetcher import MapNumberIndex
 
+# check if FAULTHANDLER env var is set
+if os.environ.get("FAULTHANDLER", "False").lower() in ("true", "1", "t"):
+    import faulthandler
+
+    faulthandler.enable()
+
 app = Flask(__name__)
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
@@ -31,17 +37,13 @@ def _load_indexes():
     try:
         name_index = NameFinder(force_rebuild=False, reduced=False)
         map_number_index = MapNumberIndex(force_rebuild=False)
-    except:
+    except Exception as e:
         logger.error("Error while loading indexes. Forcing rebuild")
+        logger.error(e)
         name_index = None
         map_number_index = None
         name_index = NameFinder(force_rebuild=True, reduced=False)
         map_number_index = MapNumberIndex(force_rebuild=True)
-
-
-# We load the indexes in a separate thread to avoid blocking the main thread and running into the timeout errors
-thread = Thread(target=_load_indexes)
-thread.start()
 
 
 @app.route("/ready", methods=["GET"])
@@ -90,7 +92,8 @@ def get_name():
 
         return jsonify(response)
     except Exception as e:
-        logger.info("Exception:" + e)
+        logger.error("Exception:")
+        logger.error(e)
         raise e
 
 
@@ -107,9 +110,12 @@ def get_map_numbers():
         raise e
 
 
-if __name__ == "__main__":
-    app.run(
-        debug=(os.environ.get("DEBUG", "False").lower() in ("true", "1", "t")),
-        host="0.0.0.0",
-        port=int(os.environ.get("PORT", 1848)),
-    )
+def create_app():
+    _load_indexes()
+
+    return app
+    # app.run(
+    #    debug=(os.environ.get("DEBUG", "False").lower() in ("true", "1", "t")),
+    #    host="0.0.0.0",
+    #    port=int(os.environ.get("PORT", 1848)),
+    # )
