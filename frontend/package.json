@@ -42,7 +42,7 @@
     "@types/jasmine": "^5.1.4",
     "@types/node": "^12.20.55",
     "@types/proj4": "^2.5.5",
-    "@types/ws": "^8.5.4",
+    "@types/ws": "^8.5.10",
     "angular-build-info": "^2.0.1",
     "jasmine-core": "~5.1.1",
     "karma": "^6.4.2",
