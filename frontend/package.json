@@ -23,7 +23,7 @@
     "@angular/platform-browser-dynamic": "^14.3.0",
     "@angular/router": "^14.3.0",
     "@googlemaps/polyline-codec": "^1.0.28",
-    "angular-split": "^15.0.0",
+    "angular-split": "^16.2.0",
     "colors": "^1.1.2",
     "dotenv": "^5.0.0",
     "echarts": "^5.4.3",
