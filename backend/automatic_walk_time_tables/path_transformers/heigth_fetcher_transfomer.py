@@ -33,7 +33,7 @@ class HeightFetcherTransformer(PathTransformer):
                 "Deine Datei hat zu viele Wegpunkte. Bitte reduziere die Anzahl Punkte und probier es erneut."
             )
 
-        geom_data =  {
+        geom_data = {
             "type": "LineString",
             "coordinates": [
                 [round(pt.point.lat), round(pt.point.lon)] for pt in path_.way_points

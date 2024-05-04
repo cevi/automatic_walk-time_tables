@@ -6,8 +6,7 @@ WORKDIR /app
 
 # Needed for RTree pip package
 RUN apt update \
-    && apt -y install libspatialindex-dev curl gdal-bin libgdal-dev g++ \
-    && rm -rf /var/lib/apt/lists/*
+    && apt -y install libspatialindex-dev curl gdal-bin libgdal-dev g++
 
 # Install requirements
 COPY ./requirements.txt /app
