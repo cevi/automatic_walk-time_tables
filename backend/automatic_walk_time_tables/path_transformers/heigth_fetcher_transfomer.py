@@ -47,7 +47,11 @@ class HeightFetcherTransformer(PathTransformer):
             "smart_filling": True,
             "sr": coord_type,
         }
-        r = requests.post(self.PATH_URL, headers={"Content-Type": "application/json"}, data=json.dumps(geom_data), params=params)
+        r = requests.post(self.PATH_URL,
+                          headers={"Content-Type": "application/json"},
+                          data=json.dumps(geom_data),
+                          params=params)
+
         self.__logger.info(r.url)
 
         self.__logger.debug(
