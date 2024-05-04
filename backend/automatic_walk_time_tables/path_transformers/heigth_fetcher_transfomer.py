@@ -51,7 +51,7 @@ class HeightFetcherTransformer(PathTransformer):
             self.PATH_URL,
             headers={"Content-Type": "application/json"},
             data=json.dumps(geom_data),
-            params=params
+            params=params,
         )
 
         self.__logger.info(r.url)
