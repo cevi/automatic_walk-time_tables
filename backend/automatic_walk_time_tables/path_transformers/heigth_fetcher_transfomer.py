@@ -33,7 +33,7 @@ class HeightFetcherTransformer(PathTransformer):
                 "Deine Datei hat zu viele Wegpunkte. Bitte reduziere die Anzahl Punkte und probier es erneut."
             )
 
-        geom_data = {
+        geom_data =  {
             "type": "LineString",
             "coordinates": [
                 [round(pt.point.lat), round(pt.point.lon)] for pt in path_.way_points
@@ -41,16 +41,13 @@ class HeightFetcherTransformer(PathTransformer):
         }
 
         coord_type = path_.way_points[0].point.type
-
         params = {
-            "geom": json.dumps(geom_data),
             "nb_points": max(path_.number_of_waypoints, self.min_number_of_points),
             "distinct_points": True,
             "smart_filling": True,
             "sr": coord_type,
         }
-
-        r = requests.get(self.PATH_URL, params=params)
+        r = requests.post(self.PATH_URL, headers={"Content-Type": "application/json"}, data=json.dumps(geom_data), params=params)
         self.__logger.info(r.url)
 
         self.__logger.debug(
