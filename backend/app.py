@@ -139,9 +139,9 @@ def create_walk_time_table():
             # calc POIs for the path
             pois_transformer = POIsTransformer(
                 pois_list_as_str=options["pois"] if "pois" in options else "",
-                pois_distance_str=options["pois_distance"]
-                if "pois_distance" in options
-                else "",
+                pois_distance_str=(
+                    options["pois_distance"] if "pois_distance" in options else ""
+                ),
             )
             pois: Path = pois_transformer.transform(path)
 
@@ -270,9 +270,9 @@ def create_export(options, uuid):
             # calc POIs for the path
             pois_transformer = POIsTransformer(
                 pois_list_as_str=options["pois"] if "pois" in options else "",
-                pois_distance_str=options["pois_distance"]
-                if "pois_distance" in options
-                else "",
+                pois_distance_str=(
+                    options["pois_distance"] if "pois_distance" in options else ""
+                ),
             )
             pois: Path = pois_transformer.transform(path)
 
