@@ -21,9 +21,9 @@ import {combineLatest} from "rxjs";
 })
 export class MapService extends SwisstopoMap {
 
-  private path_layer_source: VectorSource<Geometry> = new VectorSource<Geometry>({wrapX: false});
-  private pointer_layer_source: VectorSource<Geometry> = new VectorSource<Geometry>({wrapX: false});
-  private way_points_layer_source: VectorSource<Geometry> = new VectorSource<Geometry>({wrapX: false});
+  private path_layer_source: VectorSource<Geometry> = new VectorSource({wrapX: false});
+  private pointer_layer_source: VectorSource<Geometry> = new VectorSource({wrapX: false});
+  private way_points_layer_source: VectorSource<Geometry> = new VectorSource({wrapX: false});
 
   private map: Map | undefined;
   private pointer: number[] | undefined | null;
