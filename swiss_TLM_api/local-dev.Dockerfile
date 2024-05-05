@@ -5,8 +5,8 @@ ENV PIP_ROOT_USER_ACTION=ignore
 WORKDIR /app
 
 # Needed for RTree pip package
-RUN apt update \
-    && apt -y install libspatialindex-dev curl gdal-bin libgdal-dev g++
+RUN apt update
+RUN apt -y install libspatialindex-dev curl
 
 # Install requirements
 COPY ./requirements.txt /app
