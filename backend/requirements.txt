@@ -8,5 +8,5 @@ openpyxl==3.1.2
 matplotlib==3.8.4
 grequests==0.7.0
 pyclustering==0.10.1.2
-polyline==2.0.1
+polyline==2.0.2
 pypdf==4.2.0
