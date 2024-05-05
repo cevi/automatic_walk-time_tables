@@ -1,4 +1,4 @@
-FROM cypress/included:12.9.0
+FROM cypress/included:13.8.1
 
 WORKDIR /opt
 
