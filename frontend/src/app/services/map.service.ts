@@ -1,10 +1,10 @@
 import {Injectable} from '@angular/core';
 import {WMTS} from "ol/source";
 import {Tile} from "ol/layer";
-import Map from "ol/Map";
+import { Map } from "ol/Map";
 import {Feature, MapBrowserEvent} from "ol";
-import VectorSource from "ol/source/Vector";
-import VectorLayer from "ol/layer/Vector";
+import { VectorSource } from "ol/source/Vector";
+import { VectorLayer } from "ol/layer/Vector";
 import {Circle, Geometry, LineString} from "ol/geom";
 import {MapAnimatorService} from "./map-animator.service";
 import {Fill, Stroke, Style, Text} from "ol/style";
@@ -21,9 +21,9 @@ import {combineLatest} from "rxjs";
 })
 export class MapService extends SwisstopoMap {
 
-  private path_layer_source: VectorSource<Geometry> = new VectorSource({wrapX: false});
-  private pointer_layer_source: VectorSource<Geometry> = new VectorSource({wrapX: false});
-  private way_points_layer_source: VectorSource<Geometry> = new VectorSource({wrapX: false});
+  private path_layer_source: VectorSource<Geometry> = new VectorSource<Geometry>({wrapX: false});
+  private pointer_layer_source: VectorSource<Geometry> = new VectorSource<Geometry>({wrapX: false});
+  private way_points_layer_source: VectorSource<Geometry> = new VectorSource<Geometry>({wrapX: false});
 
   private map: Map | undefined;
   private pointer: number[] | undefined | null;
