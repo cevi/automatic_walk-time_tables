@@ -1,10 +1,10 @@
 import {Injectable} from '@angular/core';
 import {WMTS} from "ol/source";
 import {Tile} from "ol/layer";
-import { Map } from "ol/Map";
+import Map from "ol/Map";
 import {Feature, MapBrowserEvent} from "ol";
-import { VectorSource } from "ol/source/Vector";
-import { VectorLayer } from "ol/layer/Vector";
+import VectorSource from "ol/source/Vector";
+import VectorLayer from "ol/layer/Vector";
 import {Circle, Geometry, LineString} from "ol/geom";
 import {MapAnimatorService} from "./map-animator.service";
 import {Fill, Stroke, Style, Text} from "ol/style";
