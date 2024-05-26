@@ -26,8 +26,8 @@
 
           <app-upload-area *ngIf="!route_uploaded && !parse_error && !loading" class="upload-area"
                            (file_uploaded)="new_route_uploaded($event)"></app-upload-area>
-          <app-download *ngIf="route_uploaded && route_file && !parse_error" [name]="route_file?.name"
-                        [changeDate]="route_file?.lastModified"></app-download>
+          <app-download *ngIf="route_uploaded && route_file && !parse_error" [name]="route_file.name"
+                        [changeDate]="route_file.lastModified"></app-download>
 
           <div *ngIf="loading">
             <p>Route wird verarbeitet...</p>
@@ -95,11 +95,9 @@
           <mat-slide-toggle formControlName="name_points_in_export">Punkte beschriften</mat-slide-toggle>
 
           <div class="slider">
-            <label>Kartenmassstab: 1:{{scale.value}}</label>
+            <label>Kartenmassstab: 1:{{scale.step}}</label>
             <mat-slider #scale min="10000" max="100000" step="5000"
-                        [disabled]="this.options.controls['auto_scale'].value"
-                        (change)="options.controls['map_scaling'].setValue($event.value)"
-                        [value]="options.controls['map_scaling'].value"></mat-slider>
+                        [(ngModel)]="this.options.controls['auto_scale']"></mat-slider>
           </div>
         </div>
 
@@ -137,10 +135,9 @@
           <mat-slide-toggle formControlName="create_excel">Marschzeittabelle als Excel beifügen</mat-slide-toggle>
 
           <div class="slider">
-            <label>Geschwindigkeit: {{velocity.value}} Lkm/h</label>
+            <label>Geschwindigkeit: {{velocity.step}} Lkm/h</label>
             <mat-slider #velocity min="0.5" max="20" step="0.25"
-                        (change)="options.controls['velocity'].setValue($event.value)"
-                        [value]="options.controls['velocity'].value"
+                        [(ngModel)]="this.options.controls['velocity']"
             ></mat-slider>
           </div>
 

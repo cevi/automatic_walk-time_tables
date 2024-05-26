@@ -11,6 +11,8 @@ import {Router} from "@angular/router";
 export class ExportSettingsComponent {
 
   options: UntypedFormGroup;
+  step: number = 25000;
+
   parse_error: boolean = false;
 
   public route_file: File | undefined;
