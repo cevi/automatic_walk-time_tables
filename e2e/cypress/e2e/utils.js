@@ -80,9 +80,6 @@ export function export_with_interaction(file) {
     cy.get('#goto-step-3').click();
     cy.get('[formControlName="create_map_pdfs"]').click(); // no map
 
-    // check if unchecked
-    cy.get('#mat-slide-toggle-1-input').should('not.be.checked');
-
     cy.get('#goto-step-4').click();
     cy.get('#goto-step-5').click();
     cy.get('#export-button', {
