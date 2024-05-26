@@ -27,6 +27,7 @@ import {MatSnackBarModule} from "@angular/material/snack-bar";
 import {MatSelectModule} from "@angular/material/select";
 import {MatOptionModule} from "@angular/material/core";
 import {MatProgressSpinnerModule} from "@angular/material/progress-spinner";
+import {MatFormFieldModule} from "@angular/material/form-field";
 
 @NgModule({
   declarations: [
@@ -56,6 +57,7 @@ import {MatProgressSpinnerModule} from "@angular/material/progress-spinner";
     MatIconModule,
     DownloadModule,
     MatSelectModule,
+    MatFormFieldModule,
     MatOptionModule,
     NgxEchartsModule.forRoot({
       echarts: () => import('echarts')

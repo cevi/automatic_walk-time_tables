@@ -11,7 +11,7 @@ import {Router} from "@angular/router";
 export class ExportSettingsComponent {
 
   options: UntypedFormGroup;
-  step: number = 25000;
+  public scale = 10_000;
 
   parse_error: boolean = false;
 
