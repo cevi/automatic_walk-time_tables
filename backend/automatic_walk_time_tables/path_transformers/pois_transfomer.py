@@ -1,7 +1,6 @@
 import logging
 
 import numpy as np
-
 from automatic_walk_time_tables.path_transformers.path_transfomer import PathTransformer
 from automatic_walk_time_tables.utils.path import Path
 from automatic_walk_time_tables.utils.point import Point_LV95
@@ -25,7 +24,6 @@ class POIsTransformer(PathTransformer):
         elif self.pois_list_as_str != "":
             return self.pois_from_string(path)
 
-        # TODO: calc points of interest if list is empty
         else:
             return self.calc_pois(path)
 
@@ -95,8 +93,20 @@ class POIsTransformer(PathTransformer):
         # calc extremums of path_
         max_index = np.argmax([p.point.h for p in path.way_points])
         min_index = np.argmin([p.point.h for p in path.way_points])
-        pois.insert(path.way_points[max_index])
-        pois.insert(path.way_points[min_index])
+
+        # we add extremums to the list of points of interest if they are at least 100m away from the endpoint
+        if (
+            path.way_points[max_index].point.distance(path.way_points[0].point) >= 100
+            and path.way_points[min_index].point.distance(path.way_points[0].point)
+            >= 100
+        ):
+            pois.insert(path.way_points[max_index])
+        if (
+            path.way_points[min_index].point.distance(path.way_points[-1].point) >= 100
+            and path.way_points[max_index].point.distance(path.way_points[-1].point)
+            >= 100
+        ):
+            pois.insert(path.way_points[min_index])
 
         # add endpoint to list of points of interest
         pois.append(path.way_points[-1])
