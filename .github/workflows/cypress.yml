@@ -1,7 +1,11 @@
 name: End2End Testing with Cypress
+
+# we run testing for both master and dev branches (but only on pull requests)
 on:
-  push:
-    {}
+  pull_request:
+    branches:
+      - 'master'
+      - 'dev'
 
 jobs:
   test:
