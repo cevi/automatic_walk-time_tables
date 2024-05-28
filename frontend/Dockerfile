@@ -15,12 +15,6 @@ RUN npm ci
 # Add the source code to app
 COPY ./frontend/ /app/
 
-# check if ./git/HEAD and ./git/refs/heads/ are present
-# otherwise, the build will fail --> thus we create a dummy file
-RUN mkdir -p ./.git/refs/heads/
-RUN touch ./.git/HEAD
-RUN touch ./.git/refs/heads/main
-
 COPY ./.git/HEAD /app/.git/HEAD
 COPY ./.git/refs/heads/ /app/.git/refs/heads/
 
