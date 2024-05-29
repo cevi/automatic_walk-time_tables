@@ -106,6 +106,7 @@ export class MapService extends SwisstopoMap {
 
     });
 
+
     combineLatest([map_animator.way_points$, map_animator.pois$])
       .subscribe(([way_points, pois]) => {
 
@@ -138,7 +139,7 @@ export class MapService extends SwisstopoMap {
 
           feature.setStyle(new Style({
             fill: new Fill({color: '#fff'}),
-            stroke: is_selected ? new Stroke({color: '#2043d7', width: 8}) : new Stroke({color: '#2043d750', width: 8}) ,
+            stroke: is_selected ? new Stroke({color: '#2043d7', width: 8}) : new Stroke({color: '#2043d750', width: 8}),
             text: new Text({
               text: way_point.name,
               fill: new Fill({color: '#2043d7'}),
@@ -154,6 +155,8 @@ export class MapService extends SwisstopoMap {
       });
 
   }
+
+
 
   public draw_map(layerLabel: string = 'pixelkarte', target_canvas: string = 'map-canvas') {
 
@@ -179,6 +182,9 @@ export class MapService extends SwisstopoMap {
 
     this.map?.on('pointermove', async (evt) => {
 
+      // ignore event if in drawing mode
+      if (!this.map_animator?.has_route) return;
+
       const [nearest_point, dist] = await this.get_nearest_path_point(evt);
       if (dist <= 50 && nearest_point) this.map_animator?.move_pointer(nearest_point);
       else this.map_animator?.move_pointer(null);
@@ -187,11 +193,19 @@ export class MapService extends SwisstopoMap {
 
     this.map?.on('click', async (evt) => {
 
-      const [nearest_point, dist] = await this.get_nearest_path_point(evt);
-      const [nearest_poi, dist_poi] = await this.get_nearest_poi(evt);
+      if (this.map_animator?.has_route) {
 
-      if (dist <= 50 && nearest_point && dist_poi >= 50) this.map_animator?.add_point_of_interest(nearest_point);
-      else if (dist_poi <= 50 && nearest_poi) this.map_animator?.delete_poi(nearest_poi);
+        const [nearest_point, dist] = await this.get_nearest_path_point(evt);
+        const [nearest_poi, dist_poi] = await this.get_nearest_poi(evt);
+
+        if (dist <= 50 && nearest_point && dist_poi >= 50) this.map_animator?.add_point_of_interest(nearest_point);
+        else if (dist_poi <= 50 && nearest_poi) this.map_animator?.delete_poi(nearest_poi);
+
+        return
+      }
+
+      console.log('click event', evt.coordinate);
+      await this.map_animator?.add_way_point({x: evt.coordinate[0], y: evt.coordinate[1]});
 
 
     });

@@ -69,8 +69,36 @@ class GeoFileParser(object):
             return self.__parse_gpx_file(file_content)
         elif extension == "kml":
             return self.parse_kml_file__(file_content)
+        elif extension == "array":
+            return self.parse_array_file__(file_content)
         else:
             raise Exception("Unsupported file format")
+
+    def parse_array_file__(self, raw_data: str) -> path.Path:
+
+        coordinates = raw_data.split(";")
+        coordinates = [c.split(",") for c in coordinates]
+
+        if len(coordinates[0]) == 2:
+            coordinates = [
+                point.Point_LV95(float(c[0]), float(c[1])) for c in coordinates
+            ]
+        else:
+            coordinates = [
+                point.Point_LV95(float(c[0]), float(c[1]), float(c[2]))
+                for c in coordinates
+            ]
+
+        path_ = path.Path(coordinates)
+
+        if not path_.has_elevation_for_all_points():
+            path_ = self.height_fetcher.transform(path_)
+        else:
+            pass
+
+
+        return path_
+
 
     def __parse_gpx_file(self, gpx_raw_data: str) -> path.Path:
         gpx: gpxpy.gpx = gpxpy.parse(gpx_raw_data)
