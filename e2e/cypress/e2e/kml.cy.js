@@ -7,7 +7,7 @@ before(() => {
 
 it('detects server', () => {
     cy.visit('/');
-    cy.get('.mat-button-wrapper').should('contain', 'So funktioniert es!');
+    cy.get('.mdc-button__label').should('contain', 'So funktioniert es!');
 })
 
 describe('[Batch Test] of all KML files', async () => {

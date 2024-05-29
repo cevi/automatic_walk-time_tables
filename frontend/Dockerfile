@@ -1,7 +1,7 @@
 
 # Stage 1: Compile and Build angular codebase
 # Use official node image as the base image
-FROM node:18.14-alpine3.17 as build
+FROM node:20.13.1-alpine3.20 as build
 
 # Set the working directory
 WORKDIR /app
@@ -14,6 +14,7 @@ RUN npm ci
 
 # Add the source code to app
 COPY ./frontend/ /app/
+
 COPY ./.git/HEAD /app/.git/HEAD
 COPY ./.git/refs/heads/ /app/.git/refs/heads/
 

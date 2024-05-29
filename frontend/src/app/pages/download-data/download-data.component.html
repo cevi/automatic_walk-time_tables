@@ -8,7 +8,7 @@
     &nbsp;- <b>{{old_state?.last_change}}:</b> {{old_state?.message}}
   </p>
   <p class="old_state" [ngClass]="{'error_message': statusManager.status == 'Fehler'}">
-    &nbsp;- <b>{{statusManager?.last_change}}:</b> {{statusManager.status_message}} <i> ({{statusManager.status}})</i>
+    &nbsp;- <b>{{statusManager.last_change}}:</b> {{statusManager.status_message}} <i> ({{statusManager.status}})</i>
   </p>
 
   <p><br></p>

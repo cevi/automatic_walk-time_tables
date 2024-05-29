@@ -86,16 +86,16 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "browserTarget": "automatic-walk-time-tables:build:production"
+              "buildTarget": "automatic-walk-time-tables:build:production"
             },
             "prod_backend": {
-              "browserTarget": "automatic-walk-time-tables:build:prod_backend"
+              "buildTarget": "automatic-walk-time-tables:build:prod_backend"
             },
             "development": {
-              "browserTarget": "automatic-walk-time-tables:build:development"
+              "buildTarget": "automatic-walk-time-tables:build:development"
             },
             "cypress": {
-              "browserTarget": "automatic-walk-time-tables:build:cypress"
+              "buildTarget": "automatic-walk-time-tables:build:cypress"
             }
           },
           "defaultConfiguration": "development"
@@ -103,7 +103,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "automatic-walk-time-tables:build"
+            "buildTarget": "automatic-walk-time-tables:build"
           }
         },
         "test": {
@@ -127,5 +127,8 @@
         }
       }
     }
+  },
+  "cli": {
+    "analytics": "5768d376-ed0d-4fa1-a7b9-48563d3170ee"
   }
 }

@@ -1,6 +1,11 @@
 name: Lint
 
-on: [push, pull_request]
+# we run testing for both master and dev branches (but only on pull requests)
+on:
+  pull_request:
+    branches:
+      - 'master'
+      - 'dev'
 
 jobs:
   lint:
