@@ -1,2 +1,5 @@
 resources/
 sources/
+
+!resources/.gitkeep
+!sources/.gitkeep

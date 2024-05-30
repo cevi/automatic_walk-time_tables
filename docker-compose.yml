@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
 
   awt-docs:
@@ -99,7 +97,9 @@ services:
       retries: 180
 
   awt-route_engine:
-    image: ghcr.io/gis-ops/docker-valhalla/valhalla:latest
+    build:
+      context: ./route_engine
+      dockerfile: Dockerfile
     ports:
       - "8002:8002"
     volumes:
