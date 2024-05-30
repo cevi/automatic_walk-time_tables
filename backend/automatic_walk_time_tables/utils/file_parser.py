@@ -96,9 +96,7 @@ class GeoFileParser(object):
         else:
             pass
 
-
         return path_
-
 
     def __parse_gpx_file(self, gpx_raw_data: str) -> path.Path:
         gpx: gpxpy.gpx = gpxpy.parse(gpx_raw_data)
