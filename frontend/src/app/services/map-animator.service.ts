@@ -360,6 +360,7 @@ export class MapAnimatorService {
         {lat: WGS84[1], lon: WGS84[0]}
       ],
       costing: 'pedestrian',
+      directions_type: 'none',
       radius: 25
     }));
 
