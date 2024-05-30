@@ -58,12 +58,11 @@ export class ExportSettingsComponent {
     console.log('Form values:', this.options.value);
     this.mapAnimator?.path$.subscribe((path) => {
       this.has_valid_path = path.length !== 0;
+      this.route_uploaded = this.has_valid_path;
     });
 
 
   }
-
-
 
 
   public new_route_uploaded(route_file: File) {

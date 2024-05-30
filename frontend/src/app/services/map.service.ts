@@ -182,12 +182,17 @@ export class MapService extends SwisstopoMap {
 
     this.map?.on('pointermove', async (evt) => {
 
-      // ignore event if in drawing mode
-      if (!this.map_animator?.has_route) return;
+      if (this.map_animator?.has_route) {
+        const [nearest_point, dist] = await this.get_nearest_path_point(evt);
+        if (dist <= 50 && nearest_point) this.map_animator?.move_pointer(nearest_point);
+        else this.map_animator?.move_pointer(null);
+      } else {
 
-      const [nearest_point, dist] = await this.get_nearest_path_point(evt);
-      if (dist <= 50 && nearest_point) this.map_animator?.move_pointer(nearest_point);
-      else this.map_animator?.move_pointer(null);
+        // draw the pointer (we are in the drawing mode)
+        this.pointer = evt.coordinate;
+        this.pointer_layer_source.clear();
+
+      }
 
     });
 
@@ -204,7 +209,6 @@ export class MapService extends SwisstopoMap {
         return
       }
 
-      console.log('click event', evt.coordinate);
       await this.map_animator?.add_way_point({x: evt.coordinate[0], y: evt.coordinate[1]});
 
 

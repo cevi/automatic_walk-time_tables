@@ -327,6 +327,16 @@ export class MapAnimatorService {
 
     const path = this._path$.getValue();
 
+    const pois = this._pois$.getValue();
+    pois.push({
+      'x': point.x,
+      'y': point.y,
+      'h': 0,
+      'accumulated_distance': 0,
+      'name': ''
+    });
+    this._pois$.next(pois);
+
     if (path.length == 0) {
 
       path.push({
@@ -342,7 +352,6 @@ export class MapAnimatorService {
     }
 
     const old_WGS84 = transform([path[path.length - 1].x, path[path.length - 1].y], 'EPSG:2056', 'EPSG:4326');
-
 
     // fetch path from valhalla/valhalla at localhost:8002 with json in url
     const url = 'http://localhost:8002/route?json=' + encodeURIComponent(JSON.stringify({
@@ -408,6 +417,9 @@ export class MapAnimatorService {
   async finish_drawing() {
 
     this.has_route = true;
+
+    // clear pois: as we used them to draw the route
+    this._pois$.next([]);
 
     const path = this._path$.getValue().map(p =>
       ({x: p.x, y: p.y} as LV95_Coordinates));
