@@ -5,13 +5,13 @@ import math
 from typing import List
 
 import numpy as np
-
 from automatic_walk_time_tables.path_transformers.path_transfomer import PathTransformer
+from automatic_walk_time_tables.utils.path import Path
+
 from automatic_walk_time_tables.utils.geometry_utils import (
     calc_secant_line,
     calc_secant_elevation,
 )
-from automatic_walk_time_tables.utils.path import Path
 from automatic_walk_time_tables.utils.way_point import WayPoint
 
 
@@ -59,7 +59,32 @@ class DouglasPeuckerTransformer(PathTransformer):
         self.__logger.debug("Total distance: %f km", path.total_distance)
 
         way_points = self.replace_with_close_by_pois(way_points, path)
+        way_points = self.add_pois(way_points)
 
+        return way_points
+
+    def add_pois(self, way_points: Path) -> Path:
+        """
+
+        Add POIs to the way_points if they are at least 50 meters apart from any other point.
+        And if the max number of points is not reached.
+
+        """
+
+        for poi in self.pois.way_points:
+
+            if way_points.number_of_waypoints >= self.number_of_waypoints:
+                break
+
+            if any(
+                abs(poi.accumulated_distance - p.accumulated_distance) < 50
+                for p in way_points.way_points
+            ):
+                continue
+            way_points.insert(poi)
+
+        # Drop Point's close to each other
+        self.drop_points(5, Path(), way_points, True)
         return way_points
 
     def replace_with_close_by_pois(
