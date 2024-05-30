@@ -11,6 +11,7 @@ import {transform} from "ol/proj";
 })
 export class MapAnimatorService {
 
+  private static VALHALLA_URL = environment.VALHALLA_URL;
   private static BASE_URL = environment.API_URL;
   private static DEFAULT_MAP_CENTER = {x: 2719675, y: 1216320};
 
@@ -353,8 +354,9 @@ export class MapAnimatorService {
 
     const old_WGS84 = transform([path[path.length - 1].x, path[path.length - 1].y], 'EPSG:2056', 'EPSG:4326');
 
-    // fetch path from valhalla/valhalla at localhost:8002 with json in url
-    const url = 'http://localhost:8002/route?json=' + encodeURIComponent(JSON.stringify({
+    // fetch path from valhalla/valhalla
+    // TODO: use environment variable
+    const url = `${MapAnimatorService.VALHALLA_URL}route?json=` + encodeURIComponent(JSON.stringify({
       locations: [
         {lat: old_WGS84[1], lon: old_WGS84[0]},
         {lat: WGS84[1], lon: WGS84[0]}

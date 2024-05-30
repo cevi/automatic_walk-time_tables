@@ -6,5 +6,8 @@ RUN sudo apt-get update && sudo apt-get install -y python3 python3-pip libgdal-d
 COPY ./entrypoint.sh /entrypoint.sh
 RUN sudo chmod +x /entrypoint.sh
 
+# set user to root
+USER root
+
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["build_tiles"]

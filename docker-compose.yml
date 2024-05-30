@@ -87,7 +87,7 @@ services:
       - "80:80"
     depends_on:
       - awt-backend
-      - awt-route_engine
+      - awt-valhalla
     env_file:
       - .env.local-dev
     healthcheck:
@@ -96,10 +96,10 @@ services:
       timeout: 1s
       retries: 180
 
-  awt-route_engine:
+  awt-valhalla:
     build:
       context: ./route_engine
-      dockerfile: Dockerfile
+      dockerfile: dev.Dockerfile
     ports:
       - "8002:8002"
     volumes:
