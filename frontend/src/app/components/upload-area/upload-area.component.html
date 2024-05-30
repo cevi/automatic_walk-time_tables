@@ -4,7 +4,7 @@
   <span class="action-description"> Drag-and-Drop GPX- / KML-Datei </span>
   <span class="small-font"> oder </span>
 
-  <button mat-stroked-button color="primary" class="select-file" > GPX- / KML-Datei auswählen </button>
-  <input type="file" id="uploader" accept=".gpx,.kml" (input)="file_added($event)">
+  <button mat-stroked-button color="primary" class="select-file" (click)="fileSelect.click()"> GPX- / KML-Datei auswählen </button>
+  <input type="file" id="uploader" accept=".gpx,.kml" (input)="file_added($event)" #fileSelect>
 
 </div>

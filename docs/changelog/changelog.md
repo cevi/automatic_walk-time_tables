@@ -3,6 +3,8 @@
 A complete, technical changelog is available at [GitHub](https://github.com/cevi/automatic_walk-time_tables/releases).
 
 ## Version 4 - Improved Error handling & drop CLI support
+- Add option to delete waypoints (4.1.0)
+- Added waypoints are now more likely to be selected for the Excel export (4.1.0)
 - Error messages are better shown to the user (4.0.0)
 - CLI support is fully dropped (4.0.0)
 - Map numbers computation uses less API requests (4.0.0)

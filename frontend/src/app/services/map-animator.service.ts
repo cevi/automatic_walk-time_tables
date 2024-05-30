@@ -319,5 +319,18 @@ export class MapAnimatorService {
 
   }
 
+  public delete_poi(point: LV95_Waypoint) {
+
+    this.pois$.pipe(take(1)).subscribe(pois => {
+      this._pois$.next(pois.filter(p => p.x != point.x || p.y != point.y));
+    });
+
+    combineLatest([this._path$, this._pois$, this.way_points$]).pipe(take(1))
+      .subscribe(([path, pois, way_points]) =>
+        this.create_walk_time_table(path, pois).catch(err => this._error_handler(err))
+      );
+
+  }
+
 
 }

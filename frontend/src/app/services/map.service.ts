@@ -29,6 +29,7 @@ export class MapService extends SwisstopoMap {
   private pointer: number[] | undefined | null;
   private map_animator: MapAnimatorService | undefined;
 
+
   public link_animator(map_animator: MapAnimatorService) {
 
     this.map_animator = map_animator;
@@ -105,7 +106,6 @@ export class MapService extends SwisstopoMap {
 
     });
 
-
     combineLatest([map_animator.way_points$, map_animator.pois$])
       .subscribe(([way_points, pois]) => {
 
@@ -114,11 +114,12 @@ export class MapService extends SwisstopoMap {
         way_points.forEach(way_point => {
 
           const feature = new Feature({
-            geometry: new Circle([way_point.x, way_point.y], 25)
+            geometry: new Circle([way_point.x, way_point.y], 10)
           });
 
           feature.setStyle(new Style({
-            stroke: new Stroke({color: '#f13c3c', width: 5})
+            fill: new Fill({color: '#fff'}),
+            stroke: new Stroke({color: '#EFA038', width: 8}),
           }));
 
           this.way_points_layer_source.addFeature(feature);
@@ -129,14 +130,18 @@ export class MapService extends SwisstopoMap {
         pois.forEach(way_point => {
 
           const feature = new Feature({
-            geometry: new Circle([way_point.x, way_point.y], 30)
+            geometry: new Circle([way_point.x, way_point.y], 10)
           });
 
+          // check if the poi is actually selected
+          const is_selected = way_points.find(p => p.x == way_point.x && p.y == way_point.y) != undefined;
+
           feature.setStyle(new Style({
-            stroke: new Stroke({color: '#2043d7', width: 5}),
+            fill: new Fill({color: '#fff'}),
+            stroke: is_selected ? new Stroke({color: '#2043d7', width: 8}) : new Stroke({color: '#2043d750', width: 8}) ,
             text: new Text({
               text: way_point.name,
-              fill: new Fill({color: '#f13c3c'}),
+              fill: new Fill({color: '#2043d7'}),
               font: 'bold 16px Open Sans'
             })
           }));
@@ -174,7 +179,7 @@ export class MapService extends SwisstopoMap {
 
     this.map?.on('pointermove', async (evt) => {
 
-      const [nearest_point, dist] = await this.get_nearest_way_point(evt);
+      const [nearest_point, dist] = await this.get_nearest_path_point(evt);
       if (dist <= 50 && nearest_point) this.map_animator?.move_pointer(nearest_point);
       else this.map_animator?.move_pointer(null);
 
@@ -182,15 +187,51 @@ export class MapService extends SwisstopoMap {
 
     this.map?.on('click', async (evt) => {
 
-      const [nearest_point, dist] = await this.get_nearest_way_point(evt);
-      if (dist <= 50 && nearest_point) this.map_animator?.add_point_of_interest(nearest_point);
+      const [nearest_point, dist] = await this.get_nearest_path_point(evt);
+      const [nearest_poi, dist_poi] = await this.get_nearest_poi(evt);
+
+      if (dist <= 50 && nearest_point && dist_poi >= 50) this.map_animator?.add_point_of_interest(nearest_point);
+      else if (dist_poi <= 50 && nearest_poi) this.map_animator?.delete_poi(nearest_poi);
+
+
+    });
+
+  }
+
+  private async get_nearest_poi(event: MapBrowserEvent<any>): Promise<[LV95_Waypoint | null, number]> {
+
+    const p = event.coordinate;
+
+    if (this.map_animator == undefined) return [null, Infinity];
+
+    return new Promise((resolve, _) => {
+
+      if (this.map_animator == undefined) return resolve([null, Infinity]);
+
+      this.map_animator?.pois$.pipe(take(1))
+        .subscribe((pois) => {
+
+          if (pois.length == 0) return resolve([null, Infinity]);
+
+          // get the coordinates of the point neares to the p
+          const nearest_point = pois.reduce((prev, curr) => {
+            const prev_dist = Math.sqrt(Math.pow(prev.x - p[0], 2) + Math.pow(prev.y - p[1], 2));
+            const curr_dist = Math.sqrt(Math.pow(curr.x - p[0], 2) + Math.pow(curr.y - p[1], 2));
+            return prev_dist < curr_dist ? prev : curr;
+          });
+
+          const dist = Math.sqrt(Math.pow(nearest_point.x - p[0], 2) + Math.pow(nearest_point.y - p[1], 2));
+
+          resolve([nearest_point, dist])
+
+        });
 
     });
 
   }
 
 
-  private async get_nearest_way_point(event: MapBrowserEvent<any>): Promise<[LV95_Waypoint | null, number]> {
+  private async get_nearest_path_point(event: MapBrowserEvent<any>): Promise<[LV95_Waypoint | null, number]> {
 
     const p = event.coordinate;
 
@@ -218,6 +259,7 @@ export class MapService extends SwisstopoMap {
     });
 
   }
+
 
   private render_pointer(wmtsLayer: Tile<WMTS>) {
 
