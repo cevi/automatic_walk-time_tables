@@ -9,6 +9,10 @@ if ! [ "$(ls -A /custom_files | grep -Ev '.gitkeep' | file_hashes.txt)" ]; then
   pip install gdown --break-system-packages
   export PATH=$PATH:/home/valhalla/.local/bin
 
+  # clear /custom_files
+  sudo rm -rf /custom_files/*
+  sudo chmod 777 /custom_files
+
   gdown --id 1lkrS268Mphtifxmdw0UHVnR9_cNErNks -O /custom_files/
 
   echo "Default files downloaded successfully"
