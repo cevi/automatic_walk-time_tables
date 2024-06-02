@@ -94,12 +94,12 @@ export default {
                     ]
                 },
                 {
-                    text: 'Routing Engine',
+                    text: 'Route Engine',
                     collapsible: true,
                     collapsed: true,
                     items: [
                         {
-                            text: 'About', link: '/documentation/routing_engine/about'
+                            text: 'About', link: '/documentation/route_engine/about'
                         },
                     ]
                 },

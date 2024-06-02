@@ -15,11 +15,6 @@ jobs:
       - name: 🛎️  Checkout
         uses: actions/checkout@v4
 
-      # Restores the cache if it exists.
-      - name: ⛏ Restore docker image from cache
-        uses: satackey/action-docker-layer-caching@v0.0.11
-        continue-on-error: true
-
       - name: create dumy files for ./git/HEAD and ./git/refs/heads/
         run: |
           mkdir -p .git/refs/heads

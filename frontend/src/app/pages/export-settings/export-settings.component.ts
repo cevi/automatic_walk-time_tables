@@ -20,6 +20,7 @@ export class ExportSettingsComponent {
   public loading = false;
   public error_message: string = '';
   protected readonly location = location;
+  public has_valid_path: boolean = false;
 
   constructor(private mapAnimator: MapAnimatorService, fb: UntypedFormBuilder, private router: Router) {
 
@@ -53,6 +54,12 @@ export class ExportSettingsComponent {
     } catch (_) {
       // safe to ignore
     }
+
+    console.log('Form values:', this.options.value);
+    this.mapAnimator?.path$.subscribe((path) => {
+      this.has_valid_path = path.length !== 0;
+      this.route_uploaded = this.has_valid_path;
+    });
 
 
   }
@@ -104,4 +111,10 @@ export class ExportSettingsComponent {
   }
 
 
+  async finish_drawing() {
+
+    this.route_uploaded = true;
+    await this.mapAnimator.finish_drawing();
+
+  }
 }
