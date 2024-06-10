@@ -21,7 +21,7 @@
     "@angular/forms": "^18.0.0",
     "@angular/material": "^18.0.1",
     "@angular/platform-browser": "^18.0.0",
-    "@angular/platform-browser-dynamic": "^18.0.0",
+    "@angular/platform-browser-dynamic": "^18.0.2",
     "@angular/router": "^18.0.0",
     "@googlemaps/polyline-codec": "^1.0.28",
     "angular-split": "^15.0.0",
