@@ -126,8 +126,11 @@ export default {
             {
                 icon: 'github', link: 'https://github.com/cevi/automatic_walk-time_tables'
             }
-        ]
+        ],
 
+        search: {
+            provider: 'local'
+        }
     }
 
 }
