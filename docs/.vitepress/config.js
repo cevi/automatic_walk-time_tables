@@ -61,7 +61,7 @@ export default {
                         },
                         {
                             text: 'API Endpoints', link: '/documentation/backend/API_endpoints'
-                        }, ,
+                        },
                         {
                             text: 'DEPRECATED! Command Line Arguments',
                             link: '/documentation/backend/command_line_arguments'
