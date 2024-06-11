@@ -24,7 +24,7 @@ export class MapAnimatorService {
   public has_route = false;
 
   private readonly _pointer$: BehaviorSubject<LV95_Coordinates | null>;
-
+  private auto_waypoints = true;
 
   constructor() {
 
@@ -81,7 +81,7 @@ export class MapAnimatorService {
 
     combineLatest([this._path$, this._pois$]).pipe(take(1))
       .subscribe(([path, pois]) =>
-        this.create_walk_time_table(path, pois).catch(err => this._error_handler(err))
+        this.create_walk_time_table(path, pois, this.auto_waypoints).catch(err => this._error_handler(err))
       );
 
   }
@@ -230,7 +230,7 @@ export class MapAnimatorService {
   }
 
 
-  async create_walk_time_table(path: LV95_Waypoint[], pois: LV95_Waypoint[]) {
+  async create_walk_time_table(path: LV95_Waypoint[], pois: LV95_Waypoint[], auto_waypoints: boolean) {
 
     console.log('Updating walk time table')
 
@@ -242,6 +242,7 @@ export class MapAnimatorService {
     let data: any = {
       'encoding': 'polyline',
       'route': encode(path.map(p => [p.x, p.y]), 0),
+      'auto_waypoints': auto_waypoints,
       'elevation_data': encode(path.map(p => [p.accumulated_distance * 1_000, p.h]), 0),
       'pois_distance': pois
         .sort((a, b) => a.accumulated_distance - b.accumulated_distance)
@@ -315,7 +316,7 @@ export class MapAnimatorService {
     return new Promise<void>((resolve, reject) =>
       combineLatest([this._path$, this._pois$]).pipe(take(1))
         .subscribe(([path, pois]) =>
-          this.create_walk_time_table(path, pois).then(() => resolve()).catch(err => reject(err))
+          this.create_walk_time_table(path, pois, this.auto_waypoints).then(() => resolve()).catch(err => reject(err))
         )
     );
 
@@ -408,7 +409,7 @@ export class MapAnimatorService {
 
     combineLatest([this._path$, this._pois$, this.way_points$]).pipe(take(1))
       .subscribe(([path, pois, way_points]) =>
-        this.create_walk_time_table(path, pois).catch(err => this._error_handler(err))
+        this.create_walk_time_table(path, pois, this.auto_waypoints).catch(err => this._error_handler(err))
       );
 
   }
@@ -429,4 +430,16 @@ export class MapAnimatorService {
     await this.replace_route(path);
 
   }
+
+  set_automatic_waypoint_selection(val: boolean) {
+    this.auto_waypoints = val;
+
+    // call create_walk_time_table to update the walk time table
+    combineLatest([this._path$, this._pois$, this.way_points$]).pipe(take(1))
+      .subscribe(([path, pois, way_points]) =>
+        this.create_walk_time_table(path, pois, this.auto_waypoints).catch(err => this._error_handler(err))
+      );
+
+  }
+
 }

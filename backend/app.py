@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import functools
 import io
 import json
 import logging
@@ -27,9 +26,9 @@ from automatic_walk_time_tables.path_transformers.heigth_fetcher_transfomer impo
     HeightFetcherTransformer,
 )
 from automatic_walk_time_tables.path_transformers.pois_transfomer import POIsTransformer
+from automatic_walk_time_tables.utils.error import UserException
 from automatic_walk_time_tables.utils.path import Path
 from automatic_walk_time_tables.utils.point import Point_LV95
-from automatic_walk_time_tables.utils.error import UserException
 from server_logging.log_helper import setup_recursive_logger
 from server_logging.status_handler import ExportStateHandler, ExportStateLogger
 
@@ -153,6 +152,10 @@ def create_walk_time_table():
                 number_of_waypoints=21, pois=pois
             )
             selected_way_points = douglas_peucker_transformer.transform(path)
+
+            # we don't use the auto waypoints if the user has disabled them
+            if not options['auto_waypoints']:
+                selected_way_points = pois
 
             end = time.time()
             logger.info(
@@ -370,7 +373,7 @@ def download(uuid):
     state = stateHandler.get_status(uuid)
 
     if (state and state["status"] != GeneratorStatus.SUCCESS) or not os.path.exists(
-        base_path
+            base_path
     ):
         # check if content type is HTML
         if "text/html" in request.headers.get("Accept", ""):

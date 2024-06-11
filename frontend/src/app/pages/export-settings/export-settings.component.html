@@ -23,7 +23,8 @@
           <h3>Route Zeichnen [experimentell]</h3>
           <p>Starte deine Route mit einem Klick auf die Landeskarte.</p>
 
-          <button (click)="finish_drawing()" matStepperNext mat-stroked-button color="primary" [disabled]="!has_valid_path">Zeichnen Abschliessen
+          <button (click)="finish_drawing()" matStepperNext mat-stroked-button color="primary"
+                  [disabled]="!has_valid_path">Zeichnen Abschliessen
           </button>
 
           <h3>oder Route Hochladen</h3>
@@ -71,6 +72,13 @@
         <ng-template matStepLabel>Einstellungen zum Höhenprofil</ng-template>
 
         <app-elevation-profile></app-elevation-profile>
+
+        <br>
+        <mat-slide-toggle formControlName="automatic_waypoint_selection">
+          Automatische Wegpunkte
+        </mat-slide-toggle>
+        <br>
+        <br>
 
         <div class="content-block">
 
