@@ -68,7 +68,6 @@ export class MapAnimatorService {
     this._path$.next([]);
     this._way_points$.next([]);
     this._pois$.next([]);
-    this._map_center$.next(MapAnimatorService.DEFAULT_MAP_CENTER);
   }
 
 
@@ -356,7 +355,6 @@ export class MapAnimatorService {
     const old_WGS84 = transform([path[path.length - 1].x, path[path.length - 1].y], 'EPSG:2056', 'EPSG:4326');
 
     // fetch path from valhalla/valhalla
-    // TODO: use environment variable
     const url = `${MapAnimatorService.VALHALLA_URL}route?json=` + encodeURIComponent(JSON.stringify({
       locations: [
         {lat: old_WGS84[1], lon: old_WGS84[0]},
