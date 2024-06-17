@@ -22,7 +22,7 @@
     "@angular/material": "^18.0.1",
     "@angular/platform-browser": "^18.0.0",
     "@angular/platform-browser-dynamic": "^18.0.0",
-    "@angular/router": "^18.0.0",
+    "@angular/router": "^18.0.3",
     "@googlemaps/polyline-codec": "^1.0.28",
     "angular-split": "^15.0.0",
     "colors": "^1.1.2",
