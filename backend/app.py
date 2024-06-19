@@ -154,7 +154,7 @@ def create_walk_time_table():
             selected_way_points = douglas_peucker_transformer.transform(path)
 
             # we don't use the auto waypoints if the user has disabled them
-            if not options['auto_waypoints']:
+            if not options["auto_waypoints"]:
                 selected_way_points = pois
 
             end = time.time()
@@ -373,7 +373,7 @@ def download(uuid):
     state = stateHandler.get_status(uuid)
 
     if (state and state["status"] != GeneratorStatus.SUCCESS) or not os.path.exists(
-            base_path
+        base_path
     ):
         # check if content type is HTML
         if "text/html" in request.headers.get("Accept", ""):
