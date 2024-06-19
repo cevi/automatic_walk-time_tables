@@ -180,7 +180,7 @@ class DouglasPeuckerTransformer(PathTransformer):
         return final_way_points
 
     def check_poi_replacement(
-            self, b, can_replace, m, original_b, original_m, points_between_poi
+        self, b, can_replace, m, original_b, original_m, points_between_poi
     ):
         for original_point in points_between_poi:
             secant_elev = calc_secant_elevation(m, b, original_point)
@@ -239,7 +239,7 @@ class DouglasPeuckerTransformer(PathTransformer):
         return way_points
 
     def drop_points(
-            self, drv_limit, pts_dropped: Path, way_points: Path, keep_pois: bool
+        self, drv_limit, pts_dropped: Path, way_points: Path, keep_pois: bool
     ):
         """
 
