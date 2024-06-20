@@ -17,5 +17,5 @@ files.
 docker build -t shp_to_osm .
 
 # Now you can convert the SHP files to OSM.PBF using:
-docker run shp_to_osm -v /path/to/shp/files:/data
+docker run -v /path/to/shp/files:/data shp_to_osm
 ```
