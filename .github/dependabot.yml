@@ -20,6 +20,26 @@ updates:
     schedule:
       interval: "weekly"
     target-branch: "dev"
+
+    groups:
+      angular:
+        applies-to: version-updates
+        patterns:
+          - "@angular*"
+        update-types:
+          - "minor"
+          - "patch"
+      minor-and-patch:
+        applies-to: security-updates
+        patterns:
+          - "@angular*"
+        update-types:
+          - "patch"
+          - "minor"
+    ignore:
+      - dependency-name: "@angular*"
+        update-types: [ "version-update:semver-major" ]
+
   - package-ecosystem: "pip"
     directory: "/swiss_TML_api"
     schedule:
