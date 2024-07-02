@@ -51,13 +51,13 @@ Source in `./swiss_TLM_api` folder.
 
 More info can be found here: [Swiss TLM API](../swiss_TLM_api/about.md).
 
-## Routing Engine
+## Route Engine
 
 ::: info
-Source in `./routing_engine` folder.
+Source in `./route_engine` folder.
 :::
 
-More info can be found here: [Routing Engine](../routing_engine/about.md).
+More info can be found here: [Route Engine](../route_engine/about.md).
 
 ## Documentation
 

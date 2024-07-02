@@ -2,6 +2,12 @@
 
 A complete, technical changelog is available at [GitHub](https://github.com/cevi/automatic_walk-time_tables/releases).
 
+## Version 5 - Drawing Paths directly within the Web App
+- Adds basic path drawing functionality to the web app (experimental) (5.0.0)
+- Fixes a bug where the generated Excel file was buggy (5.0.0)
+- Add 1:5'000 scale to the PDF export (5.0.0)
+- Dependency updates
+
 ## Version 4 - Improved Error handling & drop CLI support
 - Add option to delete waypoints (4.1.0)
 - Added waypoints are now more likely to be selected for the Excel export (4.1.0)
