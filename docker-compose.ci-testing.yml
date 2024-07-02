@@ -86,6 +86,12 @@ services:
     logging:
       driver: none
 
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 2s
+      timeout: 1s
+      retries: 60
+
   awt-valhalla:
     build:
       context: ./route_engine
