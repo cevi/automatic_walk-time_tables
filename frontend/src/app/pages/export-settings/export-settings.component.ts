@@ -11,7 +11,6 @@ import {Router} from "@angular/router";
 export class ExportSettingsComponent {
 
   options: UntypedFormGroup;
-  public scale = 10_000;
 
   parse_error: boolean = false;
 
@@ -30,7 +29,7 @@ export class ExportSettingsComponent {
 
     this.options = fb.group({
       'velocity': new UntypedFormControl(4.5),
-      'map_scaling': new UntypedFormControl(25_000),
+      'map_scaling': new UntypedFormControl(15_000),
       'departure_time': new UntypedFormControl((new Date()).toISOString().substring(0, 16)),
       'creator_name': new UntypedFormControl(''),
       'create_map_pdfs': new UntypedFormControl(true),
