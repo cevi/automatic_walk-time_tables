@@ -154,7 +154,9 @@ def create_walk_time_table():
             selected_way_points = douglas_peucker_transformer.transform(path)
 
             # we don't use the auto waypoints if the user has disabled them
-            if not options["auto_waypoints"]:
+            if options["auto_waypoints"]:
+                selected_way_points = douglas_peucker_transformer.transform(path)
+            else:
                 selected_way_points = pois
 
             end = time.time()
