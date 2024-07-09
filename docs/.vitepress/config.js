@@ -61,9 +61,10 @@ export default {
                         },
                         {
                             text: 'API Endpoints', link: '/documentation/backend/API_endpoints'
-                        },,
+                        },
                         {
-                            text: 'DEPRECATED! Command Line Arguments', link: '/documentation/backend/command_line_arguments'
+                            text: 'DEPRECATED! Command Line Arguments',
+                            link: '/documentation/backend/command_line_arguments'
                         }
                     ]
                 },
@@ -94,12 +95,12 @@ export default {
                     ]
                 },
                 {
-                    text: 'Routing Engine',
+                    text: 'Route Engine',
                     collapsible: true,
                     collapsed: true,
                     items: [
                         {
-                            text: 'About', link: '/documentation/routing_engine/about'
+                            text: 'About', link: '/documentation/route_engine/about'
                         },
                     ]
                 },
@@ -114,17 +115,22 @@ export default {
                     ]
                 }
             ],
-            editLink: {
-                pattern: 'https://github.com/cevi/automatic_walk-time_tables/edit/master/docs/:path',
-                text: 'Edit this page on GitHub'
-            },
-            socialLinks: [
-                {
-                    icon: 'github', link: 'https://github.com/cevi/automatic_walk-time_tables'
-                }
-            ]
+
         },
 
+        editLink: {
+            pattern: 'https://github.com/cevi/automatic_walk-time_tables/edit/master/docs/:path',
+            text: 'Edit this page on GitHub'
+        },
+        socialLinks: [
+            {
+                icon: 'github', link: 'https://github.com/cevi/automatic_walk-time_tables'
+            }
+        ],
+
+        search: {
+            provider: 'local'
+        }
     }
 
 }

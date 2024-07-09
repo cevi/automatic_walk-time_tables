@@ -89,6 +89,7 @@ Creates a walk walk-time-table for a given route, i.e. it calculates the POIs an
 ```json
 {
   "encoding": "polyline",
+  "auto_waypoints": false,
   "route": "...",
   "elevation_data": "...",
   "pois_distance": "0, 0, 1352, 1734, 3031"

@@ -16,11 +16,21 @@
 
       <mat-step [hasError]="!route_uploaded" errorMessage="Route fehlt! Bitte Datei hochladen.">
 
-        <ng-template matStepLabel>Route Hochladen</ng-template>
+        <ng-template matStepLabel>Route Hochladen oder Zeichnen</ng-template>
 
         <div class="content-block">
+
+          <h3>Route Zeichnen [experimentell]</h3>
+          <p>Starte deine Route mit einem Klick auf die Landeskarte.</p>
+
+          <button (click)="finish_drawing()" matStepperNext mat-stroked-button color="primary"
+                  [disabled]="!has_valid_path">Zeichnen Abschliessen
+          </button>
+
+          <h3>oder Route Hochladen</h3>
           <p>
-            Lade eine GPX-Datei hoch, diese kannst du aus SchweizMobil oder der Swisstopo-App exportieren. Alternativ
+            Alternativ kannst du eine GPX-Datei hochladen, diese kannst du aus SchweizMobil oder der Swisstopo-App
+            exportieren. Alternativ
             kannst du eine KML-Datei hochladen, die du sie vom Kartenviewer von Swisstopo exportieren kannst.
           </p>
 
@@ -63,6 +73,13 @@
 
         <app-elevation-profile></app-elevation-profile>
 
+        <br>
+        <mat-slide-toggle formControlName="automatic_waypoint_selection">
+          Automatische Wegpunkte
+        </mat-slide-toggle>
+        <br>
+        <br>
+
         <div class="content-block">
 
           <p>
@@ -96,7 +113,7 @@
 
           <div class="slider">
             <label>Kartenmassstab: 1:{{ slider.value }}</label>
-            <mat-slider #scale min="10000" max="100000" step="5000">
+            <mat-slider min="5000" max="100000" step="5000">
               <input matSliderThumb #slider formControlName="map_scaling">
             </mat-slider>
 

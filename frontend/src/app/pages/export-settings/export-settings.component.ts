@@ -1,5 +1,5 @@
-import {Component} from '@angular/core';
-import {UntypedFormBuilder, UntypedFormControl, UntypedFormGroup} from "@angular/forms";
+import {Component, signal} from '@angular/core';
+import {FormControl, UntypedFormBuilder, UntypedFormControl, UntypedFormGroup} from "@angular/forms";
 import {MapAnimatorService} from "../../services/map-animator.service";
 import {Router} from "@angular/router";
 
@@ -11,7 +11,6 @@ import {Router} from "@angular/router";
 export class ExportSettingsComponent {
 
   options: UntypedFormGroup;
-  public scale = 10_000;
 
   parse_error: boolean = false;
 
@@ -20,6 +19,7 @@ export class ExportSettingsComponent {
   public loading = false;
   public error_message: string = '';
   protected readonly location = location;
+  public has_valid_path: boolean = false;
 
   constructor(private mapAnimator: MapAnimatorService, fb: UntypedFormBuilder, private router: Router) {
 
@@ -29,7 +29,7 @@ export class ExportSettingsComponent {
 
     this.options = fb.group({
       'velocity': new UntypedFormControl(4.5),
-      'map_scaling': new UntypedFormControl(25_000),
+      'map_scaling': new UntypedFormControl(15_000),
       'departure_time': new UntypedFormControl((new Date()).toISOString().substring(0, 16)),
       'creator_name': new UntypedFormControl(''),
       'create_map_pdfs': new UntypedFormControl(true),
@@ -39,6 +39,7 @@ export class ExportSettingsComponent {
       'auto_scale': new UntypedFormControl(false),
       'route_name': new UntypedFormControl(''),
       'name_points_in_export': new UntypedFormControl(true),
+      'automatic_waypoint_selection': new FormControl<boolean>(true),
     });
 
 
@@ -53,6 +54,18 @@ export class ExportSettingsComponent {
     } catch (_) {
       // safe to ignore
     }
+
+    // listen to changes of automatic_waypoint_selection
+    this.options.get('automatic_waypoint_selection')?.valueChanges.subscribe((val) => {
+      this.mapAnimator.set_automatic_waypoint_selection(val);
+    });
+
+
+    console.log('Form values:', this.options.value);
+    this.mapAnimator?.path$.subscribe((path) => {
+      this.has_valid_path = path.length !== 0;
+      this.route_uploaded = this.has_valid_path;
+    });
 
 
   }
@@ -104,4 +117,10 @@ export class ExportSettingsComponent {
   }
 
 
+  async finish_drawing() {
+
+    this.route_uploaded = true;
+    await this.mapAnimator.finish_drawing();
+
+  }
 }

@@ -5,13 +5,13 @@ import math
 from typing import List
 
 import numpy as np
-from automatic_walk_time_tables.path_transformers.path_transfomer import PathTransformer
-from automatic_walk_time_tables.utils.path import Path
 
+from automatic_walk_time_tables.path_transformers.path_transfomer import PathTransformer
 from automatic_walk_time_tables.utils.geometry_utils import (
     calc_secant_line,
     calc_secant_elevation,
 )
+from automatic_walk_time_tables.utils.path import Path
 from automatic_walk_time_tables.utils.way_point import WayPoint
 
 
@@ -50,7 +50,7 @@ class DouglasPeuckerTransformer(PathTransformer):
 
         self.pois = pois
 
-    def transform(self, path: Path):
+    def transform(self, path: Path) -> Path:
         way_points = self.douglas_peucker(path.copy())
         self.__logger.debug(
             "%d way point selected for final walk time table",

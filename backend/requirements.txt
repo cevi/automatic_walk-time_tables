@@ -2,10 +2,10 @@ Flask==3.0.3
 gunicorn==22.0.0
 flask-cors==4.0.1
 gpxpy==1.6.2
-numpy==1.26.4
+numpy==2.0.0
 geopy==2.4.1
-openpyxl==3.1.2
-matplotlib==3.9.0
+openpyxl==3.1.5
+matplotlib==3.9.1
 grequests==0.7.0
 pyclustering==0.10.1.2
 polyline==2.0.2

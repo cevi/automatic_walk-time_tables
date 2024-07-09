@@ -4,12 +4,14 @@ import {BehaviorSubject, combineLatest, Observable} from "rxjs";
 import {decode, encode, LatLngTuple} from "@googlemaps/polyline-codec";
 import {environment} from "../../environments/environment";
 import {take} from "rxjs/operators";
+import {transform} from "ol/proj";
 
 @Injectable({
   providedIn: 'root'
 })
 export class MapAnimatorService {
 
+  private static VALHALLA_URL = environment.VALHALLA_URL;
   private static BASE_URL = environment.API_URL;
   private static DEFAULT_MAP_CENTER = {x: 2719675, y: 1216320};
 
@@ -19,9 +21,10 @@ export class MapAnimatorService {
   private readonly _map_center$: BehaviorSubject<LV95_Coordinates>;
   private _error_handler: (err: string) => void;
 
+  public has_route = false;
 
   private readonly _pointer$: BehaviorSubject<LV95_Coordinates | null>;
-
+  private auto_waypoints = true;
 
   constructor() {
 
@@ -61,10 +64,10 @@ export class MapAnimatorService {
 
 
   public clear() {
+    this.has_route = false;
     this._path$.next([]);
     this._way_points$.next([]);
     this._pois$.next([]);
-    this._map_center$.next(MapAnimatorService.DEFAULT_MAP_CENTER);
   }
 
 
@@ -77,7 +80,7 @@ export class MapAnimatorService {
 
     combineLatest([this._path$, this._pois$]).pipe(take(1))
       .subscribe(([path, pois]) =>
-        this.create_walk_time_table(path, pois).catch(err => this._error_handler(err))
+        this.create_walk_time_table(path, pois, this.auto_waypoints).catch(err => this._error_handler(err))
       );
 
   }
@@ -143,26 +146,38 @@ export class MapAnimatorService {
 
   /**
    *
-   * @param route_file
+   * @param route_file_or_array
    * @returns {Promise<string>} the name of the route
    *
    */
-  public async replace_route(route_file: File | undefined): Promise<string> {
+  public async replace_route(route_file_or_array: File | LV95_Coordinates[] | undefined): Promise<string> {
 
-    if (!route_file) {
+    if (!route_file_or_array) {
       this.clear();
+      this.has_route = false;
       throw new Error('No route file selected');
     }
 
+    this.has_route = true;
+
+
     // minify XML data
-    let xml_string = (await route_file.text()).toString()
-    xml_string = xml_string.replace(/>\s*/g, '>');  // Remove space after >
-    xml_string = xml_string.replace(/\s*</g, '<');  // Remove space before <
+    let xml_string;
+    let file_type;
+    if (route_file_or_array instanceof File) {
+      xml_string = (await route_file_or_array.text()).toString()
+      xml_string = xml_string.replace(/>\s*/g, '>');  // Remove space after >
+      xml_string = xml_string.replace(/\s*</g, '<');  // Remove space before <
+      file_type = route_file_or_array.name.split('.').pop();
+    } else {
+      xml_string = route_file_or_array.map(p => `${p.x},${p.y}`).join(';');
+      file_type = 'array';
+    }
 
     let formData = new FormData();
     formData.append("options", JSON.stringify({
       'encoding': 'polyline',
-      'file_type': route_file.name.split('.').pop()
+      'file_type': file_type
     }));
     formData.append("file_content", xml_string);
 
@@ -214,7 +229,7 @@ export class MapAnimatorService {
   }
 
 
-  async create_walk_time_table(path: LV95_Waypoint[], pois: LV95_Waypoint[]) {
+  async create_walk_time_table(path: LV95_Waypoint[], pois: LV95_Waypoint[], auto_waypoints: boolean) {
 
     console.log('Updating walk time table')
 
@@ -226,6 +241,7 @@ export class MapAnimatorService {
     let data: any = {
       'encoding': 'polyline',
       'route': encode(path.map(p => [p.x, p.y]), 0),
+      'auto_waypoints': auto_waypoints,
       'elevation_data': encode(path.map(p => [p.accumulated_distance * 1_000, p.h]), 0),
       'pois_distance': pois
         .sort((a, b) => a.accumulated_distance - b.accumulated_distance)
@@ -299,9 +315,73 @@ export class MapAnimatorService {
     return new Promise<void>((resolve, reject) =>
       combineLatest([this._path$, this._pois$]).pipe(take(1))
         .subscribe(([path, pois]) =>
-          this.create_walk_time_table(path, pois).then(() => resolve()).catch(err => reject(err))
+          this.create_walk_time_table(path, pois, this.auto_waypoints).then(() => resolve()).catch(err => reject(err))
         )
     );
+
+  }
+
+  public async add_way_point(point: LV95_Coordinates) {
+
+    const WGS84 = transform([point.x, point.y], 'EPSG:2056', 'EPSG:4326');
+    console.log('Adding way point', point, WGS84);
+
+    const path = this._path$.getValue();
+
+    const pois = this._pois$.getValue();
+    pois.push({
+      'x': point.x,
+      'y': point.y,
+      'h': 0,
+      'accumulated_distance': 0,
+      'name': ''
+    });
+    this._pois$.next(pois);
+
+    if (path.length == 0) {
+
+      path.push({
+        'x': point.x,
+        'y': point.y,
+        'h': 0,
+        'accumulated_distance': 0,
+      });
+
+      this._path$.next(path);
+      return;
+
+    }
+
+    const old_WGS84 = transform([path[path.length - 1].x, path[path.length - 1].y], 'EPSG:2056', 'EPSG:4326');
+
+    // fetch path from valhalla/valhalla
+    const url = `${MapAnimatorService.VALHALLA_URL}route?json=` + encodeURIComponent(JSON.stringify({
+      locations: [
+        {lat: old_WGS84[1], lon: old_WGS84[0]},
+        {lat: WGS84[1], lon: WGS84[0]}
+      ],
+      costing: 'pedestrian',
+      directions_type: 'none',
+      radius: 25
+    }));
+
+    // fetch path from valhalla/valhalla at localhost:8002
+    const data = await fetch(url, {method: 'POST'}).then(response => response.json());
+    const shape: string = data.trip.legs[0].shape;
+
+    const decoded_path = decode(shape, 6).map(p =>
+      transform([p[1], p[0]], 'EPSG:4326', 'EPSG:2056'));
+
+    decoded_path.forEach(p => {
+      path.push({
+        'x': p[0],
+        'y': p[1],
+        'h': 0,
+        'accumulated_distance': 0,
+      });
+    });
+
+    this._path$.next(path);
 
   }
 
@@ -327,10 +407,37 @@ export class MapAnimatorService {
 
     combineLatest([this._path$, this._pois$, this.way_points$]).pipe(take(1))
       .subscribe(([path, pois, way_points]) =>
-        this.create_walk_time_table(path, pois).catch(err => this._error_handler(err))
+        this.create_walk_time_table(path, pois, this.auto_waypoints).catch(err => this._error_handler(err))
       );
 
   }
 
+
+  /**
+   * Finish drawing the route, does the same as the replace_route function but without the file
+   */
+  async finish_drawing() {
+
+    this.has_route = true;
+
+    // clear pois: as we used them to draw the route
+    this._pois$.next([]);
+
+    const path = this._path$.getValue().map(p =>
+      ({x: p.x, y: p.y} as LV95_Coordinates));
+    await this.replace_route(path);
+
+  }
+
+  set_automatic_waypoint_selection(val: boolean) {
+    this.auto_waypoints = val;
+
+    // call create_walk_time_table to update the walk time table
+    combineLatest([this._path$, this._pois$, this.way_points$]).pipe(take(1))
+      .subscribe(([path, pois, way_points]) =>
+        this.create_walk_time_table(path, pois, this.auto_waypoints).catch(err => this._error_handler(err))
+      );
+
+  }
 
 }
