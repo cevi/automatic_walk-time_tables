@@ -9,4 +9,4 @@ matplotlib==3.9.1
 grequests==0.7.0
 pyclustering==0.10.1.2
 polyline==2.0.2
-pypdf==4.3.0
+pypdf==4.3.1
