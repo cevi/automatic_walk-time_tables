@@ -1,6 +1,6 @@
 {
   "name": "automatic-walk-time-tables",
-  "version": "5.0.2",
+  "version": "5.0.3",
   "scripts": {
     "ng": "ng",
     "start": "tsc set-env.ts && BACKEND_DOMAIN=http://localhost:5000 node set-env.js && angular-build-info && ng serve",
