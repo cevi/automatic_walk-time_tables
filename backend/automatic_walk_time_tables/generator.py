@@ -49,6 +49,9 @@ class AutomatedWalkTableGenerator:
         if manual_mode:
             return
 
+        # TODO: drop the next few lines, as we are only supporting calling this Generator from within the backend app.
+        # and there, we hardcoded manual_mode = True
+
         if "file_type" not in options or options["file_type"] is None:
             raise Exception("No file ending provided.")
 
