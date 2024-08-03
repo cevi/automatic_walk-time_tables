@@ -124,7 +124,7 @@ def create_walk_time_table():
                 mimetype="application/json",
             )
 
-        # Decode options['route'] form polyline
+        # Decode options['route'] for polyline
         if "encoding" in options and options["encoding"] == "polyline":
             start = time.time()
 
@@ -295,7 +295,8 @@ def create_export(options, uuid):
         options["output_directory"] = output_directory
 
         options["settings"]["create_elevation_profile"] = True
-        options["settings"]["name_points_in_export"] = True
+        if "name_points_in_export" not in options["settings"]:
+            options["settings"]["name_points_in_export"] = True
 
         logger.info("OPTIONS:" + str(options))
 
