@@ -29,9 +29,15 @@ class MapNumberIndex:
             return
 
         # try to load the index
-        if not os.path.isfile(self.index_file_path + ".dat"):
+        try:
+            if not os.path.isfile(self.index_file_path + ".dat"):
+                self.__download_map_numbers()
+            self.index = RTreeIndex(self.index_file_path)
+        except:
+            # if anything crashes somehow, redownload and recreate the index
+            logger.info("Map numbers index was corrupt - rebuilding.")
             self.__download_map_numbers()
-        self.index = RTreeIndex(self.index_file_path)
+            self.index = RTreeIndex(self.index_file_path)
 
         end = time.time()
         logger.info("Map numbers index loaded (after {}s)".format(str(end - start)))
