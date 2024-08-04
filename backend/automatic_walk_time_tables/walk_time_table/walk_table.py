@@ -12,6 +12,7 @@ from automatic_walk_time_tables.utils.point import Point_LV03
 
 logger = logging.getLogger(__name__)
 
+
 def create_walk_table(
     time_stamp_iso,
     speed,
