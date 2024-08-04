@@ -78,7 +78,7 @@ export function export_with_interaction(file) {
     cy.wait(500)
 
     cy.get('#goto-step-3').click();
-    cy.get('[formControlName="create_map_pdfs"]').click(); // no map
+    cy.get('[formControlName="auto_scale"]').click(); // auto scale of map
 
     cy.get('#goto-step-4').click();
     cy.get('#goto-step-5').click();

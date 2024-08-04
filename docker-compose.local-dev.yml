@@ -1,4 +1,3 @@
-version: "3.9"
 
 # Empty as this mode is the default and already specified in docker-compose.yml
 services: {}

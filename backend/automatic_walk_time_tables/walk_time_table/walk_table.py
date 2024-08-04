@@ -5,94 +5,12 @@ from math import log
 from multiprocessing import Process
 
 import openpyxl
-from matplotlib import pyplot as plt
 
 from automatic_walk_time_tables.utils import path, error
 from automatic_walk_time_tables.utils.path import Path
 from automatic_walk_time_tables.utils.point import Point_LV03
 
 logger = logging.getLogger(__name__)
-
-
-def plot_elevation_profile(
-    path_: path.Path,
-    way_points: path.Path,
-    pois: path.Path,
-    file_name: str,
-    legend_position: str,
-):
-    """
-
-    Plots the elevation profile of the path contained in the GPX-file. In addition, the
-    plot contains the approximated elevation profile by the way_points.
-
-    Saves the plot as an image in the ./output directory as an image called {{file_name}}<.png
-
-    """
-
-    p = Process(
-        target=_plot_elevation_profile,
-        args=(file_name, legend_position, path_, pois, way_points),
-    )
-    p.start()
-    p.join()
-
-
-def _plot_elevation_profile(file_name, legend_position, path_, pois, way_points):
-    # clear the plot, plot heights of exported data from SchweizMobil
-    plt.clf()
-    distances = [p.accumulated_distance for p in path_.way_points]
-    heights = [p.point.h for p in path_.way_points]
-    plt.plot([d / 1_000.0 for d in distances], heights, label="Wanderweg", zorder=1)
-    # resize plot area
-    additional_space = log(max(heights) - min(heights)) * 25
-    plt.ylim(ymax=max(heights) + additional_space, ymin=min(heights) - additional_space)
-    # add way_points to plot
-    plt.plot(
-        [p.accumulated_distance / 1_000.0 for p in way_points.way_points],
-        [p.point.h for p in way_points.way_points],
-        label="Marschzeittabelle",
-        zorder=2,
-    )
-    plt.scatter(
-        [p.accumulated_distance / 1_000.0 for p in pois.way_points],
-        [p.point.h for p in pois.way_points],
-        c="lightblue",
-        zorder=1,
-        label="Points of Interest",
-    )
-    plt.scatter(
-        [p.accumulated_distance / 1_000.0 for p in way_points.way_points],
-        [p.point.h for p in way_points.way_points],
-        c="orange",
-        s=15,
-        zorder=4,
-        label="Wegpunkte",
-    )
-    # Check difference between the length of the original path and the length of the way points
-    logger.info(
-        "way_points = {} | distances = {}".format(
-            way_points.way_points[-1].accumulated_distance, distances[-1]
-        )
-    )
-    assert (
-        abs(way_points.way_points[-1].accumulated_distance - distances[-1]) <= 250
-    )  # max diff 250 meters
-    # labels
-    plt.ylabel("Höhe [m ü. M.]")
-    plt.xlabel("Distanz [km]")
-    plt.title("Höhenprofil", fontsize=20)
-    plt.legend(loc=legend_position, frameon=False)
-    # Grid
-    plt.grid(color="gray", linestyle="dashed", linewidth=0.5)
-    # Check if output directory exists, if not, create it.
-    if not os.path.exists("output"):
-        os.mkdir("output")
-    # show the plot and save image
-    plt.savefig(file_name + "_elevation_profile.png", dpi=750)
-    logger.info(
-        "Elevation profile plot saved as " + file_name + "_elevation_profile.png"
-    )
 
 
 def create_walk_table(

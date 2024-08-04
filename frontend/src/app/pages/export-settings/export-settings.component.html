@@ -80,22 +80,6 @@
         <br>
         <br>
 
-        <div class="content-block">
-
-          <p>
-            Hier kannst du einstellen, wo die Legende im Höhenprofil angezeigt wird.
-            Das Höhenprofil wird deinem Export als Bild beigefügt.
-          </p>
-
-          <mat-select appearance="fill" placeholder="Position der Legende" formControlName="legend_position">
-            <mat-option value="upper left">Oben Links</mat-option>
-            <mat-option value="lower left">Unten Links</mat-option>
-            <mat-option value="upper right">Oben Rechts</mat-option>
-            <mat-option value="lower right">Unten Rechts</mat-option>
-          </mat-select>
-
-        </div>
-
         <button mat-stroked-button color="primary" matStepperNext id="goto-step-3">Weiter</button>
 
       </mat-step>
@@ -105,8 +89,6 @@
         <ng-template matStepLabel>Einstellungen zur Karte</ng-template>
 
         <div class="content-block">
-          <mat-slide-toggle formControlName="create_map_pdfs">Karte als PDF beifügen</mat-slide-toggle>
-          <br>
           <mat-slide-toggle formControlName="auto_scale">Massstab automatisch wählen</mat-slide-toggle>
           <br>
           <mat-slide-toggle formControlName="name_points_in_export">Punkte beschriften</mat-slide-toggle>
@@ -151,8 +133,6 @@
 
 
         <div class="content-block">
-          <mat-slide-toggle formControlName="create_excel">Marschzeittabelle als Excel beifügen</mat-slide-toggle>
-
           <div class="slider">
             <label>Geschwindigkeit: {{ velocity.value }} Lkm/h</label>
             <mat-slider min="0.5" max="20" step="0.25">
