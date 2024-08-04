@@ -324,8 +324,6 @@ class MapCreator:
 
         qr_code_string = self.__build_qr_code_string()
 
-        self.logger.info("QR_CODE: " + qr_code_string)
-
         query_json = {
             "layout": "A4 landscape",
             "outputFormat": "pdf",
