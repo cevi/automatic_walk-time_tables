@@ -20,6 +20,8 @@ export class ExportSettingsComponent {
   public error_message: string = '';
   protected readonly location = location;
   public has_valid_path: boolean = false;
+  public excel_checked: boolean = false;
+  public map_pdfs_checked: boolean = false;
 
   constructor(private mapAnimator: MapAnimatorService, fb: UntypedFormBuilder, private router: Router) {
 
@@ -34,7 +36,6 @@ export class ExportSettingsComponent {
       'creator_name': new UntypedFormControl(''),
       'create_map_pdfs': new UntypedFormControl(true),
       'create_excel': new UntypedFormControl(true),
-      'legend_position': new UntypedFormControl('lower right'),
       'map_layers': new UntypedFormControl('ch.swisstopo.pixelkarte-farbe'),
       'auto_scale': new UntypedFormControl(false),
       'route_name': new UntypedFormControl(''),

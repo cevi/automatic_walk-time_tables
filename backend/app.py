@@ -294,7 +294,6 @@ def create_export(options, uuid):
         options["print_api_base_url"] = os.environ["PRINT_API_BASE_URL"]
         options["output_directory"] = output_directory
 
-        options["settings"]["create_elevation_profile"] = True
         if "name_points_in_export" not in options["settings"]:
             options["settings"]["name_points_in_export"] = True
 

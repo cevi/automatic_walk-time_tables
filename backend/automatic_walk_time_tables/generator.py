@@ -19,10 +19,7 @@ from automatic_walk_time_tables.path_transformers.naming_transformer import (
 from automatic_walk_time_tables.path_transformers.pois_transfomer import POIsTransformer
 from automatic_walk_time_tables.utils import path
 from automatic_walk_time_tables.utils.file_parser import GeoFileParser
-from automatic_walk_time_tables.walk_time_table.walk_table import (
-    plot_elevation_profile,
-    create_walk_table,
-)
+from automatic_walk_time_tables.walk_time_table.walk_table import create_walk_table
 from server_logging.status_handler import ExportStateLogger
 from automatic_walk_time_tables.utils.error import UserException
 
@@ -93,32 +90,8 @@ class AutomatedWalkTableGenerator:
             },
         )
 
-        # name points of walk-time table
-        if (
-            self.options["settings"]["create_excel"]
-            or self.options["settings"]["create_map_pdfs"]
-        ):
-            naming_fetcher = NamingTransformer()
-            self.__way_points = naming_fetcher.transform(self.__way_points)
-
-        if self.options["settings"]["create_elevation_profile"]:
-            self.__logger.debug(
-                "Boolean indicates that we should create the elevation profile."
-            )
-            self.__log_runtime(
-                plot_elevation_profile,
-                "Benötigte Zeit zum Zeichnen des Höhenprofils",
-                self.__path,
-                self.__way_points,
-                self.__pois,
-                file_name=name,
-                legend_position=self.options["settings"]["legend_position"],
-            )
-            self.__logger.log(
-                ExportStateLogger.REQUESTABLE,
-                "Höhenprofil wurde erstellt.",
-                {"uuid": self.uuid, "status": GeneratorStatus.RUNNING},
-            )
+        naming_fetcher = NamingTransformer()
+        self.__way_points = naming_fetcher.transform(self.__way_points)
 
         if self.options["settings"]["create_excel"]:
             # We use fetch map numbers only for the selected way points,
