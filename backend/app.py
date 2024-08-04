@@ -11,6 +11,7 @@ import time
 import uuid as uuid_factory
 import zipfile
 from threading import Thread
+import requests
 
 import polyline
 from flask import Flask, request, send_file, redirect
@@ -299,6 +300,29 @@ def create_export(options, uuid):
 
         logger.info("OPTIONS:" + str(options))
 
+        # store the current data in the mongo database
+        # TODO: store path (not JSON serializable)
+        store_dict = {
+            "uuid": uuid,
+            #"path": path,
+            #"waypoints": way_points,
+            #"pois": pois,
+            "options": options,
+        }
+        r = requests.post(os.environ["STORE_API_URL"] + "/store", json=store_dict)
+        if r.status_code == 200:
+            logger.log(
+                ExportStateLogger.REQUESTABLE,
+                "Daten abgespeichert.",
+                {"uuid": uuid, "status": GeneratorStatus.RUNNING},
+            )
+        else:
+            logger.log(
+                ExportStateLogger.REQUESTABLE,
+                "Daten nicht abgespeichert.",
+                {"uuid": uuid, "status": GeneratorStatus.ERROR},
+            )
+
         generator = AutomatedWalkTableGenerator(uuid, options)
         generator.set_data(path, way_points, pois)
         generator.run()
@@ -381,6 +405,8 @@ def download(uuid):
             frontend_url = os.environ["FRONTEND_DOMAIN"]
             return redirect(frontend_url, code=302)
 
+        # TODO: check if this UUID is stored and therefore we can recreate the export
+
         return app.response_class(
             response=json.dumps(
                 {
@@ -407,6 +433,13 @@ def download(uuid):
         as_attachment=True,
         download_name="Download.zip",
     )
+
+
+@app.route("/gpx/<uuid>")
+def generate_gpx(uuid):
+    # generate the gpx for the given UUID using the data stored in the mongo database
+    # and create a gpx file out of it and send it as content.
+    pass
 
 
 if __name__ == "__main__":

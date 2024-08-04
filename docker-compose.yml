@@ -116,6 +116,24 @@ services:
     env_file:
       - .env.local-dev
 
+  awt-store-api:
+    build:
+      context: ./store_api
+      dockerfile: local-dev.Dockerfile
+    volumes:
+      - ./store_api:/app
+    ports:
+      - "6000:6000"
+    env_file:
+      - .env.local-dev
+  
+  awt-mongodb:
+    image: mongo:latest
+    restart: always
+    env_file:
+      - .env.local-dev
+
+
 volumes:
   vitepress_dist: {}
   node_modules: {}
