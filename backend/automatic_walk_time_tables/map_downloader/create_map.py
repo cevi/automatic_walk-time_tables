@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import time
+import base64
 from pathlib import Path
 from typing import List
 
@@ -321,11 +322,14 @@ class MapCreator:
             point_layer = self.create_point_json(lv95, point, "#00BFFF", pointRadius=7)
             point_layers.append(point_layer)
 
+        qr_code_string = self.__build_qr_code_string()
+
         query_json = {
             "layout": "A4 landscape",
             "outputFormat": "pdf",
             "attributes": {
                 "scale": "Massstab: 1:" + f"{map_scaling:,}".replace(",", "'"),
+                "qr_code": qr_code_string,
                 "map": {
                     "center": center,
                     "scale": map_scaling,
@@ -339,6 +343,27 @@ class MapCreator:
         }
 
         return query_json
+
+    def __build_qr_code_string(self):
+        # for now, use a static URL
+        # TODO: use swisstopo app url string (base64 encoded path of gpx stored on a server (or generated dynamically)
+        r = requests.post(
+            "https://backend.qr.cevi.tools/png",
+            json={"text": "https://map.cevi.tools/"},
+        )
+        if r.status_code == 200:
+            qr_code_bytes = r.content
+
+            # Convert the byte string to a base64-encoded string
+            base64_encoded = base64.b64encode(qr_code_bytes).decode("utf-8")
+
+            # Add the appropriate prefix for embedding in a webpage as a data URL
+            data_url = f"data:image/png;base64,{base64_encoded}"
+
+            # Print or return the data URL
+            return data_url
+        else:
+            return "" # TODO: does this work?
 
     def create_point_json(
         self, lv95, point, color="#FF0000", pointRadius=5, label=False
