@@ -8,7 +8,8 @@ A complete, technical changelog is available at [GitHub](https://github.com/cevi
 - Add 1:5'000 scale to the PDF export (5.0.0)
 - Dependency updates
 - Bug fixes
-- Do not create height profile anymore (5.0.5)
+- Do not create height profile anymore (5.1.0)
+- Always create map pdf and excel (5.1.0)
 
 ## Version 4 - Improved Error handling & drop CLI support
 - Add option to delete waypoints (4.1.0)

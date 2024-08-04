@@ -93,63 +93,57 @@ class AutomatedWalkTableGenerator:
         naming_fetcher = NamingTransformer()
         self.__way_points = naming_fetcher.transform(self.__way_points)
 
-        if self.options["settings"]["create_excel"]:
-            # We use fetch map numbers only for the selected way points,
-            # this is much faster that for every point in the original path. As the swiss_TML_api uses a tolerance
-            # of 2_000m anyway the chance to miss a map number is very small.
+        # We use fetch map numbers only for the selected way points,
+        # this is much faster that for every point in the original path. As the swiss_TML_api uses a tolerance
+        # of 2_000m anyway the chance to miss a map number is very small.
 
-            map_numbers = self.__log_runtime(
-                fetch_map_numbers,
-                "Benötigte Zeit um die Karten-Nummern zu berechnen",
-                self.__way_points,
-            )
-            self.__logger.debug("Input File Name: %s", name)
-            self.__logger.debug("Map Numbers: %s", map_numbers)
+        map_numbers = self.__log_runtime(
+            fetch_map_numbers,
+            "Benötigte Zeit um die Karten-Nummern zu berechnen",
+            self.__way_points,
+        )
+        self.__logger.debug("Input File Name: %s", name)
+        self.__logger.debug("Map Numbers: %s", map_numbers)
 
-            self.__logger.debug(
-                "Boolean indicates that we should create walk-time table as Excel file"
-            )
-            self.__log_runtime(
-                create_walk_table,
-                "Benötigte Zeit zum Erstellen der Excel-Tabelle",
-                self.options["settings"]["departure_time"],
-                self.options["settings"]["velocity"],
-                self.__way_points,
-                route_name=gpx_route_name,
-                file_name=name,
-                creator_name=self.options["settings"]["creator_name"],
-                map_numbers=map_numbers,
-            )
+        self.__log_runtime(
+            create_walk_table,
+            "Benötigte Zeit zum Erstellen der Excel-Tabelle",
+            self.options["settings"]["departure_time"],
+            self.options["settings"]["velocity"],
+            self.__way_points,
+            route_name=gpx_route_name,
+            file_name=name,
+            creator_name=self.options["settings"]["creator_name"],
+            map_numbers=map_numbers,
+        )
 
-            self.__logger.log(
-                ExportStateLogger.REQUESTABLE,
-                "Marschzeittabelle wurde erstellt.",
-                {"uuid": self.uuid, "status": GeneratorStatus.RUNNING},
-            )
+        self.__logger.log(
+            ExportStateLogger.REQUESTABLE,
+            "Marschzeittabelle wurde erstellt.",
+            {"uuid": self.uuid, "status": GeneratorStatus.RUNNING},
+        )
 
-        if self.options["settings"]["create_map_pdfs"]:
-            self.__logger.debug("Boolean indicates that we should create map PDFs.")
-            self.__logger.log(
-                ExportStateLogger.REQUESTABLE,
-                "Karten werden erstellt...",
-                {"uuid": self.uuid, "status": GeneratorStatus.RUNNING},
-            )
-            map_creator = MapCreator(self.__path, self.uuid, self.options["settings"])
-            self.__log_runtime(
-                map_creator.plot_route_on_map,
-                "Benötigte Zeit zum Erstellen der Karten-PDFs",
-                self.__way_points,
-                pois=self.__pois,
-                file_name=name,
-                map_scaling=self.options["settings"]["map_scaling"],
-                map_layers=list(
-                    map(
-                        lambda layer: layer.strip(),
-                        self.options["settings"]["map_layers"].split(","),
-                    )
-                ),
-                print_api_base_url=self.options["print_api_base_url"],
-            )
+        self.__logger.log(
+            ExportStateLogger.REQUESTABLE,
+            "Karten werden erstellt...",
+            {"uuid": self.uuid, "status": GeneratorStatus.RUNNING},
+        )
+        map_creator = MapCreator(self.__path, self.uuid, self.options["settings"])
+        self.__log_runtime(
+            map_creator.plot_route_on_map,
+            "Benötigte Zeit zum Erstellen der Karten-PDFs",
+            self.__way_points,
+            pois=self.__pois,
+            file_name=name,
+            map_scaling=self.options["settings"]["map_scaling"],
+            map_layers=list(
+                map(
+                    lambda layer: layer.strip(),
+                    self.options["settings"]["map_layers"].split(","),
+                )
+            ),
+            print_api_base_url=self.options["print_api_base_url"],
+        )
 
     def __log_runtime(
         self,
