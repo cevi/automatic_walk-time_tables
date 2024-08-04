@@ -363,7 +363,7 @@ class MapCreator:
             # Print or return the data URL
             return data_url
         else:
-            return "" # TODO: does this work?
+            return ""  # TODO: does this work?
 
     def create_point_json(
         self, lv95, point, color="#FF0000", pointRadius=5, label=False
