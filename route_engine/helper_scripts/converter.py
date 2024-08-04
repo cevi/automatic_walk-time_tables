@@ -2,7 +2,6 @@ import ogr2osm
 
 
 class SwissTLMConverter(ogr2osm.TranslationBase):
-
     def translateName(self, name):
         return name.strip()
 

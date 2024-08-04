@@ -300,7 +300,7 @@ def create_export(options, uuid):
 
         logger.info("OPTIONS:" + str(options))
 
-        generator = AutomatedWalkTableGenerator(uuid, options, manual_mode=True)
+        generator = AutomatedWalkTableGenerator(uuid, options)
         generator.set_data(path, way_points, pois)
         generator.run()
 

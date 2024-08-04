@@ -28,9 +28,7 @@ from automatic_walk_time_tables.utils.error import UserException
 
 
 class AutomatedWalkTableGenerator:
-    def __init__(
-        self, uuid: str, options: dict, file_content: str = "", manual_mode=False
-    ):
+    def __init__(self, uuid: str, options: dict):
         self.__path: path.Path | None = None
         self.__pois: path.Path | None = None
         self.__way_points: path.Path | None = None
@@ -45,24 +43,6 @@ class AutomatedWalkTableGenerator:
         )
         pathlib.Path(self.__output_directory).mkdir(parents=True, exist_ok=True)
 
-        # Do nothing in manual mode
-        if manual_mode:
-            return
-
-        # TODO: drop the next few lines, as we are only supporting calling this Generator from within the backend app.
-        # and there, we hardcoded manual_mode = True
-
-        if "file_type" not in options or options["file_type"] is None:
-            raise Exception("No file ending provided.")
-
-        if file_content is None:
-            raise Exception("No GPX/KML file provided with the POST request.")
-
-        geo_file_parser = GeoFileParser(fetch_elevation=False)
-        self.__path = geo_file_parser.parse(
-            file_content=file_content, extension=options["file_type"]
-        )
-
     def run(self):
         self.__log_runtime(self.__create_files, "Benötigte Zeit für Export")
 
@@ -74,12 +54,12 @@ class AutomatedWalkTableGenerator:
         )
 
     def __create_files(self):
-        gpx_rout_name = self.__path.route_name
+        gpx_route_name = self.__path.route_name
 
         name = (
             self.__output_directory + "Route"
-            if gpx_rout_name == ""
-            else self.__output_directory + gpx_rout_name
+            if gpx_route_name == ""
+            else self.__output_directory + gpx_route_name
         )
 
         # calc POIs for the path
@@ -162,7 +142,7 @@ class AutomatedWalkTableGenerator:
                 self.options["settings"]["departure_time"],
                 self.options["settings"]["velocity"],
                 self.__way_points,
-                route_name=gpx_rout_name,
+                route_name=gpx_route_name,
                 file_name=name,
                 creator_name=self.options["settings"]["creator_name"],
                 map_numbers=map_numbers,
