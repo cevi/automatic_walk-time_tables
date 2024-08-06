@@ -80,6 +80,22 @@
         <br>
         <br>
 
+        <div class="content-block">
+
+          <p>
+            Hier kannst du einstellen, wo die Legende im Höhenprofil angezeigt wird.
+            Das Höhenprofil wird deinem Export als Bild beigefügt.
+          </p>
+
+          <mat-select appearance="fill" placeholder="Position der Legende" formControlName="legend_position">
+            <mat-option value="upper left">Oben Links</mat-option>
+            <mat-option value="lower left">Unten Links</mat-option>
+            <mat-option value="upper right">Oben Rechts</mat-option>
+            <mat-option value="lower right">Unten Rechts</mat-option>
+          </mat-select>
+
+        </div>
+
         <button mat-stroked-button color="primary" matStepperNext id="goto-step-3">Weiter</button>
 
       </mat-step>
