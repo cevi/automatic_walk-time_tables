@@ -304,9 +304,9 @@ def create_export(options, uuid):
         # TODO: store path (not JSON serializable)
         store_dict = {
             "uuid": uuid,
-            #"path": path,
-            #"waypoints": way_points,
-            #"pois": pois,
+            # "path": path,
+            # "waypoints": way_points,
+            # "pois": pois,
             "options": options,
         }
         r = requests.post(os.environ["STORE_API_URL"] + "/store", json=store_dict)

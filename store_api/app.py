@@ -15,9 +15,9 @@ client = MongoClient("awt-mongodb", 27017, username="admin", password="pass")
 db = client["awt"]
 collection = db["store"]
 
-class StoreData(pydantic.BaseModel): # TODO
-    uuid: pydantic.UUID4
 
+class StoreData(pydantic.BaseModel):  # TODO
+    uuid: pydantic.UUID4
 
 
 @app.route("/store", methods=["POST"])
@@ -25,14 +25,13 @@ def store_data():
     data = request.json
     # generate current timestamp and store as well
     logger.info("/store called with " + str(data))
-    
+
     collection.insert_one(data)
 
     return "OK"
-    
 
 
-class RetrieveData(pydantic.BaseModel): # TODO
+class RetrieveData(pydantic.BaseModel):  # TODO
     uuid: pydantic.UUID4
 
 
