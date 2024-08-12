@@ -34,7 +34,7 @@
     "resize-observer-polyfill": "^1.5.1",
     "rxjs": "~7.8.1",
     "tslib": "^2.6.3",
-    "zone.js": "~0.14.8"
+    "zone.js": "~0.14.10"
   },
   "devDependencies": {
     "@angular/cli": "^18.1.4",
