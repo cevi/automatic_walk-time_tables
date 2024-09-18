@@ -298,15 +298,9 @@ def create_export(options, uuid):
         if "name_points_in_export" not in options["settings"]:
             options["settings"]["name_points_in_export"] = True
 
-        logger.info("OPTIONS:" + str(options))
-
         # store the current data in the mongo database
-        # TODO: store path (not JSON serializable)
         store_dict = {
             "uuid": uuid,
-            # "path": path,
-            # "waypoints": way_points,
-            # "pois": pois,
             "options": options,
         }
         r = requests.post(os.environ["STORE_API_URL"] + "/store", json=store_dict)
@@ -439,7 +433,29 @@ def download(uuid):
 def generate_gpx(uuid):
     # generate the gpx for the given UUID using the data stored in the mongo database
     # and create a gpx file out of it and send it as content.
-    pass
+
+    r = requests.post(os.environ["STORE_API_URL"] + "/retrieve", json={"uuid": uuid})
+    if r.status_code == 200:
+        data = r.json()
+        options = data["options"]
+        thread = Thread(target=create_export, kwargs={"options": options, "uuid": str(uuid)})
+        thread.start()
+
+        response = app.response_class(
+            response=json.dumps({"status": GeneratorStatus.RUNNING, "uuid": str(uuid)}),
+            status=200,
+            mimetype="application/json",
+        )
+    else:
+        return app.response_class(response=json.dumps({
+            "status": GeneratorStatus.ERROR,
+            "message": "Die angeforderte GPX Datei ist nicht verfügbar."
+        }),
+        status=404,
+        mimetype="application/json",
+    )
+    
+    # use path_from_json to convert the loaded JSON from the database back into the path
 
 
 if __name__ == "__main__":

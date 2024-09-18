@@ -38,5 +38,8 @@ class RetrieveData(pydantic.BaseModel):  # TODO
 @app.route("/retrieve", methods=["POST"])
 def retrieve_data():
     data = request.json
+    db_data = collection.find_one(data)
+    route = {}
+    route["options"] = db_data["options"]
     logger.info("/retrieve called with " + str(data))
-    return "OK"
+    return route
