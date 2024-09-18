@@ -429,11 +429,8 @@ def download(uuid):
     )
 
 
-@app.route("/gpx/<uuid>")
-def generate_gpx(uuid):
-    # generate the gpx for the given UUID using the data stored in the mongo database
-    # and create a gpx file out of it and send it as content.
-
+@app.route("/retrieve/<uuid>")
+def retrieve_route(uuid):
     r = requests.post(os.environ["STORE_API_URL"] + "/retrieve", json={"uuid": uuid})
     if r.status_code == 200:
         data = r.json()
@@ -455,8 +452,8 @@ def generate_gpx(uuid):
         mimetype="application/json",
     )
     
-    # use path_from_json to convert the loaded JSON from the database back into the path
-
+# TODO:
+# endpoint /gpx/uuid to generate a GPX for a given route?
 
 if __name__ == "__main__":
     app.run(
