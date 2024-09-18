@@ -435,6 +435,11 @@ def retrieve_route(uuid):
     if r.status_code == 200:
         data = r.json()
         options = data["options"]
+
+        # TODO: check if the export folder still exists. 
+        # if yes: do not export again, but rather just serve the folder
+        # if no: do as is now.
+
         thread = Thread(target=create_export, kwargs={"options": options, "uuid": str(uuid)})
         thread.start()
 
