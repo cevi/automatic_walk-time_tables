@@ -345,11 +345,12 @@ class MapCreator:
         return query_json
 
     def __build_qr_code_string(self):
-        # for now, use a static URL
-        # TODO: use swisstopo app url string (base64 encoded path of gpx stored on a server (or generated dynamically)
+        clear_url = f"https://backend.map.cevi.tools/gpx/{self.uuid}.gpx"
+        b64_url = base64.b64encode(clear_url.encode("ascii")).decode("ascii")
+        final_url = "https://swisstopo.app/u/" + b64_url
         r = requests.post(
             "https://backend.qr.cevi.tools/png",
-            json={"text": "https://map.cevi.tools/"},
+            json={"text": final_url},
         )
         if r.status_code == 200:
             qr_code_bytes = r.content

@@ -28,8 +28,9 @@ from automatic_walk_time_tables.path_transformers.heigth_fetcher_transfomer impo
 )
 from automatic_walk_time_tables.path_transformers.pois_transfomer import POIsTransformer
 from automatic_walk_time_tables.utils.error import UserException
-from automatic_walk_time_tables.utils.path import Path
+from automatic_walk_time_tables.utils.path import Path, path_from_json
 from automatic_walk_time_tables.utils.point import Point_LV95
+from automatic_walk_time_tables.utils.gpx_creator import create_gpx_file
 from server_logging.log_helper import setup_recursive_logger
 from server_logging.status_handler import ExportStateHandler, ExportStateLogger
 
@@ -301,7 +302,10 @@ def create_export(options, uuid):
         # store the current data in the mongo database
         store_dict = {
             "uuid": uuid,
-            "options": options,
+            "path": path.to_json(),
+            "way_points": way_points.to_json(),
+            "pois": pois.to_json(),
+            "options": options
         }
         r = requests.post(os.environ["STORE_API_URL"] + "/store", json=store_dict)
         if r.status_code == 200:
@@ -428,14 +432,18 @@ def download(uuid):
         download_name="Download.zip",
     )
 
+def fetch_data_for_uuid(uuid):
+    r = requests.post(os.environ["STORE_API_URL"] + "/retrieve", json={"uuid": uuid})
+    if r.status_code == 200:
+        return r.json()
+    else:
+        return None
 
 @app.route("/retrieve/<uuid>")
 def retrieve_route(uuid):
-    r = requests.post(os.environ["STORE_API_URL"] + "/retrieve", json={"uuid": uuid})
-    if r.status_code == 200:
-        data = r.json()
+    data = fetch_data_for_uuid(uuid)
+    if(data is not None):
         options = data["options"]
-
         # TODO: check if the export folder still exists. 
         # if yes: do not export again, but rather just serve the folder
         # if no: do as is now.
@@ -443,7 +451,7 @@ def retrieve_route(uuid):
         thread = Thread(target=create_export, kwargs={"options": options, "uuid": str(uuid)})
         thread.start()
 
-        response = app.response_class(
+        return app.response_class(
             response=json.dumps({"status": GeneratorStatus.RUNNING, "uuid": str(uuid)}),
             status=200,
             mimetype="application/json",
@@ -452,13 +460,32 @@ def retrieve_route(uuid):
         return app.response_class(response=json.dumps({
             "status": GeneratorStatus.ERROR,
             "message": "Die angeforderte GPX Datei ist nicht verfügbar."
-        }),
-        status=404,
-        mimetype="application/json",
-    )
-    
-# TODO:
-# endpoint /gpx/uuid to generate a GPX for a given route?
+            }),
+            status=404,
+            mimetype="application/json",
+        )
+
+@app.route("/gpx/<uuid>.gpx")
+def generate_gpx(uuid):
+    data = fetch_data_for_uuid(uuid)
+    if(data is not None):
+        path = path_from_json(data["path"])
+        pois = path_from_json(data["pois"])
+        logger.info(path)
+        gpx_string = create_gpx_file(path, pois)
+        return app.response_class(
+            response = gpx_string,
+            status=200,
+            mimetype="application/gpx+xml"
+        )
+    else:
+        return app.response_class(response=json.dumps({
+            "status": GeneratorStatus.ERROR,
+            "message": "Die angeforderte GPX Datei ist nicht verfügbar."
+            }),
+            status=404,
+            mimetype="application/json",
+        )
 
 if __name__ == "__main__":
     app.run(

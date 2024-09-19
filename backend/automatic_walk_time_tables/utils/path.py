@@ -5,7 +5,7 @@ from typing import List
 import polyline
 
 from .point import Point_LV03, Point
-from .way_point import WayPoint
+from .way_point import WayPoint, way_point_from_json
 
 
 class Path:
@@ -172,3 +172,12 @@ class Path:
 
     def get_names(self):
         return [wp.name for wp in self.__way_points]
+
+def path_from_json(json):
+    path = Path()
+    path.route_name = json["route_name"]
+
+    for wp in json["way_points"]:
+        path.append(way_point_from_json(wp))
+
+    return path

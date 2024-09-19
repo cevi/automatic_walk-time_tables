@@ -120,3 +120,16 @@ class Point_WGS84(Point):
     def to_WGS84(self):
         """convert WGS84 to WGS84"""
         return self
+
+def point_from_json(json):
+    lat = json["lat"]
+    lon = json["lon"]
+    h = json["h"]
+    if json["type"] == PointType.NONE:
+        return Point(lat, lon, h)
+    elif json["type"] == PointType.LV03:
+        return Point_LV03(lat, lon, h)
+    elif json["type"] == PointType.LV95:
+        return Point_LV95(lat, lon, h)
+    elif json["type"] == PointType.WGS84:
+        return Point_WGS84(lat, lon, h)

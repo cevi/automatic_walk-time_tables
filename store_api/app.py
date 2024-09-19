@@ -41,5 +41,7 @@ def retrieve_data():
     db_data = collection.find_one(data)
     route = {}
     route["options"] = db_data["options"]
+    route["path"] = db_data["path"]
+    route["pois"] = db_data["pois"]
     logger.info("/retrieve called with " + str(data))
     return route
