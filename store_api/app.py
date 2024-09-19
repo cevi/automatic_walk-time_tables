@@ -3,7 +3,9 @@ from flask_cors import CORS
 import logging
 import pydantic
 import uuid
+from datetime import datetime, timezone
 from pymongo import MongoClient
+from flask_pydantic import validate
 
 logger = logging.getLogger(__name__)
 
@@ -16,32 +18,31 @@ db = client["awt"]
 collection = db["store"]
 
 
-class StoreData(pydantic.BaseModel):  # TODO
-    uuid: pydantic.UUID4
-
-
+class StoreData(pydantic.BaseModel):
+    uuid: str
+    options: dict #json
+    path: dict #json
+    pois: dict #json
+    way_points: dict # json
 @app.route("/store", methods=["POST"])
-def store_data():
-    data = request.json
-    # generate current timestamp and store as well
-    logger.info("/store called with " + str(data))
-
+@validate()
+def store_data(body: StoreData):
+    current_time = datetime.now(tz=timezone.utc)
+    data = {
+        "timestamp": current_time,
+        "uuid": body.uuid,
+        "options": body.options,
+        "path": body.path,
+        "pois": body.pois,
+        "way_points": body.way_points
+    }
     collection.insert_one(data)
-
     return "OK"
 
-
-class RetrieveData(pydantic.BaseModel):  # TODO
-    uuid: pydantic.UUID4
-
-
+class RequestData(pydantic.BaseModel):
+    uuid: str
 @app.route("/retrieve", methods=["POST"])
-def retrieve_data():
-    data = request.json
-    db_data = collection.find_one(data)
-    route = {}
-    route["options"] = db_data["options"]
-    route["path"] = db_data["path"]
-    route["pois"] = db_data["pois"]
-    logger.info("/retrieve called with " + str(data))
-    return route
+@validate()
+def retrieve_data(body: RequestData):
+    db_data = collection.find_one({"uuid": body.uuid})
+    return StoreData(**db_data)
