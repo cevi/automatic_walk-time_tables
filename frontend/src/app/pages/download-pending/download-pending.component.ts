@@ -20,7 +20,6 @@ export class DownloadPendingComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.statusManager.history = []; // reset history on load
     this.get_status_updates();
   }
 

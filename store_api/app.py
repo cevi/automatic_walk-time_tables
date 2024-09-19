@@ -36,7 +36,10 @@ def store_data(body: StoreData):
         "pois": body.pois,
         "way_points": body.way_points
     }
-    collection.insert_one(data)
+
+    already_in = collection.find_one({"uuid": body.uuid})
+    if already_in == None:
+        collection.insert_one(data)
     return "OK"
 
 class RequestData(pydantic.BaseModel):
