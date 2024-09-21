@@ -1,5 +1,5 @@
 import logging
-
+import os
 import fiona
 from rtree.index import Index as RTreeIndex
 
