@@ -20,8 +20,19 @@ services:
     env_file:
       - .env.ci-testing
 
+  awt-docs:
+
+    build:
+      context: docs/.
+      dockerfile: Dockerfile
+
+    env_file:
+      - .env.ci-testing
+
+    logging:
+      driver: none
+
   awt-tile-cache:
-    build: tile_caching
     env_file:
       - .env.ci-testing
 
@@ -29,16 +40,9 @@ services:
       driver: none
 
   awt-mapfish-print-server:
-    build: mapfish_print_server/.
 
     env_file:
       - .env.ci-testing
-
-    healthcheck:
-      test: "curl -f http://localhost:8080"
-      interval: 2s
-      timeout: 1s
-      retries: 60
     
     logging:
       driver: none
@@ -55,15 +59,6 @@ services:
     logging:
       driver: none
 
-    volumes:
-      - ./swiss_TLM_api/resources:/app/resources
-    
-    healthcheck:
-      test: "curl -f http://localhost:1848/ready | grep 'ready'"
-      interval: 5s
-      timeout: 1s
-      retries: 180
-
   awt-backend:
 
     build:
@@ -75,15 +70,6 @@ services:
 
     logging:
       driver: none
-
-    depends_on:
-      awt-mapfish-print-server:
-        condition: service_healthy
-      awt-swiss-tml-api:
-        condition: service_healthy
-    environment:
-      TZ: Europe/Zurich
-
 
   awt-frontend:
 
@@ -106,8 +92,21 @@ services:
       timeout: 1s
       retries: 60
 
-    depends_on:
-      - awt-backend
+  awt-valhalla:
+    build:
+      context: ./route_engine
+      dockerfile: Dockerfile
+    environment:
+      # - tile_urls=https://download.geofabrik.de/europe/switzerland-latest.osm.pbf
+      - server_threads=2  # determines how many threads will be used to run the valhalla server
+      - use_tiles_ignore_pbf=True  # load existing valhalla_tiles.tar directly
+      - build_elevation=False  # build elevation with "True" or "Force": will download only the elevation for areas covered by the graph tiles
+      - build_admins=False  # build admins db with "True" or "Force"
+      - build_time_zones=False  # build timezone db with "True" or "Force"
+      - build_tar=True  # build an indexed tar file from the tile_dir for faster graph loading times
+      - force_rebuild=False  # forces a rebuild of the routing tiles with "True"
+    env_file:
+      - .env.ci-testing
 
   awt-store-api:
     build:
@@ -117,6 +116,5 @@ services:
       - .env.ci-testing
 
   awt-mongodb:
-    image: mongo:latest
     env_file:
       - .env.ci-testing

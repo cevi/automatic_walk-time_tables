@@ -28,7 +28,7 @@ jobs:
           touch .git/refs/heads/master
 
       - name: 🏗️ Build the stack
-        run: docker compose -f docker-compose.ci-testing.yml build
+        run: docker compose -f docker-compose.yml -f docker-compose.ci-testing.yml build
 
       - name: 🚀 Run cypress (e2e tests)
-        run: docker compose -f docker-compose.ci-testing.yml up --exit-code-from awt-cypress
+        run: docker compose -f docker-compose.yml -f docker-compose.ci-testing.yml up --exit-code-from awt-cypress
