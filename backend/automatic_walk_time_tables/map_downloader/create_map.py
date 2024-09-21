@@ -345,7 +345,7 @@ class MapCreator:
         return query_json
 
     def __build_qr_code_string(self):
-        backend_domain = os.environ("BACKEND_DOMAIN")
+        backend_domain = os.environ["BACKEND_DOMAIN"]
         clear_url = f"{backend_domain}/gpx/{self.uuid}.gpx"
         b64_url = base64.b64encode(clear_url.encode("ascii")).decode("ascii")
         final_url = "https://swisstopo.app/u/" + b64_url
