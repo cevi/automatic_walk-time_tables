@@ -48,7 +48,7 @@ services:
       test: "curl -f http://localhost:1848/ready | grep 'ready'"
       interval: 5s
       timeout: 1s
-      retries: 180
+      retries: 300
 
   awt-backend:
     build:
