@@ -20,18 +20,6 @@ services:
     env_file:
       - .env.ci-testing
 
-  # awt-docs:
-
-  #   build:
-  #     context: docs/.
-  #     dockerfile: Dockerfile
-
-  #   env_file:
-  #     - .env.ci-testing
-
-  #   logging:
-  #     driver: none
-
   awt-tile-cache:
     env_file:
       - .env.ci-testing
@@ -43,6 +31,12 @@ services:
 
     env_file:
       - .env.ci-testing
+
+    healthcheck:
+      test: "curl -f http://localhost:8080"
+      interval: 2s
+      timeout: 1s
+      retries: 60
     
     logging:
       driver: none
@@ -58,6 +52,12 @@ services:
 
     logging:
       driver: none
+    
+    healthcheck:
+      test: "curl -f http://localhost:1848/ready | grep 'ready'"
+      interval: 5s
+      timeout: 1s
+      retries: 180
 
   awt-backend:
 
@@ -70,6 +70,15 @@ services:
 
     logging:
       driver: none
+
+    depends_on:
+      awt-mapfish-print-server:
+        condition: service_healthy
+      awt-swiss-tml-api:
+        condition: service_healthy
+      environment:
+        TZ: Europe/Zurich
+
 
   awt-frontend:
 
@@ -91,6 +100,10 @@ services:
       interval: 2s
       timeout: 1s
       retries: 60
+
+    depends_on:
+      - awt-backend
+      - awt-valhalla
 
   # awt-valhalla:
   #   build:
@@ -116,5 +129,6 @@ services:
       - .env.ci-testing
 
   awt-mongodb:
+    image: mongo:latest
     env_file:
       - .env.ci-testing
