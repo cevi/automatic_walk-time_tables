@@ -7,7 +7,9 @@ before(() => {
 
 it('Test small GPX file with UI change', () => {
 
-    const file = "cypress/fixtures/test_small.gpx";
+    const gpx_files = Cypress.env('gpx_files');
+
+    const file = gpx_files[0]; // take first gpx_file to perform route-storing test
     test_without_interaction(file);
     cy.location("pathname").should('contain', "download");
 
