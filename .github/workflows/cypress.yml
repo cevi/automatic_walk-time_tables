@@ -25,7 +25,10 @@ jobs:
         run: docker compose -f docker-compose.ci-testing.yml build
 
       - name: Cleanup dangling images
-        run: docker image prune -f
+        run: |
+          docker image prune -f
+          docker builder prune -a -f
+
 
       - name: 🚀 Run cypress (e2e tests)
         run: docker compose -f docker-compose.ci-testing.yml up --exit-code-from awt-cypress
