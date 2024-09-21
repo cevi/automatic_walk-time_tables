@@ -76,8 +76,8 @@ services:
         condition: service_healthy
       awt-swiss-tml-api:
         condition: service_healthy
-      environment:
-        TZ: Europe/Zurich
+    environment:
+      TZ: Europe/Zurich
 
 
   awt-frontend:
