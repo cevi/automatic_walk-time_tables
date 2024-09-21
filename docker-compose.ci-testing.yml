@@ -54,6 +54,9 @@ services:
 
     logging:
       driver: none
+
+    volumes:
+      - ./swiss_TLM_api/resources:/app/resources
     
     healthcheck:
       test: "curl -f http://localhost:1848/ready | grep 'ready'"
