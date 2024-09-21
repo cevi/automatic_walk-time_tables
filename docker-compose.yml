@@ -129,11 +129,13 @@ services:
   
   awt-mongodb:
     image: mongo:latest
-    restart: always
     env_file:
       - .env.local-dev
+    volumes:
+      - mongo_data:/data/db
 
 
 volumes:
   vitepress_dist: {}
   node_modules: {}
+  mongo_data: {}
