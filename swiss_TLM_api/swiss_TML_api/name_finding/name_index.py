@@ -33,6 +33,11 @@ def delete_file(pattern):
 
 class NameIndex:
     def __init__(self, force_rebuild, reduced):
+        # if ./index_cache does not exist, create it
+        if not os.path.exists("./index_cache"):
+            # If it does not exist, create the directory
+            os.makedirs("./index_cache")
+
         self.index_file_path = "./index_cache/swissname_data_index"
 
         # Check if index files exist
