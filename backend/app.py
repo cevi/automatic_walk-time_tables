@@ -305,7 +305,7 @@ def create_export(options, uuid):
             "path": path.to_json(),
             "way_points": way_points.to_json(),
             "pois": pois.to_json(),
-            "options": options
+            "options": options,
         }
         r = requests.post(os.environ["STORE_API_URL"] + "/store", json=store_dict)
         if r.status_code == 200:
@@ -432,6 +432,7 @@ def download(uuid):
         download_name="Download.zip",
     )
 
+
 def fetch_data_for_uuid(uuid):
     r = requests.post(os.environ["STORE_API_URL"] + "/retrieve", json={"uuid": uuid})
     if r.status_code == 200:
@@ -439,16 +440,19 @@ def fetch_data_for_uuid(uuid):
     else:
         return None
 
+
 @app.route("/retrieve/<uuid>")
 def retrieve_route(uuid):
     data = fetch_data_for_uuid(uuid)
-    if(data is not None):
+    if data is not None:
         options = data["options"]
-        # TODO: check if the export folder still exists. 
+        # TODO: check if the export folder still exists.
         # if yes: do not export again, but rather just serve the folder
         # if no: do as is now.
 
-        thread = Thread(target=create_export, kwargs={"options": options, "uuid": str(uuid)})
+        thread = Thread(
+            target=create_export, kwargs={"options": options, "uuid": str(uuid)}
+        )
         thread.start()
 
         return app.response_class(
@@ -457,35 +461,41 @@ def retrieve_route(uuid):
             mimetype="application/json",
         )
     else:
-        return app.response_class(response=json.dumps({
-            "status": GeneratorStatus.ERROR,
-            "message": "Die angeforderte GPX Datei ist nicht verfügbar."
-            }),
+        return app.response_class(
+            response=json.dumps(
+                {
+                    "status": GeneratorStatus.ERROR,
+                    "message": "Die angeforderte GPX Datei ist nicht verfügbar.",
+                }
+            ),
             status=404,
             mimetype="application/json",
         )
 
+
 @app.route("/gpx/<uuid>.gpx")
 def generate_gpx(uuid):
     data = fetch_data_for_uuid(uuid)
-    if(data is not None):
+    if data is not None:
         path = path_from_json(data["path"])
         pois = path_from_json(data["pois"])
         logger.info(path)
         gpx_string = create_gpx_file(path, pois)
         return app.response_class(
-            response = gpx_string,
-            status=200,
-            mimetype="application/gpx+xml"
+            response=gpx_string, status=200, mimetype="application/gpx+xml"
         )
     else:
-        return app.response_class(response=json.dumps({
-            "status": GeneratorStatus.ERROR,
-            "message": "Die angeforderte GPX Datei ist nicht verfügbar."
-            }),
+        return app.response_class(
+            response=json.dumps(
+                {
+                    "status": GeneratorStatus.ERROR,
+                    "message": "Die angeforderte GPX Datei ist nicht verfügbar.",
+                }
+            ),
             status=404,
             mimetype="application/json",
         )
+
 
 if __name__ == "__main__":
     app.run(

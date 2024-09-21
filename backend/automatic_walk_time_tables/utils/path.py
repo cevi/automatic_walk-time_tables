@@ -173,6 +173,7 @@ class Path:
     def get_names(self):
         return [wp.name for wp in self.__way_points]
 
+
 def path_from_json(json):
     path = Path()
     path.route_name = json["route_name"]

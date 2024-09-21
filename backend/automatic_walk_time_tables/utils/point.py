@@ -121,6 +121,7 @@ class Point_WGS84(Point):
         """convert WGS84 to WGS84"""
         return self
 
+
 def point_from_json(json):
     lat = json["lat"]
     lon = json["lon"]

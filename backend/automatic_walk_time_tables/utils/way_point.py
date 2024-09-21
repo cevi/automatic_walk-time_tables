@@ -38,5 +38,8 @@ class WayPoint:
             "name": self.name,
         }
 
+
 def way_point_from_json(json):
-    return WayPoint(json["accumulated_distance"], point_from_json(json["point"]), json["name"])
+    return WayPoint(
+        json["accumulated_distance"], point_from_json(json["point"]), json["name"]
+    )

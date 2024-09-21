@@ -20,10 +20,12 @@ collection = db["store"]
 
 class StoreData(pydantic.BaseModel):
     uuid: str
-    options: dict #json
-    path: dict #json
-    pois: dict #json
-    way_points: dict # json
+    options: dict  # json
+    path: dict  # json
+    pois: dict  # json
+    way_points: dict  # json
+
+
 @app.route("/store", methods=["POST"])
 @validate()
 def store_data(body: StoreData):
@@ -34,7 +36,7 @@ def store_data(body: StoreData):
         "options": body.options,
         "path": body.path,
         "pois": body.pois,
-        "way_points": body.way_points
+        "way_points": body.way_points,
     }
 
     already_in = collection.find_one({"uuid": body.uuid})
@@ -42,8 +44,11 @@ def store_data(body: StoreData):
         collection.insert_one(data)
     return "OK"
 
+
 class RequestData(pydantic.BaseModel):
     uuid: str
+
+
 @app.route("/retrieve", methods=["POST"])
 @validate()
 def retrieve_data(body: RequestData):
