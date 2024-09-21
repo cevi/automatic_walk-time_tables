@@ -15,6 +15,13 @@ jobs:
       - name: 🛎️  Checkout
         uses: actions/checkout@v4
 
+      - name: Freeup some space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+
       - name: create dumy files for ./git/HEAD and ./git/refs/heads/
         run: |
           mkdir -p .git/refs/heads
@@ -23,12 +30,6 @@ jobs:
 
       - name: 🏗️ Build the stack
         run: docker compose -f docker-compose.ci-testing.yml build
-
-      - name: Cleanup dangling images
-        run: |
-          docker image prune -f
-          docker builder prune -a -f
-
 
       - name: 🚀 Run cypress (e2e tests)
         run: docker compose -f docker-compose.ci-testing.yml up --exit-code-from awt-cypress
