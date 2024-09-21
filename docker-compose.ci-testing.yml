@@ -20,17 +20,17 @@ services:
     env_file:
       - .env.ci-testing
 
-  awt-docs:
+  # awt-docs:
 
-    build:
-      context: docs/.
-      dockerfile: Dockerfile
+  #   build:
+  #     context: docs/.
+  #     dockerfile: Dockerfile
 
-    env_file:
-      - .env.ci-testing
+  #   env_file:
+  #     - .env.ci-testing
 
-    logging:
-      driver: none
+  #   logging:
+  #     driver: none
 
   awt-tile-cache:
     env_file:
@@ -92,21 +92,21 @@ services:
       timeout: 1s
       retries: 60
 
-  awt-valhalla:
-    build:
-      context: ./route_engine
-      dockerfile: Dockerfile
-    environment:
-      # - tile_urls=https://download.geofabrik.de/europe/switzerland-latest.osm.pbf
-      - server_threads=2  # determines how many threads will be used to run the valhalla server
-      - use_tiles_ignore_pbf=True  # load existing valhalla_tiles.tar directly
-      - build_elevation=False  # build elevation with "True" or "Force": will download only the elevation for areas covered by the graph tiles
-      - build_admins=False  # build admins db with "True" or "Force"
-      - build_time_zones=False  # build timezone db with "True" or "Force"
-      - build_tar=True  # build an indexed tar file from the tile_dir for faster graph loading times
-      - force_rebuild=False  # forces a rebuild of the routing tiles with "True"
-    env_file:
-      - .env.ci-testing
+  # awt-valhalla:
+  #   build:
+  #     context: ./route_engine
+  #     dockerfile: Dockerfile
+  #   environment:
+  #     # - tile_urls=https://download.geofabrik.de/europe/switzerland-latest.osm.pbf
+  #     - server_threads=2  # determines how many threads will be used to run the valhalla server
+  #     - use_tiles_ignore_pbf=True  # load existing valhalla_tiles.tar directly
+  #     - build_elevation=False  # build elevation with "True" or "Force": will download only the elevation for areas covered by the graph tiles
+  #     - build_admins=False  # build admins db with "True" or "Force"
+  #     - build_time_zones=False  # build timezone db with "True" or "Force"
+  #     - build_tar=True  # build an indexed tar file from the tile_dir for faster graph loading times
+  #     - force_rebuild=False  # forces a rebuild of the routing tiles with "True"
+  #   env_file:
+  #     - .env.ci-testing
 
   awt-store-api:
     build:
