@@ -17,10 +17,12 @@ jobs:
 
       - name: Freeup some space
         run: |
+          df -h
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /opt/ghc
           sudo rm -rf "/usr/local/share/boost"
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          df -h
 
       - name: create dumy files for ./git/HEAD and ./git/refs/heads/
         run: |
@@ -30,6 +32,9 @@ jobs:
 
       - name: 🏗️ Build the stack
         run: docker compose -f docker-compose.ci-testing.yml build
+
+      - name: Check space
+        run: df -h
 
       - name: 🚀 Run cypress (e2e tests)
         run: docker compose -f docker-compose.ci-testing.yml up --exit-code-from awt-cypress
