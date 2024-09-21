@@ -21,6 +21,7 @@ services:
       - .env.ci-testing
 
   awt-tile-cache:
+    build: tile_caching
     env_file:
       - .env.ci-testing
 
@@ -28,6 +29,7 @@ services:
       driver: none
 
   awt-mapfish-print-server:
+    build: mapfish_print_server/.
 
     env_file:
       - .env.ci-testing
