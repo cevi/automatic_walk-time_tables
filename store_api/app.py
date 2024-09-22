@@ -6,14 +6,16 @@ import uuid
 from datetime import datetime, timezone
 from pymongo import MongoClient
 from flask_pydantic import validate
+import os
 
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
-# TODO: make these load from env
-client = MongoClient("awt-mongodb", 27017, username="admin", password="pass")
+username = os.environ["MONGO_INITDB_ROOT_USERNAME"]
+password = os.environ["MONGO_INITDB_ROOT_PASSWORD"]
+client = MongoClient("awt-mongodb", 27017, username=username, password=password)
 db = client["awt"]
 collection = db["store"]
 

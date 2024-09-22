@@ -14,10 +14,10 @@ it('Test small GPX file with UI change', () => {
     cy.location("pathname").should('contain', "download");
 
     cy.location("pathname").should((path) => {
-        path.split("/").slice(1).as("uuid")
+        const uuid = path.split("/")[1];
+        cy.visit('/retrieve/@{uuid}')
     })
 
-    cy.visit('/retrieve/@uuid')
     cy.url({timeout: 10_000}).should('contain', '/pending');
     cy.url({timeout: 180_000}).should('contain', '/download');
     cy.get('h2').should('contain', 'Deine Route wurde erfolgreich exportiert!');
