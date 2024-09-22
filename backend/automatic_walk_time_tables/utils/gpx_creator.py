@@ -26,7 +26,7 @@ def create_gpx_file(path: path.Path, pois: path.Path):
     gpx_track.segments.append(gpx_segment)
     gpx_f.tracks.append(gpx_track)
 
-    for i,point in enumerate(pois.way_points):
+    for i, point in enumerate(pois.way_points):
         p84 = point.point.to_WGS84()
         lat = p84.lat
         lon = p84.lon
@@ -39,18 +39,14 @@ def create_gpx_file(path: path.Path, pois: path.Path):
         gpx_extension_route_id = ET.Element("swisstopo:waypoint_routepoint_id")
         gpx_extension_route_id.text = str(10000 + i)
 
-        control = 0
-        if i == 0 or i == len(pois.way_points) -1:
-            control = 1
-
         meters = float(point.accumulated_distance)
 
         gpx_extension_control = ET.Element("swisstopo:waypoint_is_controlpoint")
-        gpx_extension_control.text = str(control)
+        gpx_extension_control.text = str(1)
 
         gpx_extension_meters = ET.Element("swisstopo:waypoint_meters_into_tour")
         gpx_extension_meters.text = str(meters)
-        
+
         wp = gpxpy.gpx.GPXWaypoint(lat, lon, elevation=elevation, name=name)
 
         wp.extensions.append(gpx_extension_id)

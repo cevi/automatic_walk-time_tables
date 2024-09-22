@@ -20,6 +20,7 @@ client = MongoClient("awt-mongodb", 27017, username=username, password=password)
 db = client.get_database("awt")
 collection = db.get_collection("store")
 
+
 class StoreData(pydantic.BaseModel):
     uuid: str
     options: dict  # json
@@ -49,6 +50,7 @@ def store_data(body: StoreData):
 
 class RequestData(pydantic.BaseModel):
     uuid: str
+
 
 @app.route("/retrieve", methods=["POST"])
 @validate()
