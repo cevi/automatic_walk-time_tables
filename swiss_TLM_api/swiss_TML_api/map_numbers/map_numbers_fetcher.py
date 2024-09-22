@@ -21,7 +21,7 @@ class MapNumberIndex:
         if not os.path.exists("./index_cache"):
             # If it does not exist, create the directory
             os.makedirs("./index_cache")
-            
+
         start = time.time()
 
         if force_rebuild:  # force_rebuild
