@@ -41,7 +41,7 @@ def _load_indexes():
         logger.error(e)
         name_index = None
         name_index = NameFinder(force_rebuild=True, reduced=False)
-        
+
     try:
         map_number_index = MapNumberIndex(force_rebuild=False)
     except Exception as e:
@@ -49,6 +49,7 @@ def _load_indexes():
         logger.error(e)
         map_number_index = None
         map_number_index = MapNumberIndex(force_rebuild=True)
+
 
 @app.route("/ready", methods=["GET"])
 def ready():
