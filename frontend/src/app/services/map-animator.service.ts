@@ -89,6 +89,29 @@ export class MapAnimatorService {
     this._pointer$.next(coordinates);
   }
 
+  public async retrieve_data(uuid: string): Promise<number> {
+    return new Promise<number>((resolve, reject) =>
+    {
+      const url = MapAnimatorService.BASE_URL + 'retrieve/' + uuid;
+      fetch(url, {
+        method: "GET",
+        headers: {
+          ContentType: 'multipart/form-data',
+          Accept: 'application/json',
+        },
+      })
+        .then(response => response.json())
+        .then((resp: any) => {
+          console.log('resp', resp);
+
+          if (resp.status === 'running')
+            resolve(resp.uuid);
+          else
+            reject(resp);
+        });
+    })
+  }
+
   public async download_map(settings: any): Promise<number> {
 
     console.log('settings', settings);

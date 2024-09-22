@@ -1,4 +1,4 @@
-from automatic_walk_time_tables.utils.point import Point
+from automatic_walk_time_tables.utils.point import Point, point_from_json
 
 
 class WayPoint:
@@ -37,3 +37,9 @@ class WayPoint:
             "point": self.point.to_json(),
             "name": self.name,
         }
+
+
+def way_point_from_json(json):
+    return WayPoint(
+        json["accumulated_distance"], point_from_json(json["point"]), json["name"]
+    )

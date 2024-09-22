@@ -18,6 +18,10 @@ class MapNumberIndex:
     index_file_path = "./index_cache/map_numbers_index"
 
     def __init__(self, force_rebuild=False):
+        if not os.path.exists("./index_cache"):
+            # If it does not exist, create the directory
+            os.makedirs("./index_cache")
+            
         start = time.time()
 
         if force_rebuild:  # force_rebuild

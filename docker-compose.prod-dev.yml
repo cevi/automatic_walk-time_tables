@@ -64,3 +64,16 @@ services:
       - force_rebuild=False  # forces a rebuild of the routing tiles with "True"
     env_file:
       - .env.prod-dev
+
+  awt-store-api:
+    build:
+      context: ./store_api
+      dockerfile: Dockerfile
+    image: registry.cevi.tools/cevi/awt_store_api:dev
+    env_file:
+      - .env.prod-dev
+
+  awt-mongodb:
+    image: registry.cevi.tools/cevi/awt_mongo:dev
+    env_file:
+      - .env.prod-dev
