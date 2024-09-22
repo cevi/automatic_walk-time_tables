@@ -58,19 +58,24 @@ class MapNumberIndex:
         # Build index using the swisstopo api
         base_url = "https://shop.swisstopo.admin.ch/de/api/geojson/814"
         response = requests.get(base_url)
-        for feature in response.json()["features"]:
-            coords = feature["geometry"]["coordinates"][0]  # get coords dict
-            coords_x = coords[0][0], coords[2][0]
-            coords_y = coords[0][1], coords[2][1]
-            min_x = min(coords_x[0], coords_x[1])
-            max_x = max(coords_x[0], coords_x[1])
-            min_y = min(coords_y[0], coords_y[1])
-            max_y = max(coords_y[0], coords_y[1])
-            bbox = min_x, min_y, max_x, max_y  # build bbox list
-            tit = feature["properties"]["title"]
-            num = feature["properties"]["map_number"]
 
-            self.index.insert(id=0, coordinates=bbox, obj="{} ({})".format(tit, num))
+        try:
+            for feature in response.json()["features"]:
+                coords = feature["geometry"]["coordinates"][0]  # get coords dict
+                coords_x = coords[0][0], coords[2][0]
+                coords_y = coords[0][1], coords[2][1]
+                min_x = min(coords_x[0], coords_x[1])
+                max_x = max(coords_x[0], coords_x[1])
+                min_y = min(coords_y[0], coords_y[1])
+                max_y = max(coords_y[0], coords_y[1])
+                bbox = min_x, min_y, max_x, max_y  # build bbox list
+                tit = feature["properties"]["title"]
+                num = feature["properties"]["map_number"]
+
+                self.index.insert(id=0, coordinates=bbox, obj="{} ({})".format(tit, num))
+        except Exception as e:
+            logger.error(e)
+        
         self.index.flush()  # save the index to disk
         logger.info("Map numbers index created.")
 
