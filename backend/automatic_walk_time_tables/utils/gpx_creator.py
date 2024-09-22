@@ -5,6 +5,7 @@ from . import way_point
 from typing import List
 import xml.etree.ElementTree as ET
 
+
 # TODO: also add waypoints?
 def create_gpx_file(path: path.Path, way_points: path.Path):
     gpx_f = gpxpy.gpx.GPX()
