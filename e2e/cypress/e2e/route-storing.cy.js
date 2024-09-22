@@ -15,7 +15,7 @@ it('Test small GPX file with UI change', () => {
 
     cy.location("pathname").then((path) => {
         const uuid = path.split("/")[1];
-        cy.visit('/retrieve/@{uuid}')
+        cy.visit(`/retrieve/${uuid}`)
     })
 
     cy.url({timeout: 10_000}).should('contain', '/pending');
