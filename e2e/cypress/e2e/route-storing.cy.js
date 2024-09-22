@@ -13,7 +13,7 @@ it('Test small GPX file with UI change', () => {
     test_without_interaction(file);
     cy.location("pathname").should('contain', "download");
 
-    cy.location("pathname").should((path) => {
+    cy.location("pathname").then((path) => {
         const uuid = path.split("/")[1];
         cy.visit('/retrieve/@{uuid}')
     })
