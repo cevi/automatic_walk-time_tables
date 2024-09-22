@@ -3,8 +3,7 @@ from . import path
 from . import point
 from . import way_point
 from typing import List
-from xml.etree import ElementTree
-
+import xml.etree.ElementTree as ET
 
 # TODO: also add waypoints?
 def create_gpx_file(path: path.Path, pois: path.Path):
@@ -34,8 +33,11 @@ def create_gpx_file(path: path.Path, pois: path.Path):
         elevation = p84.h
         name = point.name
 
-        gpx_extension_id = ElementTree.fromstring(f"<swisstopo:waypoint_id>{i}</swisstopo:waypoint_id>")
-        gpx_extension_route_id = ElementTree.fromstring(f"<swisstopo:waypoint_routepoint_id>{10000+i}</swisstopo:waypoint_routepoint_id>")
+        gpx_extension_id = ET.Element("swisstopo:waypoint_id")
+        gpx_extension_id.text = str(i)
+
+        gpx_extension_route_id = ET.Element("swisstopo:waypoint_routepoint_id")
+        gpx_extension_route_id.text = str(10000 + i)
 
         control = 0
         if i == 0 or i == len(pois.way_points) -1:
@@ -43,14 +45,18 @@ def create_gpx_file(path: path.Path, pois: path.Path):
 
         meters = float(point.accumulated_distance)
 
-        gpx_extension_control = ElementTree.fromstring(f"<swisstopo:waypoint_is_controlpoint>{control}</swisstopo:waypoint_is_controlpoint>")
-        gpx_extension_meters = ElementTree.fromstring(f"<swisstopo:waypoint_meters_into_tour>{meters}</swisstopo:waypoint_meters_into_tour>")
+        gpx_extension_control = ET.Element("swisstopo:waypoint_is_controlpoint")
+        gpx_extension_control.text = str(control)
+
+        gpx_extension_meters = ET.Element("swisstopo:waypoint_meters_into_tour")
+        gpx_extension_meters.text = str(meters)
         
         wp = gpxpy.gpx.GPXWaypoint(lat, lon, elevation=elevation, name=name)
 
         wp.extensions.append(gpx_extension_id)
         wp.extensions.append(gpx_extension_route_id)
         wp.extensions.append(gpx_extension_control)
+        wp.extensions.append(gpx_extension_meters)
 
         gpx_f.waypoints.append(wp)
 
