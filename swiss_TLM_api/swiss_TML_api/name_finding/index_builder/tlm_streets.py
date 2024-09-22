@@ -15,7 +15,7 @@ class TLM_Streets(IndexBuilder):
         street_index_builder = StreetIndex(
             self.base_path + "swissTLM3D_TLM_STRASSE.shp"
         )
-        path_index = street_index_builder.get_street_index()
+        path_index = street_index_builder.get_street_index(bounds=self.bounds)
 
         shp_file = self.base_path + "swissTLM3D_TLM_STRASSENINFO.shp"
 

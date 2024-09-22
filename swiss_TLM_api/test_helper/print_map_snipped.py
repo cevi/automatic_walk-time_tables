@@ -79,7 +79,7 @@ class MapImage:
                 response = results[index]
                 index = index + 1
                 img = Image.open(BytesIO(response.content))
-                img.thumbnail((self.TILE_WIDTH, self.TILE_WIDTH), Image.ANTIALIAS)
+                img.thumbnail((self.TILE_WIDTH, self.TILE_WIDTH), Image.Resampling.LANCZOS)
                 w, h = img.size
                 self.img.paste(
                     img,

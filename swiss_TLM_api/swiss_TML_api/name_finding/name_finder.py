@@ -1,3 +1,4 @@
+import csv
 import logging
 import time
 
@@ -7,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 class NameFinder(NameIndex):
-    def __init__(self, force_rebuild=False, reduced=False):
+    def __init__(self, force_rebuild=False, reduced=True, bounds=None ):
         """
         If force_rebuild is True, the index will be rebuilt (all old files will be removed).
         If force_rebuild is False, the index will be loaded from the filesystem (if it exists)
@@ -20,12 +21,13 @@ class NameFinder(NameIndex):
         """
 
         start = time.time()
-        super().__init__(force_rebuild, reduced)
+        super().__init__(force_rebuild, reduced, bounds)
         end = time.time()
+
 
         logger.info("Name Index loaded (after {}s)".format(str(end - start)))
 
-    def get_names(self, lat: float, lon: float, n=1):
+    def get_names(self, lat: float, lon: float, num_results=1):
         """
         See also https://api3.geo.admin.ch/api/faq/index.html#which-layers-have-a-tooltip
         fair use limit 20 Request per minute
@@ -39,7 +41,7 @@ class NameFinder(NameIndex):
         start = time.time()
 
         list_of_points = list(
-            self.index.nearest((lat, lon, lat, lon), num_results=n, objects="raw")
+            self.index.nearest((lat, lon, lat, lon), num_results=num_results, objects="raw")
         )
 
         end = time.time()

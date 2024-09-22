@@ -32,9 +32,7 @@ class NamingTransformer(PathTransformer):
                 req = requests.request("GET", url, headers=headers, data=payload)
                 resp = req.json()
 
-                # Use coordinate if next name is more than 100 meters away
-                if resp[0]["offset"] <= 100:
-                    pt.name = resp[0]["swiss_name"]
+                pt.name = resp[0]["swiss_name"]
 
             except requests.exceptions.ConnectionError:
                 logger.error(

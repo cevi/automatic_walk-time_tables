@@ -32,7 +32,7 @@ def delete_file(pattern):
 
 
 class NameIndex:
-    def __init__(self, force_rebuild, reduced):
+    def __init__(self, force_rebuild, reduced, bounds=None):
         # if ./index_cache does not exist, create it
         if not os.path.exists("./index_cache"):
             # If it does not exist, create the directory
@@ -91,7 +91,7 @@ class NameIndex:
             folder = "./resources/swissTLM3D_LV95_data_full/"
             self.__download_resources(url, folder)
 
-        self.generate_index(reduced)
+        self.generate_index(reduced, bounds)
 
     def __del__(self):
         if hasattr(self, "index"):
@@ -121,7 +121,7 @@ class NameIndex:
             os.rmdir(os.path.join(destination, directory))
         os.remove(output)
 
-    def generate_index(self, reduced):
+    def generate_index(self, reduced, bounds=None):
         logger.info(
             "Start Creating Index: Save index in {}. This might take a few minutes.".format(
                 self.index_file_path
@@ -155,7 +155,7 @@ class NameIndex:
             start = time.time()
             logger.info("\tInsertion of {} started...".format(index_part.__name__))
 
-            loader = index_part(self.index, reduced=reduced)
+            loader = index_part(self.index, reduced=reduced, bounds=bounds)
             loader.load()
 
             end = time.time()

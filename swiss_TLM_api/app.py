@@ -9,6 +9,7 @@ from flask_cors import CORS
 from shapely.geometry import Point
 
 from swiss_TML_api.logging.log_helper import setup_recursive_logger
+from swiss_TML_api.name_finding.interest import Interest
 
 setup_recursive_logger(logging.INFO)
 logger = logging.getLogger(__name__)
@@ -28,20 +29,21 @@ cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
 name_index: NameFinder | None = None
 map_number_index: MapNumberIndex | None = None
+interest: Interest | None = None
 
 
 # The NameFinder is a shared object, thus the index get only loaded once
 def _load_indexes():
     logger.info("Loading indexes...")
-    global name_index, map_number_index
+    global name_index, map_number_index, interest
     try:
         name_index = NameFinder(force_rebuild=False, reduced=False)
+        interest = Interest(name_index)
     except Exception as e:
         logger.error("Error while loading name index. Forcing rebuild")
         logger.error(e)
         name_index = None
         name_index = NameFinder(force_rebuild=True, reduced=False)
-        
     try:
         map_number_index = MapNumberIndex(force_rebuild=False)
     except Exception as e:
@@ -60,37 +62,24 @@ def ready():
 
 @app.route("/swiss_name", methods=["GET"])
 def get_name():
-    global name_index
+    global interest
     global map_number_index
     try:
         lv95_coords = request.json
         response = []
-
         for lat, lon in lv95_coords:
             req_pkt = Point((lat, lon))
 
-            swiss_names = name_index.get_names(lat, lon, 3)
-            swiss_name: SwissName = swiss_names[0]
-
-            # If object_type is of type 'Weggabelung' and there exists a Hauptgipfel nearby, we take the Hauptgipfel
-            if swiss_name.object_type == "Weggabelung" and len(swiss_names) > 1:
-                for n in swiss_names[1:]:
-                    tlm_pkt = Point((n.x, n.y))
-                    if (
-                        n.object_type == "Hauptgipfel"
-                        and round(req_pkt.distance(tlm_pkt)) <= 250
-                    ):
-                        swiss_name.name = "Weggabelung bei " + n.name
-                        break
+            selected_name = interest.select_name((lat, lon))
 
             response.append(
                 {
-                    "lv95_coord": (swiss_name.x, swiss_name.y),
+                    "lv95_coord": (selected_name.x, selected_name.y),
                     "offset": round(
-                        req_pkt.distance(Point((swiss_name.x, swiss_name.y)))
+                        req_pkt.distance(Point((selected_name.x, selected_name.y)))
                     ),
-                    "swiss_name": swiss_name.name,
-                    "object_type": swiss_name.object_type,
+                    "swiss_name": selected_name.name,
+                    "object_type": selected_name.object_type,
                 }
             )
 

@@ -66,7 +66,7 @@ class ForestBorders(IndexBuilder):
         street_index_builder = StreetIndex(
             self.base_path + "swissTLM3D_TLM_STRASSE.shp"
         )
-        path_index = street_index_builder.get_street_index()
+        path_index = street_index_builder.get_street_index(bounds=self.bounds)
         path_index.close()  # as we use multiprocessing we have to reload the index for each thread
 
         flurname_index_builder = FlurnamenIndex(
@@ -108,7 +108,7 @@ class ForestBorders(IndexBuilder):
                 street_index_builder = StreetIndex(
                     self.base_path + "swissTLM3D_TLM_STRASSE.shp"
                 )
-                path_index = street_index_builder.get_street_index()
+                path_index = street_index_builder.get_street_index(bounds=self.bounds)
 
                 while True:
                     batch = q.get()
