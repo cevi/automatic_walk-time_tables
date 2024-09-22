@@ -15,9 +15,12 @@ cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
 username = os.environ["MONGO_INITDB_ROOT_USERNAME"]
 password = os.environ["MONGO_INITDB_ROOT_PASSWORD"]
+
+logger.info("Connecting to database")
 client = MongoClient("awt-mongodb", 27017, username=username, password=password)
 db = client.get_database("awt")
 collection = db.get_collection("store")
+logger.info("Got collection: " + str(colletion))
 
 
 class StoreData(pydantic.BaseModel):
