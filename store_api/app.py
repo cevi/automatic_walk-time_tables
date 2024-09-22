@@ -8,7 +8,7 @@ from pymongo import MongoClient
 from flask_pydantic import validate
 import os
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("gunicorn.error")
 
 app = Flask(__name__)
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
@@ -35,6 +35,13 @@ class StoreData(pydantic.BaseModel):
 @app.route("/store", methods=["POST"])
 @validate()
 def store_data(body: StoreData):
+    logger.error("Entering functoin")
+    logger.error("Connecting to database")
+    client = MongoClient("awt-mongodb", 27017, username=username, password=password)
+    db = client.get_database("awt")
+    collection = db.get_collection("store")
+    logger.error("Got collection: " + str(collection))
+    logger.error("Username: " + str(username))
     current_time = datetime.now(tz=timezone.utc)
     data = {
         "timestamp": current_time,
