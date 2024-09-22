@@ -72,10 +72,12 @@ class MapNumberIndex:
                 tit = feature["properties"]["title"]
                 num = feature["properties"]["map_number"]
 
-                self.index.insert(id=0, coordinates=bbox, obj="{} ({})".format(tit, num))
+                self.index.insert(
+                    id=0, coordinates=bbox, obj="{} ({})".format(tit, num)
+                )
         except Exception as e:
             logger.error(e)
-        
+
         self.index.flush()  # save the index to disk
         logger.info("Map numbers index created.")
 
