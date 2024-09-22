@@ -14,7 +14,7 @@ it('Test small GPX file with UI change', () => {
     cy.location("pathname").should('contain', "download");
 
     cy.location("pathname").then((path) => {
-        const uuid = path.split("/")[1];
+        const uuid = path.split("/")[2]; // format: <url>/download/<uuid>
         cy.visit(`/retrieve/${uuid}`)
     })
 
