@@ -4,6 +4,7 @@ from . import point
 from . import way_point
 from typing import List
 
+
 # TODO: also add waypoints?
 def create_gpx_file(path: path.Path, pois: path.Path):
     gpx_f = gpxpy.gpx.GPX()
