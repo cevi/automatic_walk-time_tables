@@ -32,9 +32,8 @@ def create_gpx_file(path: path.Path, pois: path.Path):
         lon = p84.lon
         elevation = p84.h
         name = point.name
-        
+
         wp = gpxpy.gpx.GPXWaypoint(lat, lon, elevation=elevation, name=name)
         gpx_f.waypoints.append(wp)
-
 
     return gpx_f.to_xml()
