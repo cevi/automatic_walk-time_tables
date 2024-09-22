@@ -35,7 +35,7 @@ class StoreData(pydantic.BaseModel):
 @app.route("/store", methods=["POST"])
 @validate()
 def store_data(body: StoreData):
-    logger.error("Entering functoin")
+    logger.error("Entering function")
     logger.error("Connecting to database")
     client = MongoClient("awt-mongodb", 27017, username=username, password=password)
     db = client.get_database("awt")
