@@ -6,7 +6,7 @@ from typing import List
 import xml.etree.ElementTree as ET
 
 # TODO: also add waypoints?
-def create_gpx_file(path: path.Path, pois: path.Path):
+def create_gpx_file(path: path.Path, way_points: path.Path):
     gpx_f = gpxpy.gpx.GPX()
     gpx_f.name = path.route_name
 
@@ -26,7 +26,7 @@ def create_gpx_file(path: path.Path, pois: path.Path):
     gpx_track.segments.append(gpx_segment)
     gpx_f.tracks.append(gpx_track)
 
-    for i, point in enumerate(pois.way_points):
+    for i, point in enumerate(way_points.way_points):
         p84 = point.point.to_WGS84()
         lat = p84.lat
         lon = p84.lon

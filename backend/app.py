@@ -478,9 +478,9 @@ def generate_gpx(uuid):
     data = fetch_data_for_uuid(uuid)
     if data is not None:
         path = path_from_json(data["path"])
-        pois = path_from_json(data["pois"])
+        way_points = path_from_json(data["way_points"])
         logger.info(path)
-        gpx_string = create_gpx_file(path, pois)
+        gpx_string = create_gpx_file(path, way_points)
         return app.response_class(
             response=gpx_string, status=200, mimetype="application/gpx+xml"
         )
