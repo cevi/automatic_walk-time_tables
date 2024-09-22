@@ -36,15 +36,19 @@ def _load_indexes():
     global name_index, map_number_index
     try:
         name_index = NameFinder(force_rebuild=False, reduced=False)
-        map_number_index = MapNumberIndex(force_rebuild=False)
     except Exception as e:
-        logger.error("Error while loading indexes. Forcing rebuild")
+        logger.error("Error while loading name index. Forcing rebuild")
         logger.error(e)
         name_index = None
-        map_number_index = None
         name_index = NameFinder(force_rebuild=True, reduced=False)
+        
+    try:
+        map_number_index = MapNumberIndex(force_rebuild=False)
+    except Exception as e:
+        logger.error("Error while loading map number index. Forcing rebuild")
+        logger.error(e)
+        map_number_index = None
         map_number_index = MapNumberIndex(force_rebuild=True)
-
 
 @app.route("/ready", methods=["GET"])
 def ready():
