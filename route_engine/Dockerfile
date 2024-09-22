@@ -1,4 +1,4 @@
-FROM ghcr.io/gis-ops/docker-valhalla/valhalla:latest
+FROM ghcr.io/gis-ops/docker-valhalla/valhalla:3.4.0
 
 USER root
 
