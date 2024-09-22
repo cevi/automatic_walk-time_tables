@@ -77,7 +77,7 @@
                     <![CDATA[net.sf.jasperreports.renderers.BatikRenderer.getInstance(new java.io.File(new java.net.URI($P{northArrowGraphic})))]]></imageExpression>
             </image>
             <image evaluationTime="Report">
-                <reportElement x="10" y="515" width="45" height="45" uuid="1bae2f08-683a-416a-be8b-a4ebfc7db792"/>
+                <reportElement x="10" y="515" width="60" height="60" uuid="1bae2f08-683a-416a-be8b-a4ebfc7db792"/>
                 <imageExpression><![CDATA[$P{qr_code}]]></imageExpression>
             </image>
         </band>
