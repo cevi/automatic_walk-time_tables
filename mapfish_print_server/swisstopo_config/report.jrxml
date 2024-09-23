@@ -79,7 +79,7 @@
 
             <!-- Rectangle for white background -->
             <rectangle>
-                <reportElement x="10" y="500" width="60" height="60" uuid="bg-rectangle-uuid"/>
+                <reportElement x="10" y="500" width="60" height="60" uuid="402668be-0887-4d69-a7f7-ce9d5bf58b80"/>
                 <graphicElement>
                     <pen lineWidth="0.0"/>
                     <fill backcolor="#FFFFFF"/> <!-- White Background -->
