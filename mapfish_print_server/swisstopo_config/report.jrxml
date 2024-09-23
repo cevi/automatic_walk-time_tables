@@ -76,6 +76,15 @@
                 <imageExpression>
                     <![CDATA[net.sf.jasperreports.renderers.BatikRenderer.getInstance(new java.io.File(new java.net.URI($P{northArrowGraphic})))]]></imageExpression>
             </image>
+
+            <!-- Rectangle for white background -->
+            <rectangle>
+                <reportElement x="10" y="500" width="60" height="60" uuid="bg-rectangle-uuid"/>
+                <graphicElement>
+                    <pen lineWidth="0.0"/>
+                    <fill backcolor="#FFFFFF"/> <!-- White Background -->
+                </graphicElement>
+            </rectangle>
             <image evaluationTime="Report">
                 <reportElement x="10" y="500" width="60" height="60" uuid="1bae2f08-683a-416a-be8b-a4ebfc7db792"/>
                 <imageExpression><![CDATA[$P{qr_code}]]></imageExpression>
