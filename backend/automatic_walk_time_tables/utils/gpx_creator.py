@@ -53,18 +53,26 @@ def create_gpx_file(path: path.Path, way_points: path.Path):
         # this must be the ID of a track point at the same location
         gpx_extension_route_id = ET.Element("swisstopo:waypoint_routepoint_id")
         closest_track_point = path.get_closest_point(point.point)
-        gpx_extension_route_id.text = str(LIMIT) + str(path.way_points.index(closest_track_point))
+        gpx_extension_route_id.text = str(LIMIT) + str(
+            path.way_points.index(closest_track_point)
+        )
 
         gpx_extension_control = ET.Element("swisstopo:waypoint_is_controlpoint")
         # 1 = for start or end point, 0 = for all other points
-        gpx_extension_control.text = '1' if i == 0 or i == len(way_points.way_points) - 1 else '0'
+        gpx_extension_control.text = (
+            "1" if i == 0 or i == len(way_points.way_points) - 1 else "0"
+        )
 
         gpx_extension_meters = ET.Element("swisstopo:waypoint_meters_into_tour")
         meters = float(point.accumulated_distance)
         gpx_extension_meters.text = "{:.6f}".format(meters)
 
-        gpx_extension_waypoint_stage_before = ET.Element("swisstopo:waypoint_stage_before")
-        gpx_extension_waypoint_stage_before.attrib["distance"] = "{:.6f}".format(meters - accumulated_distance_before)
+        gpx_extension_waypoint_stage_before = ET.Element(
+            "swisstopo:waypoint_stage_before"
+        )
+        gpx_extension_waypoint_stage_before.attrib["distance"] = "{:.6f}".format(
+            meters - accumulated_distance_before
+        )
         gpx_extension_waypoint_stage_before.attrib["duration"] = "0"
         gpx_extension_waypoint_stage_before.attrib["ascent"] = "0"
         gpx_extension_waypoint_stage_before.attrib["descent"] = "0"
@@ -78,7 +86,6 @@ def create_gpx_file(path: path.Path, way_points: path.Path):
 
         if i != 0:
             wp.extensions.append(gpx_extension_waypoint_stage_before)
-
 
         gpx_f.waypoints.append(wp)
 
@@ -117,6 +124,8 @@ def create_gpx_file(path: path.Path, way_points: path.Path):
     meta_data.append(route_description_element)
 
     # TODO: this is ugly
-    gpx_xml = gpx_xml.replace("</gpx>", ET.tostring(meta_data).decode("utf-8") + "</gpx>")
+    gpx_xml = gpx_xml.replace(
+        "</gpx>", ET.tostring(meta_data).decode("utf-8") + "</gpx>"
+    )
 
     return gpx_xml

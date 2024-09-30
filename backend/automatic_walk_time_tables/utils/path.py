@@ -179,6 +179,7 @@ class Path:
             key=lambda wp: wp.point.to_LV03().distance(point.to_LV03()),
         )
 
+
 def path_from_json(json):
     path = Path()
     path.route_name = json["route_name"]

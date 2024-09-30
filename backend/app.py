@@ -390,7 +390,7 @@ def download(uuid):
     state = stateHandler.get_status(uuid)
 
     if (state and state["status"] != GeneratorStatus.SUCCESS) or not os.path.exists(
-            base_path
+        base_path
     ):
         # check if content type is HTML
         if "text/html" in request.headers.get("Accept", ""):
