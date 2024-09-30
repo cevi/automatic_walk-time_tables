@@ -173,6 +173,11 @@ class Path:
     def get_names(self):
         return [wp.name for wp in self.__way_points]
 
+    def get_closest_point(self, point: Point) -> WayPoint:
+        return min(
+            self.__way_points,
+            key=lambda wp: wp.point.to_LV03().distance(point.to_LV03()),
+        )
 
 def path_from_json(json):
     path = Path()
