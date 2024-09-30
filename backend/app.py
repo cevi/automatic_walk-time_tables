@@ -11,9 +11,9 @@ import time
 import uuid as uuid_factory
 import zipfile
 from threading import Thread
-import requests
 
 import polyline
+import requests
 from flask import Flask, request, send_file, redirect
 from flask_cors import CORS
 
@@ -28,9 +28,9 @@ from automatic_walk_time_tables.path_transformers.heigth_fetcher_transfomer impo
 )
 from automatic_walk_time_tables.path_transformers.pois_transfomer import POIsTransformer
 from automatic_walk_time_tables.utils.error import UserException
+from automatic_walk_time_tables.utils.gpx_creator import create_gpx_file
 from automatic_walk_time_tables.utils.path import Path, path_from_json
 from automatic_walk_time_tables.utils.point import Point_LV95
-from automatic_walk_time_tables.utils.gpx_creator import create_gpx_file
 from server_logging.log_helper import setup_recursive_logger
 from server_logging.status_handler import ExportStateHandler, ExportStateLogger
 
@@ -299,14 +299,10 @@ def create_export(options, uuid):
         if "name_points_in_export" not in options["settings"]:
             options["settings"]["name_points_in_export"] = True
 
-        # store the current data in the mongo database
-        store_dict = {
-            "uuid": uuid,
-            "path": path.to_json(),
-            "way_points": way_points.to_json(),
-            "pois": pois.to_json(),
-            "options": options,
-        }
+        generator = AutomatedWalkTableGenerator(uuid, options)
+        generator.set_data(path, way_points, pois)
+
+        store_dict = generator.get_store_dict()
         r = requests.post(os.environ["STORE_API_URL"] + "/store", json=store_dict)
         if r.status_code == 200:
             logger.log(
@@ -321,8 +317,6 @@ def create_export(options, uuid):
                 {"uuid": uuid, "status": GeneratorStatus.ERROR},
             )
 
-        generator = AutomatedWalkTableGenerator(uuid, options)
-        generator.set_data(path, way_points, pois)
         generator.run()
 
         # Create a new thread and start it
@@ -396,7 +390,7 @@ def download(uuid):
     state = stateHandler.get_status(uuid)
 
     if (state and state["status"] != GeneratorStatus.SUCCESS) or not os.path.exists(
-        base_path
+            base_path
     ):
         # check if content type is HTML
         if "text/html" in request.headers.get("Accept", ""):
@@ -479,7 +473,6 @@ def generate_gpx(uuid):
     if data is not None:
         path = path_from_json(data["path"])
         way_points = path_from_json(data["way_points"])
-        logger.info(path)
         gpx_string = create_gpx_file(path, way_points)
         return app.response_class(
             response=gpx_string, status=200, mimetype="application/gpx+xml"

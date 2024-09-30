@@ -191,3 +191,12 @@ class AutomatedWalkTableGenerator:
         self.__path = path_data
         self.__way_points = way_points
         self.__pois = pois
+
+    def get_store_dict(self):
+        return {
+            "uuid": self.uuid,
+            "options": self.options,
+            "path": self.__path.to_json(),
+            "pois": self.__pois.to_json(),
+            "way_points": self.__way_points.to_json(),
+        }

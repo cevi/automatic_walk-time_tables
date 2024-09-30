@@ -37,6 +37,8 @@ def create_gpx_file(path: path.Path, way_points: path.Path):
     gpx_track.segments.append(gpx_segment)
     gpx_f.tracks.append(gpx_track)
 
+    accumulated_distance_before = 0
+
     for i, point in enumerate(way_points.way_points):
         p84 = point.point.to_WGS84()
         lat = p84.lat
@@ -50,8 +52,8 @@ def create_gpx_file(path: path.Path, way_points: path.Path):
 
         # this must be the ID of a track point at the same location
         gpx_extension_route_id = ET.Element("swisstopo:waypoint_routepoint_id")
-        closest_track_point = way_points.get_closest_point(point.point)
-        gpx_extension_route_id.text = str(LIMIT) + str(way_points.way_points.index(closest_track_point))
+        closest_track_point = path.get_closest_point(point.point)
+        gpx_extension_route_id.text = str(LIMIT) + str(path.way_points.index(closest_track_point))
 
         gpx_extension_control = ET.Element("swisstopo:waypoint_is_controlpoint")
         # 1 = for start or end point, 0 = for all other points
@@ -59,13 +61,14 @@ def create_gpx_file(path: path.Path, way_points: path.Path):
 
         gpx_extension_meters = ET.Element("swisstopo:waypoint_meters_into_tour")
         meters = float(point.accumulated_distance)
-        gpx_extension_meters.text = str(meters)
+        gpx_extension_meters.text = "{:.6f}".format(meters)
 
         gpx_extension_waypoint_stage_before = ET.Element("swisstopo:waypoint_stage_before")
-        gpx_extension_waypoint_stage_before.attrib["distance"] = str(meters)
+        gpx_extension_waypoint_stage_before.attrib["distance"] = "{:.6f}".format(meters - accumulated_distance_before)
         gpx_extension_waypoint_stage_before.attrib["duration"] = "0"
         gpx_extension_waypoint_stage_before.attrib["ascent"] = "0"
         gpx_extension_waypoint_stage_before.attrib["descent"] = "0"
+        accumulated_distance_before = meters
 
         wp = gpxpy.gpx.GPXWaypoint(lat, lon, elevation=elevation, name=name)
         wp.extensions.append(gpx_extension_id)
@@ -75,6 +78,7 @@ def create_gpx_file(path: path.Path, way_points: path.Path):
 
         if i != 0:
             wp.extensions.append(gpx_extension_waypoint_stage_before)
+
 
         gpx_f.waypoints.append(wp)
 
