@@ -354,7 +354,8 @@ export class MapAnimatorService {
       'y': point.y,
       'h': 0,
       'accumulated_distance': 0,
-      'name': ''
+      'name': '',
+      'is_waypoint': true
     });
     this._pois$.next(pois);
 
@@ -366,6 +367,7 @@ export class MapAnimatorService {
         'y': point.y,
         'h': 0,
         'accumulated_distance': 0,
+        'is_waypoint': true
       });
 
       this._path$.next(path);
@@ -401,7 +403,7 @@ export class MapAnimatorService {
     };
 
     // check if the first point is within 10m of the old_last_point
-    const OFF_PATH_THRESHOLD = 20;
+    const OFF_PATH_THRESHOLD = 10;
     if ((Math.sqrt((first_point.x - old_last_point.x) ** 2 + (first_point.y - old_last_point.y) ** 2) > OFF_PATH_THRESHOLD) ||
       (Math.sqrt((last_point.x - point.x) ** 2 + (last_point.x - point.x) ** 2) > OFF_PATH_THRESHOLD)) {
 
@@ -410,6 +412,7 @@ export class MapAnimatorService {
         'y': point.y,
         'h': 0,
         'accumulated_distance': 0,
+        'is_waypoint': true
       });
 
     } else {
@@ -419,8 +422,13 @@ export class MapAnimatorService {
           'y': p[1],
           'h': 0,
           'accumulated_distance': 0,
+          'is_waypoint': false
         });
       });
+
+      // set last point as waypoint
+      path[path.length - 1].is_waypoint = true;
+
     }
 
     this._path$.next(path);
@@ -435,7 +443,8 @@ export class MapAnimatorService {
         'y': p[1],
         'h': elevation[i][1],
         'accumulated_distance': elevation[i][0] / 1_000,
-        'name': (names && names.length > 0) ? names[i] : ''
+        'name': (names && names.length > 0) ? names[i] : '',
+        'is_waypoint': false
       };
     });
 
@@ -479,6 +488,27 @@ export class MapAnimatorService {
       .subscribe(([path, pois, way_points]) =>
         this.create_walk_time_table(path, pois, this.auto_waypoints).catch(err => this._error_handler(err))
       );
+
+  }
+
+  /**
+   * Deletes all path points after the second last waypoint
+   */
+  delete_last_waypoint() {
+
+    const old_path = this._path$.getValue();
+
+    const idx_of_last_waypoint = old_path.length - old_path.slice(0, -1).reverse().findIndex(p => p.is_waypoint) - 1;
+    let path = old_path.slice(0, idx_of_last_waypoint);
+
+    const pois = this._pois$.getValue().slice(0, -1);
+
+    if (pois.length == 0) {
+      path = [];
+    }
+
+    this._path$.next(path);
+    this._pois$.next(pois);
 
   }
 

@@ -121,4 +121,9 @@ export class ExportSettingsComponent {
     await this.mapAnimator.finish_drawing();
 
   }
+
+  async delete_last_waypoint() {
+    this.mapAnimator.delete_last_waypoint();
+  }
+
 }
