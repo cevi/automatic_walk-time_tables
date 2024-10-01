@@ -389,16 +389,49 @@ def download(uuid):
     base_path = pathlib.Path("./output/" + uuid + "/")
     state = stateHandler.get_status(uuid)
 
-    if (state and state["status"] != GeneratorStatus.SUCCESS) or not os.path.exists(
-        base_path
-    ):
+    status_ok = state and state["status"] == GeneratorStatus.SUCCESS
+    files_exists = os.path.exists(base_path)
+
+    storage = None
+    if not status_ok and not files_exists:
+        storage = fetch_data_for_uuid(uuid)
+
+    if not status_ok and not files_exists and storage is None:
+
         # check if content type is HTML
         if "text/html" in request.headers.get("Accept", ""):
             frontend_url = os.environ["FRONTEND_DOMAIN"]
             return redirect(frontend_url, code=302)
 
-        # TODO: check if this UUID is stored and therefore we can recreate the export
+        return app.response_class(
+            response=json.dumps(
+                {
+                    "status": GeneratorStatus.ERROR,
+                    "message": "Die angeforderten Daten sind nicht verfügbar.",
+                }
+            ),
+            status=404,
+            mimetype="application/json",
+        )
 
+    if not files_exists and storage is not None:
+
+        logger.debug("Files not found, creating them now.")
+        logger.debug("Storage options: %s" % storage["options"])
+
+        # Create the folder and files
+        thread = Thread(
+            target=create_export, kwargs={"options": storage["options"], "uuid": uuid}
+        )
+        thread.start()
+
+        return app.response_class(
+            response=json.dumps({"status": GeneratorStatus.RUNNING, "uuid": str(uuid)}),
+            status=200,
+            mimetype="application/json",
+        )
+
+    if not files_exists and storage is None:
         return app.response_class(
             response=json.dumps(
                 {
@@ -428,11 +461,17 @@ def download(uuid):
 
 
 def fetch_data_for_uuid(uuid):
+    """
+        Fetches the data for the given UUID from the store API.
+        :param uuid: The UUID of the data to fetch
+        :return: The data for the given UUID or None if the data is not available
+    """
+
     r = requests.post(os.environ["STORE_API_URL"] + "/retrieve", json={"uuid": uuid})
     if r.status_code == 200:
         return r.json()
-    else:
-        return None
+
+    return None
 
 
 @app.route("/retrieve/<uuid>")
@@ -470,14 +509,8 @@ def retrieve_route(uuid):
 @app.route("/gpx/<uuid>.gpx")
 def generate_gpx(uuid):
     data = fetch_data_for_uuid(uuid)
-    if data is not None:
-        path = path_from_json(data["path"])
-        way_points = path_from_json(data["way_points"])
-        gpx_string = create_gpx_file(path, way_points)
-        return app.response_class(
-            response=gpx_string, status=200, mimetype="application/gpx+xml"
-        )
-    else:
+
+    if data is None:
         return app.response_class(
             response=json.dumps(
                 {
@@ -488,6 +521,11 @@ def generate_gpx(uuid):
             status=404,
             mimetype="application/json",
         )
+
+    path: path.Path = path_from_json(data["path"])
+    way_points: path.Path = path_from_json(data["way_points"])
+    gpx_string = create_gpx_file(path, way_points)
+    return app.response_class(response=gpx_string, status=200, mimetype="application/gpx+xml")
 
 
 if __name__ == "__main__":
