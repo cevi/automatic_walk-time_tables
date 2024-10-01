@@ -462,9 +462,9 @@ def download(uuid):
 
 def fetch_data_for_uuid(uuid):
     """
-        Fetches the data for the given UUID from the store API.
-        :param uuid: The UUID of the data to fetch
-        :return: The data for the given UUID or None if the data is not available
+    Fetches the data for the given UUID from the store API.
+    :param uuid: The UUID of the data to fetch
+    :return: The data for the given UUID or None if the data is not available
     """
 
     r = requests.post(os.environ["STORE_API_URL"] + "/retrieve", json={"uuid": uuid})
@@ -525,7 +525,9 @@ def generate_gpx(uuid):
     path: path.Path = path_from_json(data["path"])
     way_points: path.Path = path_from_json(data["way_points"])
     gpx_string = create_gpx_file(path, way_points)
-    return app.response_class(response=gpx_string, status=200, mimetype="application/gpx+xml")
+    return app.response_class(
+        response=gpx_string, status=200, mimetype="application/gpx+xml"
+    )
 
 
 if __name__ == "__main__":

@@ -119,7 +119,9 @@ def add_waypoints(_path: path.Path, _way_points: path.Path, gpx_f: GPX):
         # this must be the ID of a track point at the same location
         gpx_extension_route_id = ET.Element("swisstopo:waypoint_routepoint_id")
         closest_track_point = _path.get_closest_point(point.point)
-        gpx_extension_route_id.text = f"routepoint_id_{_path.way_points.index(closest_track_point)}"
+        gpx_extension_route_id.text = (
+            f"routepoint_id_{_path.way_points.index(closest_track_point)}"
+        )
 
         gpx_extension_control = ET.Element("swisstopo:waypoint_is_controlpoint")
         # 1 = for start or end point, 0 = for all other points
@@ -137,9 +139,15 @@ def add_waypoints(_path: path.Path, _way_points: path.Path, gpx_f: GPX):
         gpx_extension_waypoint_stage_before.attrib["distance"] = "{:.6f}".format(
             distance - accumulated_distance
         )
-        gpx_extension_waypoint_stage_before.attrib["duration"] = "0" # calculated by the app
-        gpx_extension_waypoint_stage_before.attrib["ascent"] = "0" # calculated by the app
-        gpx_extension_waypoint_stage_before.attrib["descent"] = "0" # calculated by the app
+        gpx_extension_waypoint_stage_before.attrib["duration"] = (
+            "0"  # calculated by the app
+        )
+        gpx_extension_waypoint_stage_before.attrib["ascent"] = (
+            "0"  # calculated by the app
+        )
+        gpx_extension_waypoint_stage_before.attrib["descent"] = (
+            "0"  # calculated by the app
+        )
         accumulated_distance = distance
 
         wp = gpxpy.gpx.GPXWaypoint(lat, lon, elevation=elevation, name=name)
