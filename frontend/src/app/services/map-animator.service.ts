@@ -90,8 +90,7 @@ export class MapAnimatorService {
   }
 
   public async retrieve_data(uuid: string): Promise<number> {
-    return new Promise<number>((resolve, reject) =>
-    {
+    return new Promise<number>((resolve, reject) => {
       const url = MapAnimatorService.BASE_URL + 'retrieve/' + uuid;
       fetch(url, {
         method: "GET",
@@ -347,9 +346,7 @@ export class MapAnimatorService {
   public async add_way_point(point: LV95_Coordinates) {
 
     const WGS84 = transform([point.x, point.y], 'EPSG:2056', 'EPSG:4326');
-    console.log('Adding way point', point, WGS84);
-
-    const path = this._path$.getValue();
+    console.log('Adding way point', point);
 
     const pois = this._pois$.getValue();
     pois.push({
@@ -361,6 +358,7 @@ export class MapAnimatorService {
     });
     this._pois$.next(pois);
 
+    const path = this._path$.getValue();
     if (path.length == 0) {
 
       path.push({
@@ -375,7 +373,8 @@ export class MapAnimatorService {
 
     }
 
-    const old_WGS84 = transform([path[path.length - 1].x, path[path.length - 1].y], 'EPSG:2056', 'EPSG:4326');
+    const old_last_point = path[path.length - 1];
+    const old_WGS84 = transform([old_last_point.x, old_last_point.y], 'EPSG:2056', 'EPSG:4326');
 
     // fetch path from valhalla/valhalla
     const url = `${MapAnimatorService.VALHALLA_URL}route?json=` + encodeURIComponent(JSON.stringify({
@@ -385,7 +384,7 @@ export class MapAnimatorService {
       ],
       costing: 'pedestrian',
       directions_type: 'none',
-      radius: 25
+      radius: 10
     }));
 
     // fetch path from valhalla/valhalla at localhost:8002
@@ -395,14 +394,34 @@ export class MapAnimatorService {
     const decoded_path = decode(shape, 6).map(p =>
       transform([p[1], p[0]], 'EPSG:4326', 'EPSG:2056'));
 
-    decoded_path.forEach(p => {
+    const first_point: LV95_Coordinates = {x: decoded_path[0][0], y: decoded_path[0][1]};
+    const last_point: LV95_Coordinates = {
+      x: decoded_path[decoded_path.length - 1][0],
+      y: decoded_path[decoded_path.length - 1][1]
+    };
+
+    // check if the first point is within 10m of the old_last_point
+    const OFF_PATH_THRESHOLD = 20;
+    if ((Math.sqrt((first_point.x - old_last_point.x) ** 2 + (first_point.y - old_last_point.y) ** 2) > OFF_PATH_THRESHOLD) ||
+      (Math.sqrt((last_point.x - point.x) ** 2 + (last_point.x - point.x) ** 2) > OFF_PATH_THRESHOLD)) {
+
       path.push({
-        'x': p[0],
-        'y': p[1],
+        'x': point.x,
+        'y': point.y,
         'h': 0,
         'accumulated_distance': 0,
       });
-    });
+
+    } else {
+      decoded_path.forEach(p => {
+        path.push({
+          'x': p[0],
+          'y': p[1],
+          'h': 0,
+          'accumulated_distance': 0,
+        });
+      });
+    }
 
     this._path$.next(path);
 
