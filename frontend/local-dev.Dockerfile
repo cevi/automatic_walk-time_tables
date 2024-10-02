@@ -6,6 +6,8 @@ WORKDIR /app
 
 # Install app dependencies
 COPY ./frontend/*.json /app/
+COPY ./.git/HEAD /app/.git/HEAD
+COPY ./.git/refs/heads/ /app/.git/refs/heads/
 
 # Install all the dependencies from package-lock.json
 RUN npm ci

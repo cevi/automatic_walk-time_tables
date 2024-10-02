@@ -80,9 +80,6 @@ services:
         - ENVIRONMENT_FILE=.env.local-dev
     volumes:
       - ./frontend/src:/app/src
-      # Mount git info to container
-      - ./.git/HEAD:/app/.git/HEAD
-      - ./.git/refs/heads/:/app/.git/refs/heads/
     ports:
       - "80:80"
     depends_on:
