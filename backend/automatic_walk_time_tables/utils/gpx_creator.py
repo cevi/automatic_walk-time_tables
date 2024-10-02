@@ -114,7 +114,7 @@ def add_waypoints(_path: path.Path, _way_points: path.Path, gpx_f: GPX):
 
         # this should be a unique id for each waypoint
         gpx_extension_id = ET.Element("swisstopo:waypoint_id")
-        gpx_extension_id.text = "waypoint_id_{i}"
+        gpx_extension_id.text = f"waypoint_id_{i}"
 
         # this must be the ID of a track point at the same location
         gpx_extension_route_id = ET.Element("swisstopo:waypoint_routepoint_id")
