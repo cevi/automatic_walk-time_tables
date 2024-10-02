@@ -4,8 +4,8 @@ from typing import List
 
 import polyline
 
-from .point import Point_LV03, Point
-from .way_point import WayPoint, way_point_from_json
+from automatic_walk_time_tables.utils.point import Point_LV03, Point
+from automatic_walk_time_tables.utils.way_point import WayPoint, way_point_from_json
 
 
 class Path:
