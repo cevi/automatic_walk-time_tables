@@ -90,7 +90,9 @@ def add_metadata_to_gpx_str(_path: path.Path, gpx_xml: str):
 def minify_xml(xml_content):
     # Remove line breaks, tabs, and multiple spaces
     minified_xml = re.sub(r">\s+<", "><", xml_content)  # Remove spaces between tags
-    minified_xml = re.sub(r"\s+", " ", minified_xml).strip()  # Collapse all whitespace inside tags
+    minified_xml = re.sub(
+        r"\s+", " ", minified_xml
+    ).strip()  # Collapse all whitespace inside tags
     return minified_xml
 
 
