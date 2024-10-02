@@ -193,10 +193,15 @@ class AutomatedWalkTableGenerator:
         self.__pois = pois
 
     def get_store_dict(self):
+
+        # name way_points
+        naming_fetcher = NamingTransformer(use_default_name=True)
+        __way_points = naming_fetcher.transform(self.__way_points)
+
         return {
             "uuid": self.uuid,
             "options": self.options,
             "path": self.__path.to_json(),
             "pois": self.__pois.to_json(),
-            "way_points": self.__way_points.to_json(),
+            "way_points": __way_points.to_json(),
         }

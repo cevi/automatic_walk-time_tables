@@ -15,8 +15,9 @@ class NamingTransformer(PathTransformer):
     Fetches the names for each point in the path.
     """
 
-    def __init__(self):
+    def __init__(self, use_default_name: bool = False):
         super().__init__()
+        self.use_default_name = use_default_name
 
     def transform(self, path_: Path) -> Path:
         for pt in path_.way_points:
@@ -33,8 +34,10 @@ class NamingTransformer(PathTransformer):
                 resp = req.json()
 
                 # Use coordinate if next name is more than 100 meters away
-                if resp[0]["offset"] <= 100:
+                if resp[0]["offset"] <= 100 and resp[0]["swiss_name"] != "":
                     pt.name = resp[0]["swiss_name"]
+                elif self.use_default_name:
+                    pt.name = f"{round(lv95.lat)}, {round(lv95.lon)}"
 
             except requests.exceptions.ConnectionError:
                 logger.error(

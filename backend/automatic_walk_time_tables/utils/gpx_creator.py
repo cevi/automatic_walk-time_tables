@@ -1,6 +1,7 @@
 import logging
 import xml.etree.ElementTree as ET
 
+import re
 import gpxpy
 from gpxpy.gpx import GPX
 
@@ -80,7 +81,17 @@ def add_metadata_to_gpx_str(_path: path.Path, gpx_xml: str):
     meta_data.append(extensions)
 
     encoded_metadata = ET.tostring(meta_data).decode("utf-8")
-    return gpx_xml.replace("</gpx>", f"{encoded_metadata}</gpx>")
+    gpx_xml = gpx_xml.replace("</gpx>", f"{encoded_metadata}</gpx>")
+
+    # minify the xml string and replace any spaces between tags
+    return minify_xml(gpx_xml.replace("\n", ""))
+
+
+def minify_xml(xml_content):
+    # Remove line breaks, tabs, and multiple spaces
+    minified_xml = re.sub(r">\s+<", "><", xml_content)  # Remove spaces between tags
+    minified_xml = re.sub(r"\s+", " ", minified_xml).strip()  # Collapse all whitespace inside tags
+    return minified_xml
 
 
 def add_track_points(_path: path.Path, gpx_f: GPX):
@@ -96,7 +107,7 @@ def add_track_points(_path: path.Path, gpx_f: GPX):
 
         # each track points must have the swisstopo:routepoint_id extension with a
         # unique id for each point
-        track_point = gpxpy.gpx.GPXTrackPoint(lat, lon, elevation=elevation, name=name)
+        track_point = gpxpy.gpx.GPXTrackPoint(lat, lon, elevation=elevation)
         routepoint_id = ET.Element("swisstopo:routepoint_id")
         routepoint_id.text = f"1{i:08d}"
         track_point.extensions.append(routepoint_id)
