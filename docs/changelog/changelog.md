@@ -6,6 +6,8 @@ A complete, technical changelog is available at [GitHub](https://github.com/cevi
 - Exports are now stored in a database. This allows for further exports and:
 - QR Code generation for import into swisstopo app
 - Add height profile again (revert removal in 5.1.0)
+- Improve Drawing: you can now delete the last point of the path
+- Improve Drawing: you can now draw off-road paths
 - Bug fixes
 - Dependency updates
 
