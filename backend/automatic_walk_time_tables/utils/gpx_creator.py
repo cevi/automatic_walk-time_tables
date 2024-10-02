@@ -51,8 +51,11 @@ def add_metadata_to_gpx_str(_path: path.Path, gpx_xml: str):
     # check if the route name is empty or too long
     if route_name == "":
         route_name = "Cevi.Tools - Marschzeittabelle"
-    elif len(route_name) > 25:
+    elif len(route_name) > 20:
         logging.warning("Route name is too long, will be truncated")
+
+    # add date to route name
+    route_name = f"{route_name} - Cevi.Tools"
 
     route_name_element = ET.Element("name")
     route_name_element.text = route_name
@@ -95,7 +98,7 @@ def add_track_points(_path: path.Path, gpx_f: GPX):
         # unique id for each point
         track_point = gpxpy.gpx.GPXTrackPoint(lat, lon, elevation=elevation, name=name)
         routepoint_id = ET.Element("swisstopo:routepoint_id")
-        routepoint_id.text = f"routepoint_id_{i}"
+        routepoint_id.text = f"1{i:08d}"
         track_point.extensions.append(routepoint_id)
         gpx_segment.points.append(track_point)
     gpx_track.segments.append(gpx_segment)
@@ -114,13 +117,13 @@ def add_waypoints(_path: path.Path, _way_points: path.Path, gpx_f: GPX):
 
         # this should be a unique id for each waypoint
         gpx_extension_id = ET.Element("swisstopo:waypoint_id")
-        gpx_extension_id.text = f"waypoint_id_{i}"
+        gpx_extension_id.text = f"2{i:08d}"
 
         # this must be the ID of a track point at the same location
         gpx_extension_route_id = ET.Element("swisstopo:waypoint_routepoint_id")
         closest_track_point = _path.get_closest_point(point.point)
         gpx_extension_route_id.text = (
-            f"routepoint_id_{_path.way_points.index(closest_track_point)}"
+            f"1{_path.way_points.index(closest_track_point):08d}"
         )
 
         gpx_extension_control = ET.Element("swisstopo:waypoint_is_controlpoint")
