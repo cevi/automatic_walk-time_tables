@@ -19,7 +19,10 @@ from automatic_walk_time_tables.path_transformers.naming_transformer import (
 from automatic_walk_time_tables.path_transformers.pois_transfomer import POIsTransformer
 from automatic_walk_time_tables.utils import path
 from automatic_walk_time_tables.utils.file_parser import GeoFileParser
-from automatic_walk_time_tables.walk_time_table.walk_table import create_walk_table
+from automatic_walk_time_tables.walk_time_table.walk_table import (
+    create_walk_table,
+    plot_elevation_profile,
+)
 from server_logging.status_handler import ExportStateLogger
 from automatic_walk_time_tables.utils.error import UserException
 
@@ -92,6 +95,21 @@ class AutomatedWalkTableGenerator:
 
         naming_fetcher = NamingTransformer()
         self.__way_points = naming_fetcher.transform(self.__way_points)
+
+        self.__log_runtime(
+            plot_elevation_profile,
+            "Benötigte Zeit zum erstellen des Höhenprofils",
+            self.__path,
+            self.__way_points,
+            self.__pois,
+            file_name=name,
+            legend_position=self.options["settings"]["legend_position"],
+        )
+        self.__logger.log(
+            ExportStateLogger.REQUESTABLE,
+            "Höhenprofil wurde erstellt.",
+            {"uuid": self.uuid, "status": GeneratorStatus.RUNNING},
+        )
 
         # We use fetch map numbers only for the selected way points,
         # this is much faster that for every point in the original path. As the swiss_TML_api uses a tolerance
@@ -173,3 +191,17 @@ class AutomatedWalkTableGenerator:
         self.__path = path_data
         self.__way_points = way_points
         self.__pois = pois
+
+    def get_store_dict(self):
+
+        # name way_points
+        naming_fetcher = NamingTransformer(use_default_name=True)
+        __way_points = naming_fetcher.transform(self.__way_points)
+
+        return {
+            "uuid": self.uuid,
+            "options": self.options,
+            "path": self.__path.to_json(),
+            "pois": self.__pois.to_json(),
+            "way_points": __way_points.to_json(),
+        }

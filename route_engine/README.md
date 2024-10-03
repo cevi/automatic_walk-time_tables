@@ -12,6 +12,8 @@ files.
 
 **Note:** You need roughly 32GB of memory on your machine to run this script.
 
+You can download the SHP files from https://www.swisstopo.admin.ch/de/landschaftsmodell-swisstlm3d.
+
 ```bash
 # First you need to build the docker container in the `helper_scripts` folder.
 docker build -t shp_to_osm .

@@ -20,8 +20,12 @@
 
         <div class="content-block">
 
-          <h3>Route Zeichnen [experimentell]</h3>
+          <h3>Route Zeichnen</h3>
           <p>Starte deine Route mit einem Klick auf die Landeskarte.</p>
+
+          <button (click)="delete_last_waypoint()" mat-stroked-button color="warn"
+                  [disabled]="!has_valid_path">Letzter Wegpunkt löschen
+          </button>
 
           <button (click)="finish_drawing()" matStepperNext mat-stroked-button color="primary"
                   [disabled]="!has_valid_path">Zeichnen Abschliessen
@@ -79,6 +83,22 @@
         </mat-slide-toggle>
         <br>
         <br>
+
+        <div class="content-block">
+
+          <p>
+            Hier kannst du einstellen, wo die Legende im Höhenprofil angezeigt wird.
+            Das Höhenprofil wird deinem Export als Bild beigefügt.
+          </p>
+
+          <mat-select appearance="fill" placeholder="Position der Legende" formControlName="legend_position">
+            <mat-option value="upper left">Oben Links</mat-option>
+            <mat-option value="lower left">Unten Links</mat-option>
+            <mat-option value="upper right">Oben Rechts</mat-option>
+            <mat-option value="lower right">Unten Rechts</mat-option>
+          </mat-select>
+
+        </div>
 
         <button mat-stroked-button color="primary" matStepperNext id="goto-step-3">Weiter</button>
 

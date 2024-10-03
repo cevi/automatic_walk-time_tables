@@ -1,5 +1,5 @@
 import logging
-
+import os
 import fiona
 from rtree.index import Index as RTreeIndex
 from shapely.geometry import LineString
@@ -12,6 +12,10 @@ class StreetIndex:
     def __init__(self, shp_file):
         self.index_file_path = "./index_cache/street_index"
         self.shp_file = shp_file
+
+        if not os.path.exists("./index_cache"):
+            # If it does not exist, create the directory
+            os.makedirs("./index_cache")
 
     def get_street_index(self, street_types=("Weg", "Strasse", "Wegfragment", "Spur")):
         path_index = RTreeIndex(self.index_file_path)

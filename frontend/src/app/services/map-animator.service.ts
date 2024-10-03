@@ -89,6 +89,28 @@ export class MapAnimatorService {
     this._pointer$.next(coordinates);
   }
 
+  public async retrieve_data(uuid: string): Promise<number> {
+    return new Promise<number>((resolve, reject) => {
+      const url = MapAnimatorService.BASE_URL + 'retrieve/' + uuid;
+      fetch(url, {
+        method: "GET",
+        headers: {
+          ContentType: 'multipart/form-data',
+          Accept: 'application/json',
+        },
+      })
+        .then(response => response.json())
+        .then((resp: any) => {
+          console.log('resp', resp);
+
+          if (resp.status === 'running')
+            resolve(resp.uuid);
+          else
+            reject(resp);
+        });
+    })
+  }
+
   public async download_map(settings: any): Promise<number> {
 
     console.log('settings', settings);
@@ -324,9 +346,7 @@ export class MapAnimatorService {
   public async add_way_point(point: LV95_Coordinates) {
 
     const WGS84 = transform([point.x, point.y], 'EPSG:2056', 'EPSG:4326');
-    console.log('Adding way point', point, WGS84);
-
-    const path = this._path$.getValue();
+    console.log('Adding way point', point);
 
     const pois = this._pois$.getValue();
     pois.push({
@@ -334,10 +354,12 @@ export class MapAnimatorService {
       'y': point.y,
       'h': 0,
       'accumulated_distance': 0,
-      'name': ''
+      'name': '',
+      'is_waypoint': true
     });
     this._pois$.next(pois);
 
+    const path = this._path$.getValue();
     if (path.length == 0) {
 
       path.push({
@@ -345,6 +367,7 @@ export class MapAnimatorService {
         'y': point.y,
         'h': 0,
         'accumulated_distance': 0,
+        'is_waypoint': true
       });
 
       this._path$.next(path);
@@ -352,7 +375,8 @@ export class MapAnimatorService {
 
     }
 
-    const old_WGS84 = transform([path[path.length - 1].x, path[path.length - 1].y], 'EPSG:2056', 'EPSG:4326');
+    const old_last_point = path[path.length - 1];
+    const old_WGS84 = transform([old_last_point.x, old_last_point.y], 'EPSG:2056', 'EPSG:4326');
 
     // fetch path from valhalla/valhalla
     const url = `${MapAnimatorService.VALHALLA_URL}route?json=` + encodeURIComponent(JSON.stringify({
@@ -362,7 +386,7 @@ export class MapAnimatorService {
       ],
       costing: 'pedestrian',
       directions_type: 'none',
-      radius: 25
+      radius: 10
     }));
 
     // fetch path from valhalla/valhalla at localhost:8002
@@ -372,14 +396,40 @@ export class MapAnimatorService {
     const decoded_path = decode(shape, 6).map(p =>
       transform([p[1], p[0]], 'EPSG:4326', 'EPSG:2056'));
 
-    decoded_path.forEach(p => {
+    const first_point: LV95_Coordinates = {x: decoded_path[0][0], y: decoded_path[0][1]};
+    const last_point: LV95_Coordinates = {
+      x: decoded_path[decoded_path.length - 1][0],
+      y: decoded_path[decoded_path.length - 1][1]
+    };
+
+    // check if the first point is within 10m of the old_last_point
+    const OFF_PATH_THRESHOLD = 10;
+    if ((Math.sqrt((first_point.x - old_last_point.x) ** 2 + (first_point.y - old_last_point.y) ** 2) > OFF_PATH_THRESHOLD) ||
+      (Math.sqrt((last_point.x - point.x) ** 2 + (last_point.x - point.x) ** 2) > OFF_PATH_THRESHOLD)) {
+
       path.push({
-        'x': p[0],
-        'y': p[1],
+        'x': point.x,
+        'y': point.y,
         'h': 0,
         'accumulated_distance': 0,
+        'is_waypoint': true
       });
-    });
+
+    } else {
+      decoded_path.forEach(p => {
+        path.push({
+          'x': p[0],
+          'y': p[1],
+          'h': 0,
+          'accumulated_distance': 0,
+          'is_waypoint': false
+        });
+      });
+
+      // set last point as waypoint
+      path[path.length - 1].is_waypoint = true;
+
+    }
 
     this._path$.next(path);
 
@@ -393,7 +443,8 @@ export class MapAnimatorService {
         'y': p[1],
         'h': elevation[i][1],
         'accumulated_distance': elevation[i][0] / 1_000,
-        'name': (names && names.length > 0) ? names[i] : ''
+        'name': (names && names.length > 0) ? names[i] : '',
+        'is_waypoint': false
       };
     });
 
@@ -437,6 +488,27 @@ export class MapAnimatorService {
       .subscribe(([path, pois, way_points]) =>
         this.create_walk_time_table(path, pois, this.auto_waypoints).catch(err => this._error_handler(err))
       );
+
+  }
+
+  /**
+   * Deletes all path points after the second last waypoint
+   */
+  delete_last_waypoint() {
+
+    const old_path = this._path$.getValue();
+
+    const idx_of_last_waypoint = old_path.length - old_path.slice(0, -1).reverse().findIndex(p => p.is_waypoint) - 1;
+    let path = old_path.slice(0, idx_of_last_waypoint);
+
+    const pois = this._pois$.getValue().slice(0, -1);
+
+    if (pois.length == 0) {
+      path = [];
+    }
+
+    this._path$.next(path);
+    this._pois$.next(pois);
 
   }
 

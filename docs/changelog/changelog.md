@@ -2,6 +2,15 @@
 
 A complete, technical changelog is available at [GitHub](https://github.com/cevi/automatic_walk-time_tables/releases).
 
+## Version 6 - Route storing & QR Codes
+- Exports are now stored in a database. This allows for further exports and:
+- QR Code generation for import into swisstopo app
+- Add height profile again (revert removal in 5.1.0)
+- Improve Drawing: you can now delete the last point of the path
+- Improve Drawing: you can now draw off-road paths
+- Bug fixes
+- Dependency updates
+
 ## Version 5 - Drawing Paths directly within the Web App
 - Adds basic path drawing functionality to the web app (experimental) (5.0.0)
 - Fixes a bug where the generated Excel file was buggy (5.0.0)

@@ -1,11 +1,11 @@
 Flask==3.0.3
-gunicorn==22.0.0
-flask-cors==4.0.1
+gunicorn==23.0.0
+flask-cors==5.0.0
 gpxpy==1.6.2
-numpy==2.0.1
+numpy==2.1.1
 geopy==2.4.1
 openpyxl==3.1.5
 grequests==0.7.0
 pyclustering==0.10.1.2
 polyline==2.0.2
-pypdf==4.3.1
+pypdf==5.0.1

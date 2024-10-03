@@ -1,0 +1,9 @@
+
+<h2>Angefragte Route wird geladen.</h2>
+
+<p *ngif="error_message === ''"> Die per Link angefrage Route wird vom Server geladen.</p>
+<p *ngIf="error_message !== ''" class="error_message">Die Route wurde nicht gefunden.</p>
+
+<ng-container *ngIf="error_message !== ''">
+    <button mat-stroked-button color="warn" routerLink="/">Neuer Versuch starten</button>
+  </ng-container>  

@@ -48,7 +48,7 @@ services:
       test: "curl -f http://localhost:1848/ready | grep 'ready'"
       interval: 5s
       timeout: 1s
-      retries: 180
+      retries: 300
 
   awt-backend:
     build:
@@ -80,9 +80,6 @@ services:
         - ENVIRONMENT_FILE=.env.local-dev
     volumes:
       - ./frontend/src:/app/src
-      # Mount git info to container
-      - ./.git/HEAD:/app/.git/HEAD
-      - ./.git/refs/heads/:/app/.git/refs/heads/
     ports:
       - "80:80"
     depends_on:
@@ -116,6 +113,26 @@ services:
     env_file:
       - .env.local-dev
 
+  awt-store-api:
+    build:
+      context: ./store_api
+      dockerfile: local-dev.Dockerfile
+    volumes:
+      - ./store_api:/app
+    ports:
+      - "6000:6000"
+    env_file:
+      - .env.local-dev
+  
+  awt-mongodb:
+    image: mongo:latest
+    env_file:
+      - .env.local-dev
+    volumes:
+      - mongo_data:/data/db
+
+
 volumes:
   vitepress_dist: {}
   node_modules: {}
+  mongo_data: {}

@@ -4,8 +4,8 @@ from typing import List
 
 import polyline
 
-from .point import Point_LV03, Point
-from .way_point import WayPoint
+from automatic_walk_time_tables.utils.point import Point_LV03, Point
+from automatic_walk_time_tables.utils.way_point import WayPoint, way_point_from_json
 
 
 class Path:
@@ -172,3 +172,19 @@ class Path:
 
     def get_names(self):
         return [wp.name for wp in self.__way_points]
+
+    def get_closest_point(self, point: Point) -> WayPoint:
+        return min(
+            self.__way_points,
+            key=lambda wp: wp.point.to_LV03().distance(point.to_LV03()),
+        )
+
+
+def path_from_json(json):
+    path = Path()
+    path.route_name = json["route_name"]
+
+    for wp in json["way_points"]:
+        path.append(way_point_from_json(wp))
+
+    return path

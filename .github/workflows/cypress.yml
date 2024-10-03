@@ -15,6 +15,12 @@ jobs:
       - name: 🛎️  Checkout
         uses: actions/checkout@v4
 
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          docker-images: false
+
       - name: create dumy files for ./git/HEAD and ./git/refs/heads/
         run: |
           mkdir -p .git/refs/heads

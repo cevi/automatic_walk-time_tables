@@ -107,3 +107,14 @@ services:
       - force_rebuild=False  # forces a rebuild of the routing tiles with "True"
     env_file:
       - .env.ci-testing
+
+  awt-store-api:
+    build:
+      context: ./store_api
+      dockerfile: Dockerfile
+    env_file:
+      - .env.ci-testing
+
+  awt-mongodb:
+    env_file:
+      - .env.ci-testing

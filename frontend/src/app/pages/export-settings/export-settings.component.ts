@@ -32,6 +32,7 @@ export class ExportSettingsComponent {
       'map_scaling': new UntypedFormControl(15_000),
       'departure_time': new UntypedFormControl((new Date()).toISOString().substring(0, 16)),
       'creator_name': new UntypedFormControl(''),
+      'legend_position': new UntypedFormControl('lower right'),
       'map_layers': new UntypedFormControl('ch.swisstopo.pixelkarte-farbe'),
       'auto_scale': new UntypedFormControl(false),
       'route_name': new UntypedFormControl(''),
@@ -120,4 +121,9 @@ export class ExportSettingsComponent {
     await this.mapAnimator.finish_drawing();
 
   }
+
+  async delete_last_waypoint() {
+    this.mapAnimator.delete_last_waypoint();
+  }
+
 }
