@@ -28,7 +28,6 @@ def get_random_coordinates_along_path():
 if __name__ == "__main__":
 
     lv03_coord = [2651537.71, 1114910.83]  # get_random_coordinates_along_path()
-    bounds = [[lv03_coord[0] - 1000, lv03_coord[1] - 1000], [lv03_coord[0] + 1000, lv03_coord[1] + 1000]]
     name_index = NameFinder(force_rebuild=False, reduced=False)
 
     image = MapImage(lv03_coord, zoom_level=9)

@@ -72,7 +72,6 @@ class MapImage:
         # Request images in parallel
         rs = (grequests.get(u) for u in urls)
         results = grequests.map(rs)
-
         index = 0
         for i in range(0, self.x_count):
             for j in range(1, self.y_count + 1):
