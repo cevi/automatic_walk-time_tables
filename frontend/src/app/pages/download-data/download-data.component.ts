@@ -13,6 +13,7 @@ export class DownloadDataComponent implements OnInit {
   static baseURL = environment.API_URL;
   private readonly uuid: string;
   public readonly download_link: string;
+  public readonly qr_link: string;
 
   public readonly available_until: string;
 
@@ -20,6 +21,7 @@ export class DownloadDataComponent implements OnInit {
     // Get UUID from the URL
     this.uuid = activatedRoute.snapshot.url[1].toString();
     this.download_link = DownloadDataComponent.baseURL + 'download/' + this.uuid;
+    this.qr_link = DownloadDataComponent.baseURL + 'qr/' + this.uuid;
 
     // the data is available for 10 minutes
     const available_until = new Date();
