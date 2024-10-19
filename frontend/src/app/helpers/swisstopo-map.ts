@@ -108,9 +108,9 @@ export class SwisstopoMap {
       layers: layers,
       target: target_canvas,
       view: new View({
-        center: [2719640, 1216329],
+        center: [2660000,1190000],
         projection: this.get_projection(),
-        resolution: 25
+        resolution: 300
       }),
       controls: defaults({
         attributionOptions: ({
