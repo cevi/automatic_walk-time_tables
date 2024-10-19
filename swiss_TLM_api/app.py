@@ -42,13 +42,8 @@ def _load_indexes():
         name_index = None
         name_index = NameFinder(force_rebuild=True, reduced=False)
 
-    try:
-        map_number_index = MapNumberIndex(force_rebuild=False)
-    except Exception as e:
-        logger.error("Error while loading map number index. Forcing rebuild")
-        logger.error(e)
-        map_number_index = None
-        map_number_index = MapNumberIndex(force_rebuild=True)
+    
+    map_number_index = MapNumberIndex(force_rebuild=True) # on every start, load the Map numbers from the swisstopo server
 
 
 @app.route("/ready", methods=["GET"])
