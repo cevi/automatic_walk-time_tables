@@ -85,7 +85,7 @@ def add_metadata_to_gpx_str(_path: path.Path, gpx_xml: str):
     ##########################
     # Add Swisstopo Tour Type
     #
-    # we need to mark the route as a swisstopo tour in to enable
+    # we need to mark the route as a swisstopo tour to enable
     # named waypoints: 0 = hiking, 1 = biking, 2 = mountain biking
     ##########################
 
