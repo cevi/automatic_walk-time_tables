@@ -92,7 +92,7 @@ class MapNumberIndex:
             for map_bbox in map_bboxes:
                 if self.is_in_bbox(map_bbox.bbox, lat, lon):
                     map_numbers_.add(map_bbox.object)
-
+        logger.info("Fetched Map Numbers: " + ", ".join(map_numbers_))
         return ", ".join(map_numbers_)
 
     def is_in_bbox(self, bbox: List[float], lat: int, lon: int, tol=2_000) -> bool:
