@@ -3,6 +3,7 @@ import os
 from typing import List
 import requests
 import time
+import json
 
 from rtree.exceptions import RTreeError
 from rtree.index import Index as RTreeIndex
@@ -56,14 +57,12 @@ class MapNumberIndex:
         self.index = RTreeIndex(self.index_file_path)
 
         # Build index using the swisstopo api
-        base_url = "https://shop.swisstopo.admin.ch/de/api/geojson/814"
-        response = requests.get(base_url)
-        logger.info(response) # DEBUG
-        logger.info(response.status_code) # DEBUG
-        logger.info(response.content)
-        logger.info(response.json()) # DEBUG
+        # downloadable at:
+        # https://shop.swisstopo.admin.ch/de/api/geojson/814
+        with open("resources/814.json", "r") as json_file:
+            geojson_data = json.load(json_file)
         try:
-            for feature in response.json()["features"]:
+            for feature in geojson_data["features"]:
                 coords = feature["geometry"]["coordinates"][0]  # get coords dict
                 coords_x = coords[0][0], coords[2][0]
                 coords_y = coords[0][1], coords[2][1]
@@ -82,7 +81,9 @@ class MapNumberIndex:
             logger.error(e)
 
         self.index.flush()  # save the index to disk
-        logger.info(f"Map numbers index created with {len(response.json()['features'])} boxes.")
+        logger.info(
+            f"Map numbers index created with {len(geojson_data['features'])} boxes."
+        )
 
     def fetch_map_numbers(self, coordinates: List[List[int]]) -> str:
         map_numbers_ = set()
