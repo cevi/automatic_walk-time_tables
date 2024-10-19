@@ -24,7 +24,7 @@ export class DownloadDataComponent implements OnInit {
     // Get UUID from the URL
     this.uuid = activatedRoute.snapshot.url[1].toString();
     this.download_link = DownloadDataComponent.baseURL + 'download/' + this.uuid;
-    this.retrieve_link = DownloadDataComponent.baseURL + 'retrieve/' + this.uuid;
+    this.retrieve_link = window.location.origin + '/retrieve/' + this.uuid;
     this.qr_link = DownloadDataComponent.baseURL + 'qr/' + this.uuid;
 
     // the data is available for 10 minutes
