@@ -60,6 +60,7 @@ class MapNumberIndex:
         response = requests.get(base_url)
         logger.info(response) # DEBUG
         logger.info(response.status_code) # DEBUG
+        logger.info(response.content)
         logger.info(response.json()) # DEBUG
         try:
             for feature in response.json()["features"]:
