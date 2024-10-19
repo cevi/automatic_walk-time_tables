@@ -79,7 +79,7 @@ class MapNumberIndex:
             logger.error(e)
 
         self.index.flush()  # save the index to disk
-        logger.info(f"Map numbers index created with {len(response.json()["features"])} boxes.")
+        logger.info(f"Map numbers index created with {len(response.json()['features'])} boxes.")
 
     def fetch_map_numbers(self, coordinates: List[List[int]]) -> str:
         map_numbers_ = set()
