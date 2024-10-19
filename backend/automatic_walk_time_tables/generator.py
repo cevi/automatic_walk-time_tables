@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import pathlib
 import time
+import os
 
 from automatic_walk_time_tables.generator_status import GeneratorStatus
 from automatic_walk_time_tables.geo_processing.map_numbers import fetch_map_numbers
@@ -18,6 +19,7 @@ from automatic_walk_time_tables.path_transformers.naming_transformer import (
 )
 from automatic_walk_time_tables.path_transformers.pois_transfomer import POIsTransformer
 from automatic_walk_time_tables.utils import path
+from automatic_walk_time_tables.utils import gpx_creator
 from automatic_walk_time_tables.utils.file_parser import GeoFileParser
 from automatic_walk_time_tables.walk_time_table.walk_table import (
     create_walk_table,
@@ -162,6 +164,22 @@ class AutomatedWalkTableGenerator:
             ),
             print_api_base_url=self.options["print_api_base_url"],
         )
+
+        self.__log_runtime(
+            self.store_gpx_file,
+            "Benötigte Zeit um die GPX-Datei zu erstellen",
+            name,
+        )
+        self.__logger.log(
+            ExportStateLogger.REQUESTABLE,
+            "GPX-Datei erstellt.",
+            {"uuid": self.uuid, "status": GeneratorStatus.RUNNING},
+        )
+
+    def store_gpx_file(self, name: str):
+        gpx_data = gpx_creator.create_gpx_file(self.__path, self.__way_points)      
+        with open(f"{name}.gpx", "w") as wr:
+            wr.write(gpx_data)
 
     def __log_runtime(
         self,
