@@ -42,8 +42,9 @@ def _load_indexes():
         name_index = None
         name_index = NameFinder(force_rebuild=True, reduced=False)
 
-    
-    map_number_index = MapNumberIndex(force_rebuild=True) # on every start, load the Map numbers from the swisstopo server
+    map_number_index = MapNumberIndex(
+        force_rebuild=True
+    )  # on every start, load the Map numbers from the swisstopo server
 
 
 @app.route("/ready", methods=["GET"])
