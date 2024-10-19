@@ -58,7 +58,9 @@ class MapNumberIndex:
         # Build index using the swisstopo api
         base_url = "https://shop.swisstopo.admin.ch/de/api/geojson/814"
         response = requests.get(base_url)
-
+        logger.info(response) # DEBUG
+        logger.info(response.status_code) # DEBUG
+        logger.info(response.json()) # DEBUG
         try:
             for feature in response.json()["features"]:
                 coords = feature["geometry"]["coordinates"][0]  # get coords dict
