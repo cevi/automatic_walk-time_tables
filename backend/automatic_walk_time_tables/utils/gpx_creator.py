@@ -2,6 +2,7 @@ import logging
 import xml.etree.ElementTree as ET
 
 import re
+import os
 import gpxpy
 from gpxpy.gpx import GPX
 import requests
