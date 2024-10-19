@@ -30,7 +30,7 @@ from automatic_walk_time_tables.path_transformers.pois_transfomer import POIsTra
 from automatic_walk_time_tables.utils.error import UserException
 from automatic_walk_time_tables.utils.gpx_creator import (
     create_gpx_file,
-    fetch_data_for_uuid
+    fetch_data_for_uuid,
 )
 from automatic_walk_time_tables.utils.path import Path, path_from_json
 from automatic_walk_time_tables.utils.point import Point_LV95

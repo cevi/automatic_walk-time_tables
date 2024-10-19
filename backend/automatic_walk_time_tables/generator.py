@@ -177,7 +177,7 @@ class AutomatedWalkTableGenerator:
         )
 
     def store_gpx_file(self, name: str):
-        gpx_data = gpx_creator.create_gpx_file(self.__path, self.__way_points)      
+        gpx_data = gpx_creator.create_gpx_file(self.__path, self.__way_points)
         with open(f"{name}.gpx", "w") as wr:
             wr.write(gpx_data)
 
