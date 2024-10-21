@@ -20,6 +20,16 @@
 
   <p><br></p>
 
+  <mat-form-field>
+    <mat-label>Link zum Teilen</mat-label>
+    <input matInput [value]="retrieve_link" readonly (click)="copyLink()" class="link-field">
+  </mat-form-field>
+
+  <p><br></p>
+
+  <p>Importiere deine Route in die Swisstopo App:</p>
+  <img src="{{qr_link}}" class="qr-img">
+
   <button mat-stroked-button routerLink="/"> Weitere Route Exportieren</button>
 
 </div>

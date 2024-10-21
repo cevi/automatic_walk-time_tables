@@ -16,6 +16,7 @@ import automatic_walk_time_tables.utils.geometry_utils
 from automatic_walk_time_tables.generator_status import GeneratorStatus
 from automatic_walk_time_tables.utils import path
 from automatic_walk_time_tables.utils.point import Point_LV95
+from automatic_walk_time_tables.utils.qr import build_qr_code_image_string
 from server_logging.status_handler import ExportStateLogger
 from automatic_walk_time_tables.utils.error import UserException
 
@@ -322,7 +323,7 @@ class MapCreator:
             point_layer = self.create_point_json(lv95, point, "#00BFFF", pointRadius=7)
             point_layers.append(point_layer)
 
-        qr_code_string = self.__build_qr_code_string()
+        qr_code_string = build_qr_code_image_string(self.uuid)
 
         query_json = {
             "layout": "A4 landscape",
@@ -343,29 +344,6 @@ class MapCreator:
         }
 
         return query_json
-
-    def __build_qr_code_string(self):
-        backend_domain = os.environ["BACKEND_DOMAIN"]
-        clear_url = f"{backend_domain}/gpx/{self.uuid}.gpx"
-        b64_url = base64.b64encode(clear_url.encode("ascii")).decode("ascii")
-        final_url = "https://swisstopo.app/u/" + b64_url
-        r = requests.post(
-            "https://backend.qr.cevi.tools/png",
-            json={"text": final_url},
-        )
-        if r.status_code == 200:
-            qr_code_bytes = r.content
-
-            # Convert the byte string to a base64-encoded string
-            base64_encoded = base64.b64encode(qr_code_bytes).decode("utf-8")
-
-            # Add the appropriate prefix for embedding in a webpage as a data URL
-            data_url = f"data:image/png;base64,{base64_encoded}"
-
-            # Print or return the data URL
-            return data_url
-        else:
-            return ""  # TODO: does this work?
 
     def create_point_json(
         self, lv95, point, color="#FF0000", pointRadius=5, label=False

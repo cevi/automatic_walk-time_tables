@@ -28,9 +28,13 @@ from automatic_walk_time_tables.path_transformers.heigth_fetcher_transfomer impo
 )
 from automatic_walk_time_tables.path_transformers.pois_transfomer import POIsTransformer
 from automatic_walk_time_tables.utils.error import UserException
-from automatic_walk_time_tables.utils.gpx_creator import create_gpx_file
+from automatic_walk_time_tables.utils.gpx_creator import (
+    create_gpx_file,
+    fetch_data_for_uuid,
+)
 from automatic_walk_time_tables.utils.path import Path, path_from_json
 from automatic_walk_time_tables.utils.point import Point_LV95
+from automatic_walk_time_tables.utils.qr import build_qr_code_image_string
 from server_logging.log_helper import setup_recursive_logger
 from server_logging.status_handler import ExportStateHandler, ExportStateLogger
 
@@ -460,18 +464,10 @@ def download(uuid):
     )
 
 
-def fetch_data_for_uuid(uuid):
-    """
-    Fetches the data for the given UUID from the store API.
-    :param uuid: The UUID of the data to fetch
-    :return: The data for the given UUID or None if the data is not available
-    """
-
-    r = requests.post(os.environ["STORE_API_URL"] + "/retrieve", json={"uuid": uuid})
-    if r.status_code == 200:
-        return r.json()
-
-    return None
+@app.route("/qr/<uuid>")
+def generate_qr_image(uuid):
+    qr_data = build_qr_code_image_string(uuid, raw=True)
+    return send_file(io.BytesIO(qr_data), mimetype="image/jpg")
 
 
 @app.route("/retrieve/<uuid>")
