@@ -56,6 +56,11 @@ def add_metadata_to_gpx_str(_path: path.Path, gpx_xml: str):
     :return: The GPX file with the metadata added
     """
 
+    ##########################
+    # Add swisstopo prefix
+    ##########################
+    gpx_xml = gpx_xml.replace("xmlns:xsi=", 'xmlns:swisstopo="https://prod-static.swisstopo-app.ch/xmlschemas/SwisstopoExtensions" xmlns:xsi=')
+
     meta_data = ET.Element("metadata")
 
     ##########################
