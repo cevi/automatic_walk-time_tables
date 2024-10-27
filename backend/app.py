@@ -306,25 +306,6 @@ def create_export(options, uuid):
         generator = AutomatedWalkTableGenerator(uuid, options)
         generator.set_data(path, way_points, pois)
 
-        if "disable-storing" in options.keys():
-            # do not store on data on a retrieve call
-            pass
-        else:
-            store_dict = generator.get_store_dict()
-            r = requests.post(os.environ["STORE_API_URL"] + "/store", json=store_dict)
-            if r.status_code == 200:
-                logger.log(
-                    ExportStateLogger.REQUESTABLE,
-                    "Daten abgespeichert.",
-                    {"uuid": uuid, "status": GeneratorStatus.RUNNING},
-                )
-            else:
-                logger.log(
-                    ExportStateLogger.REQUESTABLE,
-                    "Daten nicht abgespeichert.",
-                    {"uuid": uuid, "status": GeneratorStatus.ERROR},
-                )
-
         generator.run()
 
         # Create a new thread and start it
@@ -500,7 +481,7 @@ def retrieve_route(uuid):
         # clear old log
         stateHandler.remove_status(uuid)
 
-        options["disable-storing"] = True  # do not store on a retrieve call
+        options["is-retrieve"] = True  # do not store on a retrieve call, load names
 
         thread = Thread(
             target=create_export, kwargs={"options": options, "uuid": str(uuid)}

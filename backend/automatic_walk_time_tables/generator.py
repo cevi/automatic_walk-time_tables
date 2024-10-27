@@ -4,6 +4,7 @@ import logging
 import pathlib
 import time
 import os
+import requests
 
 from automatic_walk_time_tables.generator_status import GeneratorStatus
 from automatic_walk_time_tables.geo_processing.map_numbers import fetch_map_numbers
@@ -48,6 +49,25 @@ class AutomatedWalkTableGenerator:
     def run(self):
         self.__log_runtime(self.__create_files, "Benötigte Zeit für Export")
 
+        if "is-retrieve" in self.options.keys():
+            # do not store on data on a retrieve call
+            pass
+        else:
+            store_dict = self.get_store_dict()
+            r = requests.post(os.environ["STORE_API_URL"] + "/store", json=store_dict)
+            if r.status_code == 200:
+                self.__logger.log(
+                    ExportStateLogger.REQUESTABLE,
+                    "Daten abgespeichert.",
+                    {"uuid": self.uuid, "status": GeneratorStatus.RUNNING},
+                )
+            else:
+                self.__logger.log(
+                    ExportStateLogger.REQUESTABLE,
+                    "Daten nicht abgespeichert.",
+                    {"uuid": self.uuid, "status": GeneratorStatus.ERROR},
+                )
+
         # Export successfully completed
         self.__logger.log(
             ExportStateLogger.REQUESTABLE,
@@ -64,21 +84,29 @@ class AutomatedWalkTableGenerator:
             else self.__output_directory + gpx_route_name
         )
 
-        # calc POIs for the path
-        if self.__pois is None:
-            pois_transformer = POIsTransformer(self.options["settings"]["list_of_pois"])
-            self.__pois: path.Path = pois_transformer.transform(self.__path)
+        if "is-retrieve" in self.options.keys():
+            pass
+        else:
+            # calc POIs for the path
+            if self.__pois is None:
+                pois_transformer = POIsTransformer(
+                    self.options["settings"]["list_of_pois"]
+                )
+                self.__pois: path.Path = pois_transformer.transform(self.__path)
 
-        # calc points for walk-time table
-        if self.__way_points is None:
-            douglas_peucker_transformer = DouglasPeuckerTransformer(
-                number_of_waypoints=21, pois=self.__pois
-            )
-            self.__way_points: path.Path = self.__log_runtime(
-                douglas_peucker_transformer.transform,
-                "Benötigte Zeit zum Berechnen der Marschzeittabelle",
-                self.__path,
-            )
+            # calc points for walk-time table
+            if self.__way_points is None:
+                douglas_peucker_transformer = DouglasPeuckerTransformer(
+                    number_of_waypoints=21, pois=self.__pois
+                )
+                self.__way_points: path.Path = self.__log_runtime(
+                    douglas_peucker_transformer.transform,
+                    "Benötigte Zeit zum Berechnen der Marschzeittabelle",
+                    self.__path,
+                )
+
+            naming_fetcher = NamingTransformer()
+            self.__way_points = naming_fetcher.transform(self.__way_points)
 
         equidistant_transformer = EquidistantTransformer(equidistant_distance=1)
         equidistant_way_points: path.Path = equidistant_transformer.transform(
@@ -95,12 +123,9 @@ class AutomatedWalkTableGenerator:
             },
         )
 
-        naming_fetcher = NamingTransformer()
-        self.__way_points = naming_fetcher.transform(self.__way_points)
-
         self.__log_runtime(
             plot_elevation_profile,
-            "Benötigte Zeit zum erstellen des Höhenprofils",
+            "Benötigte Zeit zum Erstellen des Höhenprofils",
             self.__path,
             self.__way_points,
             self.__pois,
@@ -213,13 +238,13 @@ class AutomatedWalkTableGenerator:
     def get_store_dict(self):
 
         # name way_points
-        naming_fetcher = NamingTransformer(use_default_name=True)
-        __way_points = naming_fetcher.transform(self.__way_points)
+        # naming_fetcher = NamingTransformer(use_default_name=True)
+        # __way_points = naming_fetcher.transform(self.__way_points)
 
         return {
             "uuid": self.uuid,
             "options": self.options,
             "path": self.__path.to_json(),
             "pois": self.__pois.to_json(),
-            "way_points": __way_points.to_json(),
+            "way_points": self.__way_points.to_json(),
         }
