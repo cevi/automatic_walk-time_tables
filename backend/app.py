@@ -306,20 +306,24 @@ def create_export(options, uuid):
         generator = AutomatedWalkTableGenerator(uuid, options)
         generator.set_data(path, way_points, pois)
 
-        store_dict = generator.get_store_dict()
-        r = requests.post(os.environ["STORE_API_URL"] + "/store", json=store_dict)
-        if r.status_code == 200:
-            logger.log(
-                ExportStateLogger.REQUESTABLE,
-                "Daten abgespeichert.",
-                {"uuid": uuid, "status": GeneratorStatus.RUNNING},
-            )
+        if "disable-storing" in options.keys():
+            # do not store on data on a retrieve call
+            pass
         else:
-            logger.log(
-                ExportStateLogger.REQUESTABLE,
-                "Daten nicht abgespeichert.",
-                {"uuid": uuid, "status": GeneratorStatus.ERROR},
-            )
+            store_dict = generator.get_store_dict()
+            r = requests.post(os.environ["STORE_API_URL"] + "/store", json=store_dict)
+            if r.status_code == 200:
+                logger.log(
+                    ExportStateLogger.REQUESTABLE,
+                    "Daten abgespeichert.",
+                    {"uuid": uuid, "status": GeneratorStatus.RUNNING},
+                )
+            else:
+                logger.log(
+                    ExportStateLogger.REQUESTABLE,
+                    "Daten nicht abgespeichert.",
+                    {"uuid": uuid, "status": GeneratorStatus.ERROR},
+                )
 
         generator.run()
 
@@ -475,9 +479,28 @@ def retrieve_route(uuid):
     data = fetch_data_for_uuid(uuid)
     if data is not None:
         options = data["options"]
-        # TODO: check if the export folder still exists.
-        # if yes: do not export again, but rather just serve the folder
-        # if no: do as is now.
+
+        # if the output folder still exists, just serve it (export was created less than an hour ago)
+        # since the frontend is waiting on the "pending screen", we can just create a success entry
+        base_path = pathlib.Path("./output/" + uuid + "/")
+        if os.path.exists(base_path):
+            logger.log(
+                ExportStateLogger.REQUESTABLE,
+                "Die Daten sind bereits exportiert.",
+                {"uuid": uuid, "status": GeneratorStatus.SUCCESS},
+            )
+            return app.response_class(
+                response=json.dumps(
+                    {"status": GeneratorStatus.SUCCESS, "uuid": str(uuid)}
+                ),
+                status=200,
+                mimetype="application/json",
+            )
+
+        # clear old log
+        stateHandler.remove_status(uuid)
+
+        options["disable-storing"] = True  # do not store on a retrieve call
 
         thread = Thread(
             target=create_export, kwargs={"options": options, "uuid": str(uuid)}
@@ -494,7 +517,7 @@ def retrieve_route(uuid):
             response=json.dumps(
                 {
                     "status": GeneratorStatus.ERROR,
-                    "message": "Die angeforderte GPX Datei ist nicht verfügbar.",
+                    "message": "Die angeforderte Route ist nicht verfügbar.",
                 }
             ),
             status=404,
