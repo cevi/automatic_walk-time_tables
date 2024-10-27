@@ -91,6 +91,10 @@ def get_name():
                 }
             )
 
+            logger.info(
+                f"Choose {swiss_name.name} for {swiss_name.x}/{swiss_name.y} at distance {req_pkt.distance(Point((swiss_name.x, swiss_name.y)))}"
+            )
+
         return jsonify(response)
     except Exception as e:
         logger.error("Exception:")
