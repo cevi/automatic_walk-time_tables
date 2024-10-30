@@ -131,6 +131,9 @@ def add_track_points(_path: path.Path, gpx_f: GPX):
         elevation = p84.h
         name = point.name
 
+        if name == "":
+            name = "Wegpunkt"
+
         # each track points must have the swisstopo:routepoint_id extension with a
         # unique id for each point
         track_point = gpxpy.gpx.GPXTrackPoint(lat, lon, elevation=elevation)
