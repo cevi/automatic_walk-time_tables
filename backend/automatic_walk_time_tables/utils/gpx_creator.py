@@ -129,10 +129,6 @@ def add_track_points(_path: path.Path, gpx_f: GPX):
         lat = p84.lat
         lon = p84.lon
         elevation = p84.h
-        name = point.name
-
-        if name == "":
-            name = "Wegpunkt"
 
         # each track points must have the swisstopo:routepoint_id extension with a
         # unique id for each point
@@ -154,6 +150,9 @@ def add_waypoints(_path: path.Path, _way_points: path.Path, gpx_f: GPX):
         lon = p84.lon
         elevation = p84.h
         name = point.name
+
+        if name == "":
+            name = "Wegpunkt"
 
         # this should be a unique id for each waypoint
         gpx_extension_id = ET.Element("swisstopo:waypoint_id")
