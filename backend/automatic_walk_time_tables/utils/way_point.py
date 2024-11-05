@@ -22,10 +22,7 @@ class WayPoint:
 
     @property
     def name(self) -> str:
-        if self.__name is None:
-            return "({} / {})".format(round(self.point.lat), round(self.point.lon))
-
-        return self.__name
+        return self.__name if self.__name else ""
 
     @name.setter
     def name(self, name: str) -> None:
