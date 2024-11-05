@@ -2,10 +2,26 @@ import logging
 import xml.etree.ElementTree as ET
 
 import re
+import os
 import gpxpy
 from gpxpy.gpx import GPX
+import requests
 
 from automatic_walk_time_tables.utils import path
+
+
+def fetch_data_for_uuid(uuid):
+    """
+    Fetches the data for the given UUID from the store API.
+    :param uuid: The UUID of the data to fetch
+    :return: The data for the given UUID or None if the data is not available
+    """
+
+    r = requests.post(os.environ["STORE_API_URL"] + "/retrieve", json={"uuid": uuid})
+    if r.status_code == 200:
+        return r.json()
+
+    return None
 
 
 def create_gpx_file(_path: path.Path, _way_points: path.Path):
@@ -40,6 +56,14 @@ def add_metadata_to_gpx_str(_path: path.Path, gpx_xml: str):
     :return: The GPX file with the metadata added
     """
 
+    ##########################
+    # Add swisstopo prefix
+    ##########################
+    gpx_xml = gpx_xml.replace(
+        "xmlns:xsi=",
+        'xmlns:swisstopo="https://prod-static.swisstopo-app.ch/xmlschemas/SwisstopoExtensions" xmlns:xsi=',
+    )
+
     meta_data = ET.Element("metadata")
 
     ##########################
@@ -69,7 +93,7 @@ def add_metadata_to_gpx_str(_path: path.Path, gpx_xml: str):
     ##########################
     # Add Swisstopo Tour Type
     #
-    # we need to mark the route as a swisstopo tour in to enable
+    # we need to mark the route as a swisstopo tour to enable
     # named waypoints: 0 = hiking, 1 = biking, 2 = mountain biking
     ##########################
 
@@ -105,7 +129,6 @@ def add_track_points(_path: path.Path, gpx_f: GPX):
         lat = p84.lat
         lon = p84.lon
         elevation = p84.h
-        name = point.name
 
         # each track points must have the swisstopo:routepoint_id extension with a
         # unique id for each point
@@ -127,6 +150,9 @@ def add_waypoints(_path: path.Path, _way_points: path.Path, gpx_f: GPX):
         lon = p84.lon
         elevation = p84.h
         name = point.name
+
+        if name == "":
+            name = "Wegpunkt"
 
         # this should be a unique id for each waypoint
         gpx_extension_id = ET.Element("swisstopo:waypoint_id")

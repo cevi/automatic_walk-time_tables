@@ -105,6 +105,8 @@ export class MapAnimatorService {
 
           if (resp.status === 'running')
             resolve(resp.uuid);
+          else if(resp.status === 'success')
+            resolve(resp.uuid)
           else
             reject(resp);
         });
