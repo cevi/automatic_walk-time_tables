@@ -403,23 +403,6 @@ def download(uuid):
             mimetype="application/json",
         )
 
-    if not files_exists and storage is not None:
-
-        logger.debug("Files not found, creating them now.")
-        logger.debug("Storage options: %s" % storage["options"])
-
-        # Create the folder and files
-        thread = Thread(
-            target=create_export, kwargs={"options": storage["options"], "uuid": uuid}
-        )
-        thread.start()
-
-        return app.response_class(
-            response=json.dumps({"status": GeneratorStatus.RUNNING, "uuid": str(uuid)}),
-            status=200,
-            mimetype="application/json",
-        )
-
     if not files_exists and storage is None:
         return app.response_class(
             response=json.dumps(
