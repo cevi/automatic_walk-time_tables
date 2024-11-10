@@ -15,18 +15,18 @@
 
   <ng-template #splitterContent let-direction="direction" let-width="width" let-minWidth="minWidth">
     <as-split [direction]="direction" [unit]="'pixel'">
-      <div as-split-area id="map-area" [className]="'splitView-' + direction">
+      <as-split-area id="map-area" [className]="'splitView-' + direction">
 
         <div id="map-canvas" class="map"></div>
 
         <img routerLink="/" id="logo" src="../../../assets/logo_with_claim.png"/>
         <img routerLink="/" id="logo_small" src="../../../assets/logo.png"/>
 
-      </div>
+      </as-split-area>
 
-      <div as-split-area id="control-area" [className]="'splitView-' + direction" [size]="width" [minSize]="minWidth">
+      <as-split-area id="control-area" [className]="'splitView-' + direction" [size]="width" [minSize]="minWidth">
         <ng-content></ng-content>
-      </div>
+      </as-split-area>
     </as-split>
   </ng-template>
 
