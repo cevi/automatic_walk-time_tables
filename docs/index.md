@@ -6,12 +6,15 @@ titleTemplate: J+S-Marschzeittabellen automatisiert generieren
 
 
 hero:
-  name: Marschzeittabellen
-  text: automatisiert generieren
+  name: Walk-Time Tables
+  text: generated automatically
   tagline: Read the documentation about the tool.
   actions:
     - theme: brand
-      text: Get Started
+      text: Use the tool
+      link: https://map.cevi.tools
+    - theme: alt
+      text: Read the Documentation
       link: /documentation/introduction/getting-started
     - theme: alt
       text: View on GitHub
