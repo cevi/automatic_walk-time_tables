@@ -28,7 +28,7 @@
     "colors": "^1.4.0",
     "dotenv": "^5.0.0",
     "echarts": "^5.5.1",
-    "ngx-echarts": "18.0.0",
+    "ngx-echarts": "19.0.0",
     "ol": "^10.2.1",
     "proj4": "^2.15.0",
     "resize-observer-polyfill": "^1.5.1",
