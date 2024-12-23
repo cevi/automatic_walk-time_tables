@@ -4,7 +4,7 @@ const targetPath = './src/environments/environment.ts';
 
 // Load node modules
 const colors = require('colors');
-require('dotenv').load();
+require('dotenv').config();
 
 // `environment.ts` file structure
 const envConfigFile = `export const environment = {
