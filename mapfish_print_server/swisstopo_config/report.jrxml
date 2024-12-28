@@ -76,6 +76,16 @@
                 <imageExpression>
                     <![CDATA[net.sf.jasperreports.renderers.BatikRenderer.getInstance(new java.io.File(new java.net.URI($P{northArrowGraphic})))]]></imageExpression>
             </image>
+            <rectangle>
+                <reportElement x="10" y="500" width="60" height="60" forecolor="#FFFFFF"
+                               uuid="1bae2f08-683a-416a-be8b-a4ebfc7db793">
+                    <property name="com.jaspersoft.studio.unit.x" value="px"/>
+                    <property name="com.jaspersoft.studio.unit.width" value="px"/>
+                    <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    <property name="com.jaspersoft.studio.unit.y" value="px"/>
+                </reportElement>
+            </rectangle>
+
             <image evaluationTime="Report">
                 <reportElement x="10" y="500" width="60" height="60" uuid="1bae2f08-683a-416a-be8b-a4ebfc7db792"/>
                 <imageExpression><![CDATA[$P{qr_code}]]></imageExpression>

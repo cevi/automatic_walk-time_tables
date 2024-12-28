@@ -20,8 +20,12 @@
 
         <div class="content-block">
 
-          <h3>Route Zeichnen [experimentell]</h3>
+          <h3>Route Zeichnen</h3>
           <p>Starte deine Route mit einem Klick auf die Landeskarte.</p>
+
+          <button (click)="delete_last_waypoint()" mat-stroked-button color="warn"
+                  [disabled]="!has_valid_path">Letzter Wegpunkt löschen
+          </button>
 
           <button (click)="finish_drawing()" matStepperNext mat-stroked-button color="primary"
                   [disabled]="!has_valid_path">Zeichnen Abschliessen

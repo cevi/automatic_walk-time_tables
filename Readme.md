@@ -35,7 +35,7 @@ anpassen (siehe auch J+S-Broschüre Berg).
   GPX-File) dient dabei als Grundlage.
 - [x] In einem nächsten Schritt soll es möglich sein, die gewählten Punkte auf der einer interaktiven Karte zu
   visualisieren und bei Bedarf zu verschieben.
-- [ ] Das Zeichnen neuer Routen soll direkt in unserem Webinterface möglich sein (damit entfällt der GPX-Export). Herzu
+- [x] Das Zeichnen neuer Routen soll direkt in unserem Webinterface möglich sein (damit entfällt der GPX-Export). Herzu
   werden magnetische Wege verwendet. D.h. die Route soll dabei automatisch an den nächsten Weg angepasst werden.
 
 Weitere Funktionalitäten können gerne auch per Enhancement-Issue gewünscht werden.

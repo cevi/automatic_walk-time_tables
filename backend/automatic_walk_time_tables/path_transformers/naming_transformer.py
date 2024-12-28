@@ -15,8 +15,9 @@ class NamingTransformer(PathTransformer):
     Fetches the names for each point in the path.
     """
 
-    def __init__(self):
+    def __init__(self, use_default_name: bool = False):
         super().__init__()
+        self.use_default_name = use_default_name
 
     def transform(self, path_: Path) -> Path:
         for pt in path_.way_points:
