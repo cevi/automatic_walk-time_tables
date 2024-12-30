@@ -27,7 +27,7 @@
     "angular-split": "^18.0.0",
     "colors": "^1.4.0",
     "dotenv": "^16.4.7",
-    "echarts": "^5.5.1",
+    "echarts": "^5.6.0",
     "ngx-echarts": "19.0.0",
     "ol": "^10.3.1",
     "proj4": "^2.15.0",
