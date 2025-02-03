@@ -41,7 +41,7 @@
     "@angular/compiler-cli": "^18.2.13",
     "@types/jasmine": "^5.1.5",
     "@types/node": "^22.13.0",
-    "@types/proj4": "^2.5.5",
+    "@types/proj4": "^2.5.6",
     "@types/ws": "^8.5.13",
     "angular-build-info": "^2.0.1",
     "jasmine-core": "~5.5.0",
