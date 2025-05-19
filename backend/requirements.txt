@@ -1,4 +1,4 @@
-Flask==3.1.0
+Flask==3.1.1
 gunicorn==23.0.0
 flask-cors==5.0.1
 gpxpy==1.6.2
