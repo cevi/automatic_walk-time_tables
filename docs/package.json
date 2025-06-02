@@ -8,6 +8,6 @@
   "author": "Cyrill Püntener",
   "dependencies": {
     "vitepress": "^1.6.3",
-    "vue": "^3.5.15"
+    "vue": "^3.5.16"
   }
 }
