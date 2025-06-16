@@ -53,7 +53,9 @@ class MapCreator:
         )
 
         self.number_points_in_export = (
-            args["number_points_in_export"] if "number_points_in_export" in args else False
+            args["number_points_in_export"]
+            if "number_points_in_export" in args
+            else False
         )
 
     def auto_select_map_scaling(self) -> int:
@@ -318,7 +320,9 @@ class MapCreator:
                 point.name = str(i + 1)
 
             point_layer = self.create_point_json(
-                lv95, point, label=self.name_points_in_export or self.number_points_in_export
+                lv95,
+                point,
+                label=self.name_points_in_export or self.number_points_in_export,
             )
             point_layers.append(point_layer)
 
