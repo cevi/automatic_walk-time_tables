@@ -1,4 +1,4 @@
-import {Component, signal} from '@angular/core';
+import {Component} from '@angular/core';
 import {FormControl, UntypedFormBuilder, UntypedFormControl, UntypedFormGroup} from "@angular/forms";
 import {MapAnimatorService} from "../../services/map-animator.service";
 import {Router} from "@angular/router";
@@ -37,6 +37,7 @@ export class ExportSettingsComponent {
       'auto_scale': new UntypedFormControl(false),
       'route_name': new UntypedFormControl(''),
       'name_points_in_export': new UntypedFormControl(true),
+      'number_points_in_export': new UntypedFormControl(false),
       'automatic_waypoint_selection': new FormControl<boolean>(true),
     });
 
@@ -58,6 +59,17 @@ export class ExportSettingsComponent {
       this.mapAnimator.set_automatic_waypoint_selection(val);
     });
 
+    // enforce that either name_points_in_export or number_points_in_export is true
+    this.options.get('name_points_in_export')?.valueChanges.subscribe((val) => {
+      if (val) {
+        this.options.get('number_points_in_export')?.setValue(false);
+      }
+    });
+    this.options.get('number_points_in_export')?.valueChanges.subscribe((val) => {
+      if (val) {
+        this.options.get('name_points_in_export')?.setValue(false);
+      }
+    });
 
     console.log('Form values:', this.options.value);
     this.mapAnimator?.path$.subscribe((path) => {
