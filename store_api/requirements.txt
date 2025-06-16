@@ -1,6 +1,6 @@
 Flask==3.0.3
 gunicorn==23.0.0
-flask-cors==4.0.2
+flask-cors==6.0.0
 pydantic==2.8.2
 pymongo==4.8.0
 Flask-Pydantic==0.12.0
