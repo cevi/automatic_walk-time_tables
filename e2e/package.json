@@ -8,6 +8,6 @@
     "cypress-xpath": "^2.0.1"
   },
   "dependencies": {
-    "dotenv": "^16.5.0"
+    "dotenv": "^17.0.0"
   }
 }
