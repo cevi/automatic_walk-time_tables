@@ -5,5 +5,5 @@ grequests==0.6.0
 shapely==1.8.5
 Flask==2.3.2
 gunicorn==22.0.0
-flask-cors==4.0.1
+flask-cors==6.0.0
 gdown==4.5.4
