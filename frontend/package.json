@@ -1,6 +1,6 @@
 {
   "name": "automatic-walk-time-tables",
-  "version": "6.2.0",
+  "version": "6.2.1",
   "scripts": {
     "ng": "ng",
     "start": "tsc set-env.ts && BACKEND_DOMAIN=http://localhost:5000 node set-env.js && angular-build-info && ng serve",
@@ -12,7 +12,7 @@
   },
   "private": true,
   "dependencies": {
-    "@angular-devkit/build-angular": "^18.2.18",
+    "@angular-devkit/build-angular": "^18.2.20",
     "@angular/animations": "^18.2.13",
     "@angular/cdk": "^18.2.14",
     "@angular/common": "^18.2.13",
@@ -26,10 +26,10 @@
     "@googlemaps/polyline-codec": "^1.0.28",
     "angular-split": "^18.0.0",
     "colors": "^1.4.0",
-    "dotenv": "^16.4.7",
+    "dotenv": "^17.2.0",
     "echarts": "^5.6.0",
     "ngx-echarts": "19.0.0",
-    "ol": "^10.5.0",
+    "ol": "^10.6.1",
     "proj4": "^2.15.0",
     "resize-observer-polyfill": "^1.5.1",
     "rxjs": "~7.8.1",
@@ -37,14 +37,14 @@
     "zone.js": "~0.14.10"
   },
   "devDependencies": {
-    "@angular/cli": "^18.2.18",
+    "@angular/cli": "^18.2.20",
     "@angular/compiler-cli": "^18.2.13",
     "@types/jasmine": "^5.1.7",
-    "@types/node": "^22.15.30",
+    "@types/node": "^24.0.13",
     "@types/proj4": "^2.5.6",
     "@types/ws": "^8.18.1",
     "angular-build-info": "^2.0.1",
-    "jasmine-core": "~5.7.1",
+    "jasmine-core": "~5.9.0",
     "karma": "^6.4.4",
     "karma-chrome-launcher": "~3.2.0",
     "karma-coverage": "~2.2.1",
