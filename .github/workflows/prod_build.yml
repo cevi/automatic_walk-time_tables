@@ -15,7 +15,7 @@ jobs:
 
       # Checkout the source code
       - name: 🛎️ Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       # Restores the cache if it exists.
       - name: ⛏ Restore docker image from cache
