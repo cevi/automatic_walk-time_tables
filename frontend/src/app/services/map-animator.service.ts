@@ -437,14 +437,22 @@ export class MapAnimatorService {
     
     this._pathHistory.push(JSON.parse(JSON.stringify(current_path)));
     this._pathRedoHistory = [];
+
+    const total_dist = current_path[current_path.length - 1].accumulated_distance;
     
-    const reversed_path = [...current_path].reverse();
+    const reversed_path = [...current_path].reverse().map(p => ({
+        ...p,
+        accumulated_distance: Math.max(0, total_dist - p.accumulated_distance)
+    }));
     this._path$.next(reversed_path);
 
     const current_pois = this._pois$.getValue();
     this._poisHistory.push(JSON.parse(JSON.stringify(current_pois)));
     this._poisRedoHistory = [];
-    const reversed_pois = [...current_pois].reverse();
+    const reversed_pois = [...current_pois].reverse().map(p => ({
+        ...p,
+        accumulated_distance: Math.max(0, total_dist - p.accumulated_distance)
+    }));
     this._pois$.next(reversed_pois);
 
     this.create_walk_time_table(this._path$.getValue(), this._pois$.getValue(), this.auto_waypoints).catch(err => this._error_handler(err));

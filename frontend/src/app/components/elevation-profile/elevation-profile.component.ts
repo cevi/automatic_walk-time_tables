@@ -25,22 +25,24 @@ export class ElevationProfileComponent {
 
 
   public async mouseClick() {
-
-    const coordinates = await this.get_current_coordinates();
-    if (coordinates == null) return;
-
-    console.log("Mouse clicked at " + coordinates.accumulated_distance);
-    this.mapAnimator.add_point_of_interest(coordinates);
-
+    try {
+      const coordinates = await this.get_current_coordinates();
+      if (coordinates == null) return;
+      console.log("Mouse clicked at " + coordinates.accumulated_distance);
+      this.mapAnimator.add_point_of_interest(coordinates);
+    } catch(e) {
+      // Ignore off-chart clicks or un-initialized zones
+    }
   }
 
-
   public async mouseMove() {
-
-    const coordinates = await this.get_current_coordinates();
-    if (coordinates == null) return;
-    this.mapAnimator.move_pointer(coordinates);
-
+    try {
+      const coordinates = await this.get_current_coordinates();
+      if (coordinates == null) return;
+      this.mapAnimator.move_pointer(coordinates);
+    } catch(e) {
+      // Ignore
+    }
   }
 
   private set_listeners() {
@@ -52,7 +54,7 @@ export class ElevationProfileComponent {
     ])
       .subscribe(([path, way_points, pois]) => {
 
-        console.log("Draw elevation profile");
+        console.log("Draw elevation profile, Path Len:", path.length, "First:", path[0]?.accumulated_distance, "Last:", path[path.length-1]?.accumulated_distance);
 
         this.number_of_way_points = way_points.length;
         this.number_of_pois = pois.length;
@@ -75,15 +77,15 @@ export class ElevationProfileComponent {
             axisLabel: {
               formatter: '{value}'
             },
-            min: Math.floor(Math.min(...path.map(p => p.h))),
-            max: Math.floor(Math.max(...path.map(p => p.h))),
+            min: path.length ? (Math.floor(path.reduce((min, p) => (p.h != null && p.h < min) ? p.h : min, path[0].h || 0)) || 0) : 0,
+            max: path.length ? (Math.ceil(path.reduce((max, p) => (p.h != null && p.h > max) ? p.h : max, path[0].h || 0)) || 100) : 100,
             axisLine: {onZero: false}
           },
           series: [
             {
               name: 'Wanderweg',
               type: 'line',
-              data: path.map(p => [p.accumulated_distance, p.h]),
+              data: path.map(p => [Number(p.accumulated_distance || 0), Number(p.h || 0)]),
               showSymbol: false,
               itemStyle: {
                 color: 'rgb(223,80,16)'
@@ -108,14 +110,14 @@ export class ElevationProfileComponent {
               itemStyle: {
                 color: 'rgba(16,102,223,0.36)'
               },
-              data: way_points.map(p => [p.accumulated_distance, p.h]),
+              data: way_points.map(p => [Number(p.accumulated_distance || 0), Number(p.h || 0)]),
               symbolSize: 6,
               lineStyle: {
                 width: 3
               },
               markPoint: {
                 data: pois.map(p => {
-                  return {name: '', coord: [p.accumulated_distance, p.h]}
+                  return {name: '', coord: [Number(p.accumulated_distance || 0), Number(p.h || 0)]}
                 }),
                 symbolSize: 25,
               },

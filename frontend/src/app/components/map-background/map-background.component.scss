@@ -125,4 +125,65 @@
       color: #e57373 !important;
     }
   }
+
+  .mode-toggle {
+    display: flex;
+    align-items: center;
+    background: #f0f0f0;
+    border-radius: 20px;
+    padding: 3px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    .mode-icon {
+      padding: 4px 14px;
+      border-radius: 18px;
+      color: #777;
+      transition: all 0.3s ease;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      mat-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+
+      &.active {
+        background: #fff;
+        color: #d32f2f;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+    }
+  }
+}
+
+.bottom-left-controls {
+  position: absolute;
+  bottom: 40px;
+  left: 40px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  padding: 8px 16px;
+  max-width: fit-content;
+  margin-top: 0;
+
+  .toolbar-divider {
+    width: 2px;
+    height: 24px;
+    background-color: #d32f2f;
+    margin: 0 5px;
+  }
+
+  button[mat-icon-button] {
+    border-radius: 4px;
+    &:hover:not(:disabled) {
+      background-color: #f5f5f5;
+    }
+  }
 }

@@ -44,20 +44,10 @@
           </div>
         </div>
 
-        <div class="drawing-toolbar">
+        <div class="bottom-left-controls">
           <button mat-icon-button (click)="toggle_drawer_guide()" matTooltip="So funktioniert es!" color="primary">
             <mat-icon>help_outline</mat-icon>
           </button>
-          <div class="toolbar-divider"></div>
-          
-          <button mat-icon-button (click)="toggle_drawer_table()" [matTooltip]="(mapAnimator.export_mode$ | async) ? 'Zurück zum Zeichnen' : 'Marschzeittabelle erstellen'" color="primary">
-            <mat-icon>{{ (mapAnimator.export_mode$ | async) ? 'edit' : 'table_chart' }}</mat-icon>
-          </button>
-
-          <span style="color: grey; font-size: 14px; font-weight: 500; font-family: 'Open Sans', sans-serif; white-space: nowrap; padding: 0 8px;">
-            {{ (mapAnimator.export_mode$ | async) ? 'Marschzeittabellen-Modus' : 'Routen-Modus' }}
-          </span>
-
           <div class="toolbar-divider"></div>
           <button mat-icon-button [matMenuTriggerFor]="mapMenu" matTooltip="Hintergrundkarte" color="primary">
             <mat-icon>layers</mat-icon>
@@ -79,7 +69,17 @@
                <span>Keine Hintergrundkarte</span>
             </button>
           </mat-menu>
-          
+        </div>
+
+        <div class="drawing-toolbar">
+          <div class="mode-toggle" (click)="toggle_drawer_table()" [matTooltip]="(mapAnimator.export_mode$ | async) ? 'Zu Zeichnen wechseln' : 'Zu Marschzeittabellen-Modus wechseln'">
+            <div class="mode-icon" [class.active]="!(mapAnimator.export_mode$ | async)">
+              <mat-icon>edit</mat-icon>
+            </div>
+            <div class="mode-icon" [class.active]="(mapAnimator.export_mode$ | async)">
+              <mat-icon>table_chart</mat-icon>
+            </div>
+          </div>
 
           <ng-container *ngIf="!(mapAnimator.export_mode$ | async)">
             <div class="toolbar-divider"></div>
