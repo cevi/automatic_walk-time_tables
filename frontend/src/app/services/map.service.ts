@@ -28,6 +28,7 @@ export class MapService extends SwisstopoMap {
   private map: Map | undefined;
   private pointer: number[] | undefined | null;
   private map_animator: MapAnimatorService | undefined;
+  private resizeObserver: ResizeObserver | undefined;
 
 
   public link_animator(map_animator: MapAnimatorService) {
@@ -160,6 +161,11 @@ export class MapService extends SwisstopoMap {
 
   public draw_map(layerLabel: string = 'pixelkarte', target_canvas: string = 'map-canvas') {
 
+    if (this.map) {
+      this.map.updateSize();
+      return;
+    }
+
     // get base layers
     const wmtsLayer = this.get_base_WMTS_layer(layerLabel);
     const wmtsLayer_overlay = this.get_base_WMTS_layer(layerLabel);
@@ -172,6 +178,28 @@ export class MapService extends SwisstopoMap {
       new VectorLayer({source: this.pointer_layer_source}),
       new VectorLayer({source: this.way_points_layer_source}),
     ], target_canvas);
+
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+    }
+
+    const targetElement = document.getElementById(target_canvas);
+    if (targetElement) {
+      this.resizeObserver = new ResizeObserver(() => {
+        this.map?.updateSize();
+        // Give the DOM some time to settle its layout before a final update.
+        setTimeout(() => {
+          this.map?.updateSize();
+        }, 200);
+      });
+      this.resizeObserver.observe(targetElement);
+      
+      // Also attach a window resize listener as a fallback
+      window.addEventListener('resize', () => {
+        this.map?.updateSize();
+        setTimeout(() => this.map?.updateSize(), 200);
+      });
+    }
 
     this.render_pointer(wmtsLayer_overlay);
     this.register_listeners();
