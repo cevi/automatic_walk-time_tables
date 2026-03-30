@@ -249,11 +249,13 @@ export class MapAnimatorService {
       throw new Error('No route file selected');
     }
 
-
     // minify XML data
     let xml_string;
     let file_type;
     if (route_file_or_array instanceof File) {
+      // Clear POIs explicitly here when starting a fresh file import!
+      this._pois$.next([]);
+      
       xml_string = (await route_file_or_array.text()).toString()
       xml_string = xml_string.replace(/>\s*/g, '>');  // Remove space after >
       xml_string = xml_string.replace(/\s*</g, '<');  // Remove space before <
@@ -446,7 +448,6 @@ export class MapAnimatorService {
 
     this.update_map_center(way_points);
     this._path$?.next(way_points);
-    this._pois$?.next([]);
 
     return new Promise<void>((resolve, reject) =>
       combineLatest([this._path$, this._pois$]).pipe(take(1))
@@ -685,7 +686,11 @@ export class MapAnimatorService {
   public delete_poi(point: LV95_Waypoint) {
 
     this.pois$.pipe(take(1)).subscribe(pois => {
-      this._pois$.next(pois.filter(p => p.x != point.x || p.y != point.y));
+      const idx = pois.findIndex(p => Math.abs(p.x - point.x) < 2 && Math.abs(p.y - point.y) < 2);
+      if (idx !== -1) {
+        pois.splice(idx, 1);
+      }
+      this._pois$.next(pois);
     });
 
     combineLatest([this._path$, this._pois$, this.way_points$]).pipe(take(1))
