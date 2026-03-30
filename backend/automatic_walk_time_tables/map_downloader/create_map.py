@@ -140,7 +140,7 @@ class MapCreator:
             response_obj = None
 
             try:
-                response_obj = requests.post(url, data=json.dumps(query_json))
+                response_obj = requests.post(url, json=query_json)
             except requests.exceptions.ConnectionError:
                 self.logger.error(
                     "Could not connect to mapfish print server. Is the server running?"

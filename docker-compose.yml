@@ -26,6 +26,8 @@ services:
       - "8080:8080"
     depends_on:
       - awt-tile-cache
+    environment:
+      CATALINA_OPTS: "-Dfile.encoding=UTF-8"
     env_file:
       - .env.local-dev
     healthcheck:
