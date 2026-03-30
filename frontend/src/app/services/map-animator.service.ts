@@ -3,8 +3,16 @@ import {LV95_Coordinates, LV95_Waypoint} from "../helpers/coordinates";
 import {BehaviorSubject, combineLatest, Observable} from "rxjs";
 import {decode, encode, LatLngTuple} from "@googlemaps/polyline-codec";
 import {environment} from "../../environments/environment";
-import {take} from "rxjs/operators";
+import {take, filter} from "rxjs/operators";
 import {transform} from "ol/proj";
+import {Router, NavigationEnd} from "@angular/router";
+
+export interface RouteStats {
+  dist: number;
+  up: number;
+  down: number;
+  duration: number;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -21,19 +29,30 @@ export class MapAnimatorService {
   private readonly _map_center$: BehaviorSubject<LV95_Coordinates>;
   private _error_handler: (err: string) => void;
 
-  public has_route = false;
+  public route_stats$ = new BehaviorSubject<RouteStats | null>(null);
+  public export_mode$ = new BehaviorSubject<boolean>(false);
+
+  private _drawer_open = false;
+  public get drawer_open(): boolean { return this._drawer_open; }
+  public set drawer_open(val: boolean) {
+     this._drawer_open = val;
+     this.update_export_mode();
+  }
+
+  public get has_route(): boolean {
+     return this._path$.getValue().length > 0;
+  }
 
   private readonly _pointer$: BehaviorSubject<LV95_Coordinates | null>;
-  private auto_waypoints = true;
+  public auto_waypoints = true;
 
   private _pathHistory: LV95_Waypoint[][] = [];
   private _pathRedoHistory: LV95_Waypoint[][] = [];
   private _poisHistory: LV95_Waypoint[][] = [];
   private _poisRedoHistory: LV95_Waypoint[][] = [];
   public magnetic_paths: boolean = true;
-  public drawer_open: boolean = false;
 
-  constructor() {
+  constructor(private router: Router) {
 
     this._path$ = new BehaviorSubject<LV95_Waypoint[]>([]);
     this._way_points$ = new BehaviorSubject<LV95_Waypoint[]>([]);
@@ -42,6 +61,20 @@ export class MapAnimatorService {
     this._pointer$ = new BehaviorSubject<LV95_Coordinates | null>(null);
     this._error_handler = (err: string) => console.error(err);
 
+    this._way_points$.subscribe(wp => {
+      this._recalculate_route_stats(wp);
+    });
+
+    this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(() => {
+       this.update_export_mode();
+    });
+
+  }
+
+  private update_export_mode() {
+     const is_export = this._drawer_open && this.router.url === '/';
+     this.export_mode$.next(is_export);
+     this._pois$.next(this._pois$.getValue()); // force POIs refresh
   }
 
   public set_error_handler(handler: (err: string) => void) {
@@ -71,7 +104,6 @@ export class MapAnimatorService {
 
 
   public clear() {
-    this.has_route = false;
     this._path$.next([]);
     this._way_points$.next([]);
     this._pois$.next([]);
@@ -194,11 +226,8 @@ export class MapAnimatorService {
 
     if (!route_file_or_array) {
       this.clear();
-      this.has_route = false;
       throw new Error('No route file selected');
     }
-
-    this.has_route = true;
 
 
     // minify XML data
@@ -282,11 +311,14 @@ export class MapAnimatorService {
       'encoding': 'polyline',
       'route': encode(path.map(p => [p.x, p.y]), 0),
       'auto_waypoints': auto_waypoints,
-      'elevation_data': encode(path.map(p => [p.accumulated_distance * 1_000, p.h]), 0),
       'pois_distance': pois
         .sort((a, b) => a.accumulated_distance - b.accumulated_distance)
         .map(p => `${p.accumulated_distance * 1_000}`).join(','),
     };
+
+    if (!path.some(p => p.h === 0)) {
+      data['elevation_data'] = encode(path.map(p => [p.accumulated_distance * 1_000, p.h]), 0);
+    }
 
     let formData = new FormData();
     formData.append("options", JSON.stringify(data));
@@ -378,6 +410,8 @@ export class MapAnimatorService {
       const previous_pois = this._poisHistory.pop()!;
       this._pois$.next(previous_pois);
     }
+
+    this.create_walk_time_table(this._path$.getValue(), this._pois$.getValue(), this.auto_waypoints).catch(err => this._error_handler(err));
   }
 
   public redo() {
@@ -393,6 +427,8 @@ export class MapAnimatorService {
       const next_pois = this._poisRedoHistory.pop()!;
       this._pois$.next(next_pois);
     }
+
+    this.create_walk_time_table(this._path$.getValue(), this._pois$.getValue(), this.auto_waypoints).catch(err => this._error_handler(err));
   }
 
   public invert_route() {
@@ -410,6 +446,8 @@ export class MapAnimatorService {
     this._poisRedoHistory = [];
     const reversed_pois = [...current_pois].reverse();
     this._pois$.next(reversed_pois);
+
+    this.create_walk_time_table(this._path$.getValue(), this._pois$.getValue(), this.auto_waypoints).catch(err => this._error_handler(err));
   }
 
   public can_undo(): boolean {
@@ -553,6 +591,8 @@ export class MapAnimatorService {
 
     this._path$.next(path);
 
+    this.create_walk_time_table(path, this._pois$.getValue(), this.auto_waypoints).catch(err => this._error_handler(err));
+
   }
 
   private create_way_points(path: LatLngTuple[], elevation: LatLngTuple[], names: string[] = []): LV95_Waypoint[] {
@@ -588,10 +628,6 @@ export class MapAnimatorService {
    * Finish drawing the route, does the same as the replace_route function but without the file
    */
   async finish_drawing() {
-
-    this.has_route = true;
-
-    // clear pois: as we used them to draw the route
     this._pois$.next([]);
 
     const path = this._path$.getValue().map(p =>
@@ -752,6 +788,39 @@ export class MapAnimatorService {
     this._path$.next(path);
     this._pois$.next(pois);
 
+    this.create_walk_time_table(path, pois, this.auto_waypoints).catch(err => this._error_handler(err));
+
+  }
+
+  private _recalculate_route_stats(wp: LV95_Waypoint[]) {
+    if (!wp || wp.length === 0) {
+      this.route_stats$.next(null);
+      return;
+    }
+    let dist = wp[wp.length - 1].accumulated_distance;
+    let up = 0;
+    let down = 0;
+    let duration = 0;
+    const speed = 4; // default speed for live preview
+
+    for (let i = 1; i < wp.length; i++) {
+       const dH = Math.round(wp[i].h - wp[i-1].h);
+       const dDist = Math.abs(wp[i].accumulated_distance - wp[i-1].accumulated_distance);
+       if (dH > 0) up += dH;
+       else down += Math.abs(dH);
+       
+       duration += (dDist + (dH > 0 ? dH / 100 : 0)) / speed;
+    }
+    this.route_stats$.next({dist, up, down, duration});
+  }
+
+  public formatDuration(hours: number): string {
+    const h = Math.floor(hours);
+    const m = Math.round((hours - h) * 60);
+    if (m === 60) {
+      return `${h + 1}h 00min`;
+    }
+    return `${h}h ${m.toString().padStart(2, '0')}min`;
   }
 
 }

@@ -30,6 +30,7 @@ import {MatProgressSpinnerModule} from "@angular/material/progress-spinner";
 import {MatFormFieldModule} from "@angular/material/form-field";
 import { RetrieveDataComponent } from './pages/retrieve-data/retrieve-data.component';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatMenuModule } from '@angular/material/menu';
 @NgModule({
   declarations: [
     AppComponent,
@@ -66,6 +67,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
     }),
     MatProgressSpinnerModule,
     MatTooltipModule,
+    MatMenuModule,
     FormsModule
   ],
   providers: [

@@ -21,46 +21,94 @@
         <img routerLink="/" id="logo" src="../../../assets/logo_with_claim.png"/>
         <img routerLink="/" id="logo_small" src="../../../assets/logo.png"/>
 
+        <div class="stats-overlay" *ngIf="(mapAnimator.route_stats$ | async) as stats" [class.hidden]="!mapAnimator.has_route">
+          <div class="stat-item" matTooltip="Distanz">
+            <mat-icon>straighten</mat-icon>
+            <span>{{stats.dist | number:'1.1-1'}} km</span>
+          </div>
+          <div class="stat-item" matTooltip="Leistungskilometer">
+            <mat-icon>speed</mat-icon>
+            <span>{{(stats.dist + (stats.up / 100) + (stats.down / 300)) | number:'1.1-1'}} Lkm</span>
+          </div>
+          <div class="stat-item" matTooltip="Aufstieg">
+            <mat-icon>trending_up</mat-icon>
+            <span>{{stats.up | number:'1.0-0'}} m</span>
+          </div>
+          <div class="stat-item" matTooltip="Abstieg">
+            <mat-icon>trending_down</mat-icon>
+            <span>{{stats.down | number:'1.0-0'}} m</span>
+          </div>
+          <div class="stat-item" matTooltip="Wanderzeit">
+            <mat-icon>schedule</mat-icon>
+            <span>{{mapAnimator.formatDuration(stats.duration)}}</span>
+          </div>
+        </div>
+
         <div class="drawing-toolbar">
           <button mat-icon-button (click)="toggle_drawer_guide()" matTooltip="So funktioniert es!" color="primary">
             <mat-icon>help_outline</mat-icon>
           </button>
           <div class="toolbar-divider"></div>
           
-          <input type="file" id="gpx_upload_input" style="display: none" (change)="onFileSelected($event)" accept=".gpx,.kml">
-          <button mat-icon-button (click)="triggerUpload()" matTooltip="GPX/KML Route importieren" color="primary">
-            <mat-icon>upload_file</mat-icon>
+          <button mat-icon-button (click)="toggle_drawer_table()" [matTooltip]="(mapAnimator.export_mode$ | async) ? 'Zurück zum Zeichnen' : 'Marschzeittabelle erstellen'" color="primary">
+            <mat-icon>{{ (mapAnimator.export_mode$ | async) ? 'edit' : 'table_chart' }}</mat-icon>
           </button>
-          <div class="toolbar-divider"></div>
 
-          <button mat-icon-button class="toolbar-label-btn" disabled>
-            <mat-icon style="color: grey;">add_location</mat-icon>
-            <span class="toolbar-label">Tour zeichnen</span>
-          </button>
+          <span style="color: grey; font-size: 14px; font-weight: 500; font-family: 'Open Sans', sans-serif; white-space: nowrap; padding: 0 8px;">
+            {{ (mapAnimator.export_mode$ | async) ? 'Marschzeittabellen-Modus' : 'Routen-Modus' }}
+          </span>
+
           <div class="toolbar-divider"></div>
-          <button mat-icon-button class="icon-magnet" [class.active]="mapAnimator.magnetic_paths" (click)="mapAnimator.toggle_magnetic_paths()" matTooltip="Magnetisches Zeichnen">
-            <mat-icon [style.color]="mapAnimator.magnetic_paths ? '#e57373' : 'grey'">auto_fix_high</mat-icon>
+          <button mat-icon-button [matMenuTriggerFor]="mapMenu" matTooltip="Hintergrundkarte" color="primary">
+            <mat-icon>layers</mat-icon>
           </button>
-          <div class="toolbar-divider"></div>
-          <button mat-icon-button (click)="mapAnimator.invert_route()" matTooltip="Tour umkehren" [disabled]="!has_valid_path">
-            <mat-icon style="color: #e57373;">sync_alt</mat-icon>
-          </button>
-          <div class="toolbar-divider"></div>
-          <button mat-icon-button (click)="mapAnimator.undo()" matTooltip="Rückgängig machen" [disabled]="!mapAnimator.can_undo()">
-            <mat-icon style="color: #e57373;">undo</mat-icon>
-          </button>
-          <div class="toolbar-divider"></div>
-          <button mat-icon-button (click)="mapAnimator.redo()" matTooltip="Wiederherstellen" [disabled]="!mapAnimator.can_redo()">
-            <mat-icon style="color: #e57373;">redo</mat-icon>
-          </button>
-          <div class="toolbar-divider"></div>
-          <button mat-icon-button (click)="mapAnimator.clear()" matTooltip="Route verwerfen" color="warn" [disabled]="!has_valid_path">
-            <mat-icon>delete_outline</mat-icon>
-          </button>
-          <div class="toolbar-divider"></div>
-          <button mat-icon-button (click)="toggle_drawer_table()" matTooltip="Marschzeittabelle erstellen" color="primary">
-            <mat-icon>table_chart</mat-icon>
-          </button>
+          <mat-menu #mapMenu="matMenu">
+            <button mat-menu-item (click)="setMapLayer('pixelkarte')">
+               <mat-icon *ngIf="currentLayer === 'pixelkarte'" color="primary">check</mat-icon>
+               <mat-icon *ngIf="currentLayer !== 'pixelkarte'"></mat-icon>
+               <span>Basiskarte Farbig</span>
+            </button>
+            <button mat-menu-item (click)="setMapLayer('luftbild')">
+               <mat-icon *ngIf="currentLayer === 'luftbild'" color="primary">check</mat-icon>
+               <mat-icon *ngIf="currentLayer !== 'luftbild'"></mat-icon>
+               <span>Luftbild</span>
+            </button>
+            <button mat-menu-item (click)="setMapLayer('keine')">
+               <mat-icon *ngIf="currentLayer === 'keine'" color="primary">check</mat-icon>
+               <mat-icon *ngIf="currentLayer !== 'keine'"></mat-icon>
+               <span>Keine Hintergrundkarte</span>
+            </button>
+          </mat-menu>
+          
+
+          <ng-container *ngIf="!(mapAnimator.export_mode$ | async)">
+            <div class="toolbar-divider"></div>
+            <button mat-icon-button class="icon-magnet" [class.active]="mapAnimator.magnetic_paths" (click)="mapAnimator.toggle_magnetic_paths()" matTooltip="Magnetisches Zeichnen">
+              <mat-icon [style.color]="mapAnimator.magnetic_paths ? '#e57373' : 'grey'">auto_fix_high</mat-icon>
+            </button>
+            <div class="toolbar-divider"></div>
+            <button mat-icon-button (click)="mapAnimator.invert_route()" matTooltip="Tour umkehren" [disabled]="!has_valid_path">
+              <mat-icon [style.color]="!has_valid_path ? 'grey' : '#e57373'">sync_alt</mat-icon>
+            </button>
+            <div class="toolbar-divider"></div>
+            <button mat-icon-button (click)="mapAnimator.undo()" matTooltip="Rückgängig machen" [disabled]="!mapAnimator.can_undo()">
+              <mat-icon [style.color]="!mapAnimator.can_undo() ? 'grey' : '#e57373'">undo</mat-icon>
+            </button>
+            <div class="toolbar-divider"></div>
+            <button mat-icon-button (click)="mapAnimator.redo()" matTooltip="Wiederherstellen" [disabled]="!mapAnimator.can_redo()">
+              <mat-icon [style.color]="!mapAnimator.can_redo() ? 'grey' : '#e57373'">redo</mat-icon>
+            </button>
+            <div class="toolbar-divider"></div>
+            <button mat-icon-button (click)="mapAnimator.clear()" matTooltip="Route verwerfen" color="warn" [disabled]="!has_valid_path">
+              <mat-icon>delete_outline</mat-icon>
+            </button>
+            <div class="toolbar-divider"></div>
+            <input type="file" id="gpx_upload_input" style="display: none" (change)="onFileSelected($event)" accept=".gpx,.kml">
+            <button mat-icon-button (click)="triggerUpload()" matTooltip="GPX/KML Route importieren" color="primary">
+              <mat-icon>upload_file</mat-icon>
+            </button>
+          </ng-container>
+
         </div>
 
       </as-split-area>
@@ -72,3 +120,38 @@
   </ng-template>
 
 </div>
+
+<style>
+  .stats-overlay {
+    position: absolute;
+    bottom: 115px;
+    right: 40px;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 10px 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    z-index: 1000;
+    pointer-events: auto;
+    font-family: 'Open Sans', sans-serif;
+  }
+  .stats-overlay.hidden {
+    display: none !important;
+  }
+  .stat-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+  }
+  .stat-item mat-icon {
+    color: #efa038;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+</style>

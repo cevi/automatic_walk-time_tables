@@ -50,6 +50,14 @@ export class SwisstopoMap {
         "20110914",
         "20110228"
       ]
+    },
+    'luftbild': {
+      "attribution": "swisstopo",
+      "format": "jpeg",
+      "serverLayerName": "ch.swisstopo.swissimage",
+      "attributionUrl": "https://www.swisstopo.admin.ch/internet/swisstopo/fr/home.html",
+      "label": "luftbild",
+      "timestamps": ["current"]
     }
   };
 

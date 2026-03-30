@@ -41,8 +41,15 @@ export class MapBackgroundComponent implements OnInit, AfterViewInit {
 
   }
 
+  public currentLayer: string = 'pixelkarte';
+
   ngAfterViewInit() {
-    this.mapService?.draw_map();
+    this.mapService?.draw_map(this.currentLayer);
+  }
+
+  setMapLayer(layer: string) {
+    this.currentLayer = layer;
+    this.mapService?.draw_map(layer);
   }
 
   toggle_drawer_table() {

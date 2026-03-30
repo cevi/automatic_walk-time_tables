@@ -1,13 +1,13 @@
 import {Injectable} from '@angular/core';
 import {WMTS} from "ol/source";
-import {Tile} from "ol/layer";
+import {Layer, Tile} from "ol/layer";
 import Map from "ol/Map";
 import {Feature, MapBrowserEvent} from "ol";
 import VectorSource from "ol/source/Vector";
 import VectorLayer from "ol/layer/Vector";
 import {Circle, Geometry, LineString, Point} from "ol/geom";
 import {MapAnimatorService} from "./map-animator.service";
-import {Fill, Stroke, Style, Text, Icon} from "ol/style";
+import {Fill, Stroke, Style, Text, Icon, Circle as CircleStyle} from "ol/style";
 import {Extent} from "ol/extent";
 import {getRenderPixel} from "ol/render";
 import {take} from "rxjs/operators";
@@ -41,6 +41,25 @@ export class MapService extends SwisstopoMap {
     );
 
     map_animator.path$.subscribe(path => {
+
+      this.path_layer_source.clear();
+
+      if (!path || path.length === 0) return;
+
+      if (path.length === 1) {
+        const feature = new Feature({
+          geometry: new Point([path[0].x, path[0].y])
+        });
+        feature.setStyle(new Style({
+          image: new CircleStyle({
+            radius: 6,
+            fill: new Fill({color: '#efa038'}),
+            stroke: new Stroke({color: '#fff', width: 2})
+          })
+        }));
+        this.path_layer_source.addFeature(feature);
+        return;
+      }
 
       const feature = new Feature({
         geometry: new LineString(path.map(p => [p.x, p.y]))
@@ -95,7 +114,6 @@ export class MapService extends SwisstopoMap {
         return styles;
       });
 
-      this.path_layer_source.clear();
       this.path_layer_source.addFeature(feature);
 
     });
@@ -158,44 +176,74 @@ export class MapService extends SwisstopoMap {
 
         this.way_points_layer_source.clear();
 
-        way_points.forEach(way_point => {
+        if (this.map_animator && !this.map_animator.export_mode$.getValue()) {
+          // Drawing Mode: Always mark the first and last point of the route
+          if (way_points.length > 0) {
+            const endpoints = way_points.length === 1 ? [way_points[0]] : [way_points[0], way_points[way_points.length - 1]];
+            endpoints.forEach(wp => {
+              const feature = new Feature({
+                geometry: new Point([wp.x, wp.y])
+              });
+              feature.setStyle(new Style({
+                image: new CircleStyle({
+                  radius: 6,
+                  fill: new Fill({color: '#efa038'}),
+                  stroke: new Stroke({color: '#fff', width: 2})
+                })
+              }));
+              this.way_points_layer_source.addFeature(feature);
+            });
+          }
+        }
 
-          const feature = new Feature({
-            geometry: new Circle([way_point.x, way_point.y], 10)
+        if (this.map_animator && this.map_animator.export_mode$.getValue()) {
+          
+          way_points.forEach(way_point => {
+
+            const feature = new Feature({
+              geometry: new Point([way_point.x, way_point.y])
+            });
+
+            feature.setStyle(new Style({
+              image: new CircleStyle({
+                radius: 8,
+                fill: new Fill({color: '#fff'}),
+                stroke: new Stroke({color: '#efa038', width: 4})
+              })
+            }));
+
+            this.way_points_layer_source.addFeature(feature);
+
           });
 
-          feature.setStyle(new Style({
-            fill: new Fill({color: '#fff'}),
-            stroke: new Stroke({color: '#EFA038', width: 8}),
-          }));
+          pois.forEach(way_point => {
 
-          this.way_points_layer_source.addFeature(feature);
+            const feature = new Feature({
+              geometry: new Point([way_point.x, way_point.y])
+            });
 
-        });
+            // check if the poi is actually selected
+            const is_selected = way_points.find(p => p.x == way_point.x && p.y == way_point.y) != undefined;
 
+            feature.setStyle(new Style({
+              image: new CircleStyle({
+                radius: 8,
+                fill: new Fill({color: '#fff'}),
+                stroke: is_selected ? new Stroke({color: '#efa038', width: 4}) : new Stroke({color: '#efa03880', width: 4}),
+              }),
+              text: new Text({
+                text: way_point.name,
+                fill: new Fill({color: '#333'}),
+                stroke: new Stroke({color: '#fff', width: 3}),
+                font: 'bold 16px Open Sans',
+                offsetY: 20
+              })
+            }));
 
-        pois.forEach(way_point => {
+            this.way_points_layer_source.addFeature(feature);
 
-          const feature = new Feature({
-            geometry: new Circle([way_point.x, way_point.y], 10)
           });
-
-          // check if the poi is actually selected
-          const is_selected = way_points.find(p => p.x == way_point.x && p.y == way_point.y) != undefined;
-
-          feature.setStyle(new Style({
-            fill: new Fill({color: '#fff'}),
-            stroke: is_selected ? new Stroke({color: '#2043d7', width: 8}) : new Stroke({color: '#2043d750', width: 8}),
-            text: new Text({
-              text: way_point.name,
-              fill: new Fill({color: '#2043d7'}),
-              font: 'bold 16px Open Sans'
-            })
-          }));
-
-          this.way_points_layer_source.addFeature(feature);
-
-        });
+        }
 
 
       });
@@ -206,20 +254,35 @@ export class MapService extends SwisstopoMap {
 
   public draw_map(layerLabel: string = 'pixelkarte', target_canvas: string = 'map-canvas') {
 
+    let oldCenter: number[] | undefined;
+    let oldResolution: number | undefined;
+
+    if (this.map) {
+      const view = this.map.getView();
+      oldCenter = view.getCenter();
+      oldResolution = view.getResolution();
+      this.map.setTarget(undefined);
+    }
+
     // get base layers
-    const wmtsLayer = this.get_base_WMTS_layer(layerLabel);
-    const wmtsLayer_overlay = this.get_base_WMTS_layer(layerLabel);
-    if (wmtsLayer == null || wmtsLayer_overlay == null) return;
+    const wmtsLayer = layerLabel !== 'keine' ? this.get_base_WMTS_layer(layerLabel) : null;
+    const wmtsLayer_overlay = layerLabel !== 'keine' ? this.get_base_WMTS_layer(layerLabel) : null;
 
-    this.map = this.create_map_from_layers([
-      wmtsLayer,
-      new VectorLayer({source: this.path_layer_source}),
-      wmtsLayer_overlay,
-      new VectorLayer({source: this.pointer_layer_source}),
-      new VectorLayer({source: this.way_points_layer_source}),
-    ], target_canvas);
+    const layers: Layer[] = [];
+    if (wmtsLayer) layers.push(wmtsLayer);
+    layers.push(new VectorLayer({source: this.path_layer_source}));
+    if (wmtsLayer_overlay) layers.push(wmtsLayer_overlay);
+    layers.push(new VectorLayer({source: this.pointer_layer_source}));
+    layers.push(new VectorLayer({source: this.way_points_layer_source}));
 
-    this.render_pointer(wmtsLayer_overlay);
+    this.map = this.create_map_from_layers(layers, target_canvas);
+
+    if (oldCenter && oldResolution) {
+      this.map.getView().setCenter(oldCenter);
+      this.map.getView().setResolution(oldResolution);
+    }
+
+    if (wmtsLayer_overlay) this.render_pointer(wmtsLayer_overlay);
     this.register_listeners();
 
     const styleElement = document.createElement('style');
@@ -304,12 +367,16 @@ export class MapService extends SwisstopoMap {
     });
     this.map?.addInteraction(modify);
 
+    this.map_animator?.export_mode$.subscribe(is_export => {
+       modify.setActive(!is_export);
+    });
+
     // Right-click to undo the last waypoint
     const viewport = this.map?.getViewport();
     if (viewport) {
       viewport.addEventListener('contextmenu', (e) => {
         e.preventDefault();
-        if (this.map_animator?.can_undo()) {
+        if (this.map_animator && !this.map_animator.export_mode$.getValue() && this.map_animator.can_undo()) {
            this.map_animator.undo();
         }
       });
@@ -317,13 +384,13 @@ export class MapService extends SwisstopoMap {
 
     this.map?.on('pointermove', async (evt) => {
 
-      if (this.map_animator?.has_route) {
+      if (this.map_animator && this.map_animator.export_mode$.getValue()) {
         
         let foundWaypoint = false;
         this.map?.forEachFeatureAtPixel(evt.pixel, (f, l) => {
           if (l && (l as any).getSource() === this.way_points_layer_source) {
-            const geom = f.getGeometry() as Circle;
-            const center = geom.getCenter();
+            const geom = f.getGeometry() as Point;
+            const center = geom.getCoordinates();
             tooltipOverlay.setPosition(center);
             hovered_waypoint = {x: center[0], y: center[1]} as LV95_Waypoint;
             foundWaypoint = true;
@@ -340,6 +407,9 @@ export class MapService extends SwisstopoMap {
         else this.map_animator?.move_pointer(null);
       } else {
 
+        tooltipOverlay.setPosition(undefined);
+        hovered_waypoint = null;
+
         // draw the pointer (we are in the drawing mode)
         this.pointer = evt.coordinate;
         this.pointer_layer_source.clear();
@@ -350,7 +420,7 @@ export class MapService extends SwisstopoMap {
 
     this.map?.on('click', async (evt) => {
 
-      if (this.map_animator?.has_route) {
+      if (this.map_animator && this.map_animator.export_mode$.getValue()) {
 
         const [nearest_point, dist] = await this.get_nearest_path_point(evt);
         const [nearest_poi, dist_poi] = await this.get_nearest_poi(evt);
@@ -362,7 +432,6 @@ export class MapService extends SwisstopoMap {
       }
 
       await this.map_animator?.add_way_point({x: evt.coordinate[0], y: evt.coordinate[1]});
-
 
     });
 
