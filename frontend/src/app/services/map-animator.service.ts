@@ -75,8 +75,21 @@ export class MapAnimatorService {
 
   private update_export_mode() {
      const is_export = this._drawer_open && this.router.url === '/';
-     this.export_mode$.next(is_export);
-     this._pois$.next(this._pois$.getValue()); // force POIs refresh
+     
+     if (is_export && this._path$.getValue().length > 0 && this._path$.getValue().some(p => p.h === 0)) {
+         this.start_export_mode();
+     } else {
+         this.export_mode$.next(is_export);
+         this._pois$.next(this._pois$.getValue()); // force POIs refresh
+     }
+  }
+
+  public start_export_mode() {
+    this.export_mode$.next(true);
+
+    const path = this._path$.getValue().map(p => ({x: p.x, y: p.y} as LV95_Coordinates));
+
+    this.replace_route(path).catch(err => this._error_handler(err));
   }
 
   public set_error_handler(handler: (err: string) => void) {
