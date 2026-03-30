@@ -1,82 +1,87 @@
-import {Injectable} from '@angular/core';
-import {WMTS} from "ol/source";
-import {Layer, Tile} from "ol/layer";
-import Map from "ol/Map";
-import {Feature, MapBrowserEvent} from "ol";
-import VectorSource from "ol/source/Vector";
-import VectorLayer from "ol/layer/Vector";
-import {Circle, Geometry, LineString, Point} from "ol/geom";
-import {MapAnimatorService} from "./map-animator.service";
-import {Fill, Stroke, Style, Text, Icon, Circle as CircleStyle} from "ol/style";
-import {Extent} from "ol/extent";
-import {getRenderPixel} from "ol/render";
-import {take} from "rxjs/operators";
-import {LV95_Waypoint} from "../helpers/coordinates";
-import {SwisstopoMap} from "../helpers/swisstopo-map";
-import {combineLatest} from "rxjs";
-import {Modify} from "ol/interaction";
-import Overlay from "ol/Overlay";
+import { Injectable } from '@angular/core';
+import { WMTS } from 'ol/source';
+import { Layer, Tile } from 'ol/layer';
+import Map from 'ol/Map';
+import { Feature, MapBrowserEvent } from 'ol';
+import VectorSource from 'ol/source/Vector';
+import VectorLayer from 'ol/layer/Vector';
+import { Circle, Geometry, LineString, Point } from 'ol/geom';
+import { MapAnimatorService } from './map-animator.service';
+import {
+  Fill,
+  Stroke,
+  Style,
+  Text,
+  Icon,
+  Circle as CircleStyle,
+} from 'ol/style';
+import { Extent } from 'ol/extent';
+import { getRenderPixel } from 'ol/render';
+import { take } from 'rxjs/operators';
+import { LV95_Waypoint } from '../helpers/coordinates';
+import { SwisstopoMap } from '../helpers/swisstopo-map';
+import { combineLatest } from 'rxjs';
+import { Modify } from 'ol/interaction';
+import Overlay from 'ol/Overlay';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class MapService extends SwisstopoMap {
-
-  private path_layer_source = new VectorSource({wrapX: false});
-  private pointer_layer_source = new VectorSource({wrapX: false});
-  private way_points_layer_source = new VectorSource({wrapX: false});
+  private path_layer_source = new VectorSource({ wrapX: false });
+  private pointer_layer_source = new VectorSource({ wrapX: false });
+  private way_points_layer_source = new VectorSource({ wrapX: false });
 
   private map: Map | undefined;
   private pointer: number[] | undefined | null;
   private map_animator: MapAnimatorService | undefined;
 
-
   public link_animator(map_animator: MapAnimatorService) {
-
     this.map_animator = map_animator;
 
     // adjust the map center to the route
-    map_animator.map_center$.subscribe(center =>
-      this.map?.getView().setCenter([center.x, center.y])
+    map_animator.map_center$.subscribe((center) =>
+      this.map?.getView().setCenter([center.x, center.y]),
     );
 
-    map_animator.path$.subscribe(path => {
-
+    map_animator.path$.subscribe((path) => {
       this.path_layer_source.clear();
 
       if (!path || path.length === 0) return;
 
       if (path.length === 1) {
         const feature = new Feature({
-          geometry: new Point([path[0].x, path[0].y])
+          geometry: new Point([path[0].x, path[0].y]),
         });
-        feature.setStyle(new Style({
-          image: new CircleStyle({
-            radius: 6,
-            fill: new Fill({color: '#efa038'}),
-            stroke: new Stroke({color: '#fff', width: 2})
-          })
-        }));
+        feature.setStyle(
+          new Style({
+            image: new CircleStyle({
+              radius: 6,
+              fill: new Fill({ color: '#efa038' }),
+              stroke: new Stroke({ color: '#fff', width: 2 }),
+            }),
+          }),
+        );
         this.path_layer_source.addFeature(feature);
         return;
       }
 
       const feature = new Feature({
-        geometry: new LineString(path.map(p => [p.x, p.y]))
+        geometry: new LineString(path.map((p) => [p.x, p.y])),
       });
 
       feature.setStyle((feature, resolution) => {
         const styles = [
           new Style({
-            stroke: new Stroke({color: '#efa038', width: 5})
-          })
+            stroke: new Stroke({ color: '#efa038', width: 5 }),
+          }),
         ];
 
         const geometry = feature.getGeometry() as LineString;
         const coords = geometry.getCoordinates();
-        
+
         // draw an arrow every ~200 pixels
-        const interval = 200 * resolution; 
+        const interval = 200 * resolution;
         let next_arrow = interval / 2; // offset the first arrow
         let current_distance = 0;
 
@@ -100,9 +105,9 @@ export class MapService extends SwisstopoMap {
                   src: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="%23efa038"><polygon points="12,2 22,12 16,12 16,22 8,22 8,12 2,12"/></svg>',
                   anchor: [0.5, 0.5],
                   rotateWithView: true,
-                  rotation: rotation
-                })
-              })
+                  rotation: rotation,
+                }),
+              }),
             );
 
             next_arrow += interval;
@@ -115,35 +120,41 @@ export class MapService extends SwisstopoMap {
       });
 
       this.path_layer_source.addFeature(feature);
-
     });
-
 
     /*
      * Check if the map center must be updated, after the pointer has moved.
      * We will update the map center if the pointer is close to the edge of the map extent.
      *
      */
-    map_animator.pointer$.subscribe(p => {
-
+    map_animator.pointer$.subscribe((p) => {
       if (p == null) {
         this.pointer = null;
-        return
+        return;
       }
 
       this.pointer = [p?.x, p?.y];
 
-      const extend: Extent | undefined = this.map?.getView().calculateExtent(this.map?.getSize())
+      const extend: Extent | undefined = this.map
+        ?.getView()
+        .calculateExtent(this.map?.getSize());
       if (extend == null) return;
 
       // Calculate the relative border size based on the current map extent and scale.
       const extent = this.map?.getView().calculateExtent(this.map?.getSize());
       if (extent == null) return;
-      const min_border = Math.min(extent[2] - extent[0], extent[3] - extent[1]) * 0.05;
+      const min_border =
+        Math.min(extent[2] - extent[0], extent[3] - extent[1]) * 0.05;
 
       // calculate the offset of the map center to the pointer coordinates
-      const map_center = [(extend[2] + extend[0]) / 2, (extend[3] + extend[1]) / 2];
-      const max_offset = [(extend[2] - extend[0]) / 2 - min_border, (extend[3] - extend[1]) / 2 - min_border];
+      const map_center = [
+        (extend[2] + extend[0]) / 2,
+        (extend[3] + extend[1]) / 2,
+      ];
+      const max_offset = [
+        (extend[2] - extend[0]) / 2 - min_border,
+        (extend[3] - extend[1]) / 2 - min_border,
+      ];
       const offset = [p.x - map_center[0], p.y - map_center[1]];
 
       // build up the new map center
@@ -159,101 +170,104 @@ export class MapService extends SwisstopoMap {
         new_center[1] = map_center[1] + (offset[1] + max_offset[1]);
       }
 
-
       // Check if the map center has moved.
       if (new_center[0] == map_center[0] && new_center[1] == map_center[1]) {
         this.map?.render(); // We need to rerender the map anyway to show the new pointer location.
         return;
       }
 
-      this.map_animator?.set_map_center({x: new_center[0], y: new_center [1]});
-
+      this.map_animator?.set_map_center({ x: new_center[0], y: new_center[1] });
     });
 
-
-    combineLatest([map_animator.way_points$, map_animator.pois$])
-      .subscribe(([way_points, pois]) => {
-
+    combineLatest([map_animator.way_points$, map_animator.pois$]).subscribe(
+      ([way_points, pois]) => {
         this.way_points_layer_source.clear();
 
         if (this.map_animator && !this.map_animator.export_mode$.getValue()) {
           // Drawing Mode: Always mark the first and last point of the route
           if (way_points.length > 0) {
-            const endpoints = way_points.length === 1 ? [way_points[0]] : [way_points[0], way_points[way_points.length - 1]];
-            endpoints.forEach(wp => {
+            const endpoints =
+              way_points.length === 1
+                ? [way_points[0]]
+                : [way_points[0], way_points[way_points.length - 1]];
+            endpoints.forEach((wp) => {
               const feature = new Feature({
-                geometry: new Point([wp.x, wp.y])
+                geometry: new Point([wp.x, wp.y]),
               });
-              feature.setStyle(new Style({
-                image: new CircleStyle({
-                  radius: 6,
-                  fill: new Fill({color: '#efa038'}),
-                  stroke: new Stroke({color: '#fff', width: 2})
-                })
-              }));
+              feature.setStyle(
+                new Style({
+                  image: new CircleStyle({
+                    radius: 6,
+                    fill: new Fill({ color: '#efa038' }),
+                    stroke: new Stroke({ color: '#fff', width: 2 }),
+                  }),
+                }),
+              );
               this.way_points_layer_source.addFeature(feature);
             });
           }
         }
 
         if (this.map_animator && this.map_animator.export_mode$.getValue()) {
-          
-          way_points.forEach(way_point => {
-
+          way_points.forEach((way_point) => {
             const feature = new Feature({
-              geometry: new Point([way_point.x, way_point.y])
+              geometry: new Point([way_point.x, way_point.y]),
             });
 
-            feature.setStyle(new Style({
-              image: new CircleStyle({
-                radius: 8,
-                fill: new Fill({color: '#fff'}),
-                stroke: new Stroke({color: '#efa038', width: 4})
-              })
-            }));
+            feature.setStyle(
+              new Style({
+                image: new CircleStyle({
+                  radius: 8,
+                  fill: new Fill({ color: '#fff' }),
+                  stroke: new Stroke({ color: '#efa038', width: 4 }),
+                }),
+              }),
+            );
 
             this.way_points_layer_source.addFeature(feature);
-
           });
 
-          pois.forEach(way_point => {
-
+          pois.forEach((way_point) => {
             const feature = new Feature({
-              geometry: new Point([way_point.x, way_point.y])
+              geometry: new Point([way_point.x, way_point.y]),
             });
 
             // check if the poi is actually selected
-            const is_selected = way_points.find(p => p.x == way_point.x && p.y == way_point.y) != undefined;
+            const is_selected =
+              way_points.find(
+                (p) => p.x == way_point.x && p.y == way_point.y,
+              ) != undefined;
 
-            feature.setStyle(new Style({
-              image: new CircleStyle({
-                radius: 8,
-                fill: new Fill({color: '#fff'}),
-                stroke: is_selected ? new Stroke({color: '#efa038', width: 4}) : new Stroke({color: '#efa03880', width: 4}),
+            feature.setStyle(
+              new Style({
+                image: new CircleStyle({
+                  radius: 8,
+                  fill: new Fill({ color: '#fff' }),
+                  stroke: is_selected
+                    ? new Stroke({ color: '#efa038', width: 4 })
+                    : new Stroke({ color: '#efa03880', width: 4 }),
+                }),
+                text: new Text({
+                  text: way_point.name,
+                  fill: new Fill({ color: '#333' }),
+                  stroke: new Stroke({ color: '#fff', width: 3 }),
+                  font: 'bold 16px Open Sans',
+                  offsetY: 20,
+                }),
               }),
-              text: new Text({
-                text: way_point.name,
-                fill: new Fill({color: '#333'}),
-                stroke: new Stroke({color: '#fff', width: 3}),
-                font: 'bold 16px Open Sans',
-                offsetY: 20
-              })
-            }));
+            );
 
             this.way_points_layer_source.addFeature(feature);
-
           });
         }
-
-
-      });
-
+      },
+    );
   }
 
-
-
-  public draw_map(layerLabel: string = 'pixelkarte', target_canvas: string = 'map-canvas') {
-
+  public draw_map(
+    layerLabel: string = 'pixelkarte',
+    target_canvas: string = 'map-canvas',
+  ) {
     let oldCenter: number[] | undefined;
     let oldResolution: number | undefined;
 
@@ -265,15 +279,17 @@ export class MapService extends SwisstopoMap {
     }
 
     // get base layers
-    const wmtsLayer = layerLabel !== 'keine' ? this.get_base_WMTS_layer(layerLabel) : null;
-    const wmtsLayer_overlay = layerLabel !== 'keine' ? this.get_base_WMTS_layer(layerLabel) : null;
+    const wmtsLayer =
+      layerLabel !== 'keine' ? this.get_base_WMTS_layer(layerLabel) : null;
+    const wmtsLayer_overlay =
+      layerLabel !== 'keine' ? this.get_base_WMTS_layer(layerLabel) : null;
 
     const layers: Layer[] = [];
     if (wmtsLayer) layers.push(wmtsLayer);
-    layers.push(new VectorLayer({source: this.path_layer_source}));
+    layers.push(new VectorLayer({ source: this.path_layer_source }));
     if (wmtsLayer_overlay) layers.push(wmtsLayer_overlay);
-    layers.push(new VectorLayer({source: this.pointer_layer_source}));
-    layers.push(new VectorLayer({source: this.way_points_layer_source}));
+    layers.push(new VectorLayer({ source: this.pointer_layer_source }));
+    layers.push(new VectorLayer({ source: this.way_points_layer_source }));
 
     this.map = this.create_map_from_layers(layers, target_canvas);
 
@@ -318,57 +334,58 @@ export class MapService extends SwisstopoMap {
   }
 
   private register_listeners() {
-
     const tooltipElement = document.createElement('div');
     tooltipElement.className = 'waypoint-tooltip';
     tooltipElement.innerHTML = `
-        <span>Ziehen zum Verschieben</span>
-        <button id="delete-waypoint-btn" title="Wegpunkt löschen"><svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button>
+        <span>Klicken zum Löschen</span>
     `;
     const tooltipOverlay = new Overlay({
       element: tooltipElement,
       offset: [0, -15],
       positioning: 'bottom-center',
-      stopEvent: true
+      stopEvent: true,
     });
     this.map?.addOverlay(tooltipOverlay);
 
     let hovered_waypoint: LV95_Waypoint | null = null;
     let is_hovering_tooltip = false;
 
-    tooltipElement.addEventListener('mouseenter', () => is_hovering_tooltip = true);
+    tooltipElement.addEventListener(
+      'mouseenter',
+      () => (is_hovering_tooltip = true),
+    );
     tooltipElement.addEventListener('mouseleave', () => {
       is_hovering_tooltip = false;
       tooltipOverlay.setPosition(undefined);
       hovered_waypoint = null;
     });
-    
+
     // Deletion handler
     const deleteBtn = tooltipElement.querySelector('#delete-waypoint-btn');
     if (deleteBtn) {
       deleteBtn.addEventListener('click', () => {
-         if (hovered_waypoint && this.map_animator) {
-            this.map_animator.delete_route_waypoint(hovered_waypoint);
-            tooltipOverlay.setPosition(undefined);
-         }
+        if (hovered_waypoint && this.map_animator) {
+          this.map_animator.delete_route_waypoint(hovered_waypoint);
+          tooltipOverlay.setPosition(undefined);
+        }
       });
     }
 
     const modify = new Modify({
-      source: this.path_layer_source
+      source: this.path_layer_source,
     });
     modify.on('modifyend', async (evt) => {
       const features = evt.features.getArray();
       if (features.length > 0 && this.map_animator) {
-         const geom = features[0].getGeometry() as LineString;
-         const coords = geom.getCoordinates();
-         await this.map_animator.handle_modify_event(coords);
+        const geom = features[0].getGeometry() as LineString;
+        const coords = geom.getCoordinates();
+        await this.map_animator.handle_modify_event(coords);
       }
     });
     this.map?.addInteraction(modify);
 
-    this.map_animator?.export_mode$.subscribe(is_export => {
-       modify.setActive(!is_export);
+    this.map_animator?.export_mode$.subscribe((is_export) => {
+      modify.setActive(!is_export);
     });
 
     // Right-click to undo the last waypoint
@@ -376,26 +393,35 @@ export class MapService extends SwisstopoMap {
     if (viewport) {
       viewport.addEventListener('contextmenu', (e) => {
         e.preventDefault();
-        if (this.map_animator && !this.map_animator.export_mode$.getValue() && this.map_animator.can_undo()) {
-           this.map_animator.undo();
+        if (
+          this.map_animator &&
+          !this.map_animator.export_mode$.getValue() &&
+          this.map_animator.can_undo()
+        ) {
+          this.map_animator.undo();
         }
       });
     }
 
     this.map?.on('pointermove', async (evt) => {
-
       if (this.map_animator && this.map_animator.export_mode$.getValue()) {
-        
         let foundWaypoint = false;
-        this.map?.forEachFeatureAtPixel(evt.pixel, (f, l) => {
-          if (l && (l as any).getSource() === this.way_points_layer_source) {
-            const geom = f.getGeometry() as Point;
-            const center = geom.getCoordinates();
-            tooltipOverlay.setPosition(center);
-            hovered_waypoint = {x: center[0], y: center[1]} as LV95_Waypoint;
-            foundWaypoint = true;
-          }
-        }, { hitTolerance: 15 });
+        this.map?.forEachFeatureAtPixel(
+          evt.pixel,
+          (f, l) => {
+            if (l && (l as any).getSource() === this.way_points_layer_source) {
+              const geom = f.getGeometry() as Point;
+              const center = geom.getCoordinates();
+              tooltipOverlay.setPosition(center);
+              hovered_waypoint = {
+                x: center[0],
+                y: center[1],
+              } as LV95_Waypoint;
+              foundWaypoint = true;
+            }
+          },
+          { hitTolerance: 15 },
+        );
 
         if (!foundWaypoint && !is_hovering_tooltip) {
           tooltipOverlay.setPosition(undefined);
@@ -403,116 +429,115 @@ export class MapService extends SwisstopoMap {
         }
 
         const [nearest_point, dist] = await this.get_nearest_path_point(evt);
-        if (dist <= 50 && nearest_point) this.map_animator?.move_pointer(nearest_point);
+        if (dist <= 50 && nearest_point)
+          this.map_animator?.move_pointer(nearest_point);
         else this.map_animator?.move_pointer(null);
       } else {
-
         tooltipOverlay.setPosition(undefined);
         hovered_waypoint = null;
 
         // draw the pointer (we are in the drawing mode)
         this.pointer = evt.coordinate;
         this.pointer_layer_source.clear();
-
       }
-
     });
 
     this.map?.on('click', async (evt) => {
-
       if (this.map_animator && this.map_animator.export_mode$.getValue()) {
-
         const [nearest_point, dist] = await this.get_nearest_path_point(evt);
         const [nearest_poi, dist_poi] = await this.get_nearest_poi(evt);
 
-        if (dist <= 50 && nearest_point && dist_poi >= 50) this.map_animator?.add_point_of_interest(nearest_point);
-        else if (dist_poi <= 50 && nearest_poi) this.map_animator?.delete_poi(nearest_poi);
+        if (dist <= 50 && nearest_point && dist_poi >= 50)
+          this.map_animator?.add_point_of_interest(nearest_point);
+        else if (dist_poi <= 50 && nearest_poi)
+          this.map_animator?.delete_poi(nearest_poi);
 
-        return
+        return;
       }
 
-      await this.map_animator?.add_way_point({x: evt.coordinate[0], y: evt.coordinate[1]});
-
+      await this.map_animator?.add_way_point({
+        x: evt.coordinate[0],
+        y: evt.coordinate[1],
+      });
     });
-
   }
 
-  private async get_nearest_poi(event: MapBrowserEvent<any>): Promise<[LV95_Waypoint | null, number]> {
-
+  private async get_nearest_poi(
+    event: MapBrowserEvent<any>,
+  ): Promise<[LV95_Waypoint | null, number]> {
     const p = event.coordinate;
 
     if (this.map_animator == undefined) return [null, Infinity];
 
     return new Promise((resolve, _) => {
-
       if (this.map_animator == undefined) return resolve([null, Infinity]);
 
-      this.map_animator?.pois$.pipe(take(1))
-        .subscribe((pois) => {
+      this.map_animator?.pois$.pipe(take(1)).subscribe((pois) => {
+        if (pois.length == 0) return resolve([null, Infinity]);
 
-          if (pois.length == 0) return resolve([null, Infinity]);
-
-          // get the coordinates of the point neares to the p
-          const nearest_point = pois.reduce((prev, curr) => {
-            const prev_dist = Math.sqrt(Math.pow(prev.x - p[0], 2) + Math.pow(prev.y - p[1], 2));
-            const curr_dist = Math.sqrt(Math.pow(curr.x - p[0], 2) + Math.pow(curr.y - p[1], 2));
-            return prev_dist < curr_dist ? prev : curr;
-          });
-
-          const dist = Math.sqrt(Math.pow(nearest_point.x - p[0], 2) + Math.pow(nearest_point.y - p[1], 2));
-
-          resolve([nearest_point, dist])
-
+        // get the coordinates of the point neares to the p
+        const nearest_point = pois.reduce((prev, curr) => {
+          const prev_dist = Math.sqrt(
+            Math.pow(prev.x - p[0], 2) + Math.pow(prev.y - p[1], 2),
+          );
+          const curr_dist = Math.sqrt(
+            Math.pow(curr.x - p[0], 2) + Math.pow(curr.y - p[1], 2),
+          );
+          return prev_dist < curr_dist ? prev : curr;
         });
 
-    });
+        const dist = Math.sqrt(
+          Math.pow(nearest_point.x - p[0], 2) +
+            Math.pow(nearest_point.y - p[1], 2),
+        );
 
+        resolve([nearest_point, dist]);
+      });
+    });
   }
 
-
-  private async get_nearest_path_point(event: MapBrowserEvent<any>): Promise<[LV95_Waypoint | null, number]> {
-
+  private async get_nearest_path_point(
+    event: MapBrowserEvent<any>,
+  ): Promise<[LV95_Waypoint | null, number]> {
     const p = event.coordinate;
 
     if (this.map_animator == undefined) return [null, Infinity];
 
     return new Promise((resolve, _) => {
-      this.map_animator?.path$.pipe(take(1))
-        .subscribe(path => {
+      this.map_animator?.path$.pipe(take(1)).subscribe((path) => {
+        if (path == null || path.length == 0) return resolve([null, Infinity]);
 
-          if (path == null || path.length == 0) return resolve([null, Infinity]);
-
-          // get the coordinates of the point neares to the p
-          const nearest_point = path.reduce((prev, curr) => {
-            const prev_dist = Math.sqrt(Math.pow(prev.x - p[0], 2) + Math.pow(prev.y - p[1], 2));
-            const curr_dist = Math.sqrt(Math.pow(curr.x - p[0], 2) + Math.pow(curr.y - p[1], 2));
-            return prev_dist < curr_dist ? prev : curr;
-          });
-
-          const dist = Math.sqrt(Math.pow(nearest_point.x - p[0], 2) + Math.pow(nearest_point.y - p[1], 2));
-
-          resolve([nearest_point, dist])
-
+        // get the coordinates of the point neares to the p
+        const nearest_point = path.reduce((prev, curr) => {
+          const prev_dist = Math.sqrt(
+            Math.pow(prev.x - p[0], 2) + Math.pow(prev.y - p[1], 2),
+          );
+          const curr_dist = Math.sqrt(
+            Math.pow(curr.x - p[0], 2) + Math.pow(curr.y - p[1], 2),
+          );
+          return prev_dist < curr_dist ? prev : curr;
         });
 
-    });
+        const dist = Math.sqrt(
+          Math.pow(nearest_point.x - p[0], 2) +
+            Math.pow(nearest_point.y - p[1], 2),
+        );
 
+        resolve([nearest_point, dist]);
+      });
+    });
   }
 
-
   private render_pointer(wmtsLayer: Tile<WMTS>) {
-
     const radius = 12;
 
     // before rendering the layer, do some clipping
     wmtsLayer.on('prerender', (event) => {
-
       const ctx = event.context as CanvasRenderingContext2D;
       ctx.save();
       ctx.beginPath();
 
       if (this.pointer != null) {
-
         const pointer = this.map?.getPixelFromCoordinate(this.pointer);
 
         if (pointer != null) {
@@ -523,18 +548,17 @@ export class MapService extends SwisstopoMap {
             pointer[1],
           ]);
           const canvasRadius = Math.sqrt(
-            Math.pow(offset[0] - pixel[0], 2) + Math.pow(offset[1] - pixel[1], 2)
+            Math.pow(offset[0] - pixel[0], 2) +
+              Math.pow(offset[1] - pixel[1], 2),
           );
           ctx.arc(pixel[0], pixel[1], canvasRadius, 0, 2 * Math.PI);
           ctx.lineWidth = (12 * canvasRadius) / radius;
           ctx.strokeStyle = '#EFA038FF';
           ctx.stroke();
         }
-
       }
 
       ctx.clip();
-
     });
 
     // after rendering the layer, restore the canvas context
@@ -542,7 +566,5 @@ export class MapService extends SwisstopoMap {
       const ctx = event.context as CanvasRenderingContext2D;
       ctx.restore();
     });
-
   }
-
 }

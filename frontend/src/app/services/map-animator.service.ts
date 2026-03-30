@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {LV95_Coordinates, LV95_Waypoint} from "../helpers/coordinates";
-import {BehaviorSubject, combineLatest, Observable} from "rxjs";
+import {BehaviorSubject, combineLatest, Observable, Subject} from "rxjs";
 import {decode, encode, LatLngTuple} from "@googlemaps/polyline-codec";
 import {environment} from "../../environments/environment";
 import {take, filter} from "rxjs/operators";
@@ -30,6 +30,8 @@ export class MapAnimatorService {
   private _error_handler: (err: string) => void;
 
   public route_stats$ = new BehaviorSubject<RouteStats | null>(null);
+  public auto_waypoints_baked$ = new Subject<void>();
+  public velocity$ = new BehaviorSubject<number>(4.5);
   public export_mode$ = new BehaviorSubject<boolean>(false);
 
   private _drawer_open = false;
@@ -181,6 +183,11 @@ export class MapAnimatorService {
 
             'way_points': encode(way_points.map(p => [p.x, p.y]), 0),
             'way_points_elevation': encode(way_points.map(p => [p.accumulated_distance * 1_000, p.h]), 0),
+
+            'way_points_details': JSON.stringify(way_points.map(p => ({
+               name: p.name || '',
+               break_duration: p.break_duration ? p.break_duration.toString() : ''
+            }))),
 
             'pois_distance': pois
               .sort((a, b) => a.accumulated_distance - b.accumulated_distance)
@@ -345,11 +352,55 @@ export class MapAnimatorService {
 
         const pois = decode(resp?.pois, 0);
         const pois_elevation = decode(resp?.pois_elevation, 0);
-        this._pois$.next(this.create_way_points(pois, pois_elevation, resp?.pois_names));
+        let new_pois = this.create_way_points(pois, pois_elevation, resp?.pois_names);
+        
+        let path_wps = this._path$.getValue();
+        if (path_wps && path_wps.length > 0) {
+           let track_start = path_wps[0];
+           let track_end = path_wps[path_wps.length - 1];
+           new_pois = new_pois.filter(p => 
+              !(Math.abs(p.x - track_start.x) < 50 && Math.abs(p.y - track_start.y) < 50) &&
+              !(Math.abs(p.x - track_end.x) < 50 && Math.abs(p.y - track_end.y) < 50)
+           );
+        }
+
+        const old_pois = this._pois$.getValue();
+        for (let np of new_pois) {
+           let closest = old_pois.find(op => Math.abs(op.x - np.x) < 100 && Math.abs(op.y - np.y) < 100);
+           if (closest) {
+              if (closest.name) np.name = closest.name;
+              if (closest.break_duration) np.break_duration = closest.break_duration;
+           }
+        }
+        this._pois$.next(new_pois);
 
         const selected_way_points = decode(resp?.selected_way_points, 0);
         const selected_way_points_elevation = decode(resp?.selected_way_points_elevation, 0);
-        this._way_points$.next(this.create_way_points(selected_way_points, selected_way_points_elevation));
+        let new_wps = this.create_way_points(selected_way_points, selected_way_points_elevation);
+
+        if (auto_waypoints) {
+            let current_pois = this._pois$.getValue();
+            for (let i = 1; i < new_wps.length - 1; i++) {
+               let nw = new_wps[i];
+               if (!current_pois.some(op => Math.abs(op.x - nw.x) < 50 && Math.abs(op.y - nw.y) < 50)) {
+                  let fakePoi = {...nw, is_waypoint: false};
+                  current_pois.push(fakePoi);
+               }
+            }
+            this._pois$.next(current_pois);
+            this.auto_waypoints = false;
+            this.auto_waypoints_baked$.next();
+        }
+
+        const old_wps = this._way_points$.getValue();
+        for (let nw of new_wps) {
+           let closest = old_wps.find(ow => Math.abs(ow.x - nw.x) < 100 && Math.abs(ow.y - nw.y) < 100);
+           if (closest) {
+              if (closest.name) nw.name = closest.name;
+              if (closest.break_duration) nw.break_duration = closest.break_duration;
+           }
+        }
+        this._way_points$.next(new_wps);
 
       });
   }
@@ -795,9 +846,29 @@ export class MapAnimatorService {
 
     this._path$.next(path);
     this._pois$.next(pois);
+    this._recalculate_route_stats(this._way_points$.getValue());
 
     this.create_walk_time_table(path, pois, this.auto_waypoints).catch(err => this._error_handler(err));
 
+  }
+
+  public set_velocity(v: number) {
+    this.velocity$.next(v);
+    this._recalculate_route_stats(this._way_points$.getValue());
+  }
+
+  public async get_name_from_coords(lat: number, lon: number): Promise<string> {
+    try {
+      const resp = await fetch(MapAnimatorService.BASE_URL + 'get_name', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({lat, lon})
+      });
+      const data = await resp.json();
+      return data.name || '';
+    } catch {
+      return '';
+    }
   }
 
   private _recalculate_route_stats(wp: LV95_Waypoint[]) {
@@ -809,7 +880,7 @@ export class MapAnimatorService {
     let up = 0;
     let down = 0;
     let duration = 0;
-    const speed = 4; // default speed for live preview
+    const speed = this.velocity$.getValue() || 4.5;
 
     for (let i = 1; i < wp.length; i++) {
        const dH = Math.round(wp[i].h - wp[i-1].h);

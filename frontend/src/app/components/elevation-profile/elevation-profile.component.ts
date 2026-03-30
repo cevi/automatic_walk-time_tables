@@ -77,8 +77,8 @@ export class ElevationProfileComponent {
             axisLabel: {
               formatter: '{value}'
             },
-            min: path.length ? (Math.floor(path.reduce((min, p) => (p.h != null && p.h < min) ? p.h : min, path[0].h || 0)) || 0) : 0,
-            max: path.length ? (Math.ceil(path.reduce((max, p) => (p.h != null && p.h > max) ? p.h : max, path[0].h || 0)) || 100) : 100,
+            min: 'dataMin',
+            max: 'dataMax',
             axisLine: {onZero: false}
           },
           series: [

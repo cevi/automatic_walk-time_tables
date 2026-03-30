@@ -21,6 +21,7 @@ export class ExportSettingsComponent {
   public error_message: string = '';
   protected readonly location = location;
   public has_valid_path: boolean = false;
+  private _suppress_auto_waypoint_trigger: boolean = false;
 
   constructor(private mapAnimator: MapAnimatorService, fb: UntypedFormBuilder, private router: Router) {
 
@@ -29,7 +30,7 @@ export class ExportSettingsComponent {
     })
 
     this.options = fb.group({
-      'velocity': new UntypedFormControl(4.5),
+      'velocity': new UntypedFormControl(this.mapAnimator.velocity$.getValue()),
       'map_scaling': new UntypedFormControl(15_000),
       'departure_time': new UntypedFormControl((new Date()).toISOString().substring(0, 16)),
       'creator_name': new UntypedFormControl(''),
@@ -39,7 +40,7 @@ export class ExportSettingsComponent {
       'route_name': new UntypedFormControl(''),
       'name_points_in_export': new UntypedFormControl(true),
       'number_points_in_export': new UntypedFormControl(false),
-      'automatic_waypoint_selection': new FormControl<boolean>(true),
+      'automatic_waypoint_selection': new FormControl<boolean>(false),
     });
 
 
@@ -57,7 +58,13 @@ export class ExportSettingsComponent {
 
     // listen to changes of automatic_waypoint_selection
     this.options.get('automatic_waypoint_selection')?.valueChanges.subscribe((val) => {
-      this.mapAnimator.set_automatic_waypoint_selection(val);
+      if (!this._suppress_auto_waypoint_trigger) {
+         this.mapAnimator.set_automatic_waypoint_selection(val);
+      }
+    });
+
+    this.options.get('velocity')?.valueChanges.subscribe((val) => {
+      this.mapAnimator.set_velocity(val);
     });
 
     // enforce that either name_points_in_export or number_points_in_export is true
@@ -78,7 +85,28 @@ export class ExportSettingsComponent {
       this.route_uploaded = this.has_valid_path;
     });
 
+  }
 
+  ngOnInit() {
+    this.mapAnimator?.auto_waypoints_baked$.subscribe(() => {
+       this._suppress_auto_waypoint_trigger = true;
+       this.options.get('automatic_waypoint_selection')?.setValue(false, {emitEvent: false});
+       setTimeout(() => {
+          this._suppress_auto_waypoint_trigger = false;
+       }, 50);
+    });
+  }
+
+  onUserEdited() {
+    this._suppress_auto_waypoint_trigger = true;
+    this.options.get('automatic_waypoint_selection')?.setValue(false, {emitEvent: false});
+    setTimeout(() => {
+       this._suppress_auto_waypoint_trigger = false;
+    }, 50);
+  }
+
+  onAutoGenerate() {
+    this.options.get('automatic_waypoint_selection')?.setValue(true);
   }
 
 

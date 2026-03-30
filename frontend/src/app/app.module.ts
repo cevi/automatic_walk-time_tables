@@ -17,6 +17,7 @@ import {MatIconModule} from "@angular/material/icon";
 import {DownloadModule} from "./modules/download-module/download.module";
 import {NgxEchartsModule} from 'ngx-echarts';
 import {ElevationProfileComponent} from './components/elevation-profile/elevation-profile.component';
+import {WalkTimeTableComponent} from './components/walk-time-table/walk-time-table.component';
 import {AngularSplitModule} from 'angular-split';
 import {MatInputModule} from "@angular/material/input";
 import {MatButtonModule} from "@angular/material/button";
@@ -42,7 +43,8 @@ import { MatMenuModule } from '@angular/material/menu';
     DownloadPendingComponent,
     DownloadDataComponent,
     UploadAreaComponent,
-    ElevationProfileComponent
+    ElevationProfileComponent,
+    WalkTimeTableComponent
   ],
   imports: [
     BrowserModule,

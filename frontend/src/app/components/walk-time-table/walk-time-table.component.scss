@@ -1,0 +1,91 @@
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 10px;
+  margin-bottom: 20px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+.marschzeit-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Open Sans', 'Roboto', sans-serif;
+  font-size: 13px;
+  white-space: nowrap;
+
+  thead {
+    background-color: #add8e6; /* Match excel light blue */
+    border-bottom: 2px solid #999;
+    
+    th {
+      padding: 8px 10px;
+      text-align: center;
+      font-weight: 600;
+      color: #333;
+      border-right: 1px solid #bbb;
+
+      &:last-child {
+        border-right: none;
+      }
+    }
+  }
+
+  tbody {
+    tr {
+      &:nth-child(even) {
+        background-color: #e6f7ff; /* Match excel alternate row */
+      }
+      &:nth-child(odd) {
+        background-color: #f9f9f9;
+      }
+
+      td {
+        padding: 4px 8px;
+        border-right: 1px solid #ddd;
+        border-bottom: 1px solid #ddd;
+        vertical-align: middle;
+
+        &.col-name {
+          width: 300px;
+        }
+
+        &.col-break {
+          width: 80px;
+        }
+
+        input[type="text"] {
+          width: 100%;
+          border: none;
+          background: transparent;
+          font-family: inherit;
+          font-size: 13px;
+          padding: 4px;
+          border-radius: 2px;
+
+          &:focus {
+            outline: 1px solid #1066df;
+            background: #fff;
+          }
+        }
+      }
+    }
+  }
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.sum-col {
+  background-color: rgba(0,0,0,0.03); /* slight darken for sum columns */
+}
+
+.highlight-col {
+  background-color: #c4e4f5; /* arrival time highlight matching excel */
+  font-weight: bold;
+}

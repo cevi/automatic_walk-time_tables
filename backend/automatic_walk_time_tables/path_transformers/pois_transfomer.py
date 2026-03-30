@@ -19,13 +19,22 @@ class POIsTransformer(PathTransformer):
 
     def transform(self, path: Path) -> Path:
         if self.pois_distance_str != "":
-            return self.pois_from_distance_string(path)
+            pois = self.pois_from_distance_string(path)
 
         elif self.pois_list_as_str != "":
-            return self.pois_from_string(path)
+            pois = self.pois_from_string(path)
 
         else:
-            return self.calc_pois(path)
+            pois = self.calc_pois(path)
+
+        # Ensure start and end points
+        if len(pois.way_points) == 0 or pois.way_points[0].point.distance(path.way_points[0].point) > 50:
+            pois.way_points.insert(0, path.way_points[0])
+            
+        if len(pois.way_points) < 2 or pois.way_points[-1].point.distance(path.way_points[-1].point) > 50:
+            pois.way_points.append(path.way_points[-1])
+            
+        return pois
 
     def pois_from_distance_string(self, path: Path):
         self.__logger.info(
