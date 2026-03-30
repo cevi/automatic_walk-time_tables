@@ -10,6 +10,7 @@ templates:
       scale: !string { }
 
       qr_code: !string {}
+      qr_url: !string {}
 
       map: !map
         maxDpi: 250
