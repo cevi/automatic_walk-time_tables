@@ -29,7 +29,7 @@ import {MatOptionModule} from "@angular/material/core";
 import {MatProgressSpinnerModule} from "@angular/material/progress-spinner";
 import {MatFormFieldModule} from "@angular/material/form-field";
 import { RetrieveDataComponent } from './pages/retrieve-data/retrieve-data.component';
-
+import { MatTooltipModule } from '@angular/material/tooltip';
 @NgModule({
   declarations: [
     AppComponent,
@@ -65,6 +65,7 @@ import { RetrieveDataComponent } from './pages/retrieve-data/retrieve-data.compo
       echarts: () => import('echarts')
     }),
     MatProgressSpinnerModule,
+    MatTooltipModule,
     FormsModule
   ],
   providers: [

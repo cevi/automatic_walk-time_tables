@@ -26,6 +26,13 @@ export class MapAnimatorService {
   private readonly _pointer$: BehaviorSubject<LV95_Coordinates | null>;
   private auto_waypoints = true;
 
+  private _pathHistory: LV95_Waypoint[][] = [];
+  private _pathRedoHistory: LV95_Waypoint[][] = [];
+  private _poisHistory: LV95_Waypoint[][] = [];
+  private _poisRedoHistory: LV95_Waypoint[][] = [];
+  public magnetic_paths: boolean = true;
+  public drawer_open: boolean = false;
+
   constructor() {
 
     this._path$ = new BehaviorSubject<LV95_Waypoint[]>([]);
@@ -68,6 +75,10 @@ export class MapAnimatorService {
     this._path$.next([]);
     this._way_points$.next([]);
     this._pois$.next([]);
+    this._pathHistory = [];
+    this._pathRedoHistory = [];
+    this._poisHistory = [];
+    this._poisRedoHistory = [];
   }
 
 
@@ -117,6 +128,11 @@ export class MapAnimatorService {
 
     console.log('settings', settings);
     localStorage['form_values'] = JSON.stringify(settings);
+
+    const current_path = this._path$.getValue();
+    if (current_path.some(p => p.h === 0)) {
+      await this.finish_drawing();
+    }
 
     return new Promise<number>((resolve, reject) =>
       combineLatest([this.path$, this.pois$, this.way_points$]).pipe(take(1))
@@ -345,12 +361,102 @@ export class MapAnimatorService {
 
   }
 
+  public toggle_magnetic_paths() {
+    this.magnetic_paths = !this.magnetic_paths;
+  }
+
+  public undo() {
+    if (this._pathHistory.length === 0) return;
+    const current_path = this._path$.getValue();
+    this._pathRedoHistory.push(JSON.parse(JSON.stringify(current_path)));
+    const previous_path = this._pathHistory.pop()!;
+    this._path$.next(previous_path);
+
+    if (this._poisHistory.length > 0) {
+      const current_pois = this._pois$.getValue();
+      this._poisRedoHistory.push(JSON.parse(JSON.stringify(current_pois)));
+      const previous_pois = this._poisHistory.pop()!;
+      this._pois$.next(previous_pois);
+    }
+  }
+
+  public redo() {
+    if (this._pathRedoHistory.length === 0) return;
+    const current_path = this._path$.getValue();
+    this._pathHistory.push(JSON.parse(JSON.stringify(current_path)));
+    const next_path = this._pathRedoHistory.pop()!;
+    this._path$.next(next_path);
+
+    if (this._poisRedoHistory.length > 0) {
+      const current_pois = this._pois$.getValue();
+      this._poisHistory.push(JSON.parse(JSON.stringify(current_pois)));
+      const next_pois = this._poisRedoHistory.pop()!;
+      this._pois$.next(next_pois);
+    }
+  }
+
+  public invert_route() {
+    const current_path = this._path$.getValue();
+    if (current_path.length === 0) return;
+    
+    this._pathHistory.push(JSON.parse(JSON.stringify(current_path)));
+    this._pathRedoHistory = [];
+    
+    const reversed_path = [...current_path].reverse();
+    this._path$.next(reversed_path);
+
+    const current_pois = this._pois$.getValue();
+    this._poisHistory.push(JSON.parse(JSON.stringify(current_pois)));
+    this._poisRedoHistory = [];
+    const reversed_pois = [...current_pois].reverse();
+    this._pois$.next(reversed_pois);
+  }
+
+  public can_undo(): boolean {
+    return this._pathHistory.length > 0;
+  }
+
+  public can_redo(): boolean {
+    return this._pathRedoHistory.length > 0;
+  }
+
+  public async fetch_valhalla_route(locations: LV95_Coordinates[]): Promise<LV95_Coordinates[]> {
+    if (locations.length < 2) return locations;
+
+    const valhalla_locations = locations.map(p => {
+      const wgs = transform([p.x, p.y], 'EPSG:2056', 'EPSG:4326');
+      return {lat: wgs[1], lon: wgs[0]};
+    });
+
+    const url = `${MapAnimatorService.VALHALLA_URL}route?json=` + encodeURIComponent(JSON.stringify({
+      locations: valhalla_locations,
+      costing: 'pedestrian',
+      directions_type: 'none',
+      radius: 10
+    }));
+
+    const data = await fetch(url, {method: 'POST'}).then(response => response.json());
+    
+    let path: LV95_Coordinates[] = [];
+    for (const leg of data.trip.legs) {
+      const decoded_leg = decode(leg.shape, 6).map(p => transform([p[1], p[0]], 'EPSG:4326', 'EPSG:2056'));
+      if (path.length > 0) {
+        decoded_leg.shift();
+      }
+      path = path.concat(decoded_leg.map(p => ({x: p[0], y: p[1]})));
+    }
+    return path;
+  }
+
   public async add_way_point(point: LV95_Coordinates) {
 
     const WGS84 = transform([point.x, point.y], 'EPSG:2056', 'EPSG:4326');
     console.log('Adding way point', point);
 
     const pois = this._pois$.getValue();
+    this._poisHistory.push(JSON.parse(JSON.stringify(pois)));
+    this._poisRedoHistory = [];
+
     pois.push({
       'x': point.x,
       'y': point.y,
@@ -362,6 +468,11 @@ export class MapAnimatorService {
     this._pois$.next(pois);
 
     const path = this._path$.getValue();
+    
+    // Save history
+    this._pathHistory.push(JSON.parse(JSON.stringify(path)));
+    this._pathRedoHistory = [];
+
     if (path.length == 0) {
 
       path.push({
@@ -381,22 +492,29 @@ export class MapAnimatorService {
     const old_WGS84 = transform([old_last_point.x, old_last_point.y], 'EPSG:2056', 'EPSG:4326');
 
     // fetch path from valhalla/valhalla
-    const url = `${MapAnimatorService.VALHALLA_URL}route?json=` + encodeURIComponent(JSON.stringify({
-      locations: [
-        {lat: old_WGS84[1], lon: old_WGS84[0]},
-        {lat: WGS84[1], lon: WGS84[0]}
-      ],
-      costing: 'pedestrian',
-      directions_type: 'none',
-      radius: 10
-    }));
+    let decoded_path: number[][] = [];
+    if (this.magnetic_paths) {
+      const url = `${MapAnimatorService.VALHALLA_URL}route?json=` + encodeURIComponent(JSON.stringify({
+        locations: [
+          {lat: old_WGS84[1], lon: old_WGS84[0]},
+          {lat: WGS84[1], lon: WGS84[0]}
+        ],
+        costing: 'pedestrian',
+        directions_type: 'none',
+        radius: 10
+      }));
 
-    // fetch path from valhalla/valhalla at localhost:8002
-    const data = await fetch(url, {method: 'POST'}).then(response => response.json());
-    const shape: string = data.trip.legs[0].shape;
+      const data = await fetch(url, {method: 'POST'}).then(response => response.json());
+      const shape: string = data.trip.legs[0].shape;
 
-    const decoded_path = decode(shape, 6).map(p =>
-      transform([p[1], p[0]], 'EPSG:4326', 'EPSG:2056'));
+      decoded_path = decode(shape, 6).map(p =>
+        transform([p[1], p[0]], 'EPSG:4326', 'EPSG:2056'));
+    } else {
+      decoded_path = [
+        [old_last_point.x, old_last_point.y],
+        [point.x, point.y]
+      ];
+    }
 
     const first_point: LV95_Coordinates = {x: decoded_path[0][0], y: decoded_path[0][1]};
     const last_point: LV95_Coordinates = {
@@ -407,7 +525,7 @@ export class MapAnimatorService {
     // check if the first point is within 10m of the old_last_point
     const OFF_PATH_THRESHOLD = 10;
     if ((Math.sqrt((first_point.x - old_last_point.x) ** 2 + (first_point.y - old_last_point.y) ** 2) > OFF_PATH_THRESHOLD) ||
-      (Math.sqrt((last_point.x - point.x) ** 2 + (last_point.x - point.x) ** 2) > OFF_PATH_THRESHOLD)) {
+      (Math.sqrt((last_point.x - point.x) ** 2 + (last_point.y - point.y) ** 2) > OFF_PATH_THRESHOLD)) {
 
       path.push({
         'x': point.x,
@@ -480,6 +598,128 @@ export class MapAnimatorService {
       ({x: p.x, y: p.y} as LV95_Coordinates));
     await this.replace_route(path);
 
+  }
+
+  public async handle_modify_event(new_coords: number[][]) {
+    const path = this._path$.getValue();
+    if (path.length === 0) return;
+
+    // Compare new_coords (from OpenLayers Modify) with path (LV95_Waypoint[])
+    // to find what changed. OpenLayers Modify either ADDS a vertex or MOVES a vertex.
+    // If len diff is 1, a vertex was added.
+    let changed_idx = -1;
+    let new_point: LV95_Coordinates | null = null;
+    let action: 'insert' | 'move' = 'move';
+
+    if (new_coords.length > path.length) {
+      action = 'insert';
+      // Find the first index where coordinates diverge
+      for (let i = 0; i < path.length; i++) {
+        if (path[i].x !== new_coords[i][0] || path[i].y !== new_coords[i][1]) {
+          changed_idx = i;
+          new_point = {x: new_coords[i][0], y: new_coords[i][1]};
+          break;
+        }
+      }
+      if (changed_idx === -1) {
+        changed_idx = new_coords.length - 1;
+        new_point = {x: new_coords[changed_idx][0], y: new_coords[changed_idx][1]};
+      }
+    } else {
+      action = 'move';
+      for (let i = 0; i < path.length; i++) {
+        if (path[i].x !== new_coords[i][0] || path[i].y !== new_coords[i][1]) {
+          changed_idx = i;
+          new_point = {x: new_coords[i][0], y: new_coords[i][1]};
+          break;
+        }
+      }
+    }
+
+    if (changed_idx === -1 || !new_point) return;
+
+    await this.modify_route(changed_idx, new_point, action);
+  }
+
+  public async delete_route_waypoint(wp_coords: LV95_Coordinates) {
+    const path = this._path$.getValue();
+    
+    // Find closest index
+    let min_dist = Infinity;
+    let changed_idx = -1;
+    for (let i = 0; i < path.length; i++) {
+      const dist = Math.sqrt(Math.pow(path[i].x - wp_coords.x, 2) + Math.pow(path[i].y - wp_coords.y, 2));
+      if (dist < min_dist) {
+        min_dist = dist;
+        changed_idx = i;
+      }
+    }
+
+    if (changed_idx === -1 || min_dist > 50) return; // not found or too far
+
+    await this.modify_route(changed_idx, null, 'delete');
+  }
+
+  private async modify_route(changed_idx: number, new_point: LV95_Coordinates | null, action: 'insert' | 'move' | 'delete') {
+    const path = this._path$.getValue();
+    const way_points = this._way_points$.getValue();
+
+    // 1. Find anchor waypoints BEFORE and AFTER the changed_idx.
+    // A point in path correspond to a way_point if the coordinates match closely.
+    
+    let start_anchor_idx = 0;
+    let end_anchor_idx = path.length - 1;
+
+    for (let i = changed_idx - 1; i >= 0; i--) {
+      // Is path[i] a waypoint?
+      if (way_points.find(wp => Math.abs(wp.x - path[i].x) < 2 && Math.abs(wp.y - path[i].y) < 2)) {
+        start_anchor_idx = i;
+        break;
+      }
+    }
+
+    for (let i = changed_idx + 1; i < path.length; i++) {
+      if (way_points.find(wp => Math.abs(wp.x - path[i].x) < 2 && Math.abs(wp.y - path[i].y) < 2)) {
+        end_anchor_idx = i;
+        break;
+      }
+    }
+
+    const start_anchor = path[start_anchor_idx];
+    const end_anchor = path[end_anchor_idx];
+
+    let query_locations: LV95_Coordinates[] = [];
+    if (action === 'delete') {
+      query_locations = [start_anchor, end_anchor];
+    } else {
+      query_locations = [start_anchor, new_point!, end_anchor];
+    }
+
+    // Save history so we can undo this drag/drop modification!
+    this._pathHistory.push(JSON.parse(JSON.stringify(path)));
+    this._pathRedoHistory = [];
+    this._poisHistory.push(JSON.parse(JSON.stringify(this._pois$.getValue())));
+    this._poisRedoHistory = [];
+
+    // recalculate segment
+    let new_segment: LV95_Coordinates[] = [];
+    if (this.magnetic_paths) {
+      new_segment = await this.fetch_valhalla_route(query_locations);
+    } else {
+      new_segment = query_locations;
+    }
+
+    // construct new full path
+    const head = path.slice(0, start_anchor_idx);
+    const tail = path.slice(end_anchor_idx + 1); // skip the end anchor as it is returned by the new_segment
+    
+    // new_segment contains both start_anchor and end_anchor. We just append them correctly.
+    const new_full_path = head.concat(new_segment.map(p => ({
+      x: p.x, y: p.y, h: 0, accumulated_distance: 0, is_waypoint: false, name: ''
+    }))).concat(tail);
+
+    // Provide it back to the backend
+    await this.replace_route(new_full_path);
   }
 
   set_automatic_waypoint_selection(val: boolean) {

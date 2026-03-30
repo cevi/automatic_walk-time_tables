@@ -5,16 +5,17 @@ import Map from "ol/Map";
 import {Feature, MapBrowserEvent} from "ol";
 import VectorSource from "ol/source/Vector";
 import VectorLayer from "ol/layer/Vector";
-import {Circle, Geometry, LineString} from "ol/geom";
+import {Circle, Geometry, LineString, Point} from "ol/geom";
 import {MapAnimatorService} from "./map-animator.service";
-import {Fill, Stroke, Style, Text} from "ol/style";
+import {Fill, Stroke, Style, Text, Icon} from "ol/style";
 import {Extent} from "ol/extent";
 import {getRenderPixel} from "ol/render";
 import {take} from "rxjs/operators";
 import {LV95_Waypoint} from "../helpers/coordinates";
 import {SwisstopoMap} from "../helpers/swisstopo-map";
 import {combineLatest} from "rxjs";
-
+import {Modify} from "ol/interaction";
+import Overlay from "ol/Overlay";
 
 @Injectable({
   providedIn: 'root'
@@ -45,9 +46,54 @@ export class MapService extends SwisstopoMap {
         geometry: new LineString(path.map(p => [p.x, p.y]))
       });
 
-      feature.setStyle(new Style({
-        stroke: new Stroke({color: '#efa038', width: 5})
-      }));
+      feature.setStyle((feature, resolution) => {
+        const styles = [
+          new Style({
+            stroke: new Stroke({color: '#efa038', width: 5})
+          })
+        ];
+
+        const geometry = feature.getGeometry() as LineString;
+        const coords = geometry.getCoordinates();
+        
+        // draw an arrow every ~200 pixels
+        const interval = 200 * resolution; 
+        let next_arrow = interval / 2; // offset the first arrow
+        let current_distance = 0;
+
+        for (let i = 0; i < coords.length - 1; i++) {
+          const start = coords[i];
+          const end = coords[i + 1];
+          const dx = end[0] - start[0];
+          const dy = end[1] - start[1];
+          const segment_len = Math.sqrt(dx * dx + dy * dy);
+
+          while (current_distance + segment_len >= next_arrow) {
+            const fraction = (next_arrow - current_distance) / segment_len;
+            const x = start[0] + dx * fraction;
+            const y = start[1] + dy * fraction;
+            const rotation = Math.PI / 2 - Math.atan2(dy, dx);
+
+            styles.push(
+              new Style({
+                geometry: new Point([x, y]),
+                image: new Icon({
+                  src: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="%23efa038"><polygon points="12,2 22,12 16,12 16,22 8,22 8,12 2,12"/></svg>',
+                  anchor: [0.5, 0.5],
+                  rotateWithView: true,
+                  rotation: rotation
+                })
+              })
+            );
+
+            next_arrow += interval;
+          }
+
+          current_distance += segment_len;
+        }
+
+        return styles;
+      });
 
       this.path_layer_source.clear();
       this.path_layer_source.addFeature(feature);
@@ -176,13 +222,119 @@ export class MapService extends SwisstopoMap {
     this.render_pointer(wmtsLayer_overlay);
     this.register_listeners();
 
+    const styleElement = document.createElement('style');
+    styleElement.innerHTML = `
+      .waypoint-tooltip {
+        background: white;
+        padding: 5px 10px;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: inherit;
+        font-size: 14px;
+        pointer-events: auto;
+      }
+      .waypoint-tooltip button {
+        background: white;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        cursor: pointer;
+        padding: 4px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #d32f2f;
+      }
+      .waypoint-tooltip button:hover {
+        background: #f5f5f5;
+      }
+    `;
+    document.head.appendChild(styleElement);
   }
 
   private register_listeners() {
 
+    const tooltipElement = document.createElement('div');
+    tooltipElement.className = 'waypoint-tooltip';
+    tooltipElement.innerHTML = `
+        <span>Ziehen zum Verschieben</span>
+        <button id="delete-waypoint-btn" title="Wegpunkt löschen"><svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button>
+    `;
+    const tooltipOverlay = new Overlay({
+      element: tooltipElement,
+      offset: [0, -15],
+      positioning: 'bottom-center',
+      stopEvent: true
+    });
+    this.map?.addOverlay(tooltipOverlay);
+
+    let hovered_waypoint: LV95_Waypoint | null = null;
+    let is_hovering_tooltip = false;
+
+    tooltipElement.addEventListener('mouseenter', () => is_hovering_tooltip = true);
+    tooltipElement.addEventListener('mouseleave', () => {
+      is_hovering_tooltip = false;
+      tooltipOverlay.setPosition(undefined);
+      hovered_waypoint = null;
+    });
+    
+    // Deletion handler
+    const deleteBtn = tooltipElement.querySelector('#delete-waypoint-btn');
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', () => {
+         if (hovered_waypoint && this.map_animator) {
+            this.map_animator.delete_route_waypoint(hovered_waypoint);
+            tooltipOverlay.setPosition(undefined);
+         }
+      });
+    }
+
+    const modify = new Modify({
+      source: this.path_layer_source
+    });
+    modify.on('modifyend', async (evt) => {
+      const features = evt.features.getArray();
+      if (features.length > 0 && this.map_animator) {
+         const geom = features[0].getGeometry() as LineString;
+         const coords = geom.getCoordinates();
+         await this.map_animator.handle_modify_event(coords);
+      }
+    });
+    this.map?.addInteraction(modify);
+
+    // Right-click to undo the last waypoint
+    const viewport = this.map?.getViewport();
+    if (viewport) {
+      viewport.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        if (this.map_animator?.can_undo()) {
+           this.map_animator.undo();
+        }
+      });
+    }
+
     this.map?.on('pointermove', async (evt) => {
 
       if (this.map_animator?.has_route) {
+        
+        let foundWaypoint = false;
+        this.map?.forEachFeatureAtPixel(evt.pixel, (f, l) => {
+          if (l && (l as any).getSource() === this.way_points_layer_source) {
+            const geom = f.getGeometry() as Circle;
+            const center = geom.getCenter();
+            tooltipOverlay.setPosition(center);
+            hovered_waypoint = {x: center[0], y: center[1]} as LV95_Waypoint;
+            foundWaypoint = true;
+          }
+        }, { hitTolerance: 15 });
+
+        if (!foundWaypoint && !is_hovering_tooltip) {
+          tooltipOverlay.setPosition(undefined);
+          hovered_waypoint = null;
+        }
+
         const [nearest_point, dist] = await this.get_nearest_path_point(evt);
         if (dist <= 50 && nearest_point) this.map_animator?.move_pointer(nearest_point);
         else this.map_animator?.move_pointer(null);

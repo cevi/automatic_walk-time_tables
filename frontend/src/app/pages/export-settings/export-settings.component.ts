@@ -135,8 +135,36 @@ export class ExportSettingsComponent {
 
   }
 
-  async delete_last_waypoint() {
-    this.mapAnimator.delete_last_waypoint();
+  get magnetic_paths(): boolean {
+    return this.mapAnimator.magnetic_paths;
+  }
+
+  toggle_magnetic_paths() {
+    this.mapAnimator.toggle_magnetic_paths();
+  }
+
+  invert_route() {
+    this.mapAnimator.invert_route();
+  }
+
+  undo() {
+    this.mapAnimator.undo();
+  }
+
+  redo() {
+    this.mapAnimator.redo();
+  }
+
+  can_undo(): boolean {
+    return this.mapAnimator.can_undo();
+  }
+
+  can_redo(): boolean {
+    return this.mapAnimator.can_redo();
+  }
+
+  cancel_drawing() {
+    this.mapAnimator.clear();
   }
 
 }

@@ -1,6 +1,7 @@
 import {AfterViewInit, Component, OnInit} from '@angular/core';
 import {MapAnimatorService} from "../../services/map-animator.service";
 import {MapService} from "../../services/map.service";
+import {Router} from "@angular/router";
 
 @Component({
     selector: 'app-map-background',
@@ -14,15 +15,20 @@ import {MapService} from "../../services/map.service";
 export class MapBackgroundComponent implements OnInit, AfterViewInit {
 
   public setHorizontal: boolean = true;
-
+  public has_valid_path: boolean = false;
 
   constructor(
-    private mapAnimator: MapAnimatorService,
-    private mapService: MapService) {
+    public mapAnimator: MapAnimatorService,
+    private mapService: MapService,
+    private router: Router) {
   }
 
   ngOnInit(): void {
     this.mapService.link_animator(this.mapAnimator);
+
+    this.mapAnimator.path$.subscribe(path => {
+      this.has_valid_path = path.length > 0;
+    });
 
     // sets horizontal to true if the window is wider than it is tall
     this.setHorizontal = window.innerWidth > window.innerHeight;
@@ -39,5 +45,39 @@ export class MapBackgroundComponent implements OnInit, AfterViewInit {
     this.mapService?.draw_map();
   }
 
+  toggle_drawer_table() {
+    if (this.router.url === '/guide') {
+      this.router.navigate(['/']);
+      this.mapAnimator.drawer_open = true;
+    } else {
+      this.mapAnimator.drawer_open = !this.mapAnimator.drawer_open;
+    }
+  }
+
+  toggle_drawer_guide() {
+    if (this.router.url !== '/guide') {
+      this.router.navigate(['/guide']);
+      this.mapAnimator.drawer_open = true;
+    } else {
+      this.mapAnimator.drawer_open = !this.mapAnimator.drawer_open;
+    }
+  }
+
+  triggerUpload() {
+    document.getElementById('gpx_upload_input')?.click();
+  }
+
+  onFileSelected(event: any) {
+    const file: File = event.target.files[0];
+    if (file) {
+      this.mapAnimator.replace_route(file).then(() => {
+         this.mapAnimator.drawer_open = true;
+      }).catch(err => {
+         console.error("Failed to parse route:", err);
+         alert("Fehler beim Verarbeiten der GPX/KML-Datei.");
+      });
+    }
+    event.target.value = '';
+  }
 
 }

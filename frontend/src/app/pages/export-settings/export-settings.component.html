@@ -1,8 +1,6 @@
 <div class="export-dialog">
   <h2>Marschzeittabellen erstellen</h2>
 
-  <button mat-stroked-button color="primary" class="help-button" routerLink="guide">So funktioniert es!</button>
-
   @if (error_message != '') {
     <p id="status_message" class="error_message">
       {{ error_message }}
@@ -13,63 +11,6 @@
   @if (error_message == '') {
     <form [formGroup]="options">
       <mat-stepper orientation="vertical">
-        <mat-step [hasError]="!route_uploaded" errorMessage="Route fehlt! Bitte Datei hochladen.">
-          <ng-template matStepLabel>Route Hochladen oder Zeichnen</ng-template>
-          <div class="content-block">
-            <h3>Route Zeichnen</h3>
-            <p>Starte deine Route mit einem Klick auf die Landeskarte.</p>
-            <button (click)="delete_last_waypoint()" mat-stroked-button color="warn"
-              [disabled]="!has_valid_path">Letzter Wegpunkt löschen
-            </button>
-            <button (click)="finish_drawing()" matStepperNext mat-stroked-button color="primary"
-              [disabled]="!has_valid_path">Zeichnen Abschliessen
-            </button>
-            <h3>oder Route Hochladen</h3>
-            <p>
-              Alternativ kannst du eine GPX-Datei hochladen, diese kannst du aus SchweizMobil oder der Swisstopo-App
-              exportieren. Alternativ
-              kannst du eine KML-Datei hochladen, die du sie vom Kartenviewer von Swisstopo exportieren kannst.
-            </p>
-            @if (!route_uploaded && !parse_error && !loading) {
-              <app-upload-area class="upload-area"
-              (file_uploaded)="new_route_uploaded($event)"></app-upload-area>
-            }
-            @if (route_uploaded && route_file && !parse_error) {
-              <app-download [name]="route_file.name"
-              [changeDate]="route_file.lastModified"></app-download>
-            }
-            @if (loading) {
-              <div>
-                <p>Route wird verarbeitet...</p>
-                <mat-progress-bar mode="query"></mat-progress-bar>
-              </div>
-            }
-            @if (parse_error) {
-              <div>
-                <p class="error">
-                  Die Route konnte nicht verarbeitet werden. Bitte lade eine andere Datei hoch. Falls du der Meinung bist,
-                  das
-                  deine Route im Tool funktionieren sollte, melde dich bitte <a
-                href="https://github.com/cevi/automatic_walk-time_tables">via Github</a>. </p>
-                <button mat-stroked-button color="warn" (click)="parse_error = false">
-                  Neuer Export Starten
-                </button>
-              </div>
-            }
-          </div>
-          @if (!route_uploaded) {
-            <button mat-stroked-button color="primary" routerLink="guide" fragment="get-gpx-file">
-              Wie
-              erhalte ich eine GPX- oder KML-Datei?
-            </button>
-          }
-          @if (route_uploaded) {
-            <button mat-stroked-button color="warn" (click)="delete_route_file()"> Datei löschen
-            </button>
-          }
-          <button mat-stroked-button color="primary" matStepperNext [disabled]="!route_uploaded" id="goto-step-2">Weiter
-          </button>
-        </mat-step>
         <mat-step>
           <ng-template matStepLabel>Einstellungen zum Höhenprofil</ng-template>
           <app-elevation-profile></app-elevation-profile>

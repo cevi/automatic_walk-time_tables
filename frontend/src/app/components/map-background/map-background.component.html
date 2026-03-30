@@ -14,16 +14,58 @@
 
   <ng-template #splitterContent let-direction="direction" let-width="width" let-minWidth="minWidth">
     <as-split [direction]="direction" [unit]="'pixel'">
-      <as-split-area id="map-area" [className]="'splitView-' + direction">
+      <as-split-area id="map-area" [className]="'splitView-' + direction" style="position: relative;">
 
         <div id="map-canvas" class="map"></div>
 
         <img routerLink="/" id="logo" src="../../../assets/logo_with_claim.png"/>
         <img routerLink="/" id="logo_small" src="../../../assets/logo.png"/>
 
+        <div class="drawing-toolbar">
+          <button mat-icon-button (click)="toggle_drawer_guide()" matTooltip="So funktioniert es!" color="primary">
+            <mat-icon>help_outline</mat-icon>
+          </button>
+          <div class="toolbar-divider"></div>
+          
+          <input type="file" id="gpx_upload_input" style="display: none" (change)="onFileSelected($event)" accept=".gpx,.kml">
+          <button mat-icon-button (click)="triggerUpload()" matTooltip="GPX/KML Route importieren" color="primary">
+            <mat-icon>upload_file</mat-icon>
+          </button>
+          <div class="toolbar-divider"></div>
+
+          <button mat-icon-button class="toolbar-label-btn" disabled>
+            <mat-icon style="color: grey;">add_location</mat-icon>
+            <span class="toolbar-label">Tour zeichnen</span>
+          </button>
+          <div class="toolbar-divider"></div>
+          <button mat-icon-button class="icon-magnet" [class.active]="mapAnimator.magnetic_paths" (click)="mapAnimator.toggle_magnetic_paths()" matTooltip="Magnetisches Zeichnen">
+            <mat-icon [style.color]="mapAnimator.magnetic_paths ? '#e57373' : 'grey'">auto_fix_high</mat-icon>
+          </button>
+          <div class="toolbar-divider"></div>
+          <button mat-icon-button (click)="mapAnimator.invert_route()" matTooltip="Tour umkehren" [disabled]="!has_valid_path">
+            <mat-icon style="color: #e57373;">sync_alt</mat-icon>
+          </button>
+          <div class="toolbar-divider"></div>
+          <button mat-icon-button (click)="mapAnimator.undo()" matTooltip="Rückgängig machen" [disabled]="!mapAnimator.can_undo()">
+            <mat-icon style="color: #e57373;">undo</mat-icon>
+          </button>
+          <div class="toolbar-divider"></div>
+          <button mat-icon-button (click)="mapAnimator.redo()" matTooltip="Wiederherstellen" [disabled]="!mapAnimator.can_redo()">
+            <mat-icon style="color: #e57373;">redo</mat-icon>
+          </button>
+          <div class="toolbar-divider"></div>
+          <button mat-icon-button (click)="mapAnimator.clear()" matTooltip="Route verwerfen" color="warn" [disabled]="!has_valid_path">
+            <mat-icon>delete_outline</mat-icon>
+          </button>
+          <div class="toolbar-divider"></div>
+          <button mat-icon-button (click)="toggle_drawer_table()" matTooltip="Marschzeittabelle erstellen" color="primary">
+            <mat-icon>table_chart</mat-icon>
+          </button>
+        </div>
+
       </as-split-area>
 
-      <as-split-area id="control-area" [className]="'splitView-' + direction" [size]="width" [minSize]="minWidth">
+      <as-split-area id="control-area" [className]="'splitView-' + direction" [size]="mapAnimator.drawer_open ? width : 0" [minSize]="mapAnimator.drawer_open ? minWidth : 0" [visible]="mapAnimator.drawer_open">
         <ng-content></ng-content>
       </as-split-area>
     </as-split>
