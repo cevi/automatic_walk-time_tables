@@ -58,6 +58,14 @@ export class SwisstopoMap {
       "attributionUrl": "https://www.swisstopo.admin.ch/internet/swisstopo/fr/home.html",
       "label": "luftbild",
       "timestamps": ["current"]
+    },
+    'haltestellen': {
+      "attribution": "BAV",
+      "format": "png",
+      "serverLayerName": "ch.bav.haltestellen-oev",
+      "attributionUrl": "https://www.bav.admin.ch/bav/de/home.html",
+      "label": "ÖV-Haltestellen",
+      "timestamps": ["current"]
     }
   };
 

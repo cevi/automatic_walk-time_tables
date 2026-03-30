@@ -1,124 +1,251 @@
 <div class="main-content">
-
   @if (setHorizontal) {
     <ng-container
-    *ngTemplateOutlet="splitterContent; context: {direction: 'horizontal', width: 450, minWidth:450}"></ng-container>
+      *ngTemplateOutlet="
+        splitterContent;
+        context: { direction: 'horizontal', width: 450, minWidth: 450 }
+      "
+    ></ng-container>
   } @else {
     <as-split direction="vertical" [unit]="'pixel'">
       <ng-container
-      *ngTemplateOutlet="splitterContent; context: {direction: 'vertical', width: 35, minWidth: 35}"></ng-container>
+        *ngTemplateOutlet="
+          splitterContent;
+          context: { direction: 'vertical', width: 35, minWidth: 35 }
+        "
+      ></ng-container>
     </as-split>
   }
 
-
-
-  <ng-template #splitterContent let-direction="direction" let-width="width" let-minWidth="minWidth">
+  <ng-template
+    #splitterContent
+    let-direction="direction"
+    let-width="width"
+    let-minWidth="minWidth"
+  >
     <as-split [direction]="direction" [unit]="'pixel'">
-      <as-split-area id="map-area" [className]="'splitView-' + direction" style="position: relative;">
-
+      <as-split-area
+        id="map-area"
+        [className]="'splitView-' + direction"
+        style="position: relative"
+      >
         <div id="map-canvas" class="map"></div>
 
-        <img routerLink="/" id="logo" src="../../../assets/logo_with_claim.png"/>
-        <img routerLink="/" id="logo_small" src="../../../assets/logo.png"/>
+        <img
+          routerLink="/"
+          id="logo"
+          src="../../../assets/logo_with_claim.png"
+        />
+        <img routerLink="/" id="logo_small" src="../../../assets/logo.png" />
 
-        <div class="stats-overlay" *ngIf="(mapAnimator.route_stats$ | async) as stats" [class.hidden]="!mapAnimator.has_route">
+        <div
+          class="stats-overlay"
+          *ngIf="mapAnimator.route_stats$ | async as stats"
+          [class.hidden]="!mapAnimator.has_route"
+        >
           <div class="stat-item" matTooltip="Distanz">
             <mat-icon>straighten</mat-icon>
-            <span>{{stats.dist | number:'1.1-1'}} km</span>
+            <span>{{ stats.dist | number: "1.1-1" }} km</span>
           </div>
           <div class="stat-item" matTooltip="Leistungskilometer">
             <mat-icon>speed</mat-icon>
-            <span>{{(stats.dist + (stats.up / 100) + (stats.down / 300)) | number:'1.1-1'}} Lkm</span>
+            <span
+              >{{
+                stats.dist + stats.up / 100 + stats.down / 300 | number: "1.1-1"
+              }}
+              Lkm</span
+            >
           </div>
           <div class="stat-item" matTooltip="Aufstieg">
             <mat-icon>trending_up</mat-icon>
-            <span>{{stats.up | number:'1.0-0'}} m</span>
+            <span>{{ stats.up | number: "1.0-0" }} m</span>
           </div>
           <div class="stat-item" matTooltip="Abstieg">
             <mat-icon>trending_down</mat-icon>
-            <span>{{stats.down | number:'1.0-0'}} m</span>
+            <span>{{ stats.down | number: "1.0-0" }} m</span>
           </div>
           <div class="stat-item" matTooltip="Wanderzeit">
             <mat-icon>schedule</mat-icon>
-            <span>{{mapAnimator.formatDuration(stats.duration)}}</span>
+            <span>{{ mapAnimator.formatDuration(stats.duration) }}</span>
           </div>
         </div>
 
         <div class="bottom-left-controls">
-          <button mat-icon-button (click)="toggle_drawer_guide()" matTooltip="So funktioniert es!" color="primary">
+          <button
+            mat-icon-button
+            (click)="toggle_drawer_guide()"
+            matTooltip="So funktioniert es!"
+            color="primary"
+          >
             <mat-icon>help_outline</mat-icon>
           </button>
           <div class="toolbar-divider"></div>
-          <button mat-icon-button [matMenuTriggerFor]="mapMenu" matTooltip="Hintergrundkarte" color="primary">
+          <button
+            mat-icon-button
+            [matMenuTriggerFor]="mapMenu"
+            matTooltip="Hintergrundkarte"
+            color="primary"
+          >
             <mat-icon>layers</mat-icon>
           </button>
           <mat-menu #mapMenu="matMenu">
             <button mat-menu-item (click)="setMapLayer('pixelkarte')">
-               <mat-icon *ngIf="currentLayer === 'pixelkarte'" color="primary">check</mat-icon>
-               <mat-icon *ngIf="currentLayer !== 'pixelkarte'"></mat-icon>
-               <span>Basiskarte Farbig</span>
+              <mat-icon *ngIf="currentLayer === 'pixelkarte'" color="primary"
+                >check</mat-icon
+              >
+              <mat-icon *ngIf="currentLayer !== 'pixelkarte'"></mat-icon>
+              <span>Basiskarte Farbig</span>
             </button>
             <button mat-menu-item (click)="setMapLayer('luftbild')">
-               <mat-icon *ngIf="currentLayer === 'luftbild'" color="primary">check</mat-icon>
-               <mat-icon *ngIf="currentLayer !== 'luftbild'"></mat-icon>
-               <span>Luftbild</span>
+              <mat-icon *ngIf="currentLayer === 'luftbild'" color="primary"
+                >check</mat-icon
+              >
+              <mat-icon *ngIf="currentLayer !== 'luftbild'"></mat-icon>
+              <span>Luftbild</span>
             </button>
             <button mat-menu-item (click)="setMapLayer('keine')">
-               <mat-icon *ngIf="currentLayer === 'keine'" color="primary">check</mat-icon>
-               <mat-icon *ngIf="currentLayer !== 'keine'"></mat-icon>
-               <span>Keine Hintergrundkarte</span>
+              <mat-icon *ngIf="currentLayer === 'keine'" color="primary"
+                >check</mat-icon
+              >
+              <mat-icon *ngIf="currentLayer !== 'keine'"></mat-icon>
+              <span>Keine Hintergrundkarte</span>
+            </button>
+            <mat-divider></mat-divider>
+            <button mat-menu-item (click)="toggleFountains($event)">
+              <mat-icon *ngIf="showFountains" color="primary"
+                >check_box</mat-icon
+              >
+              <mat-icon *ngIf="!showFountains"
+                >check_box_outline_blank</mat-icon
+              >
+              <span>Brunnen anzeigen</span>
+            </button>
+            <button mat-menu-item (click)="toggleHaltestellen($event)">
+              <mat-icon *ngIf="showHaltestellen" color="primary"
+                >check_box</mat-icon
+              >
+              <mat-icon *ngIf="!showHaltestellen"
+                >check_box_outline_blank</mat-icon
+              >
+              <span>ÖV-Haltestellen</span>
             </button>
           </mat-menu>
         </div>
 
         <div class="drawing-toolbar">
-          <div class="mode-toggle" (click)="toggle_drawer_table()" [matTooltip]="(mapAnimator.export_mode$ | async) ? 'Zu Zeichnen wechseln' : 'Zu Marschzeittabellen-Modus wechseln'">
-            <div class="mode-icon" [class.active]="!(mapAnimator.export_mode$ | async)">
+          <div
+            class="mode-toggle"
+            (click)="toggle_drawer_table()"
+            [matTooltip]="
+              (mapAnimator.export_mode$ | async)
+                ? 'Zu Zeichnen wechseln'
+                : 'Zu Marschzeittabellen-Modus wechseln'
+            "
+          >
+            <div
+              class="mode-icon"
+              [class.active]="!(mapAnimator.export_mode$ | async)"
+            >
               <mat-icon>edit</mat-icon>
             </div>
-            <div class="mode-icon" [class.active]="(mapAnimator.export_mode$ | async)">
+            <div
+              class="mode-icon"
+              [class.active]="mapAnimator.export_mode$ | async"
+            >
               <mat-icon>table_chart</mat-icon>
             </div>
           </div>
 
           <ng-container *ngIf="!(mapAnimator.export_mode$ | async)">
             <div class="toolbar-divider"></div>
-            <button mat-icon-button class="icon-magnet" [class.active]="mapAnimator.magnetic_paths" (click)="mapAnimator.toggle_magnetic_paths()" matTooltip="Magnetisches Zeichnen">
-              <mat-icon [style.color]="mapAnimator.magnetic_paths ? '#e57373' : 'grey'">auto_fix_high</mat-icon>
+            <button
+              mat-icon-button
+              class="icon-magnet"
+              [class.active]="mapAnimator.magnetic_paths"
+              (click)="mapAnimator.toggle_magnetic_paths()"
+              matTooltip="Magnetisches Zeichnen"
+            >
+              <mat-icon
+                [style.color]="mapAnimator.magnetic_paths ? '#e57373' : 'grey'"
+                >auto_fix_high</mat-icon
+              >
             </button>
             <div class="toolbar-divider"></div>
-            <button mat-icon-button (click)="mapAnimator.invert_route()" matTooltip="Tour umkehren" [disabled]="!has_valid_path">
-              <mat-icon [style.color]="!has_valid_path ? 'grey' : '#e57373'">sync_alt</mat-icon>
+            <button
+              mat-icon-button
+              (click)="mapAnimator.invert_route()"
+              matTooltip="Tour umkehren"
+              [disabled]="!has_valid_path"
+            >
+              <mat-icon [style.color]="!has_valid_path ? 'grey' : '#e57373'"
+                >sync_alt</mat-icon
+              >
             </button>
             <div class="toolbar-divider"></div>
-            <button mat-icon-button (click)="mapAnimator.undo()" matTooltip="Rückgängig machen" [disabled]="!mapAnimator.can_undo()">
-              <mat-icon [style.color]="!mapAnimator.can_undo() ? 'grey' : '#e57373'">undo</mat-icon>
+            <button
+              mat-icon-button
+              (click)="mapAnimator.undo()"
+              matTooltip="Rückgängig machen"
+              [disabled]="!mapAnimator.can_undo()"
+            >
+              <mat-icon
+                [style.color]="!mapAnimator.can_undo() ? 'grey' : '#e57373'"
+                >undo</mat-icon
+              >
             </button>
             <div class="toolbar-divider"></div>
-            <button mat-icon-button (click)="mapAnimator.redo()" matTooltip="Wiederherstellen" [disabled]="!mapAnimator.can_redo()">
-              <mat-icon [style.color]="!mapAnimator.can_redo() ? 'grey' : '#e57373'">redo</mat-icon>
+            <button
+              mat-icon-button
+              (click)="mapAnimator.redo()"
+              matTooltip="Wiederherstellen"
+              [disabled]="!mapAnimator.can_redo()"
+            >
+              <mat-icon
+                [style.color]="!mapAnimator.can_redo() ? 'grey' : '#e57373'"
+                >redo</mat-icon
+              >
             </button>
             <div class="toolbar-divider"></div>
-            <button mat-icon-button (click)="mapAnimator.clear()" matTooltip="Route verwerfen" color="warn" [disabled]="!has_valid_path">
+            <button
+              mat-icon-button
+              (click)="mapAnimator.clear()"
+              matTooltip="Route verwerfen"
+              color="warn"
+              [disabled]="!has_valid_path"
+            >
               <mat-icon>delete_outline</mat-icon>
             </button>
             <div class="toolbar-divider"></div>
-            <input type="file" id="gpx_upload_input" style="display: none" (change)="onFileSelected($event)" accept=".gpx,.kml">
-            <button mat-icon-button (click)="triggerUpload()" matTooltip="GPX/KML Route importieren" color="primary">
+            <input
+              type="file"
+              id="gpx_upload_input"
+              style="display: none"
+              (change)="onFileSelected($event)"
+              accept=".gpx,.kml"
+            />
+            <button
+              mat-icon-button
+              (click)="triggerUpload()"
+              matTooltip="GPX/KML Route importieren"
+              color="primary"
+            >
               <mat-icon>upload_file</mat-icon>
             </button>
           </ng-container>
-
         </div>
-
       </as-split-area>
 
-      <as-split-area id="control-area" [className]="'splitView-' + direction" [size]="mapAnimator.drawer_open ? width : 0" [minSize]="mapAnimator.drawer_open ? minWidth : 0" [visible]="mapAnimator.drawer_open">
+      <as-split-area
+        id="control-area"
+        [className]="'splitView-' + direction"
+        [size]="mapAnimator.drawer_open ? width : 0"
+        [minSize]="mapAnimator.drawer_open ? minWidth : 0"
+        [visible]="mapAnimator.drawer_open"
+      >
         <ng-content></ng-content>
       </as-split-area>
     </as-split>
   </ng-template>
-
 </div>
 
 <style>
@@ -129,13 +256,13 @@
     background: rgba(255, 255, 255, 0.95);
     padding: 10px 15px;
     border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     display: flex;
     gap: 20px;
     align-items: center;
     z-index: 1000;
     pointer-events: auto;
-    font-family: 'Open Sans', sans-serif;
+    font-family: "Open Sans", sans-serif;
   }
   .stats-overlay.hidden {
     display: none !important;

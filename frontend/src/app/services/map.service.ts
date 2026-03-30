@@ -18,6 +18,8 @@ import {
 import { Extent } from 'ol/extent';
 import { getRenderPixel } from 'ol/render';
 import { take } from 'rxjs/operators';
+import { transformExtent } from 'ol/proj';
+import { bbox } from 'ol/loadingstrategy';
 import { LV95_Waypoint } from '../helpers/coordinates';
 import { SwisstopoMap } from '../helpers/swisstopo-map';
 import { combineLatest } from 'rxjs';
@@ -31,6 +33,46 @@ export class MapService extends SwisstopoMap {
   private path_layer_source = new VectorSource({ wrapX: false });
   private pointer_layer_source = new VectorSource({ wrapX: false });
   private way_points_layer_source = new VectorSource({ wrapX: false });
+
+  private fountains_layer_source = new VectorSource({
+    loader: (extent, resolution, projection, success, failure) => {
+      // Only load if resolution is small enough (zoomed in enough, > 100 is too far out)
+      if (resolution > 100) {
+        if (success) success([]);
+        return;
+      }
+
+      const ext4326 = transformExtent(extent, projection, 'EPSG:4326');
+      const query = `[out:json];(nwr[amenity~"drinking_water|fountain|water_point"](${ext4326[1]},${ext4326[0]},${ext4326[3]},${ext4326[2]});nwr[man_made~"water_well|water_tap"](${ext4326[1]},${ext4326[0]},${ext4326[3]},${ext4326[2]}););out qt center;`;
+      const url =
+        'https://overpass.osm.ch/api/interpreter?data=' +
+        encodeURIComponent(query);
+
+      fetch(url)
+        .then((response) => response.json())
+        .then((data) => {
+          const features: Feature[] = [];
+          data.elements.forEach((el: any) => {
+            let coords;
+            if (el.type === 'node') coords = [el.lon, el.lat];
+            else if (el.center) coords = [el.center.lon, el.center.lat];
+
+            if (coords) {
+              const pt = new Point(coords).transform('EPSG:4326', projection);
+              const feature = new Feature({ geometry: pt, ...el.tags });
+              features.push(feature);
+            }
+          });
+          this.fountains_layer_source.addFeatures(features);
+          if (success) success(features as any);
+        })
+        .catch((err) => {
+          console.error(err);
+          if (failure) failure();
+        });
+    },
+    strategy: bbox,
+  });
 
   private map: Map | undefined;
   private pointer: number[] | undefined | null;
@@ -266,6 +308,8 @@ export class MapService extends SwisstopoMap {
 
   public draw_map(
     layerLabel: string = 'pixelkarte',
+    showFountains: boolean = false,
+    showHaltestellen: boolean = false,
     target_canvas: string = 'map-canvas',
   ) {
     let oldCenter: number[] | undefined;
@@ -283,11 +327,29 @@ export class MapService extends SwisstopoMap {
       layerLabel !== 'keine' ? this.get_base_WMTS_layer(layerLabel) : null;
     const wmtsLayer_overlay =
       layerLabel !== 'keine' ? this.get_base_WMTS_layer(layerLabel) : null;
+    const haltestellen_overlay = showHaltestellen ? this.get_base_WMTS_layer('haltestellen') : null;
 
     const layers: Layer[] = [];
     if (wmtsLayer) layers.push(wmtsLayer);
+    if (haltestellen_overlay) layers.push(haltestellen_overlay);
     layers.push(new VectorLayer({ source: this.path_layer_source }));
     if (wmtsLayer_overlay) layers.push(wmtsLayer_overlay);
+
+    if (showFountains) {
+      layers.push(
+        new VectorLayer({
+          source: this.fountains_layer_source,
+          style: new Style({
+            image: new Icon({
+              src: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="24" height="24"><path d="M480-120q-106 0-180-71.5T226-365q0-67 43-138.5T387-644q20-20 41.5-40t46.5-41q25 21 46.5 41t41.5 40q76 71 119 140.5T734-365q0 102-74 173.5T480-120Z" fill="%230070FF" stroke="white" stroke-width="40"/></svg>',
+              anchor: [0.5, 1],
+              scale: 1,
+            }),
+          }),
+        }),
+      );
+    }
+
     layers.push(new VectorLayer({ source: this.pointer_layer_source }));
     layers.push(new VectorLayer({ source: this.way_points_layer_source }));
 
