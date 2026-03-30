@@ -255,6 +255,7 @@ export class MapAnimatorService {
     if (route_file_or_array instanceof File) {
       // Clear POIs explicitly here when starting a fresh file import!
       this._pois$.next([]);
+      this._way_points$.next([]);
       
       xml_string = (await route_file_or_array.text()).toString()
       xml_string = xml_string.replace(/>\s*/g, '>');  // Remove space after >
@@ -381,7 +382,15 @@ export class MapAnimatorService {
 
         const old_pois = this._pois$.getValue();
         for (let np of new_pois) {
-           let closest = old_pois.find(op => Math.abs(op.x - np.x) < 100 && Math.abs(op.y - np.y) < 100);
+           let closest: LV95_Waypoint | undefined;
+           let min_dist = Infinity;
+           for (let op of old_pois) {
+              const d = Math.sqrt(Math.pow(op.x - np.x, 2) + Math.pow(op.y - np.y, 2));
+              if (d < 50 && d < min_dist) {
+                 min_dist = d;
+                 closest = op;
+              }
+           }
            if (closest) {
               if (closest.name) np.name = closest.name;
               if (closest.break_duration) np.break_duration = closest.break_duration;
@@ -409,7 +418,15 @@ export class MapAnimatorService {
 
         const old_wps = this._way_points$.getValue();
         for (let nw of new_wps) {
-           let closest = old_wps.find(ow => Math.abs(ow.x - nw.x) < 100 && Math.abs(ow.y - nw.y) < 100);
+           let closest: LV95_Waypoint | undefined;
+           let min_dist = Infinity;
+           for (let ow of old_wps) {
+              const d = Math.sqrt(Math.pow(ow.x - nw.x, 2) + Math.pow(ow.y - nw.y, 2));
+              if (d < 50 && d < min_dist) {
+                 min_dist = d;
+                 closest = ow;
+              }
+           }
            if (closest) {
               if (closest.name) nw.name = closest.name;
               if (closest.break_duration) nw.break_duration = closest.break_duration;
@@ -444,7 +461,24 @@ export class MapAnimatorService {
     if (path.length != elevation.length)
       throw new Error('Die Route und die Höhendaten haben unterschiedliche Länge!');
 
+    const old_path = this._path$?.getValue() || [];
+    let old_start_name = ''; let old_start_break = '';
+    let old_end_name = ''; let old_end_break = '';
+    if (old_path.length > 0) {
+      old_start_name = old_path[0].name || '';
+      old_start_break = old_path[0].break_duration || '';
+      old_end_name = old_path[old_path.length - 1].name || '';
+      old_end_break = old_path[old_path.length - 1].break_duration || '';
+    }
+
     const way_points = this.create_way_points(path, elevation);
+
+    if (way_points.length > 0 && old_path.length > 0) {
+      way_points[0].name = old_start_name;
+      way_points[0].break_duration = old_start_break;
+      way_points[way_points.length - 1].name = old_end_name;
+      way_points[way_points.length - 1].break_duration = old_end_break;
+    }
 
     this.update_map_center(way_points);
     this._path$?.next(way_points);
