@@ -112,7 +112,7 @@ export class MapDrawingRenderer {
   private setupModifyInteraction() {
     this.modifyInteraction = new Modify({
       source: this.path_layer_source,
-      pixelTolerance: 20,
+      pixelTolerance: 25,
     });
 
     this.modifyInteraction.on('modifystart', (evt: any) => {
@@ -128,7 +128,7 @@ export class MapDrawingRenderer {
             const center = (feature.getGeometry() as Point).getCoordinates();
             hit_anchor = { x: center[0], y: center[1] } as LV95_Waypoint;
           }
-        }, { hitTolerance: 15 });
+        }, { hitTolerance: 25 });
       }
 
       this.dragged_anchor = hit_anchor || this.hovered_anchor || null;
@@ -154,6 +154,10 @@ export class MapDrawingRenderer {
       });
       this.dragged_anchor = null;
       this.modifystart_coord = null;
+      this.hovered_anchor = undefined;
+      this.is_hovering_tooltip = false;
+      this.pointer_layer_source.clear();
+      this.tooltipOverlay.setPosition(undefined);
     });
 
     this.map.addInteraction(this.modifyInteraction);
@@ -162,7 +166,7 @@ export class MapDrawingRenderer {
   private setupSnapInteraction() {
     this.snapInteraction = new Snap({
       source: this.anchor_points_layer_source,
-      pixelTolerance: 20,
+      pixelTolerance: 25,
     });
     this.map.addInteraction(this.snapInteraction);
   }
@@ -188,7 +192,7 @@ export class MapDrawingRenderer {
               foundAnchor = true;
             }
           },
-          { hitTolerance: 15 },
+          { hitTolerance: 25 },
         );
 
         if (!foundAnchor && !this.is_mouse_over_dom_tooltip) {
@@ -572,7 +576,7 @@ export class MapDrawingRenderer {
       if (pixel) {
         this.map?.forEachFeatureAtPixel(pixel, (feature, layer) => {
           if (layer === this.path_layer) this.is_hovering_tooltip = true;
-        });
+        }, { hitTolerance: 25 });
       }
 
       if (!this.is_hovering_tooltip && !this.hovered_anchor) {

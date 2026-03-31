@@ -3,7 +3,7 @@
     <h3>Höhenprofil:</h3>
     <p>Mit einem Klick ins Höhenprofil kannst du zusätzliche Wegpunkte einfügen. Diese werden falls
     möglich berücksichtigt. </p>
-    <div id="chart" (click)="mouseClick()" (mousemove)="mouseMove()" (mouseout)="mouseOut()" echarts [options]="plot_options"></div>
+    <div id="chart" (chartInit)="onChartInit($event)" echarts [options]="plot_options"></div>
     
     <div style="display: flex; gap: 12px; margin-top: 16px; margin-bottom: 8px;">
       <span style="background: rgba(26, 115, 232, 0.08); color: #1a73e8; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 500;">

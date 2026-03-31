@@ -17,7 +17,6 @@ export class MapStateService {
 
   private readonly _path$ = new BehaviorSubject<LV95_Waypoint[]>([]);
   private readonly _anchor_points$ = new BehaviorSubject<LV95_Coordinates[]>([]);
-  private readonly _way_points$ = new BehaviorSubject<LV95_Waypoint[]>([]);
   private readonly _pois$ = new BehaviorSubject<LV95_Waypoint[]>([]);
   private readonly _map_center$ = new BehaviorSubject<LV95_Coordinates>(MapStateService.DEFAULT_MAP_CENTER);
   private readonly _export_mode$ = new BehaviorSubject<boolean>(false);
@@ -28,7 +27,6 @@ export class MapStateService {
 
   public readonly path$ = this._path$.asObservable();
   public readonly anchor_points$ = this._anchor_points$.asObservable();
-  public readonly way_points$ = this._way_points$.asObservable();
   public readonly pois$ = this._pois$.asObservable();
   public readonly map_center$ = this._map_center$.asObservable();
   public readonly export_mode$ = this._export_mode$.asObservable();
@@ -46,7 +44,6 @@ export class MapStateService {
   // Synchronous Accessors (Use judiciously)
   public get path(): LV95_Waypoint[] { return this._path$.value; }
   public get anchor_points(): LV95_Coordinates[] { return this._anchor_points$.value; }
-  public get way_points(): LV95_Waypoint[] { return this._way_points$.value; }
   public get pois(): LV95_Waypoint[] { return this._pois$.value; }
   public get export_mode(): boolean { return this._export_mode$.value; }
   public get has_route(): boolean { return this._path$.value.length > 0; }
@@ -58,10 +55,6 @@ export class MapStateService {
 
   public updateAnchorPoints(anchors: LV95_Coordinates[]): void {
     this._anchor_points$.next([...anchors]);
-  }
-
-  public updateWayPoints(waypoints: LV95_Waypoint[]): void {
-    this._way_points$.next([...waypoints]);
   }
 
   public updatePOIs(pois: LV95_Waypoint[]): void {
@@ -87,7 +80,6 @@ export class MapStateService {
   public clearAll(): void {
     this._path$.next([]);
     this._anchor_points$.next([]);
-    this._way_points$.next([]);
     this._pois$.next([]);
   }
 }

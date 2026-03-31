@@ -34,7 +34,7 @@ export class WalkTimeTableComponent implements OnInit, OnDestroy, OnChanges {
   constructor(public mapAnimator: MapAnimatorService, private mapService: MapService) {}
 
   ngOnInit() {
-    this.sub = this.mapAnimator.way_points$.subscribe(wps => {
+    this.sub = this.mapAnimator.pois$.subscribe((wps: LV95_Waypoint[]) => {
       this.currentWps = wps;
       this.recalculate(this.currentWps);
     });

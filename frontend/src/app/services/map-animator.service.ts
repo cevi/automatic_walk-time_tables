@@ -25,7 +25,7 @@ export class MapAnimatorService implements OnDestroy {
     private history: RouteHistoryService,
     private api: RouteApiService,
   ) {
-    this.state.way_points$.pipe(takeUntil(this.destroy$)).subscribe((wp) => {
+    this.state.pois$.pipe(takeUntil(this.destroy$)).subscribe((wp) => {
       this._recalculate_route_stats(wp);
     });
 
@@ -51,9 +51,6 @@ export class MapAnimatorService implements OnDestroy {
   }
   public get anchor_points$() {
     return this.state.anchor_points$;
-  }
-  public get way_points$() {
-    return this.state.way_points$;
   }
   public get pois$() {
     return this.state.pois$;
@@ -86,9 +83,6 @@ export class MapAnimatorService implements OnDestroy {
   }
   public get pois(): LV95_Waypoint[] {
     return this.state.pois;
-  }
-  public get way_points(): LV95_Waypoint[] {
-    return this.state.way_points;
   }
 
   public get has_route(): boolean {
@@ -215,6 +209,12 @@ export class MapAnimatorService implements OnDestroy {
     );
 
     this.state.updatePath(mergedRoute);
+
+    const syncedAnchors = mergedRoute
+      .filter((p) => p.is_waypoint)
+      .map((p) => ({ x: p.x, y: p.y } as LV95_Coordinates));
+    this.state.updateAnchorPoints(syncedAnchors);
+
     this.regenerateWalkTimeTable();
   }
 
@@ -321,6 +321,12 @@ export class MapAnimatorService implements OnDestroy {
     );
 
     this.state.updatePath(mergedRoute);
+
+    const syncedAnchors = mergedRoute
+      .filter((p) => p.is_waypoint)
+      .map((p) => ({ x: p.x, y: p.y } as LV95_Coordinates));
+    this.state.updateAnchorPoints(syncedAnchors);
+
     this.regenerateWalkTimeTable();
   }
 
@@ -462,6 +468,12 @@ export class MapAnimatorService implements OnDestroy {
     );
 
     this.state.updatePath(mergedRoute);
+
+    const syncedAnchors = mergedRoute
+      .filter((p) => p.is_waypoint)
+      .map((p) => ({ x: p.x, y: p.y } as LV95_Coordinates));
+    this.state.updateAnchorPoints(syncedAnchors);
+
     this.regenerateWalkTimeTable();
   }
 
@@ -491,7 +503,7 @@ export class MapAnimatorService implements OnDestroy {
     }
 
     const tableJson = JSON.stringify(
-      this.state.way_points.map((p) => ({
+      this.state.pois.map((p) => ({
         name: p.name || '',
         break_duration: p.break_duration ? p.break_duration.toString() : '',
       })),
@@ -561,11 +573,10 @@ export class MapAnimatorService implements OnDestroy {
       y: (y_max + y_min) / 2,
     });
   }
-
   public regenerateWalkTimeTable() {
     if (this.state.anchor_points.length < 2) {
       this.state.route_stats$.next(null);
-      this.state.updateWayPoints([]);
+      this.state.updatePOIs([]);
       return;
     }
 
@@ -591,14 +602,14 @@ export class MapAnimatorService implements OnDestroy {
     const pois_coords = decode(resp.pois, 0);
     const pois_elev = decode(resp.pois_elevation, 0);
 
-    const way_points: LV95_Waypoint[] = pois_coords.map((p, i) => {
+    const pois: LV95_Waypoint[] = pois_coords.map((p, i) => {
       const x = p[0];
       const y = p[1];
       let name = '';
       let break_duration = '';
       let is_waypoint = true;
 
-      const old_wp = this.state.way_points.find((w) =>
+      const old_wp = this.state.pois.find((w) =>
         GeometryUtils.pointsMatch(w, { x, y }),
       );
       if (old_wp) {
@@ -618,8 +629,8 @@ export class MapAnimatorService implements OnDestroy {
       };
     });
 
-    this.state.updateWayPoints(way_points);
-    this._recalculate_route_stats(way_points);
+    this.state.updatePOIs(pois);
+    this._recalculate_route_stats(pois);
   }
 
   public can_undo(): boolean {
@@ -737,7 +748,7 @@ export class MapAnimatorService implements OnDestroy {
 
   public set_velocity(v: number) {
     this.state.velocity$.next(v);
-    this._recalculate_route_stats(this.state.way_points);
+    this._recalculate_route_stats(this.state.pois);
   }
 
   public async get_name_from_coords(lat: number, lon: number): Promise<string> {
