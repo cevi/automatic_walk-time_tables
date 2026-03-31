@@ -1,37 +1,48 @@
-<div class="info">
+<div class="page-container">
+  
+  <div class="success-header">
+    <h2><mat-icon style="color: #1e8e3e; font-size: 28px; height: 28px; width: 28px;">task_alt</mat-icon> Deine Route wurde erfolgreich exportiert!</h2>
+    <p>Daten werden heruntergeladen.</p>
+  </div>
 
-  <h2>Deine Route wurde erfolgreich exportiert!</h2>
-  <p>Daten werden heruntergeladen.</p>
+  <div class="log-container">
+    <h3 class="log-title">Export Log:</h3>
+    @for (old_state of statusManager.history; track old_state) {
+      <div class="log-line">
+        <span class="timestamp">{{old_state?.last_change}}</span>
+        <span class="message">{{old_state?.message}}</span>
+      </div>
+    }
+    <div class="log-line" [ngClass]="{'error': statusManager.status == 'Fehler', 'success': statusManager.status != 'Fehler'}">
+      <span class="timestamp">{{statusManager.last_change}}</span>
+      <span class="message">{{statusManager.status_message}} <i>({{statusManager.status}})</i></span>
+    </div>
+  </div>
 
-  <p class="old_state"><b>Export Log:</b></p>
-  @for (old_state of statusManager.history; track old_state) {
-    <p class="old_state">
-      &nbsp;- <b>{{old_state?.last_change}}:</b> {{old_state?.message}}
-    </p>
-  }
-  <p class="old_state" [ngClass]="{'error_message': statusManager.status == 'Fehler'}">
-    &nbsp;- <b>{{statusManager.last_change}}:</b> {{statusManager.status_message}} <i> ({{statusManager.status}})</i>
-  </p>
+  <div class="action-card">
+    <p>Falls das Herunterladen nicht automatisch startet, klicke auf den folgenden Button. Deine Daten sind bis <strong>{{available_until}}</strong> verfügbar.</p>
+    <a mat-flat-button color="primary" class="download-btn" href="{{download_link}}">
+      <mat-icon inline="true" style="margin-right: 8px;">download</mat-icon> Daten herunterladen
+    </a>
+  </div>
 
-  <p><br></p>
+  <div class="share-section">
+    <mat-form-field appearance="outline">
+      <mat-label>Link zum Teilen</mat-label>
+      <input matInput [value]="retrieve_link" readonly (click)="copyLink()" class="link-field" matTooltip="Klicken zum Kopieren">
+      <mat-icon matSuffix style="color: #1a73e8; cursor: pointer; margin-right: 8px;" (click)="copyLink()">content_copy</mat-icon>
+    </mat-form-field>
+  </div>
 
-  <p>Falls das Herunterladen nicht automatisch startet, klicke auf den folgenden Button. Deine Daten sind
-  bis {{available_until}} verfügbar.</p>
+  <div class="qr-section">
+    <p>Importiere deine Route in die Swisstopo App:</p>
+    <img src="{{qr_link}}" class="qr-img" alt="Swisstopo Import QR">
+  </div>
 
-  <a mat-stroked-button href="{{download_link}}"> Daten herunterladen</a>
-
-  <p><br></p>
-
-  <mat-form-field>
-    <mat-label>Link zum Teilen</mat-label>
-    <input matInput [value]="retrieve_link" readonly (click)="copyLink()" class="link-field">
-  </mat-form-field>
-
-  <p><br></p>
-
-  <p>Importiere deine Route in die Swisstopo App:</p>
-  <img src="{{qr_link}}" class="qr-img">
-
-  <button mat-stroked-button routerLink="/"> Weitere Route Exportieren</button>
+  <div class="footer-actions">
+    <button mat-stroked-button class="restart-btn" routerLink="/">
+      <mat-icon inline="true" style="margin-right: 6px;">add_circle_outline</mat-icon> Weitere Route Exportieren
+    </button>
+  </div>
 
 </div>

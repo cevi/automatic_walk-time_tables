@@ -31,7 +31,7 @@ export class DownloadDataComponent implements OnInit {
     // the data is available for 10 minutes
     const available_until = new Date();
     available_until.setMinutes(available_until.getMinutes() + 10);
-    this.available_until = available_until.toLocaleString();
+    this.available_until = available_until.toLocaleString('de-CH');
 
   }
 

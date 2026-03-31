@@ -1,73 +1,117 @@
 .table-container {
   width: 100%;
   overflow-x: auto;
-  margin-top: 10px;
-  margin-bottom: 20px;
-  border-radius: 4px;
-  border: 1px solid #ccc;
+  margin-top: 20px;
+  margin-bottom: 30px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .marschzeit-table {
   width: 100%;
-  border-collapse: collapse;
-  font-family: 'Open Sans', 'Roboto', sans-serif;
-  font-size: 13px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-family: 'Open Sans', 'Inter', 'Roboto', sans-serif;
+  font-size: 14px;
   white-space: nowrap;
 
   thead {
-    background-color: #add8e6; /* Match excel light blue */
-    border-bottom: 2px solid #999;
-    
     th {
-      padding: 8px 10px;
+      padding: 16px 12px;
       text-align: center;
       font-weight: 600;
-      color: #333;
-      border-right: 1px solid #bbb;
+      font-size: 13px;
+      letter-spacing: 0.3px;
+      color: #5f6368;
+      background-color: #f8f9fa;
+      border-bottom: 2px solid #e8eaed;
+      text-transform: uppercase;
 
+      &:first-child {
+        text-align: left;
+        padding-left: 20px;
+      }
+      
       &:last-child {
-        border-right: none;
+        padding-right: 20px;
       }
     }
   }
 
   tbody {
     tr {
-      &:nth-child(even) {
-        background-color: #e6f7ff; /* Match excel alternate row */
-      }
-      &:nth-child(odd) {
-        background-color: #f9f9f9;
+      transition: background-color 0.2s ease;
+
+      &:hover {
+        background-color: #f8faff;
       }
 
       td {
-        padding: 4px 8px;
-        border-right: 1px solid #ddd;
-        border-bottom: 1px solid #ddd;
+        padding: 12px;
+        border-bottom: 1px solid #f1f3f4;
         vertical-align: middle;
+        color: #3c4043;
+
+        &:first-child {
+          padding-left: 20px;
+        }
+
+        &:last-child {
+          padding-right: 20px;
+        }
 
         &.col-name {
-          width: 300px;
+          width: 360px;
         }
 
         &.col-break {
-          width: 80px;
+          width: 110px;
         }
 
-        input[type="text"] {
+        input[type="text"],
+        input[type="number"] {
           width: 100%;
-          border: none;
+          border: 1px solid transparent;
           background: transparent;
+          color: #202124;
           font-family: inherit;
-          font-size: 13px;
-          padding: 4px;
-          border-radius: 2px;
+          font-size: 14px;
+          padding: 8px 12px;
+          border-radius: 6px;
+          transition: all 0.2s ease;
+          box-sizing: border-box;
+
+          &:hover:not(:disabled) {
+            background: rgba(0, 0, 0, 0.03);
+          }
 
           &:focus {
-            outline: 1px solid #1066df;
+            outline: none;
+            border: 1px solid #1a73e8;
             background: #fff;
+            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+          }
+
+          &:disabled {
+            color: #9aa0a6;
+            cursor: not-allowed;
           }
         }
+
+        input[type="number"] {
+          text-align: center;
+          
+          &::placeholder {
+            color: #80868b;
+            font-size: 13px;
+          }
+        }
+      }
+
+      &:last-child td {
+        border-bottom: none;
       }
     }
   }
@@ -75,6 +119,7 @@
 
 .text-right {
   text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .text-center {
@@ -82,10 +127,63 @@
 }
 
 .sum-col {
-  background-color: rgba(0,0,0,0.03); /* slight darken for sum columns */
+  color: #5f6368;
+  font-weight: 500;
 }
 
+/* Pill badge for arrival time */
 .highlight-col {
-  background-color: #c4e4f5; /* arrival time highlight matching excel */
-  font-weight: bold;
+  text-align: center;
+
+  .time-badge {
+    display: inline-block;
+    background-color: #e8f0fe;
+    color: #1967d2;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.action-icon {
+  cursor: pointer;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  color: #bdc1c6;
+  transition: all 0.2s ease;
+  margin-left: 8px;
+
+  &:hover {
+    color: #fbbc04;
+    transform: scale(1.1);
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 48px 20px !important;
+  
+  h3 {
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #202124;
+    font-size: 18px;
+  }
+  
+  p {
+    margin-top: 0;
+    color: #5f6368;
+    margin-bottom: 24px;
+    font-size: 14px;
+  }
+  
+  button {
+    border-radius: 20px;
+    padding: 0 24px;
+    letter-spacing: 0.3px;
+  }
 }

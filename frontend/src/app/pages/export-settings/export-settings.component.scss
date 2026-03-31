@@ -1,13 +1,11 @@
 #export-button {
-
   margin-top: 25px;
-
+  border-radius: 24px;
+  padding: 0 24px;
 }
 
 .mat-select {
-  background-color: rgba(0, 0, 0, 0.04);
-  padding: 15px 5px;
-
+  background-color: transparent;
 }
 
 .mat-form-field {
@@ -15,34 +13,40 @@
 }
 
 .slider {
-  margin: 25px 0 0;
-  display: grid;
-
+  margin: 16px 0 16px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
 }
 
 .help-button {
   margin: 0 20px 0 0;
 }
 
-@media (min-width: 600px) {
-  .slider {
-    grid-template-columns: 220px auto;
-    margin-top: 10px;
-  }
-}
-
 .mat-stepper-vertical {
   background-color: transparent;
+  font-family: 'Open Sans', 'Inter', 'Roboto', sans-serif;
 }
 
 .slider label {
-
-  line-height: 45px;
-
+  font-weight: 500;
+  color: #3c4043;
+  margin-right: 16px;
 }
 
 .content-block {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04), 0 1px 4px rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 24px;
+  
+  p {
+    color: #5f6368;
+    line-height: 1.5;
+    margin-top: 0;
+  }
 }
 
 .full-width {
@@ -61,9 +65,78 @@
 }
 
 .error {
-  color: red;
+  color: #d93025;
 }
 
-.mat-stroked-button {
+.mat-mdc-unelevated-button, .mat-mdc-outlined-button {
+  border-radius: 20px !important;
+  letter-spacing: 0.3px;
   margin: 0 10px 0 0;
 }
+
+.export-dialog h2 {
+  font-family: 'Open Sans', 'Inter', 'Roboto', sans-serif;
+  font-weight: 600;
+  color: #202124;
+  margin-bottom: 24px;
+  letter-spacing: -0.2px;
+}
+
+/* Premium Stepper Redesign */
+::ng-deep .mat-stepper-vertical {
+  background-color: transparent !important;
+  font-family: 'Open Sans', 'Inter', 'Roboto', sans-serif;
+}
+
+::ng-deep .mat-stepper-vertical-line::before {
+  display: none !important; /* Eradicate the ugly connecting line */
+}
+
+::ng-deep .mat-vertical-content-container {
+  margin-left: 0 !important; /* Push content completely flush with left edge */
+  padding-bottom: 24px !important;
+}
+
+::ng-deep .mat-vertical-content {
+  padding: 0 !important; /* Remove internal padding */
+}
+
+::ng-deep .mat-step-header {
+  padding: 16px 12px !important;
+  border-radius: 12px;
+  background: transparent !important;
+  transition: all 0.2s ease;
+  margin-bottom: 8px;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.02) !important;
+  }
+}
+
+::ng-deep .mat-step-label {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: #3c4043 !important;
+  letter-spacing: -0.2px;
+}
+
+::ng-deep .mat-step-icon {
+  background-color: #1a73e8 !important;
+  color: white !important;
+  width: 28px !important;
+  height: 28px !important;
+}
+
+.toggle-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 12px;
+  
+  @media (min-width: 600px) {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 24px;
+  }
+}
+
