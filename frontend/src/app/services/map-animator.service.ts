@@ -325,8 +325,9 @@ export class MapAnimatorService {
 
     console.log('Updating walk time table')
 
-    if (path == undefined) {
-      console.error('No path found')
+    if (!path || path.length < 2) {
+      if (!path) console.error('No path found');
+      this._way_points$.next([]);
       return;
     }
 
