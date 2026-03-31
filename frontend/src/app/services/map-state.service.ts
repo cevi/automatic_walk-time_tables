@@ -20,7 +20,7 @@ export class MapStateService {
   private readonly _pois$ = new BehaviorSubject<LV95_Waypoint[]>([]);
   private readonly _map_center$ = new BehaviorSubject<LV95_Coordinates>(MapStateService.DEFAULT_MAP_CENTER);
   private readonly _export_mode$ = new BehaviorSubject<boolean>(false);
-  private readonly _pointer$ = new BehaviorSubject<LV95_Coordinates | null>(null);
+  private readonly _pointer$ = new BehaviorSubject<LV95_Waypoint | null>(null);
   
   public readonly route_stats$ = new BehaviorSubject<RouteStats | null>(null);
   public readonly velocity$ = new BehaviorSubject<number>(4.5);

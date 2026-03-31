@@ -17,6 +17,9 @@ export class ElevationProfileComponent {
   number_of_way_points: number = 0;
   number_of_pois: number = 0;
 
+  private echartsInstance: any = null;
+  private is_echarts_hovering: boolean = false;
+
   constructor(private mapAnimator: MapAnimatorService) {
 
     this.set_listeners();
@@ -33,23 +36,49 @@ export class ElevationProfileComponent {
       this.mapAnimator.path$,
       this.mapAnimator.pois$,
     ])
-      .subscribe(([path, pois]) => {
+       .subscribe(([path, pois]) => {
 
         this.number_of_pois = pois.length;
+
+        // Compute Y-axis bounds with a minimum 100m span
+        let yMin = Infinity, yMax = -Infinity;
+        for (const p of path) {
+          const h = Number(p.h || 0);
+          if (h < yMin) yMin = h;
+          if (h > yMax) yMax = h;
+        }
+        for (const p of pois) {
+          const h = Number(p.h || 0);
+          if (h < yMin) yMin = h;
+          if (h > yMax) yMax = h;
+        }
+        if (!isFinite(yMin)) { yMin = 0; yMax = 100; }
+        const span = yMax - yMin;
+        if (span < 100) {
+          const mid = (yMax + yMin) / 2;
+          yMin = mid - 50;
+          yMax = mid + 50;
+        }
+        yMin = Math.floor(yMin / 10) * 10;
+        yMax = Math.ceil(yMax / 10) * 10;
 
         this.plot_options = {
           tooltip: {
             trigger: 'axis',
-            axisPointer: { animation: false },
+            axisPointer: {
+              animation: false,
+              lineStyle: { color: '#999', type: 'dashed' },
+            },
           },
           xAxis: {
             type: 'value',
-            axisLabel: { formatter: '{value} km' }
+            axisLabel: { formatter: '{value} km' },
+            max: 'dataMax',
           },
           yAxis: {
             type: 'value',
             axisLabel: { formatter: '{value}' },
-            min: 'dataMin', max: 'dataMax',
+            min: yMin, max: yMax,
             axisLine: {onZero: false}
           },
           series: [
@@ -58,27 +87,32 @@ export class ElevationProfileComponent {
               type: 'line',
               data: path.map(p => [Number(p.accumulated_distance || 0), Number(p.h || 0)]),
               showSymbol: false,
-              itemStyle: { color: 'rgb(223,80,16)' },
+              itemStyle: { color: '#888' },
+              lineStyle: { color: '#888', width: 2 },
               areaStyle: {
                 color: new graphic.LinearGradient(0, 0, 0, 1, [
-                  { offset: 0, color: 'rgb(223,80,16)' },
-                  { offset: 1, color: 'rgba(223,80,16,0.2)' }
+                  { offset: 0, color: 'rgba(160,160,160,0.5)' },
+                  { offset: 1, color: 'rgba(160,160,160,0.1)' }
                 ])
-              }, smooth: true,
+              },
+              smooth: true,
+              emphasis: {
+                itemStyle: {
+                  color: '#2196F3',
+                  borderColor: '#fff',
+                  borderWidth: 2,
+                },
+              },
             },
             {
               name: 'POI',
               type: 'line',
-              itemStyle: { color: 'rgba(16,102,223,0.36)' },
+              itemStyle: { color: '#d32f2f' },
+              lineStyle: { color: '#efa038', width: 3 },
               data: pois.map(p => [Number(p.accumulated_distance || 0), Number(p.h || 0)]),
-              symbolSize: 6,
-              lineStyle: { width: 3 },
-              markPoint: {
-                data: pois.map(p => {
-                  return {name: '', coord: [Number(p.accumulated_distance || 0), Number(p.h || 0)]}
-                }),
-                symbolSize: 25,
-              },
+              symbol: 'circle',
+              symbolSize: 8,
+              showSymbol: true,
             }
           ],
         };
@@ -86,7 +120,9 @@ export class ElevationProfileComponent {
   }
 
   public onChartInit(ec: any) {
+    this.echartsInstance = ec;
     ec.getZr().on('mousemove', async (params: any) => {
+       this.is_echarts_hovering = true;
        const pointInPixel = [params.offsetX, params.offsetY];
        if (ec.containPixel('grid', pointInPixel)) {
           let distance = ec.convertFromPixel('grid', pointInPixel)[0];
@@ -109,7 +145,28 @@ export class ElevationProfileComponent {
     });
 
     ec.getZr().on('mouseout', () => {
+       this.is_echarts_hovering = false;
        this.mapAnimator.move_pointer(null);
+    });
+
+    this.mapAnimator.pointer$.subscribe((coord) => {
+       if (!this.echartsInstance || this.is_echarts_hovering) return;
+       
+       if (!coord) {
+          this.echartsInstance.dispatchAction({ type: 'hideTip' });
+          this.echartsInstance.dispatchAction({ type: 'downplay', seriesIndex: 0 });
+       } else {
+          this.mapAnimator.path$.pipe(take(1)).subscribe((path) => {
+             const dataIndex = path.findIndex(p => p.accumulated_distance === coord.accumulated_distance);
+             if (dataIndex !== -1) {
+                 this.echartsInstance.dispatchAction({
+                     type: 'showTip',
+                     seriesIndex: 0,
+                     dataIndex: dataIndex
+                 });
+             }
+          });
+       }
     });
   }
 

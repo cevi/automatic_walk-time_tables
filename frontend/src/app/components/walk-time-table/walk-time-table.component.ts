@@ -52,6 +52,7 @@ export class WalkTimeTableComponent implements OnInit, OnDestroy, OnChanges {
 
   onFieldChange() {
     this.userEdited.emit();
+    this.mapAnimator.update_poi_names(this.currentWps);
     this.recalculate(this.currentWps);
   }
 

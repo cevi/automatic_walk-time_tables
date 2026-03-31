@@ -57,6 +57,12 @@ export class MapDrawingRenderer {
   public onUndoRequested = new EventEmitter<void>();
 
   private path_sub!: Subscription;
+  private external_pointer_layer_source = new VectorSource();
+  private external_pointer_layer = new VectorLayer({
+    source: this.external_pointer_layer_source,
+    zIndex: 100,
+  });
+
   private export_mode_sub!: Subscription;
   private anchor_points_sub!: Subscription;
 
@@ -66,9 +72,15 @@ export class MapDrawingRenderer {
     this.map.addLayer(this.path_layer);
     this.map.addLayer(this.anchor_points_layer);
     this.map.addLayer(this.pointer_layer);
+    this.map.addLayer(this.external_pointer_layer);
 
     this.setupInteractions();
     this.setupSubscriptions();
+
+    // Clear pointer when mouse leaves the map viewport
+    this.map.getViewport().addEventListener('pointerleave', () => {
+      this.map_animator.move_pointer(null);
+    });
   }
 
   private setupInteractions() {
@@ -252,6 +264,26 @@ export class MapDrawingRenderer {
         // Update the drawing pointer location
         this.pointer = [evt.coordinate[0], evt.coordinate[1]];
         this.render_pointer();
+
+        // Bi-Directional Hover Sync: Emitting Map cursor to ECharts
+        let map_hover_coord: LV95_Waypoint | null = null;
+        if (!this.is_modifying && !this.hovered_anchor) {
+          let hit_path = false;
+          this.map.forEachFeatureAtPixel(
+            evt.pixel,
+            (f, l) => { if (l === this.path_layer) hit_path = true; },
+            { hitTolerance: 25 }
+          );
+
+          if (hit_path && this.map_animator.path.length > 0) {
+            let min_dist = Infinity;
+            for (const wp of this.map_animator.path) {
+              const d = Math.pow(wp.x - evt.coordinate[0], 2) + Math.pow(wp.y - evt.coordinate[1], 2);
+              if (d < min_dist) { min_dist = d; map_hover_coord = wp; }
+            }
+          }
+        }
+        this.map_animator.move_pointer(map_hover_coord);
       }
     });
   }
@@ -313,6 +345,24 @@ export class MapDrawingRenderer {
 
     this.anchor_points_sub = this.map_animator.anchor_points$.subscribe(() => {
       this.refreshAnchors();
+    });
+
+    this.map_animator.pointer$.subscribe((coord) => {
+      this.external_pointer_layer_source.clear();
+      // Only show in editing mode, and not when hovering/modifying an anchor
+      if (coord && !this.map_animator.export_mode && !this.hovered_anchor && !this.is_modifying) {
+        const feature = new Feature({ geometry: new Point([coord.x, coord.y]) });
+        feature.setStyle(
+          new Style({
+            image: new CircleStyle({
+              radius: 6,
+              fill: new Fill({ color: '#2196F3' }),
+              stroke: new Stroke({ color: '#fff', width: 2 }),
+            }),
+          }),
+        );
+        this.external_pointer_layer_source.addFeature(feature);
+      }
     });
   }
 

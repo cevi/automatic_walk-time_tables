@@ -730,6 +730,10 @@ export class MapAnimatorService implements OnDestroy {
     }
   }
 
+  public update_poi_names(pois: LV95_Waypoint[]) {
+    this.state.updatePOIs(pois);
+  }
+
   set_automatic_waypoint_selection(val: boolean) {
     this.state.auto_waypoints = val;
     this.regenerateWalkTimeTable();
