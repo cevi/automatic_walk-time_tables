@@ -1,4 +1,5 @@
 import { Feature } from 'ol';
+import { Subscription } from 'rxjs';
 import Map from 'ol/Map';
 import VectorSource from 'ol/source/Vector';
 import VectorLayer from 'ol/layer/Vector';
@@ -21,20 +22,24 @@ export class MapExportRenderer {
     this.setupSubscriptions();
   }
 
+  private sub1!: Subscription;
+  private sub2!: Subscription;
+  private sub3!: Subscription;
+
   private setupSubscriptions() {
-    this.map_animator.way_points$.subscribe(() => {
+    this.sub1 = this.map_animator.way_points$.subscribe(() => {
       if (this.map_animator.export_mode) {
          this.refreshMarkers();
       }
     });
 
-    this.map_animator.pois$.subscribe(() => {
+    this.sub2 = this.map_animator.pois$.subscribe(() => {
       if (this.map_animator.export_mode) {
          this.refreshMarkers();
       }
     });
 
-    this.map_animator.export_mode$.subscribe((is_export) => {
+    this.sub3 = this.map_animator.export_mode$.subscribe((is_export) => {
       this.way_points_layer.setVisible(is_export);
       if (is_export) {
          this.refreshMarkers();
@@ -97,4 +102,14 @@ export class MapExportRenderer {
       this.way_points_layer_source.addFeature(feature);
     });
   }
+
+  public destroy() {
+    this.sub1?.unsubscribe();
+    this.sub2?.unsubscribe();
+    this.sub3?.unsubscribe();
+    if (this.map) {
+      this.map.removeLayer(this.way_points_layer);
+    }
+  }
 }
+

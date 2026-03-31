@@ -3,6 +3,17 @@ import { LatLngTuple } from '@googlemaps/polyline-codec';
 
 export class GeometryUtils {
   /**
+   * Universal geometry math tolerance resolver
+   */
+  public static pointsMatch(
+    p1: { x: number; y: number },
+    p2: { x: number; y: number },
+    tolerance: number = 2
+  ): boolean {
+    return Math.abs(p1.x - p2.x) < tolerance && Math.abs(p1.y - p2.y) < tolerance;
+  }
+
+  /**
    * Identifies if a coordinate exists within the active Anchor Points array.
    */
   public static is_anchor(
@@ -10,9 +21,7 @@ export class GeometryUtils {
     anchor_points: LV95_Coordinates[],
   ): boolean {
     if ('is_waypoint' in point && point.is_waypoint === true) return true;
-    return anchor_points.some(
-      (a) => Math.abs(a.x - point.x) < 2 && Math.abs(a.y - point.y) < 2,
-    );
+    return anchor_points.some((a) => GeometryUtils.pointsMatch(a, point));
   }
 
   /**
@@ -134,26 +143,33 @@ export class GeometryUtils {
     if (action !== 'delete' && new_point) {
       let closest_idx = -1;
       let min_dist = Infinity;
+      
+      // 1. Find the geographically closest point Valhalla returned
       for (let i = 0; i < new_segment_mapped.length; i++) {
         const d = Math.sqrt(
-          (new_segment_mapped[i].x - new_point.x) ** 2 +
-            (new_segment_mapped[i].y - new_point.y) ** 2,
+          Math.pow(new_segment_mapped[i].x - new_point.x, 2) +
+          Math.pow(new_segment_mapped[i].y - new_point.y, 2)
         );
         if (d < min_dist) {
           min_dist = d;
           closest_idx = i;
         }
       }
-      if (closest_idx !== -1) {
-        new_segment_mapped[closest_idx].is_waypoint = true;
-        if (action === 'move' && moved_pt) {
-          new_segment_mapped[closest_idx] = {
-            ...moved_pt,
-            name: moved_pt.name || '',
-            x: new_segment_mapped[closest_idx].x,
-            y: new_segment_mapped[closest_idx].y,
-          };
-        }
+
+      // 2. Mathematical Injection: If Valhalla dropped the point (distance > 5 meters), force inject it.
+      const injection_node: LV95_Waypoint = moved_pt ? {
+        ...moved_pt, x: new_point.x, y: new_point.y, name: moved_pt.name || '', is_waypoint: true
+      } : {
+        x: new_point.x, y: new_point.y, h: 0, accumulated_distance: 0, is_waypoint: true, name: '', break_duration: ''
+      };
+
+      if (min_dist > 5) {
+        // Splice it directly into the array at the closest geometric segment
+        if (closest_idx === -1) closest_idx = 0;
+        new_segment_mapped.splice(closest_idx + 1, 0, injection_node);
+      } else {
+        // Valhalla kept the node, just bind the flag
+        new_segment_mapped[closest_idx] = injection_node;
       }
     }
 

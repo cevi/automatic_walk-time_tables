@@ -1,7 +1,7 @@
-import { Injectable } from '@angular/core';
+import { Injectable, OnDestroy } from '@angular/core';
 import { LV95_Coordinates, LV95_Waypoint } from '../helpers/coordinates';
 import { combineLatest, Subject } from 'rxjs';
-import { take, filter } from 'rxjs/operators';
+import { take, filter, takeUntil } from 'rxjs/operators';
 import { Router, NavigationEnd } from '@angular/router';
 import { MapStateService } from './map-state.service';
 import { RouteHistoryService } from './route-history.service';
@@ -13,65 +13,131 @@ import { environment } from '../../environments/environment';
 @Injectable({
   providedIn: 'root',
 })
-export class MapAnimatorService {
-  private _error_handler: (err: string) => void = (err: string) => console.error(err);
+export class MapAnimatorService implements OnDestroy {
+  private _error_handler: (err: string) => void = (err: string) =>
+    console.error(err);
   public auto_waypoints_baked$ = new Subject<void>();
+  private destroy$ = new Subject<void>();
 
   constructor(
     private router: Router,
     private state: MapStateService,
     private history: RouteHistoryService,
-    private api: RouteApiService
+    private api: RouteApiService,
   ) {
-    this.state.way_points$.subscribe((wp) => {
+    this.state.way_points$.pipe(takeUntil(this.destroy$)).subscribe((wp) => {
       this._recalculate_route_stats(wp);
     });
 
     this.router.events
-      .pipe(filter((e) => e instanceof NavigationEnd))
+      .pipe(
+        filter((e) => e instanceof NavigationEnd),
+        takeUntil(this.destroy$)
+      )
       .subscribe(() => {
         this.update_export_mode();
       });
   }
 
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+
   // --- Facade Getters bounds to MapStateService ---
-  public get path$() { return this.state.path$; }
-  public get anchor_points$() { return this.state.anchor_points$; }
-  public get way_points$() { return this.state.way_points$; }
-  public get pois$() { return this.state.pois$; }
-  public get map_center$() { return this.state.map_center$; }
-  public get export_mode$() { return this.state.export_mode$; }
-  public get pointer$() { return this.state.pointer$; }
-  public get route_stats$() { return this.state.route_stats$; }
-  public get velocity$() { return this.state.velocity$; }
+  public get path$() {
+    return this.state.path$;
+  }
+  public get anchor_points$() {
+    return this.state.anchor_points$;
+  }
+  public get way_points$() {
+    return this.state.way_points$;
+  }
+  public get pois$() {
+    return this.state.pois$;
+  }
+  public get map_center$() {
+    return this.state.map_center$;
+  }
+  public get export_mode$() {
+    return this.state.export_mode$;
+  }
+  public get pointer$() {
+    return this.state.pointer$;
+  }
+  public get route_stats$() {
+    return this.state.route_stats$;
+  }
+  public get velocity$() {
+    return this.state.velocity$;
+  }
 
   // Synchronous Facade Getters
-  public get export_mode(): boolean { return this.state.export_mode; }
-  public get path(): LV95_Waypoint[] { return this.state.path; }
-  public get anchor_points(): LV95_Coordinates[] { return this.state.anchor_points; }
-  public get pois(): LV95_Waypoint[] { return this.state.pois; }
-  public get way_points(): LV95_Waypoint[] { return this.state.way_points; }
+  public get export_mode(): boolean {
+    return this.state.export_mode;
+  }
+  public get path(): LV95_Waypoint[] {
+    return this.state.path;
+  }
+  public get anchor_points(): LV95_Coordinates[] {
+    return this.state.anchor_points;
+  }
+  public get pois(): LV95_Waypoint[] {
+    return this.state.pois;
+  }
+  public get way_points(): LV95_Waypoint[] {
+    return this.state.way_points;
+  }
 
-  public get has_route(): boolean { return this.state.has_route; }
-  public get magnetic_paths(): boolean { return this.state.magnetic_paths; }
-  public set magnetic_paths(val: boolean) { this.state.magnetic_paths = val; }
-  public get is_modifying(): boolean { return this.state.is_modifying; }
-  public set is_modifying(val: boolean) { this.state.is_modifying = val; }
-  public get auto_waypoints() { return this.state.auto_waypoints; }
-  public set auto_waypoints(val: boolean) { this.state.auto_waypoints = val; }
-  public get drawer_open() { return this.state.drawer_open; }
-  public set drawer_open(val: boolean) { 
+  public get has_route(): boolean {
+    return this.state.has_route;
+  }
+  public get magnetic_paths(): boolean {
+    return this.state.magnetic_paths;
+  }
+  public set magnetic_paths(val: boolean) {
+    this.state.magnetic_paths = val;
+  }
+  public get is_modifying(): boolean {
+    return this.state.is_modifying;
+  }
+  public set is_modifying(val: boolean) {
+    this.state.is_modifying = val;
+  }
+  public get auto_waypoints() {
+    return this.state.auto_waypoints;
+  }
+  public set auto_waypoints(val: boolean) {
+    this.state.auto_waypoints = val;
+  }
+  public get drawer_open() {
+    return this.state.drawer_open;
+  }
+  public set drawer_open(val: boolean) {
     this.state.drawer_open = val;
     this.update_export_mode();
   }
 
-  public toggle_magnetic_paths() { this.state.toggleMagneticPaths(); }
-  public move_pointer(coords: LV95_Waypoint | null) { this.state.movePointer(coords); }
-  public set_error_handler(handler: (err: string) => void) { this._error_handler = handler; }
+  public toggle_magnetic_paths() {
+    this.state.toggleMagneticPaths();
+  }
+  public move_pointer(coords: LV95_Waypoint | null) {
+    this.state.movePointer(coords);
+  }
+  public set_error_handler(handler: (err: string) => void) {
+    this._error_handler = handler;
+  }
 
   private update_export_mode() {
-    const is_export = this.state.drawer_open && this.router.url.split('?')[0] === '/';
-    if (is_export && this.state.path.length > 0 && this.state.path.some((p) => p.h === 0)) {
+    const is_export =
+      this.state.drawer_open && this.router.url.split('?')[0] === '/';
+    if (
+      is_export &&
+      this.state.path.length > 0 &&
+      this.state.path.some((p) => p.h === 0)
+    ) {
       this.start_export_mode();
     } else {
       this.state.setExportMode(is_export);
@@ -81,7 +147,9 @@ export class MapAnimatorService {
 
   public start_export_mode() {
     this.state.setExportMode(true);
-    const path = this.state.path.map((p) => ({ x: p.x, y: p.y }) as LV95_Coordinates);
+    const path = this.state.path.map(
+      (p) => ({ x: p.x, y: p.y }) as LV95_Coordinates,
+    );
     this.replace_route(path).catch(this._error_handler);
   }
 
@@ -98,30 +166,42 @@ export class MapAnimatorService {
     this.history.clearHistories();
   }
 
-  /**
-   * --- CORE SEMANTIC MODIFICATION ROUTINES ---
-   */
-
   public async add_way_point(point: LV95_Coordinates) {
     if (this.export_mode) return;
     const current_path = this.state.path;
     const current_anchors = this.state.anchor_points;
-    const start_anchor = current_anchors.length > 0 ? current_anchors[current_anchors.length - 1] : null;
+    const start_anchor =
+      current_anchors.length > 0
+        ? current_anchors[current_anchors.length - 1]
+        : null;
 
     // 1. Snapshot History before mutation
     this.history.commitState(current_path, this.state.pois, current_anchors);
 
     // 2. Build Query
-    const queryLocations = GeometryUtils.buildRoutingQuery(start_anchor, point, null, 'insert');
-    
+    const queryLocations = GeometryUtils.buildRoutingQuery(
+      start_anchor,
+      point,
+      null,
+      'insert',
+    );
+
     // 3. Update Anchor State
     const new_anchors = [...current_anchors, point];
     this.state.updateAnchorPoints(new_anchors);
 
     // 4. Fetch Valhalla Routing Segment or Straight Line
-    const new_segment = this.magnetic_paths 
-        ? await this.api.fetchValhallaRoute(queryLocations)
-        : queryLocations;
+    let new_segment = queryLocations;
+    if (this.magnetic_paths) {
+      try {
+        new_segment = await this.api.fetchValhallaRoute(queryLocations);
+      } catch (err) {
+        console.warn(
+          'Valhalla routing failed, falling back to straight line:',
+          err,
+        );
+      }
+    }
 
     // 5. Splice Segments & Push State
     const mergedRoute = GeometryUtils.spliceRoute(
@@ -131,7 +211,7 @@ export class MapAnimatorService {
       -1,
       point,
       'insert',
-      null
+      null,
     );
 
     this.state.updatePath(mergedRoute);
@@ -143,13 +223,19 @@ export class MapAnimatorService {
     const current_path = this.state.path;
     const current_anchors = this.state.anchor_points;
 
-    const anchor_idx = current_anchors.findIndex(a => Math.abs(a.x - point.x) < 2 && Math.abs(a.y - point.y) < 2);
+    const anchor_idx = current_anchors.findIndex(
+      (a) => GeometryUtils.pointsMatch(a, point)
+    );
     if (anchor_idx === -1) return;
 
     this.history.commitState(current_path, this.state.pois, current_anchors);
 
-    const start_anchor = anchor_idx > 0 ? current_anchors[anchor_idx - 1] : null;
-    const end_anchor = anchor_idx < current_anchors.length - 1 ? current_anchors[anchor_idx + 1] : null;
+    const start_anchor =
+      anchor_idx > 0 ? current_anchors[anchor_idx - 1] : null;
+    const end_anchor =
+      anchor_idx < current_anchors.length - 1
+        ? current_anchors[anchor_idx + 1]
+        : null;
 
     // Remove from anchors
     const new_anchors = [...current_anchors];
@@ -159,27 +245,70 @@ export class MapAnimatorService {
     // If less than 2 anchors remain, clear path
     if (new_anchors.length < 2) {
       if (new_anchors.length === 1) {
-         this.state.updatePath([{ x: new_anchors[0].x, y: new_anchors[0].y, h: 0, accumulated_distance: 0, is_waypoint: true }]);
+        this.state.updatePath([
+          {
+            x: new_anchors[0].x,
+            y: new_anchors[0].y,
+            h: 0,
+            accumulated_distance: 0,
+            is_waypoint: true,
+          },
+        ]);
       } else {
-         this.state.updatePath([]);
+        this.state.updatePath([]);
       }
       this.regenerateWalkTimeTable();
       return;
     }
 
-    // Identify topological splice indices
+    // Identify topological splice indices strictly via anchors
     let start_path_idx = -1;
     let end_path_idx = -1;
 
+    let anchor_counter = 0;
+    let path_node_idx = -1;
     for (let i = 0; i < current_path.length; i++) {
-        if (start_anchor && Math.abs(current_path[i].x - start_anchor.x) < 2 && Math.abs(current_path[i].y - start_anchor.y) < 2) start_path_idx = i;
-        if (end_anchor && Math.abs(current_path[i].x - end_anchor.x) < 2 && Math.abs(current_path[i].y - end_anchor.y) < 2) end_path_idx = i;
+      if (current_path[i].is_waypoint) {
+        if (anchor_counter === anchor_idx) {
+          path_node_idx = i;
+          break;
+        }
+        anchor_counter++;
+      }
     }
 
-    const queryLocations = GeometryUtils.buildRoutingQuery(start_anchor, null, end_anchor, 'delete');
-    const new_segment = this.magnetic_paths 
-        ? await this.api.fetchValhallaRoute(queryLocations)
-        : queryLocations;
+    if (path_node_idx !== -1) {
+        for (let i = path_node_idx - 1; i >= 0; i--) {
+          if (current_path[i].is_waypoint) {
+            start_path_idx = i;
+            break;
+          }
+        }
+        for (let i = path_node_idx + 1; i < current_path.length; i++) {
+          if (current_path[i].is_waypoint) {
+            end_path_idx = i;
+            break;
+          }
+        }
+    }
+
+    const queryLocations = GeometryUtils.buildRoutingQuery(
+      start_anchor,
+      null,
+      end_anchor,
+      'delete',
+    );
+    let new_segment = queryLocations;
+    if (this.magnetic_paths) {
+      try {
+        new_segment = await this.api.fetchValhallaRoute(queryLocations);
+      } catch (err) {
+        console.warn(
+          'Valhalla routing failed, falling back to straight line:',
+          err,
+        );
+      }
+    }
 
     const mergedRoute = GeometryUtils.spliceRoute(
       current_path,
@@ -188,120 +317,138 @@ export class MapAnimatorService {
       end_path_idx,
       null,
       'delete',
-      null
+      null,
     );
 
     this.state.updatePath(mergedRoute);
     this.regenerateWalkTimeTable();
   }
 
-  public async handle_modify_event(event: { new_coords: number[][], dragged_anchor: LV95_Waypoint | null, mousedown_coord: number[] }) {
+  public async handle_modify_event(event: {
+    new_coords: number[][];
+    dragged_anchor: LV95_Waypoint | null;
+    mousedown_coord: number[];
+  }) {
     if (this.export_mode) return;
     const { new_coords, dragged_anchor, mousedown_coord } = event;
     const current_path = this.state.path;
     const current_anchors = this.state.anchor_points;
 
-    let max_dist = 0;
+    let start_path_idx = -1;
+    let end_path_idx = -1;
     let dragged_idx = -1;
-    for (let i = 0; i < new_coords.length; i++) {
-       let min_to_path = Infinity;
-       for (let j = 0; j < current_path.length; j++) {
-           const d = Math.abs(new_coords[i][0] - current_path[j].x) + Math.abs(new_coords[i][1] - current_path[j].y);
-           if (d < min_to_path) min_to_path = d;
-       }
-       if (min_to_path > max_dist) {
-          max_dist = min_to_path;
-          dragged_idx = i;
-       }
-    }
+    let dragged_point: LV95_Waypoint;
+    const isInsert = new_coords.length > current_path.length;
 
-    if (dragged_idx === -1) return;
+    if (!isInsert && dragged_anchor) {
+      // MOVES: Strict Topological Lookup via known dragged_anchor
+      let anchor_idx = current_anchors.findIndex(a => GeometryUtils.pointsMatch(a, dragged_anchor));
+      
+      if (anchor_idx !== -1) {
+        let current_anchor_count = 0;
+        for (let i = 0; i < current_path.length; i++) {
+          if (current_path[i].is_waypoint) {
+            if (current_anchor_count === anchor_idx - 1) start_path_idx = i;
+            if (current_anchor_count === anchor_idx + 1) end_path_idx = i;
+            if (current_anchor_count === anchor_idx) dragged_idx = i; // The exact node being replaced
+            current_anchor_count++;
+          }
+        }
+      }
+      // Safety fallback if coordinate sync failed
+      if (dragged_idx === -1) dragged_idx = find_spatial_index(new_coords, current_path);
+      dragged_point = { x: new_coords[dragged_idx][0], y: new_coords[dragged_idx][1] } as LV95_Waypoint;
+      
+    } else {
+      // INSERTS: Array divergence logic
+      for (let i = 0; i < current_path.length; i++) {
+        if (Math.abs(new_coords[i][0] - current_path[i].x) > 0.1 || Math.abs(new_coords[i][1] - current_path[i].y) > 0.1) {
+          dragged_idx = i;
+          break;
+        }
+      }
+      if (dragged_idx === -1) dragged_idx = new_coords.length - 1;
+
+      for (let i = dragged_idx - 1; i >= 0; i--) {
+        if (current_path[i].is_waypoint) { start_path_idx = i; break; }
+      }
+      for (let i = dragged_idx; i < current_path.length; i++) {
+        if (current_path[i].is_waypoint) { end_path_idx = i; break; }
+      }
+      dragged_point = { x: new_coords[dragged_idx][0], y: new_coords[dragged_idx][1] } as LV95_Waypoint;
+    }
 
     this.history.commitState(current_path, this.state.pois, current_anchors);
 
-    let start_path_idx = -1;
-    let end_path_idx = -1;
-    let isInsert = false;
-
-    if (dragged_anchor) {
-       const a_idx = current_anchors.findIndex(a => Math.abs(a.x - dragged_anchor.x) < 0.1 && Math.abs(a.y - dragged_anchor.y) < 0.1);
-       if (a_idx === -1) return; 
-
-       let anchor_counter = 0;
-       let path_node_idx = -1;
-       for (let i = 0; i < current_path.length; i++) {
-           if (current_path[i].is_waypoint) {
-               if (anchor_counter === a_idx) { path_node_idx = i; break; }
-               anchor_counter++;
-           }
-       }
-       if (path_node_idx === -1) return;
-
-       for (let i = path_node_idx - 1; i >= 0; i--) {
-           if (current_path[i].is_waypoint) { start_path_idx = i; break; }
-       }
-       for (let i = path_node_idx + 1; i < current_path.length; i++) {
-           if (current_path[i].is_waypoint) { end_path_idx = i; break; }
-       }
-    } else {
-       isInsert = true;
-       // True topological grab location matching via exact mouse coordinate.
-       let min_d = Infinity;
-       let grab_idx = 0;
-       for (let i = 0; i < current_path.length; i++) {
-           const d = Math.abs(current_path[i].x - mousedown_coord[0]) + Math.abs(current_path[i].y - mousedown_coord[1]);
-           if (d < min_d) { min_d = d; grab_idx = i; }
-       }
-
-       for (let i = grab_idx; i >= 0; i--) {
-           if (current_path[i].is_waypoint) { start_path_idx = i; break; }
-       }
-       for (let i = grab_idx; i < current_path.length; i++) {
-           if (current_path[i].is_waypoint) { end_path_idx = i; break; }
-       }
-    }
-
-    const dragged_point = { x: new_coords[dragged_idx][0], y: new_coords[dragged_idx][1] } as LV95_Waypoint;
     const start_anchor = start_path_idx !== -1 ? current_path[start_path_idx] : null;
     const end_anchor = end_path_idx !== -1 ? current_path[end_path_idx] : null;
+
+    // Helper function scoped inside handle_modify_event to prevent duplication
+    function find_spatial_index(nc: number[][], cp: LV95_Waypoint[]) {
+      let max_d = 0, idx = 0;
+      for (let i = 0; i < Math.min(nc.length, cp.length); i++) {
+        const d = Math.pow(nc[i][0] - cp[i].x, 2) + Math.pow(nc[i][1] - cp[i].y, 2);
+        if (d > max_d) { max_d = d; idx = i; }
+      }
+      return idx;
+    }
 
     // Strict 1:1 anchor parity array insertions
     const new_anchors = [...current_anchors];
     if (isInsert) {
-       let anchors_before = 0;
-       for (let i = 0; i <= start_path_idx; i++) {
-           if (current_path[i].is_waypoint) anchors_before++;
-       }
-       new_anchors.splice(anchors_before, 0, dragged_point);
+      let anchors_before = 0;
+      for (let i = 0; i <= start_path_idx; i++) {
+        if (current_path[i].is_waypoint) anchors_before++;
+      }
+      new_anchors.splice(anchors_before, 0, dragged_point);
     } else {
-       if (dragged_anchor) {
-          const mv_idx = new_anchors.findIndex(a => Math.abs(a.x - dragged_anchor.x) < 0.1 && Math.abs(a.y - dragged_anchor.y) < 0.1);
-          if (mv_idx !== -1) new_anchors[mv_idx] = dragged_point;
-       }
+      if (dragged_anchor) {
+        const mv_idx = new_anchors.findIndex(
+          (a) =>
+            Math.abs(a.x - dragged_anchor.x) < 0.1 &&
+            Math.abs(a.y - dragged_anchor.y) < 0.1,
+        );
+        if (mv_idx !== -1) new_anchors[mv_idx] = dragged_point;
+      }
     }
     this.state.updateAnchorPoints(new_anchors);
 
     const queryLocations = GeometryUtils.buildRoutingQuery(
-       start_anchor, 
-       dragged_point, 
-       end_anchor, 
-       isInsert ? 'insert' : 'move'
+      start_anchor,
+      dragged_point,
+      end_anchor,
+      isInsert ? 'insert' : 'move',
     );
 
     let new_segment: LV95_Coordinates[] = [];
-    if (queryLocations.length === 2 && queryLocations[0].x === queryLocations[1].x && queryLocations[0].y === queryLocations[1].y) {
-       new_segment = [queryLocations[0]];
+    if (
+      queryLocations.length === 2 &&
+      queryLocations[0].x === queryLocations[1].x &&
+      queryLocations[0].y === queryLocations[1].y
+    ) {
+      new_segment = [queryLocations[0]];
     } else {
-       new_segment = this.magnetic_paths 
-           ? await this.api.fetchValhallaRoute(queryLocations)
-           : queryLocations;
+      new_segment = queryLocations;
+      if (this.magnetic_paths) {
+        try {
+          new_segment = await this.api.fetchValhallaRoute(queryLocations);
+        } catch (err) {
+          console.warn(
+            'Valhalla routing failed, falling back to straight line:',
+            err,
+          );
+        }
+      }
     }
 
     if (end_anchor && new_segment.length > 0) {
-       const last = new_segment[new_segment.length - 1];
-       if (Math.abs(last.x - end_anchor.x) > 2 || Math.abs(last.y - end_anchor.y) > 2) {
-           new_segment.push(end_anchor);
-       }
+      const last = new_segment[new_segment.length - 1];
+      if (
+        Math.abs(last.x - end_anchor.x) > 2 ||
+        Math.abs(last.y - end_anchor.y) > 2
+      ) {
+        new_segment.push(end_anchor);
+      }
     }
 
     const mergedRoute = GeometryUtils.spliceRoute(
@@ -311,7 +458,7 @@ export class MapAnimatorService {
       end_path_idx,
       dragged_point,
       isInsert ? 'insert' : 'move',
-      dragged_anchor
+      dragged_anchor,
     );
 
     this.state.updatePath(mergedRoute);
@@ -329,7 +476,9 @@ export class MapAnimatorService {
 
   async finish_drawing() {
     this.state.updatePOIs([]);
-    const path = this.state.path.map((p) => ({ x: p.x, y: p.y }) as LV95_Coordinates);
+    const path = this.state.path.map(
+      (p) => ({ x: p.x, y: p.y }) as LV95_Coordinates,
+    );
     await this.replace_route(path);
   }
 
@@ -348,7 +497,12 @@ export class MapAnimatorService {
       })),
     );
 
-    const resp = await this.api.exportPdf(this.state.path, this.state.pois, settings, tableJson);
+    const resp = await this.api.exportPdf(
+      this.state.path,
+      this.state.pois,
+      settings,
+      tableJson,
+    );
     if (resp.status === 'running') return resp.uuid;
     throw resp;
   }
@@ -372,7 +526,7 @@ export class MapAnimatorService {
     if (route_file_or_array instanceof File) {
       this.state.clearAll();
       xml_string = (await route_file_or_array.text()).toString();
-      xml_string = xml_string.replace(/>\s*/g, '>'); 
+      xml_string = xml_string.replace(/>\s*/g, '>');
       xml_string = xml_string.replace(/\s*</g, '<');
       file_type = route_file_or_array.name.split('.').pop() || 'tmp';
     } else {
@@ -390,8 +544,10 @@ export class MapAnimatorService {
   }
 
   private update_map_center(points: LV95_Coordinates[]) {
-    let x_min = points[0].x, y_min = points[0].y;
-    let x_max = points[0].x, y_max = points[0].y;
+    let x_min = points[0].x,
+      y_min = points[0].y;
+    let x_max = points[0].x,
+      y_max = points[0].y;
 
     points.forEach((point) => {
       if (point.x < x_min) x_min = point.x;
@@ -400,12 +556,26 @@ export class MapAnimatorService {
       if (point.y > y_max) y_max = point.y;
     });
 
-    this.state.updateMapCenter({ x: (x_max + x_min) / 2, y: (y_max + y_min) / 2 });
+    this.state.updateMapCenter({
+      x: (x_max + x_min) / 2,
+      y: (y_max + y_min) / 2,
+    });
   }
 
   public regenerateWalkTimeTable() {
-    this.api.createWalkTimeTable(this.state.path, this.state.pois, this.state.auto_waypoints)
-      .then(resp => {
+    if (this.state.anchor_points.length < 2) {
+      this.state.route_stats$.next(null);
+      this.state.updateWayPoints([]);
+      return;
+    }
+
+    this.api
+      .createWalkTimeTable(
+        this.state.path,
+        this.state.pois,
+        this.state.auto_waypoints,
+      )
+      .then((resp) => {
         if (!resp) return;
         this.applyWalkTimeTableResponse(resp);
       })
@@ -415,12 +585,49 @@ export class MapAnimatorService {
   private applyWalkTimeTableResponse(resp: any) {
     if (resp?.status === 'error') throw new Error(resp.message);
     if (!resp?.pois || !resp?.pois_elevation) {
-       throw new Error('Unvollständige Antwort vom Server.');
+      throw new Error('Unvollständige Antwort vom Server.');
     }
+
+    const pois_coords = decode(resp.pois, 0);
+    const pois_elev = decode(resp.pois_elevation, 0);
+
+    const way_points: LV95_Waypoint[] = pois_coords.map((p, i) => {
+      const x = p[0];
+      const y = p[1];
+      let name = '';
+      let break_duration = '';
+      let is_waypoint = true;
+
+      const old_wp = this.state.way_points.find((w) =>
+        GeometryUtils.pointsMatch(w, { x, y }),
+      );
+      if (old_wp) {
+        name = old_wp.name || '';
+        break_duration = old_wp.break_duration || '';
+        is_waypoint = old_wp.is_waypoint;
+      }
+
+      return {
+        x,
+        y,
+        h: pois_elev[i][1],
+        accumulated_distance: pois_elev[i][0] / 1000,
+        is_waypoint,
+        name,
+        break_duration,
+      };
+    });
+
+    this.state.updateWayPoints(way_points);
+    this._recalculate_route_stats(way_points);
   }
 
-  public can_undo(): boolean { return this.history.canUndo; }
-  public can_redo(): boolean { return this.history.canRedo; }
+  public can_undo(): boolean {
+    return this.history.canUndo;
+  }
+  public can_redo(): boolean {
+    return this.history.canRedo;
+  }
 
   public undo() {
     this.history.undo();
@@ -490,22 +697,20 @@ export class MapAnimatorService {
         .subscribe((data: any) => {
           const path_val = data[0];
           const pois_val = data[1];
-          this.api.createWalkTimeTable(path_val, pois_val, this.auto_waypoints)
-            .then(resp => {
-               this.applyWalkTimeTableResponse(resp);
-               resolve();
+          this.api
+            .createWalkTimeTable(path_val, pois_val, this.auto_waypoints)
+            .then((resp) => {
+              this.applyWalkTimeTableResponse(resp);
+              resolve();
             })
             .catch((err: any) => reject(err));
-        })
+        }),
     );
   }
 
-
-
-
   public delete_poi(point: LV95_Waypoint) {
     const pois = this.state.pois;
-    const idx = pois.findIndex((p) => Math.abs(p.x - point.x) < 2 && Math.abs(p.y - point.y) < 2);
+    const idx = pois.findIndex((p) => GeometryUtils.pointsMatch(p, point));
     if (idx !== -1) {
       const new_pois = [...pois];
       new_pois.splice(idx, 1);
@@ -526,7 +731,7 @@ export class MapAnimatorService {
     const old_path = this.state.path;
     const old_anchors = this.state.anchor_points;
     if (old_anchors.length > 0) {
-        this.delete_route_waypoint(old_anchors[old_anchors.length - 1]);
+      this.delete_route_waypoint(old_anchors[old_anchors.length - 1]);
     }
   }
 

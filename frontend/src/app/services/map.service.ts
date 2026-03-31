@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, OnDestroy } from '@angular/core';
 import { Layer } from 'ol/layer';
 import Map from 'ol/Map';
 import { Feature } from 'ol';
@@ -16,7 +16,7 @@ import { MapExportRenderer } from './map-export-renderer';
 @Injectable({
   providedIn: 'root',
 })
-export class MapService extends SwisstopoMap {
+export class MapService extends SwisstopoMap implements OnDestroy {
   private fountains_layer_source = new VectorSource({
     loader: (extent, resolution, projection, success, failure) => {
       // Only load if resolution is small enough (zoomed in enough, > 100 is too far out)
@@ -159,6 +159,10 @@ export class MapService extends SwisstopoMap {
 
     if (this.map_animator) {
       const animator = this.map_animator;
+
+      this.drawingRenderer?.destroy();
+      this.exportRenderer?.destroy();
+
       this.drawingRenderer = new MapDrawingRenderer(this.map, animator);
       this.exportRenderer = new MapExportRenderer(this.map, animator);
 
@@ -178,5 +182,10 @@ export class MapService extends SwisstopoMap {
         }
       });
     }
+  }
+
+  ngOnDestroy(): void {
+    this.drawingRenderer?.destroy();
+    this.exportRenderer?.destroy();
   }
 }
