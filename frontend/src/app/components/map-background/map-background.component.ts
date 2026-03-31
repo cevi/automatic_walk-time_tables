@@ -21,6 +21,12 @@ export class MapBackgroundComponent implements OnInit, AfterViewInit {
   ) {}
 
   ngOnInit(): void {
+    const url = new URL(window.location.href);
+    const bgLayerUrl = url.searchParams.get('bgLayer');
+    if (bgLayerUrl) {
+      this.currentLayer = bgLayerUrl;
+    }
+
     this.mapService.link_animator(this.mapAnimator);
 
     this.mapAnimator.path$.subscribe((path) => {
