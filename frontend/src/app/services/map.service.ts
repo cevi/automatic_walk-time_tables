@@ -115,7 +115,10 @@ export class MapService extends SwisstopoMap {
       feature.setStyle((feature, resolution) => {
         const styles = [
           new Style({
-            stroke: new Stroke({ color: '#efa038', width: 5 }),
+            stroke: new Stroke({ color: '#fff', width: 7 }),
+          }),
+          new Style({
+            stroke: new Stroke({ color: '#efa038', width: 4 }),
           }),
         ];
 
@@ -144,7 +147,7 @@ export class MapService extends SwisstopoMap {
               new Style({
                 geometry: new Point([x, y]),
                 image: new Icon({
-                  src: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="%23efa038"><polygon points="12,2 22,12 16,12 16,22 8,22 8,12 2,12"/></svg>',
+                  src: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="%23efa038"><polygon points="12,2 22,12 16,12 16,22 8,22 8,12 2,12" stroke="white" stroke-width="1.5" stroke-linejoin="round"/></svg>',
                   anchor: [0.5, 0.5],
                   rotateWithView: true,
                   rotation: rotation,
@@ -327,7 +330,9 @@ export class MapService extends SwisstopoMap {
       layerLabel !== 'keine' ? this.get_base_WMTS_layer(layerLabel) : null;
     const wmtsLayer_overlay =
       layerLabel !== 'keine' ? this.get_base_WMTS_layer(layerLabel) : null;
-    const haltestellen_overlay = showHaltestellen ? this.get_base_WMTS_layer('haltestellen') : null;
+    const haltestellen_overlay = showHaltestellen
+      ? this.get_base_WMTS_layer('haltestellen')
+      : null;
 
     const layers: Layer[] = [];
     if (wmtsLayer) layers.push(wmtsLayer);
