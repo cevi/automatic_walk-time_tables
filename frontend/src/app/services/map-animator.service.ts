@@ -209,9 +209,9 @@ export class MapAnimatorService implements OnDestroy {
       new_segment,
       start_anchor ? current_path.length - 1 : -1, // Simple append logic
       -1,
-      point,
+      point as LV95_Waypoint,
       'insert',
-      null,
+      point as LV95_Waypoint,
     );
 
     this.state.updatePath(mergedRoute);
@@ -338,7 +338,7 @@ export class MapAnimatorService implements OnDestroy {
     let end_path_idx = -1;
     let dragged_idx = -1;
     let dragged_point: LV95_Waypoint;
-    const isInsert = new_coords.length > current_path.length;
+    const isInsert = !dragged_anchor;
 
     if (!isInsert && dragged_anchor) {
       // MOVES: Strict Topological Lookup via known dragged_anchor

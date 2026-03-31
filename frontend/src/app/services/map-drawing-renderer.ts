@@ -289,7 +289,6 @@ export class MapDrawingRenderer {
       (is_export) => {
         this.modifyInteraction.setActive(!is_export);
         this.snapInteraction.setActive(!is_export);
-        this.path_layer.setVisible(!is_export);
         this.anchor_points_layer.setVisible(!is_export);
         this.pointer_layer.setVisible(!is_export);
 
