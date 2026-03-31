@@ -1,5 +1,7 @@
 from automatic_walk_time_tables.path_transformers.path_transfomer import PathTransformer
 from automatic_walk_time_tables.utils.path import Path
+from automatic_walk_time_tables.utils.point import Point_LV95
+from automatic_walk_time_tables.utils.way_point import WayPoint
 
 
 class EquidistantTransformer(PathTransformer):
@@ -46,9 +48,6 @@ class EquidistantTransformer(PathTransformer):
                 inter_y = prev_lv95.lat + t * (curr_lv95.lat - prev_lv95.lat)
                 inter_x = prev_lv95.lon + t * (curr_lv95.lon - prev_lv95.lon)
                 inter_h = prev_lv95.h + t * (curr_lv95.h - prev_lv95.h)
-                
-                from automatic_walk_time_tables.utils.point import Point_LV95
-                from automatic_walk_time_tables.utils.way_point import WayPoint
                 
                 inter_pt = Point_LV95(inter_y, inter_x, inter_h)
                 new_wp = WayPoint(target_distance, inter_pt)

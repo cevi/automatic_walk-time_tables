@@ -183,3 +183,39 @@
     }
   }
 }
+
+.stats-overlay {
+  position: absolute;
+  bottom: 115px;
+  right: 40px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 10px 15px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  z-index: 1000;
+  pointer-events: auto;
+  font-family: "Open Sans", sans-serif;
+
+  &.hidden {
+    display: none !important;
+  }
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+
+  mat-icon {
+    color: #efa038;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+}

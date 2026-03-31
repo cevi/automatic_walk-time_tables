@@ -40,7 +40,7 @@ export class ExportSettingsComponent {
       'route_name': new UntypedFormControl(''),
       'name_points_in_export': new UntypedFormControl(true),
       'number_points_in_export': new UntypedFormControl(false),
-      'automatic_waypoint_selection': new FormControl<boolean>(false),
+      'automatic_waypoint_selection': new FormControl<boolean>(this.mapAnimator.auto_waypoints),
     });
 
 
