@@ -90,11 +90,14 @@
           </button>
           <mat-menu #mapMenu="matMenu">
             <button mat-menu-item (click)="setMapLayer('pixelkarte')">
-              <mat-icon *ngIf="currentLayer === 'pixelkarte'" color="primary"
-                >check</mat-icon
-              >
-              <mat-icon *ngIf="currentLayer !== 'pixelkarte'"></mat-icon>
-              <span>Basiskarte Farbig</span>
+               <mat-icon *ngIf="currentLayer === 'pixelkarte'" color="primary">check</mat-icon>
+               <mat-icon *ngIf="currentLayer !== 'pixelkarte'"></mat-icon>
+               <span>Basiskarte Farbig</span>
+            </button>
+            <button mat-menu-item (click)="setMapLayer('pixelkarte-grau')">
+               <mat-icon *ngIf="currentLayer === 'pixelkarte-grau'" color="primary">check</mat-icon>
+               <mat-icon *ngIf="currentLayer !== 'pixelkarte-grau'"></mat-icon>
+               <span>Basiskarte S/W</span>
             </button>
             <button mat-menu-item (click)="setMapLayer('luftbild')">
               <mat-icon *ngIf="currentLayer === 'luftbild'" color="primary"

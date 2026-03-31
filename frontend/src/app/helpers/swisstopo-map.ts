@@ -51,6 +51,14 @@ export class SwisstopoMap {
         "20110228"
       ]
     },
+    'pixelkarte-grau': {
+      "attribution": "swisstopo",
+      "format": "jpeg",
+      "serverLayerName": "ch.swisstopo.pixelkarte-grau",
+      "attributionUrl": "https://www.swisstopo.admin.ch/internet/swisstopo/fr/home.html",
+      "label": "pixelkarte-grau",
+      "timestamps": ["current"]
+    },
     'luftbild': {
       "attribution": "swisstopo",
       "format": "jpeg",
