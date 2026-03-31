@@ -22,7 +22,10 @@
           </button>
         </td>
       </tr>
-      <tr *ngFor="let row of rows; let first = first; trackBy: trackByFn">
+      <tr *ngFor="let row of rows; let first = first; let i = index; trackBy: trackByFn"
+          [class.row-highlighted]="highlightedRowIndex === i"
+          (mouseenter)="onRowHover(row)"
+          (mouseleave)="onRowLeave()">
         <td class="col-name">
           <div style="display: flex; align-items: center; width: 100%;">
             <input type="text" [(ngModel)]="row.waypoint.name" [disabled]="autoWaypoints" placeholder="{{row.waypoint.x | number:'1.0-0'}}, {{row.waypoint.y | number:'1.0-0'}}" (ngModelChange)="onFieldChange()">

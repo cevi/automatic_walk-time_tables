@@ -118,6 +118,28 @@ export class MapAnimatorService implements OnDestroy {
     this.state.toggleMagneticPaths();
   }
   public move_pointer(coords: LV95_Waypoint | null) {
+    if (coords) {
+      // Centralized POI snapping: if the coordinate is close to a POI by accumulated_distance,
+      // snap to the POI so all consumers see the same result.
+      const pois = this.state.pois;
+      const path = this.state.path;
+      if (pois.length > 0 && path.length > 0) {
+        const totalDist = path[path.length - 1].accumulated_distance || 1;
+        const snapThreshold = totalDist * 0.01; // 1% of total path length
+
+        let nearest_poi: LV95_Waypoint | null = null;
+        let min_dist = Infinity;
+        for (const poi of pois) {
+          const d = Math.abs((poi.accumulated_distance || 0) - (coords.accumulated_distance || 0));
+          if (d < min_dist) { min_dist = d; nearest_poi = poi; }
+        }
+
+        if (nearest_poi && min_dist <= snapThreshold) {
+          this.state.movePointer(nearest_poi);
+          return;
+        }
+      }
+    }
     this.state.movePointer(coords);
   }
   public set_error_handler(handler: (err: string) => void) {

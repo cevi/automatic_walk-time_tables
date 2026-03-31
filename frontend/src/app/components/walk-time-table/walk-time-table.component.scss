@@ -44,8 +44,9 @@
     tr {
       transition: background-color 0.2s ease;
 
-      &:hover {
-        background-color: #f8faff;
+      &:hover,
+      &.row-highlighted {
+        background-color: #e8f0fe;
       }
 
       td {

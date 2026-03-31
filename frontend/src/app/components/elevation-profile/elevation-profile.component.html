@@ -1,8 +1,6 @@
 @if (plot_options != {}) {
   <div class="elevation-map">
-    <h3>Höhenprofil:</h3>
-    <p>Mit einem Klick ins Höhenprofil kannst du zusätzliche Wegpunkte einfügen. Diese werden falls
-    möglich berücksichtigt. </p>
+    <p>Mit einem Klick ins Höhenprofil kannst du zusätzliche Wegpunkte einfügen.</p>
     <div id="chart" (chartInit)="onChartInit($event)" echarts [options]="plot_options"></div>
     
     <div style="display: flex; gap: 12px; margin-top: 16px; margin-bottom: 8px;">

@@ -18,7 +18,7 @@ export class ElevationProfileComponent {
   number_of_pois: number = 0;
 
   private echartsInstance: any = null;
-  private is_echarts_hovering: boolean = false;
+  private hover_snapped_poi: LV95_Waypoint | null = null;
 
   constructor(private mapAnimator: MapAnimatorService) {
 
@@ -63,12 +63,32 @@ export class ElevationProfileComponent {
         yMax = Math.ceil(yMax / 10) * 10;
 
         this.plot_options = {
+          animation: false,
           tooltip: {
             trigger: 'axis',
             axisPointer: {
               animation: false,
               lineStyle: { color: '#999', type: 'dashed' },
             },
+            formatter: (params: any) => {
+              if (!params || params.length === 0) return '';
+              const dist = Number(params[0].data[0]).toFixed(3);
+              const elev = Math.round(Number(params[0].data[1]));
+              let html = `<b>${dist} km</b><br/>Höhe: ${elev} m ü.M.`;
+              // Check if a POI series point is present
+              const poiParam = params.find((p: any) => p.seriesName === 'POI');
+              if (poiParam) {
+                const poiName = pois[poiParam.dataIndex]?.name;
+                html += `<br/><span style="color:#d32f2f">● Wegpunkt${poiName ? ': ' + poiName : ''}</span>`;
+              }
+              return html;
+            },
+          },
+          grid: {
+            left: 45,
+            right: 15,
+            top: 15,
+            bottom: 30,
           },
           xAxis: {
             type: 'value',
@@ -121,11 +141,12 @@ export class ElevationProfileComponent {
 
   public onChartInit(ec: any) {
     this.echartsInstance = ec;
+
+    // Mousemove: just find nearest path point. Centralized move_pointer() handles POI snapping.
     ec.getZr().on('mousemove', async (params: any) => {
-       this.is_echarts_hovering = true;
        const pointInPixel = [params.offsetX, params.offsetY];
        if (ec.containPixel('grid', pointInPixel)) {
-          let distance = ec.convertFromPixel('grid', pointInPixel)[0];
+          const distance = ec.convertFromPixel('grid', pointInPixel)[0];
           try {
              const coord = await this.get_coordinate_by_distance(distance);
              if (coord) this.mapAnimator.move_pointer(coord);
@@ -133,29 +154,44 @@ export class ElevationProfileComponent {
        }
     });
 
+    // Click: use hover_snapped_poi from pointer$ to decide add vs delete
     ec.getZr().on('click', async (params: any) => {
        const pointInPixel = [params.offsetX, params.offsetY];
        if (ec.containPixel('grid', pointInPixel)) {
-          let distance = ec.convertFromPixel('grid', pointInPixel)[0];
-          try {
-             const coord = await this.get_coordinate_by_distance(distance);
-             if (coord) this.mapAnimator.add_point_of_interest(coord);
-          } catch(e) {}
+          if (this.hover_snapped_poi) {
+            this.mapAnimator.delete_poi(this.hover_snapped_poi);
+            this.hover_snapped_poi = null;
+          } else {
+            const distance = ec.convertFromPixel('grid', pointInPixel)[0];
+            try {
+               const coord = await this.get_coordinate_by_distance(distance);
+               if (coord) this.mapAnimator.add_point_of_interest(coord);
+            } catch(e) {}
+          }
        }
     });
 
     ec.getZr().on('mouseout', () => {
-       this.is_echarts_hovering = false;
        this.mapAnimator.move_pointer(null);
     });
 
+    // pointer$ is the SINGLE source of truth for ECharts indicator positioning.
+    // No is_echarts_hovering guard — centralized snap drives everything.
     this.mapAnimator.pointer$.subscribe((coord) => {
-       if (!this.echartsInstance || this.is_echarts_hovering) return;
-       
+       if (!this.echartsInstance) return;
+
        if (!coord) {
           this.echartsInstance.dispatchAction({ type: 'hideTip' });
           this.echartsInstance.dispatchAction({ type: 'downplay', seriesIndex: 0 });
+          this.hover_snapped_poi = null;
        } else {
+          // Track if we're snapped to a POI (for click-to-delete)
+          const pois = this.mapAnimator.pois;
+          this.hover_snapped_poi = pois.find(p =>
+            p.x === coord.x && p.y === coord.y &&
+            p.accumulated_distance === coord.accumulated_distance
+          ) || null;
+
           this.mapAnimator.path$.pipe(take(1)).subscribe((path) => {
              const dataIndex = path.findIndex(p => p.accumulated_distance === coord.accumulated_distance);
              if (dataIndex !== -1) {

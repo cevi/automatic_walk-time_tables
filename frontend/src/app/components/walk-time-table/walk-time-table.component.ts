@@ -28,7 +28,9 @@ export class WalkTimeTableComponent implements OnInit, OnDestroy, OnChanges {
   @Output() userEdited = new EventEmitter<void>();
 
   rows: TableRow[] = [];
+  highlightedRowIndex: number = -1;
   private sub: Subscription | null = null;
+  private pointerSub: Subscription | null = null;
   private currentWps: LV95_Waypoint[] = [];
 
   constructor(public mapAnimator: MapAnimatorService, private mapService: MapService) {}
@@ -37,6 +39,19 @@ export class WalkTimeTableComponent implements OnInit, OnDestroy, OnChanges {
     this.sub = this.mapAnimator.pois$.subscribe((wps: LV95_Waypoint[]) => {
       this.currentWps = wps;
       this.recalculate(this.currentWps);
+    });
+
+    // Reverse highlight: when map/elevation hover snaps to a POI, highlight that table row
+    this.pointerSub = this.mapAnimator.pointer$.subscribe((coord) => {
+      if (!coord) {
+        this.highlightedRowIndex = -1;
+        return;
+      }
+      const idx = this.currentWps.findIndex(wp =>
+        wp.accumulated_distance === coord.accumulated_distance &&
+        wp.x === coord.x && wp.y === coord.y
+      );
+      this.highlightedRowIndex = idx;
     });
   }
 
@@ -48,6 +63,15 @@ export class WalkTimeTableComponent implements OnInit, OnDestroy, OnChanges {
 
   ngOnDestroy() {
     if (this.sub) this.sub.unsubscribe();
+    if (this.pointerSub) this.pointerSub.unsubscribe();
+  }
+
+  onRowHover(row: TableRow) {
+    this.mapAnimator.move_pointer(row.waypoint);
+  }
+
+  onRowLeave() {
+    this.mapAnimator.move_pointer(null);
   }
 
   onFieldChange() {

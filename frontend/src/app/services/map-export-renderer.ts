@@ -14,6 +14,9 @@ export class MapExportRenderer {
   private pois_layer_source = new VectorSource({ wrapX: false });
   public pois_layer = new VectorLayer({ source: this.pois_layer_source, zIndex: 20 });
 
+  private labels_layer_source = new VectorSource({ wrapX: false });
+  private labels_layer = new VectorLayer({ source: this.labels_layer_source, zIndex: 21, declutter: true });
+
   private pointer_layer_source = new VectorSource();
   private pointer_layer = new VectorLayer({ source: this.pointer_layer_source, zIndex: 30 });
 
@@ -24,6 +27,7 @@ export class MapExportRenderer {
     this.map = map;
     this.map_animator = animator;
     this.map.addLayer(this.pois_layer);
+    this.map.addLayer(this.labels_layer);
     this.map.addLayer(this.pointer_layer);
 
     this.setupSubscriptions();
@@ -124,11 +128,13 @@ export class MapExportRenderer {
 
     this.sub3 = this.map_animator.export_mode$.subscribe((is_export) => {
       this.pois_layer.setVisible(is_export);
+      this.labels_layer.setVisible(is_export);
       this.pointer_layer.setVisible(is_export);
       if (is_export) {
         this.refreshMarkers();
       } else {
         this.pois_layer_source.clear();
+        this.labels_layer_source.clear();
         this.pointer_layer_source.clear();
       }
     });
@@ -153,30 +159,39 @@ export class MapExportRenderer {
 
   private refreshMarkers() {
     this.pois_layer_source.clear();
+    this.labels_layer_source.clear();
 
     const pois = this.map_animator.pois;
     pois.forEach((poi: any) => {
-      const feature = new Feature({
-        geometry: new Point([poi.x, poi.y]),
-      });
-
-      feature.setStyle(
+      // Circle marker (always visible)
+      const circleFeature = new Feature({ geometry: new Point([poi.x, poi.y]) });
+      circleFeature.setStyle(
         new Style({
           image: new CircleStyle({
             radius: 6,
             fill: new Fill({ color: '#d32f2f' }),
             stroke: new Stroke({ color: '#fff', width: 2 }),
           }),
-          text: new Text({
-            text: poi.name,
-            fill: new Fill({ color: '#333' }),
-            stroke: new Stroke({ color: '#fff', width: 3 }),
-            font: 'bold 16px Open Sans',
-            offsetY: -15,
-          }),
         }),
       );
-      this.pois_layer_source.addFeature(feature);
+      this.pois_layer_source.addFeature(circleFeature);
+
+      // Text label (decluttered)
+      if (poi.name) {
+        const labelFeature = new Feature({ geometry: new Point([poi.x, poi.y]) });
+        labelFeature.setStyle(
+          new Style({
+            text: new Text({
+              text: poi.name,
+              fill: new Fill({ color: '#d32f2f' }),
+              stroke: new Stroke({ color: '#fff', width: 3 }),
+              font: 'bold 16px Open Sans',
+              offsetY: -15,
+            }),
+          }),
+        );
+        this.labels_layer_source.addFeature(labelFeature);
+      }
     });
   }
 
@@ -186,6 +201,7 @@ export class MapExportRenderer {
     this.sub4?.unsubscribe();
     if (this.map) {
       this.map.removeLayer(this.pois_layer);
+      this.map.removeLayer(this.labels_layer);
       this.map.removeLayer(this.pointer_layer);
     }
   }
