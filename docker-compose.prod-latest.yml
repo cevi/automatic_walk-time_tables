@@ -15,6 +15,8 @@ services:
 
   awt-mapfish-print-server:
     image: registry.cevi.tools/cevi/awt_mapfish-print-server:latest
+    environment:
+      CATALINA_OPTS: "-Dfile.encoding=UTF-8"
     env_file:
       - .env.prod-latest
 
