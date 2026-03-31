@@ -721,8 +721,37 @@ export class MapAnimatorService implements OnDestroy {
       way_points[way_points.length - 1].break_duration = old_end_break;
     }
 
+    const old_anchors = this.state.anchor_points;
+    if (old_anchors.length > 0) {
+      old_anchors.forEach(old_anchor => {
+        let min_dist = Infinity;
+        let closest_idx = -1;
+        for (let i = 0; i < way_points.length; i++) {
+          const d = Math.pow(way_points[i].x - old_anchor.x, 2) + Math.pow(way_points[i].y - old_anchor.y, 2);
+          if (d < min_dist) {
+            min_dist = d;
+            closest_idx = i;
+          }
+        }
+        if (closest_idx !== -1 && min_dist < 2500) {
+          way_points[closest_idx].is_waypoint = true;
+        }
+      });
+    }
+
+    // Always ensure start and end nodes are anchors for topological integrity
+    if (way_points.length > 0) {
+      way_points[0].is_waypoint = true;
+      way_points[way_points.length - 1].is_waypoint = true;
+    }
+
     this.update_map_center(way_points);
     this.state.updatePath(way_points);
+
+    const syncedAnchors = way_points
+      .filter((p) => p.is_waypoint)
+      .map((p) => ({ x: p.x, y: p.y } as LV95_Coordinates));
+    this.state.updateAnchorPoints(syncedAnchors);
 
     return new Promise<void>((resolve, reject) =>
       combineLatest([this.path$, this.pois$])

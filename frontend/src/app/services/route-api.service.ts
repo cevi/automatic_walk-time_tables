@@ -145,6 +145,16 @@ export class RouteApiService {
         path.map((p) => [p.accumulated_distance * 1_000, p.h]),
         0,
       ),
+      // In the new architecture, the frontend POIs act as the way_points for the table
+      way_points: encode(
+        pois.map((p) => [p.x, p.y]),
+        0,
+      ),
+      way_points_elevation: encode(
+        pois.map((p) => [p.accumulated_distance * 1_000, p.h]),
+        0,
+      ),
+      way_points_details: tableJson,
       table: tableJson,
     };
 
@@ -157,9 +167,12 @@ export class RouteApiService {
         pois.map((p) => [p.accumulated_distance * 1_000, p.h]),
         0,
       );
+      export_request['pois_distance'] = pois
+        .sort((a, b) => a.accumulated_distance - b.accumulated_distance)
+        .map(p => `${p.accumulated_distance * 1_000}`).join(',');
     }
 
-    const response = await fetch(RouteApiService.BASE_URL + 'generate-pdf', {
+    const response = await fetch(RouteApiService.BASE_URL + 'create_map', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

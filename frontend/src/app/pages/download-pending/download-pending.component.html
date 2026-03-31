@@ -1,13 +1,12 @@
-
-<h2>Export läuft, wir bitten um Geduld.</h2>
-
 @if (statusManager.status != 'error') {
+  <h2>Export läuft, bitte warten...</h2>
   <mat-progress-bar mode="query"></mat-progress-bar>
+  <p>Die Marschzeittabelle wird erstellt, dies kann einen Moment dauern.</p>
 } @else {
-  <mat-progress-bar  mode="buffer" value="80" color="warn"></mat-progress-bar>
+  <h2>Export fehlgeschlagen</h2>
+  <mat-progress-bar mode="buffer" value="80" color="warn"></mat-progress-bar>
+  <p>Leider konnte die Marschzeittabelle nicht erstellt werden.</p>
 }
-
-<p> Marschzeittabelle wird erstellt, wir bitten um Geduld.</p>
 @for (old_state of statusManager.history; track old_state) {
   <p class="old_state">
     &nbsp;- <b>{{old_state?.last_change}}:</b> {{old_state?.message}}

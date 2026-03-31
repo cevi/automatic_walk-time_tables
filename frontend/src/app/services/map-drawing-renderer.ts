@@ -335,6 +335,7 @@ export class MapDrawingRenderer {
           this.tooltipOverlay.setPosition(undefined);
         } else {
           this.map_animator.trigger_path_redraw();
+          this.refreshAnchors();
         }
       },
     );
