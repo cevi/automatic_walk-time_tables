@@ -30,10 +30,10 @@ export class RouteHistoryService {
     pois: LV95_Waypoint[],
     anchors: LV95_Coordinates[]
   ): void {
-    // Preserve copies securely
-    this._pathHistory.push(JSON.parse(JSON.stringify(path)));
-    this._poisHistory.push(JSON.parse(JSON.stringify(pois)));
-    this._anchorPointsHistory.push(JSON.parse(JSON.stringify(anchors)));
+    // Preserve copies securely using native high-performance cloning
+    this._pathHistory.push(structuredClone(path));
+    this._poisHistory.push(structuredClone(pois));
+    this._anchorPointsHistory.push(structuredClone(anchors));
 
     // Erase redo sequences post-modification
     this._pathRedoHistory = [];
@@ -45,18 +45,18 @@ export class RouteHistoryService {
     if (!this.canUndo) return;
 
     // Push Current State to Redo
-    this._pathRedoHistory.push(JSON.parse(JSON.stringify(this.mapState.path)));
+    this._pathRedoHistory.push(structuredClone(this.mapState.path));
     const previous_path = this._pathHistory.pop()!;
     this.mapState.updatePath(previous_path);
 
     if (this._poisHistory.length > 0) {
-      this._poisRedoHistory.push(JSON.parse(JSON.stringify(this.mapState.pois)));
+      this._poisRedoHistory.push(structuredClone(this.mapState.pois));
       const previous_pois = this._poisHistory.pop()!;
       this.mapState.updatePOIs(previous_pois);
     }
 
     if (this._anchorPointsHistory.length > 0) {
-      this._anchorPointsRedoHistory.push(JSON.parse(JSON.stringify(this.mapState.anchor_points)));
+      this._anchorPointsRedoHistory.push(structuredClone(this.mapState.anchor_points));
       const previous_anchors = this._anchorPointsHistory.pop()!;
       this.mapState.updateAnchorPoints(previous_anchors);
     }
@@ -66,18 +66,18 @@ export class RouteHistoryService {
     if (!this.canRedo) return;
 
     // Push Current State to Undo
-    this._pathHistory.push(JSON.parse(JSON.stringify(this.mapState.path)));
+    this._pathHistory.push(structuredClone(this.mapState.path));
     const next_path = this._pathRedoHistory.pop()!;
     this.mapState.updatePath(next_path);
 
     if (this._poisRedoHistory.length > 0) {
-      this._poisHistory.push(JSON.parse(JSON.stringify(this.mapState.pois)));
+      this._poisHistory.push(structuredClone(this.mapState.pois));
       const next_pois = this._poisRedoHistory.pop()!;
       this.mapState.updatePOIs(next_pois);
     }
 
     if (this._anchorPointsRedoHistory.length > 0) {
-      this._anchorPointsHistory.push(JSON.parse(JSON.stringify(this.mapState.anchor_points)));
+      this._anchorPointsHistory.push(structuredClone(this.mapState.anchor_points));
       const next_anchors = this._anchorPointsRedoHistory.pop()!;
       this.mapState.updateAnchorPoints(next_anchors);
     }

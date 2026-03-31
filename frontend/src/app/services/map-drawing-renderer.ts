@@ -269,16 +269,19 @@ export class MapDrawingRenderer {
   }
 
   private setupDrawInteraction() {
-    this.map.on('click', async (evt) => {
-      if (
-        !this.hovered_anchor &&
-        !this.is_hovering_tooltip &&
-        !this.map_animator.export_mode
-      ) {
+    this.map.on('singleclick', async (evt) => {
+      if (this.map_animator.export_mode) return;
+
+      if (this.hovered_anchor) {
+        // Explicitly hit an anchor without dragging -> delete it
+        this.onWaypointDeleted.emit(this.hovered_anchor);
+        this.tooltipOverlay.setPosition(undefined);
+      } else if (!this.is_hovering_tooltip) {
+        // Hit empty map -> append new anchor
         this.pointer_layer_source.clear();
         this.onWaypointAdded.emit({
-          x: this.pointer![0],
-          y: this.pointer![1],
+          x: evt.coordinate[0], // MUST use locked event coordinate, not this.pointer
+          y: evt.coordinate[1], // MUST use locked event coordinate, not this.pointer
         });
       }
     });
