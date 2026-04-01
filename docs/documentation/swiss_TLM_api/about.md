@@ -34,19 +34,20 @@ docker run --publish=1848:1848 --mount type=bind,source="$(pwd)"/resources,targe
              cevi/swiss_tlm_api:latest 
 ```
 
-## Prerequisites for Local Execution
+## Data Sources and Automated Downloads
 
-Make sure to download the latest version of the topographic landscape model dataset here:
-from https://www.swisstopo.admin.ch/de/geodata/landscape/tlm3d.html.
+Make sure you have an internet connection during the first container boot or execution. The application depends on two datasets from Swisstopo, which are **automatically downloaded** if they are not already present in your `./resources/` directory:
 
-1) Install `libspatialindex` for robust spatial indexing methods. Using the command:
+1. **swissTLM3D** (Topographic Landscape Model): Used for streets, forests, structures, etc.
+   - Automatically downloaded from Swisstopo (February 2026 release) to `./resources/swissTLM3D_LV95_data_full/`.
+2. **swissNAMES3D**: Used for topological elevation points (Peaks, Passes, Hills, Viewpoints).
+   - *Architecture Note:* As of the 2024 update, Swisstopo removed the `TLM_KOTIERTER_PUNKT` (pure numeric spot heights) from `swissTLM3D` and moved purely cartographic spot heights to the Swiss Map Vector (`SMV`) databases. Because `SMV` is fragmented into ~250 regional tiles totaling >100GB, this API now seamlessly uses the lightweight `swissNAMES3D` dataset to reliably extract over 30,000 nationwide named elevation points instead.
+   - Automatically downloaded to `./resources/swissNAMES3D_data/`.
+
+1) **System Packages**: ensure `libspatialindex-dev` is installed for RTree indexing:
    ```bash
-   $ apt -y install libspatialindex-dev
+   $ sudo apt-y install libspatialindex-dev
    ```
 
-2) And store it in the directory `./res/swissTLM3D_1.9_LV95_LN02_shp3d/`. Currently, we only need the `.shp` files.
-   ```bash
-   $ wget https://cms.geo.admin.ch/Topo/swisstlm3d/LV95/swissTLM3D_1.9_LV95_LN02_shp3d.zip
-   $ unzip swissTLM3D_LV95_data.zip 
-   ```
+2) **Local Data Handling**: The `name_index.py` boot script will check for the `.shp` files in `./resources/` during startup. If missing, it will fetch them automatically. No manual `wget` extraction is required anymore for repo cloning.
 

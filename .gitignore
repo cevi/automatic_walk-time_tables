@@ -2,3 +2,6 @@ backend/.idea
 .idea
 swiss_TLM_api/map_snipped.png
 swiss_TLM_api/index_cache/index_cache.tar.xz
+swiss_TLM_api/resources/swissTLM3D_LV95_data_full/*
+swiss_TLM_api/resources/SMV25_CHLV95LN02.gpkg
+swiss_TLM_api/resources/smv25.gpkg

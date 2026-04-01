@@ -17,6 +17,15 @@ from swiss_TML_api.name_finding.index_builder.stops_and_stations import StopsAnd
 from swiss_TML_api.name_finding.index_builder.tlm_streets import TLM_Streets
 from swiss_TML_api.name_finding.index_builder.versorgungsbauten import Versorgungsbauten
 
+from swiss_TML_api.name_finding.index_builder.gebaeude import Gebaeude
+from swiss_TML_api.name_finding.index_builder.sportbaute import Sportbaute
+from swiss_TML_api.name_finding.index_builder.staubaute import Staubaute
+from swiss_TML_api.name_finding.index_builder.schutzgebiet import Schutzgebiet
+from swiss_TML_api.name_finding.index_builder.schule import Schule
+from swiss_TML_api.name_finding.index_builder.nutzungsareal import Nutzungsareal
+from swiss_TML_api.name_finding.index_builder.intersections import Intersections
+from swiss_TML_api.name_finding.index_builder.hoehenpunkt import Hoehenpunkt
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -68,6 +77,9 @@ class NameIndex:
             )
             return
 
+        if not os.path.exists("./resources/swissTLM3D_LV95_data/"):
+            os.makedirs("./resources/swissTLM3D_LV95_data/")
+
         if reduced and not any(
             fname.endswith(".shp")
             for fname in os.listdir("resources/swissTLM3D_LV95_data/")
@@ -78,6 +90,9 @@ class NameIndex:
             folder = "./resources/swissTLM3D_LV95_data/"
             self.__download_resources(url, folder)
 
+        if not os.path.exists("resources/swissTLM3D_LV95_data_full/"):
+            os.makedirs("resources/swissTLM3D_LV95_data_full/")
+
         if not reduced and not any(
             fname.endswith(".shp")
             for fname in os.listdir("resources/swissTLM3D_LV95_data_full/")
@@ -85,11 +100,23 @@ class NameIndex:
             logger.info("SHP files not found. Downloading them from Swisstopo")
 
             url = (
-                "https://data.geo.admin.ch/ch.swisstopo.swisstlm3d/swisstlm3d_2022-03/"
-                "swisstlm3d_2022-03_2056_5728.shp.zip"
+                "https://data.geo.admin.ch/ch.swisstopo.swisstlm3d/swisstlm3d_2026-02-24/"
+                "swisstlm3d_2026-02-24_2056_5728.shp.zip"
             )
             folder = "./resources/swissTLM3D_LV95_data_full/"
             self.__download_resources(url, folder)
+
+        if not os.path.exists("./resources/swissNAMES3D_data/"):
+            os.makedirs("./resources/swissNAMES3D_data/")
+
+        if not any(
+            fname.endswith(".shp")
+            for fname in os.listdir("./resources/swissNAMES3D_data/")
+        ):
+            logger.info("swissNAMES3D SHP files not found. Downloading them from Swisstopo")
+            url = "https://data.geo.admin.ch/ch.swisstopo.swissnames3d/swissnames3d_2025/swissnames3d_2025_2056.shp.zip"
+            folder = "./resources/swissNAMES3D_data/"
+            self.__download_resources_simple(url, folder)
 
         self.generate_index(reduced)
 
@@ -110,15 +137,36 @@ class NameIndex:
 
         shutil.unpack_archive(filename=output, extract_dir=destination)
 
-        for directory in os.listdir(destination):
-            if any(ext in directory for ext in (".zip", ".gitkeep")):
-                continue
+        for root, dirs, files in os.walk(destination, topdown=False):
+            for file in files:
+                if file.endswith(".zip") or file == ".gitkeep":
+                    continue
+                
+                # Swisstopo 2026 zip uses Windows backslashes in paths which Linux unpacks as literal flat filenames
+                actual_filename = file.split('\\')[-1]
+                src_path = os.path.join(root, file)
+                dst_path = os.path.join(destination, actual_filename)
+                
+                if src_path != dst_path:
+                    shutil.move(src_path, dst_path)
+            
+            # Remove empty subdirectories
+            for d in dirs:
+                try:
+                    os.rmdir(os.path.join(root, d))
+                except OSError:
+                    pass
+        
+        os.remove(output)
 
-            for file in os.listdir(os.path.join(destination, directory)):
-                file_name = os.path.join(destination, directory, file)
-                shutil.move(file_name, os.path.join(destination, file))
-
-            os.rmdir(os.path.join(destination, directory))
+    def __download_resources_simple(self, url: str, destination: str):
+        output = os.path.join(destination, "swissNAMES3D_raw.zip")
+        req = requests.get(url, stream=True)
+        with open(output, "wb") as f:
+            for chunk in req.iter_content(chunk_size=1024):
+                if chunk:
+                    f.write(chunk)
+        shutil.unpack_archive(filename=output, extract_dir=destination)
         os.remove(output)
 
     def generate_index(self, reduced):
@@ -150,6 +198,14 @@ class NameIndex:
             Versorgungsbauten,
             Einzelobjekte,
             PKTNames,
+            Gebaeude,
+            Sportbaute,
+            Staubaute,
+            Schutzgebiet,
+            Schule,
+            Nutzungsareal,
+            Intersections,
+            Hoehenpunkt,
         )
         for index_part in index_parts:
             start = time.time()
