@@ -13,6 +13,7 @@ import { SwisstopoMap } from '../helpers/swisstopo-map';
 import { MapDrawingRenderer } from './map-drawing-renderer';
 import { MapExportRenderer } from './map-export-renderer';
 import Overlay from 'ol/Overlay';
+import { braetlistellenData } from '../../assets/braetlistellen';
 
 export interface MapOverlays {
   fountains: boolean;
@@ -293,6 +294,33 @@ export class MapService extends SwisstopoMap implements OnDestroy {
           for (const t of tags) {
             html += `<p><strong>${t}:</strong> ${props[t]}</p>`;
           }
+
+          if (props['amenity'] === 'bbq' || props['leisure'] === 'firepit') {
+            let origin = evt.coordinate;
+            const geom = feature.getGeometry();
+            if (geom && typeof (geom as any).getCoordinates === 'function') {
+              const coords = (geom as any).getCoordinates();
+              if (coords && coords.length >= 2) {
+                origin = coords;
+              }
+            }
+
+            let closest = null;
+            let min_distSq = 2500; // 50m tolerance
+            for (const b of braetlistellenData) {
+              const dx = b.x - origin[0];
+              const dy = b.y - origin[1];
+              const distSq = dx * dx + dy * dy;
+              if (distSq < min_distSq) {
+                min_distSq = distSq;
+                closest = b;
+              }
+            }
+            if (closest && closest.url) {
+              html += `<p style="margin-top:10px;"><a href="${closest.url}" target="_blank" style="color:#1976D2; text-decoration: underline;">Link zu brätlistellen.ch</a></p>`;
+            }
+          }
+
           html += '</div>';
 
           popupContent.innerHTML = html;

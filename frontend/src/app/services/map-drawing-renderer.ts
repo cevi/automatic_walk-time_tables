@@ -11,6 +11,7 @@ import { LV95_Coordinates, LV95_Waypoint } from '../helpers/coordinates';
 import Overlay from 'ol/Overlay';
 import { Subscription } from 'rxjs';
 import { GeometryUtils } from '../utils/geometry.utils';
+import { braetlistellenData } from '../../assets/braetlistellen';
 
 export class MapDrawingRenderer {
   private map: Map;
@@ -521,6 +522,7 @@ export class MapDrawingRenderer {
       let clickedVector = false;
       let vectorName = '';
       let vectorProperties: any = null;
+      let vectorGeometry: any = null;
 
       this.map.forEachFeatureAtPixel(evt.pixel, (feature, layer) => {
         if (layer) {
@@ -531,6 +533,7 @@ export class MapDrawingRenderer {
             clickedVector = true;
             vectorName = lName;
             vectorProperties = feature.getProperties();
+            vectorGeometry = feature.getGeometry();
           }
         }
       });
@@ -580,6 +583,29 @@ export class MapDrawingRenderer {
         } else if (vectorName === 'feuerstellen') {
           title = 'Feuerstelle';
           subtitle = vectorProperties['name'] || 'Öffentlicher Grillplatz';
+          
+          let origin = evt.coordinate;
+          if (vectorGeometry && typeof vectorGeometry.getCoordinates === 'function') {
+            const coords = vectorGeometry.getCoordinates();
+            if (coords && coords.length >= 2) {
+              origin = coords;
+            }
+          }
+
+          let closest = null;
+          let min_distSq = 2500; // 50m tolerance
+          for (const b of braetlistellenData) {
+            const dx = b.x - origin[0];
+            const dy = b.y - origin[1];
+            const distSq = dx * dx + dy * dy;
+            if (distSq < min_distSq) {
+              min_distSq = distSq;
+              closest = b;
+            }
+          }
+          if (closest && closest.url) {
+            subtitle += `<br><a href="${closest.url}" target="_blank" style="color:#1976D2; text-decoration: underline;">Link zu brätlistellen.ch</a>`;
+          }
         } else if (vectorName === 'shelter') {
           title = 'Unterstand';
           subtitle = vectorProperties['name'] || 'Schutzhütte';
