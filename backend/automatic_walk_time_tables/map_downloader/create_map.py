@@ -16,7 +16,7 @@ import automatic_walk_time_tables.utils.geometry_utils
 from automatic_walk_time_tables.generator_status import GeneratorStatus
 from automatic_walk_time_tables.utils import path
 from automatic_walk_time_tables.utils.point import Point_LV95
-from automatic_walk_time_tables.utils.qr import build_qr_code_image_string
+from automatic_walk_time_tables.utils.qr import build_qr_code_image_string, build_qr_url
 from server_logging.status_handler import ExportStateLogger
 from automatic_walk_time_tables.utils.error import UserException
 
@@ -359,6 +359,7 @@ class MapCreator:
         # Only include qr_code when we actually received a valid QR image
         if qr_code_string:
             attributes["qr_code"] = qr_code_string
+            attributes["qr_url"] = build_qr_url(self.uuid)
 
         query_json = {
             "layout": "A4 landscape",

@@ -8,8 +8,9 @@
     <property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.HorizontalRowLayout"/>
     <property name="com.jaspersoft.studio.unit." value="pixel"/>
     <parameter name="mapSubReport" class="java.lang.String" isForPrompting="false"/>
-	<parameter name="scale" class="java.lang.String"/>
+    <parameter name="scale" class="java.lang.String"/>
     <parameter name="qr_code" class="java.lang.String"/>
+    <parameter name="qr_url" class="java.lang.String"/>
     <parameter name="scalebarSubReport" class="java.lang.String"/>
     <parameter name="northArrowGraphic" class="java.lang.String"/>
     <title>
@@ -86,9 +87,10 @@
                 </reportElement>
             </rectangle>
 
-            <image evaluationTime="Report">
+            <image evaluationTime="Report" hyperlinkType="Reference" hyperlinkTarget="Blank">
                 <reportElement x="10" y="500" width="60" height="60" uuid="1bae2f08-683a-416a-be8b-a4ebfc7db792"/>
                 <imageExpression><![CDATA[$P{qr_code}]]></imageExpression>
+                <hyperlinkReferenceExpression><![CDATA[$P{qr_url}]]></hyperlinkReferenceExpression>
             </image>
         </band>
     </title>
