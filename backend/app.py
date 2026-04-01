@@ -62,23 +62,25 @@ def get_name():
         data = request.json
         lat = data.get("lat")
         lon = data.get("lon")
-        
+
         url = "http://awt-swiss-tml-api:1848/swiss_name"
         payload = json.dumps([[lat, lon]])
         headers = {"Content-Type": "application/json"}
-        
+
         req = requests.request("GET", url, headers=headers, data=payload)
         resp = req.json()
-        
+
         name = ""
         if len(resp) > 0 and resp[0]["offset"] <= 100:
             name = resp[0]["swiss_name"]
-            
+
         return jsonify({"name": name})
     except Exception as e:
         import traceback
+
         traceback.print_exc()
         return jsonify({"name": ""})
+
 
 @app.route("/parse_route", methods=["POST"])
 def parse_route():
@@ -303,6 +305,7 @@ def create_export(options, uuid):
 
             if "way_points_details" in options:
                 import json
+
                 details = json.loads(options["way_points_details"])
                 for i, wp in enumerate(way_points.way_points):
                     if i < len(details):

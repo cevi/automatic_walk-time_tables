@@ -12,6 +12,7 @@ class Schule(IndexBuilder):
 
     def load(self):
         import os
+
         shp_file = self.base_path + "swissTLM3D_TLM_SCHULE.shp"
         if not os.path.exists(shp_file):
             return

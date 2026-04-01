@@ -13,8 +13,15 @@ class Hoehenpunkt(IndexBuilder):
         shp_file = "./resources/swissNAMES3D_data/swissNAMES3D_PKT.shp"
 
         valid_types = {
-            'Gipfel', 'Haupthuegel', 'Hauptgipfel', 'Huegel', 
-            'Pass', 'Strassenpass', 'Aussichtspunkt', 'Felskopf', 'Alpiner Gipfel'
+            "Gipfel",
+            "Haupthuegel",
+            "Hauptgipfel",
+            "Huegel",
+            "Pass",
+            "Strassenpass",
+            "Aussichtspunkt",
+            "Felskopf",
+            "Alpiner Gipfel",
         }
 
         try:
@@ -22,13 +29,13 @@ class Hoehenpunkt(IndexBuilder):
                 for obj in src:
                     props = obj["properties"]
                     obj_art = props.get("OBJEKTART")
-                    
+
                     if obj_art not in valid_types:
                         continue
-                        
+
                     obj_type = obj_art
                     geo = obj["geometry"]["coordinates"]
-                    
+
                     h = 0
                     if "HOEHE" in props and props["HOEHE"] is not None:
                         h = float(props["HOEHE"])
@@ -57,16 +64,17 @@ class Hoehenpunkt(IndexBuilder):
         # 2. Load un-named spot elevations from SMV25
         smv25_file = "./resources/swissNAMES3D_data/SMV25_HOEHENKOTEN.shp"
         import os
+
         if os.path.exists(smv25_file):
             try:
                 with fiona.open(smv25_file) as src:
                     for obj in src:
                         props = obj.get("properties", {})
                         h = props.get("HOEHE", 0)
-                        
+
                         geo = obj["geometry"]["coordinates"]
                         x, y = geo[0], geo[1]
-                        
+
                         swiss_name = SwissName(
                             name=f"Punkt {int(h)}",
                             object_type="Kotierter Punkt",

@@ -16,8 +16,12 @@ class Nutzungsareal(IndexBuilder):
             with fiona.open(shp_file) as src:
                 for obj in src:
                     obj_type = obj["properties"].get("OBJEKTART", "")
-                    
-                    if obj_type not in ["Kraftwerkareal", "Abwasserreinigungsareal", "Ruinenareal"]:
+
+                    if obj_type not in [
+                        "Kraftwerkareal",
+                        "Abwasserreinigungsareal",
+                        "Ruinenareal",
+                    ]:
                         continue
 
                     geo = shape(obj["geometry"])

@@ -28,12 +28,18 @@ class POIsTransformer(PathTransformer):
             pois = self.calc_pois(path)
 
         # Ensure start and end points
-        if len(pois.way_points) == 0 or pois.way_points[0].point.distance(path.way_points[0].point) > 50:
+        if (
+            len(pois.way_points) == 0
+            or pois.way_points[0].point.distance(path.way_points[0].point) > 50
+        ):
             pois.way_points.insert(0, path.way_points[0])
-            
-        if len(pois.way_points) < 2 or pois.way_points[-1].point.distance(path.way_points[-1].point) > 50:
+
+        if (
+            len(pois.way_points) < 2
+            or pois.way_points[-1].point.distance(path.way_points[-1].point) > 50
+        ):
             pois.way_points.append(path.way_points[-1])
-            
+
         return pois
 
     def pois_from_distance_string(self, path: Path):

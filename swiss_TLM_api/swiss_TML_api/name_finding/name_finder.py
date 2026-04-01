@@ -10,6 +10,7 @@ import threading
 
 lock = threading.Lock()
 
+
 class NameFinder(NameIndex):
     def __init__(self, force_rebuild=False, reduced=False):
         """

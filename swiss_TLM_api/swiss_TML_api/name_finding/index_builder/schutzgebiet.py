@@ -26,17 +26,19 @@ class Schutzgebiet(IndexBuilder):
 
                     # Nationalpark bounds could be huge, but maybe we just add the outer boundary points?
                     # Or the centroid? The centroid of a national park is not very useful if you're on the boundary...
-                    # For now, let's insert the centroid, maybe people want the boundary? 
+                    # For now, let's insert the centroid, maybe people want the boundary?
                     # "Nationalparksgrenzen" was the user's issue text.
                     # To add borders, we can add points along the exterior boundary.
-                    if geo.geom_type == 'Polygon':
+                    if geo.geom_type == "Polygon":
                         polygons = [geo]
-                    elif geo.geom_type == 'MultiPolygon':
+                    elif geo.geom_type == "MultiPolygon":
                         polygons = list(geo.geoms)
                     else:
                         continue
 
-                    skip_step = 100 # Add a point every ~100 coords to not overload index
+                    skip_step = (
+                        100  # Add a point every ~100 coords to not overload index
+                    )
                     for poly in polygons:
                         ext_coords = list(poly.exterior.coords)
                         for i, p in enumerate(ext_coords):
@@ -48,6 +50,8 @@ class Schutzgebiet(IndexBuilder):
                                     y=int(p[1]),
                                     h=0,
                                 )
-                                self.index.insert(id=0, coordinates=(p[0], p[1]), obj=swiss_name)
+                                self.index.insert(
+                                    id=0, coordinates=(p[0], p[1]), obj=swiss_name
+                                )
         except Exception:
             pass

@@ -53,21 +53,30 @@ class NameIndex:
         # If the index does not exist or the version differs, and force_rebuild is False,
         # we redownload the index from Google Drive
         file_id = "1gESYkWDCrAJ06ADBwM-c2SrEpri6I5P0"
-        INDEX_CACHE_VERSION = "v1-2026-04-01"  # Bump this string to force production to redownload
-        
+        INDEX_CACHE_VERSION = (
+            "v1-2026-04-01"  # Bump this string to force production to redownload
+        )
+
         version_file = "./index_cache/.version"
         current_version = None
-        
+
         if os.path.isfile(version_file):
             with open(version_file, "r") as f:
                 current_version = f.read().strip()
 
-        if not force_rebuild and (not os.path.isfile(self.index_file_path + ".dat") or current_version != INDEX_CACHE_VERSION):
-            if current_version != INDEX_CACHE_VERSION and os.path.isfile(self.index_file_path + ".dat"):
-                logger.info(f"New index cache version detected: '{INDEX_CACHE_VERSION}'. Invalidating old index cache...")
+        if not force_rebuild and (
+            not os.path.isfile(self.index_file_path + ".dat")
+            or current_version != INDEX_CACHE_VERSION
+        ):
+            if current_version != INDEX_CACHE_VERSION and os.path.isfile(
+                self.index_file_path + ".dat"
+            ):
+                logger.info(
+                    f"New index cache version detected: '{INDEX_CACHE_VERSION}'. Invalidating old index cache..."
+                )
                 delete_file("./index_cache/*.dat")
                 delete_file("./index_cache/*.idx")
-                
+
             output = "./index_cache/index_cache.tar.xz"
             gdown.download(id=file_id, output=output, quiet=False)
             logger.info("Downloading index from Google Drive completed")
@@ -75,7 +84,7 @@ class NameIndex:
             shutil.unpack_archive(output, "./index_cache/")
             logger.info("Extracting index completed")
             os.remove(output)
-            
+
             # Save the new version
             with open(version_file, "w") as f:
                 f.write(INDEX_CACHE_VERSION)
@@ -131,7 +140,9 @@ class NameIndex:
             fname.endswith(".shp")
             for fname in os.listdir("./resources/swissNAMES3D_data/")
         ):
-            logger.info("swissNAMES3D SHP files not found. Downloading them from Swisstopo")
+            logger.info(
+                "swissNAMES3D SHP files not found. Downloading them from Swisstopo"
+            )
             url = "https://data.geo.admin.ch/ch.swisstopo.swissnames3d/swissnames3d_2025/swissnames3d_2025_2056.shp.zip"
             folder = "./resources/swissNAMES3D_data/"
             self.__download_resources_simple(url, folder)
@@ -159,22 +170,22 @@ class NameIndex:
             for file in files:
                 if file.endswith(".zip") or file == ".gitkeep":
                     continue
-                
+
                 # Swisstopo 2026 zip uses Windows backslashes in paths which Linux unpacks as literal flat filenames
-                actual_filename = file.split('\\')[-1]
+                actual_filename = file.split("\\")[-1]
                 src_path = os.path.join(root, file)
                 dst_path = os.path.join(destination, actual_filename)
-                
+
                 if src_path != dst_path:
                     shutil.move(src_path, dst_path)
-            
+
             # Remove empty subdirectories
             for d in dirs:
                 try:
                     os.rmdir(os.path.join(root, d))
                 except OSError:
                     pass
-        
+
         os.remove(output)
 
     def __download_resources_simple(self, url: str, destination: str):
