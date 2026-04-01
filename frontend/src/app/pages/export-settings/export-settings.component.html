@@ -1,168 +1,171 @@
 <div class="export-dialog">
   <h2>Marschzeittabellen erstellen</h2>
 
-  <button mat-stroked-button color="primary" class="help-button" routerLink="guide">So funktioniert es!</button>
-
-  @if (error_message != '') {
+  @if (error_message != "") {
     <p id="status_message" class="error_message">
       {{ error_message }}
     </p>
-    <button mat-stroked-button color="warn" (click)="location.reload()">Neuer Versuch starten</button>
+    <button mat-stroked-button color="warn" (click)="location.reload()">
+      Neuer Versuch starten
+    </button>
   }
 
-  @if (error_message == '') {
+  @if (error_message == "") {
     <form [formGroup]="options">
       <mat-stepper orientation="vertical">
-        <mat-step [hasError]="!route_uploaded" errorMessage="Route fehlt! Bitte Datei hochladen.">
-          <ng-template matStepLabel>Route Hochladen oder Zeichnen</ng-template>
+        <mat-step>
+          <ng-template matStepLabel
+            >Einstellungen zur Marschzeittabelle</ng-template
+          >
           <div class="content-block">
-            <h3>Route Zeichnen</h3>
-            <p>Starte deine Route mit einem Klick auf die Landeskarte.</p>
-            <button (click)="delete_last_waypoint()" mat-stroked-button color="warn"
-              [disabled]="!has_valid_path">Letzter Wegpunkt löschen
-            </button>
-            <button (click)="finish_drawing()" matStepperNext mat-stroked-button color="primary"
-              [disabled]="!has_valid_path">Zeichnen Abschliessen
-            </button>
-            <h3>oder Route Hochladen</h3>
-            <p>
-              Alternativ kannst du eine GPX-Datei hochladen, diese kannst du aus SchweizMobil oder der Swisstopo-App
-              exportieren. Alternativ
-              kannst du eine KML-Datei hochladen, die du sie vom Kartenviewer von Swisstopo exportieren kannst.
-            </p>
-            @if (!route_uploaded && !parse_error && !loading) {
-              <app-upload-area class="upload-area"
-              (file_uploaded)="new_route_uploaded($event)"></app-upload-area>
-            }
-            @if (route_uploaded && route_file && !parse_error) {
-              <app-download [name]="route_file.name"
-              [changeDate]="route_file.lastModified"></app-download>
-            }
-            @if (loading) {
-              <div>
-                <p>Route wird verarbeitet...</p>
-                <mat-progress-bar mode="query"></mat-progress-bar>
-              </div>
-            }
-            @if (parse_error) {
-              <div>
-                <p class="error">
-                  Die Route konnte nicht verarbeitet werden. Bitte lade eine andere Datei hoch. Falls du der Meinung bist,
-                  das
-                  deine Route im Tool funktionieren sollte, melde dich bitte <a
-                href="https://github.com/cevi/automatic_walk-time_tables">via Github</a>. </p>
-                <button mat-stroked-button color="warn" (click)="parse_error = false">
-                  Neuer Export Starten
-                </button>
-              </div>
-            }
+            <div class="slider">
+              <label>Geschwindigkeit: {{ velocity.value }} Lkm/h</label>
+              <mat-slider min="0.5" max="20" step="0.25">
+                <input matSliderThumb #velocity formControlName="velocity" />
+              </mat-slider>
+            </div>
+            <mat-form-field appearance="fill" class="full-width">
+              <mat-label>Routen-Name</mat-label>
+              <input matInput type="text" formControlName="route_name" />
+            </mat-form-field>
+            <br />
+            <mat-form-field appearance="fill" class="full-width">
+              <mat-label>Dein Name</mat-label>
+              <input matInput type="text" formControlName="creator_name" />
+            </mat-form-field>
+            <br />
+            <mat-form-field appearance="fill" class="full-width">
+              <mat-label>Abmarsch Zeit</mat-label>
+              <input
+                matInput
+                type="datetime-local"
+                formControlName="departure_time"
+              />
+            </mat-form-field>
           </div>
-          @if (!route_uploaded) {
-            <button mat-stroked-button color="primary" routerLink="guide" fragment="get-gpx-file">
-              Wie
-              erhalte ich eine GPX- oder KML-Datei?
-            </button>
-          }
-          @if (route_uploaded) {
-            <button mat-stroked-button color="warn" (click)="delete_route_file()"> Datei löschen
-            </button>
-          }
-          <button mat-stroked-button color="primary" matStepperNext [disabled]="!route_uploaded" id="goto-step-2">Weiter
+          <button
+            mat-stroked-button
+            color="primary"
+            matStepperNext
+            id="goto-step-3"
+          >
+            Weiter
+          </button>
+        </mat-step>
+
+        <mat-step>
+          <ng-template matStepLabel>Einstellungen zum Höhenprofil</ng-template>
+
+          <app-walk-time-table
+            [velocity]="options.value.velocity"
+            [departureTime]="options.value.departure_time"
+            [autoWaypoints]="options.value.automatic_waypoint_selection"
+            (autoGenerate)="onAutoGenerate()"
+            (userEdited)="onUserEdited()"
+          >
+          </app-walk-time-table>
+
+          <app-elevation-profile></app-elevation-profile>
+          <br />
+          <div class="content-block">
+            <p>
+              Hier kannst du einstellen, wo die Legende im Höhenprofil angezeigt
+              wird. Das Höhenprofil wird deinem Export als Bild beigefügt.
+            </p>
+            <mat-select
+              appearance="fill"
+              placeholder="Position der Legende"
+              formControlName="legend_position"
+            >
+              <mat-option value="upper left">Oben Links</mat-option>
+              <mat-option value="lower left">Unten Links</mat-option>
+              <mat-option value="upper right">Oben Rechts</mat-option>
+              <mat-option value="lower right">Unten Rechts</mat-option>
+            </mat-select>
+          </div>
+          <button
+            mat-stroked-button
+            color="primary"
+            matStepperNext
+            id="goto-step-4"
+          >
+            Weiter
+          </button>
+        </mat-step>
+
+        <mat-step>
+          <ng-template matStepLabel>Einstellungen zur Karte</ng-template>
+          <div class="content-block">
+            <mat-slide-toggle formControlName="auto_scale"
+              >Massstab automatisch wählen</mat-slide-toggle
+            >
+            <br />
+            <mat-slide-toggle formControlName="name_points_in_export"
+              >Punkte beschriften</mat-slide-toggle
+            >
+            <mat-slide-toggle formControlName="number_points_in_export"
+              >Punkte nummerieren</mat-slide-toggle
+            >
+            <div class="slider">
+              <label>Kartenmassstab: 1:{{ slider.value }}</label>
+              <mat-slider min="5000" max="100000" step="5000">
+                <input matSliderThumb #slider formControlName="map_scaling" />
+              </mat-slider>
+            </div>
+          </div>
+          <div class="content-block">
+            <p>Kartenlayer auswählen:</p>
+            <mat-select
+              appearance="fill"
+              placeholder="Kartenlayer"
+              formControlName="map_layers"
+            >
+              <mat-option value="ch.swisstopo.pixelkarte-farbe"
+                >Basiskarte Farbig</mat-option
+              >
+              <mat-option value="ch.swisstopo.pixelkarte-grau"
+                >Basiskarte S/W</mat-option
+              >
+              <mat-option value="ch.swisstopo.swissimage-product"
+                >Luftbild</mat-option
+              >
+              <mat-option
+                value="ch.swisstopo.pixelkarte-farbe,ch.bafu.wrz-wildruhezonen_portal,ch.bafu.bundesinventare-auen,ch.bafu.bundesinventare-hochmoore,ch.bafu.bundesinventare-flachmoore,ch.bafu.bundesinventare-jagdbanngebiete,ch.bafu.schutzgebiete-schweizerischer_nationalpark,ch.bafu.bundesinventare-trockenwiesen_trockenweiden"
+              >
+                Wildruhezonen
+              </mat-option>
+              <mat-option
+                value="ch.swisstopo.vec200-miscellaneous,ch.swisstopo.vec200-names-namedlocation,ch.swisstopo.vec25-gebaeude,ch.swisstopo.swisstlm3d-eisenbahnnetz,ch.swisstopo.swisstlm3d-gewaessernetz,ch.swisstopo.swisstlm3d-uebrigerverkehr,ch.swisstopo.swisstlm3d-wald,ch.swisstopo.swisstlm3d-strassen,ch.swisstopo.swisstlm3d-wanderwege,ch.swisstopo.vec25-heckenbaeume,ch.swisstopo.geologie-geotope"
+              >
+                Minimale Karte
+              </mat-option>
+            </mat-select>
+          </div>
+          <button
+            mat-stroked-button
+            color="primary"
+            matStepperNext
+            id="goto-step-5"
+          >
+            Weiter
           </button>
         </mat-step>
         <mat-step>
-          <ng-template matStepLabel>Einstellungen zum Höhenprofil</ng-template>
-          <app-elevation-profile></app-elevation-profile>
-          <br>
-            <mat-slide-toggle formControlName="automatic_waypoint_selection">
-              Automatische Wegpunkte
-            </mat-slide-toggle>
-            <br>
-              <br>
-                <div class="content-block">
-                  <p>
-                    Hier kannst du einstellen, wo die Legende im Höhenprofil angezeigt wird.
-                    Das Höhenprofil wird deinem Export als Bild beigefügt.
-                  </p>
-                  <mat-select appearance="fill" placeholder="Position der Legende" formControlName="legend_position">
-                    <mat-option value="upper left">Oben Links</mat-option>
-                    <mat-option value="lower left">Unten Links</mat-option>
-                    <mat-option value="upper right">Oben Rechts</mat-option>
-                    <mat-option value="lower right">Unten Rechts</mat-option>
-                  </mat-select>
-                </div>
-                <button mat-stroked-button color="primary" matStepperNext id="goto-step-3">Weiter</button>
-              </mat-step>
-              <mat-step>
-                <ng-template matStepLabel>Einstellungen zur Karte</ng-template>
-                <div class="content-block">
-                  <mat-slide-toggle formControlName="auto_scale">Massstab automatisch wählen</mat-slide-toggle>
-                  <br>
-                    <mat-slide-toggle formControlName="name_points_in_export">Punkte beschriften</mat-slide-toggle>
-                    <mat-slide-toggle formControlName="number_points_in_export">Punkte nummerieren</mat-slide-toggle>
-                    <div class="slider">
-                      <label>Kartenmassstab: 1:{{ slider.value }}</label>
-                      <mat-slider min="5000" max="100000" step="5000">
-                        <input matSliderThumb #slider formControlName="map_scaling">
-                      </mat-slider>
-                    </div>
-                  </div>
-                  <div class="content-block">
-                    <p>
-                      Kartenlayer auswählen:
-                    </p>
-                    <mat-select appearance="fill" placeholder="Kartenlayer" formControlName="map_layers">
-                      <mat-option value="ch.swisstopo.pixelkarte-farbe">Basiskarte Farbig</mat-option>
-                      <mat-option value="ch.swisstopo.swissimage-product">Luftbild</mat-option>
-                      <mat-option
-                        value="ch.swisstopo.pixelkarte-farbe,ch.bafu.wrz-wildruhezonen_portal,ch.bafu.bundesinventare-auen,ch.bafu.bundesinventare-hochmoore,ch.bafu.bundesinventare-flachmoore,ch.bafu.bundesinventare-jagdbanngebiete,ch.bafu.schutzgebiete-schweizerischer_nationalpark,ch.bafu.bundesinventare-trockenwiesen_trockenweiden">
-                        Wildruhezonen
-                      </mat-option>
-                      <mat-option
-                        value="ch.swisstopo.vec200-miscellaneous,ch.swisstopo.vec200-names-namedlocation,ch.swisstopo.vec25-gebaeude,ch.swisstopo.swisstlm3d-eisenbahnnetz,ch.swisstopo.swisstlm3d-gewaessernetz,ch.swisstopo.swisstlm3d-uebrigerverkehr,ch.swisstopo.swisstlm3d-wald,ch.swisstopo.swisstlm3d-strassen,ch.swisstopo.swisstlm3d-wanderwege,ch.swisstopo.vec25-heckenbaeume,ch.swisstopo.geologie-geotope">
-                        Minimale Karte
-                      </mat-option>
-                    </mat-select>
-                  </div>
-                  <button mat-stroked-button color="primary" matStepperNext id="goto-step-4">Weiter</button>
-                </mat-step>
-                <mat-step>
-                  <ng-template matStepLabel>Einstellungen zur Marschzeittabelle</ng-template>
-                  <div class="content-block">
-                    <div class="slider">
-                      <label>Geschwindigkeit: {{ velocity.value }} Lkm/h</label>
-                      <mat-slider min="0.5" max="20" step="0.25">
-                        <input matSliderThumb #velocity formControlName="velocity">
-                      </mat-slider>
-                    </div>
-                    <mat-form-field appearance="fill" class="full-width">
-                      <mat-label>Routen-Name</mat-label>
-                      <input matInput type="text" formControlName="route_name">
-                    </mat-form-field>
-                    <br>
-                      <mat-form-field appearance="fill" class="full-width">
-                        <mat-label>Dein Name</mat-label>
-                        <input matInput type="text" formControlName="creator_name">
-                      </mat-form-field>
-                      <br>
-                        <mat-form-field appearance="fill" class="full-width">
-                          <mat-label>Abmarsch Zeit</mat-label>
-                          <input matInput type="datetime-local" formControlName="departure_time">
-                        </mat-form-field>
-                      </div>
-                      <button mat-stroked-button color="primary" matStepperNext id="goto-step-5">Weiter</button>
-                    </mat-step>
-                    <mat-step>
-                      <ng-template matStepLabel>Marschzeittabelle Erstellen</ng-template>
-                      <div class="content-block">
-                        <p>Nun sind wir bereit deine Marschzeittabelle zu erstellen:</p>
-                        <button mat-stroked-button color="primary" [disabled]="!route_uploaded" id="export-button"
-                          (click)="download_map()">
-                          Generieren lassen
-                        </button>
-                      </div>
-                    </mat-step>
-                  </mat-stepper>
-                </form>
-              }
-            </div>
+          <ng-template matStepLabel>Marschzeittabelle Erstellen</ng-template>
+          <div class="content-block">
+            <p>Nun sind wir bereit deine Marschzeittabelle zu erstellen:</p>
+            <button
+              mat-stroked-button
+              color="primary"
+              [disabled]="!route_uploaded"
+              id="export-button"
+              (click)="download_map()"
+            >
+              Generieren lassen
+            </button>
+          </div>
+        </mat-step>
+      </mat-stepper>
+    </form>
+  }
+</div>

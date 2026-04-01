@@ -1,327 +1,438 @@
-import {Injectable} from '@angular/core';
-import {WMTS} from "ol/source";
-import {Tile} from "ol/layer";
-import Map from "ol/Map";
-import {Feature, MapBrowserEvent} from "ol";
-import VectorSource from "ol/source/Vector";
-import VectorLayer from "ol/layer/Vector";
-import {Circle, Geometry, LineString} from "ol/geom";
-import {MapAnimatorService} from "./map-animator.service";
-import {Fill, Stroke, Style, Text} from "ol/style";
-import {Extent} from "ol/extent";
-import {getRenderPixel} from "ol/render";
-import {take} from "rxjs/operators";
-import {LV95_Waypoint} from "../helpers/coordinates";
-import {SwisstopoMap} from "../helpers/swisstopo-map";
-import {combineLatest} from "rxjs";
+import { Injectable, OnDestroy } from '@angular/core';
+import { Layer } from 'ol/layer';
+import Map from 'ol/Map';
+import { Feature } from 'ol';
+import VectorSource from 'ol/source/Vector';
+import VectorLayer from 'ol/layer/Vector';
+import { Point } from 'ol/geom';
+import { MapAnimatorService } from './map-animator.service';
+import { Style, Icon } from 'ol/style';
+import { transformExtent } from 'ol/proj';
+import { bbox } from 'ol/loadingstrategy';
+import { SwisstopoMap } from '../helpers/swisstopo-map';
+import { MapDrawingRenderer } from './map-drawing-renderer';
+import { MapExportRenderer } from './map-export-renderer';
+import Overlay from 'ol/Overlay';
+import { braetlistellenData } from '../../assets/braetlistellen';
+import TileLayer from 'ol/layer/Tile';
+import XYZ from 'ol/source/XYZ';
 
+export interface MapOverlays {
+  fountains: boolean;
+  haltestellen: boolean;
+  hangneigung: boolean;
+  wanderwege: boolean;
+  sperrungen: boolean;
+  schutzgebiete: boolean;
+  schiessanzeigen: boolean;
+  herdenschutzhunde: boolean;
+  notfall: boolean;
+  feuerstellen: boolean;
+  shelter: boolean;
+}
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
-export class MapService extends SwisstopoMap {
+export class MapService extends SwisstopoMap implements OnDestroy {
+  private create_osm_source(queryFn: (ext: number[]) => string): VectorSource {
+    const source = new VectorSource({
+      strategy: bbox,
+      attributions:
+        '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap contributors</a>',
+      loader: (extent, resolution, projection, success, failure) => {
+        if (resolution > 100) {
+          if (success) success([]);
+          return;
+        }
 
-  private path_layer_source = new VectorSource({wrapX: false});
-  private pointer_layer_source = new VectorSource({wrapX: false});
-  private way_points_layer_source = new VectorSource({wrapX: false});
+        const ext4326 = transformExtent(extent, projection, 'EPSG:4326');
+        const query = queryFn(ext4326);
+        const url =
+          'https://overpass.osm.ch/api/interpreter?data=' +
+          encodeURIComponent(query);
+
+        fetch(url)
+          .then((response) => response.json())
+          .then((data) => {
+            const features: Feature[] = [];
+            data.elements.forEach((el: any) => {
+              let coords;
+              if (el.type === 'node') coords = [el.lon, el.lat];
+              else if (el.center) coords = [el.center.lon, el.center.lat];
+
+              if (coords) {
+                const pt = new Point(coords).transform('EPSG:4326', projection);
+                const feature = new Feature({ geometry: pt, ...el.tags });
+                features.push(feature);
+              }
+            });
+            source.addFeatures(features);
+            if (success) success(features as any);
+          })
+          .catch((err) => {
+            console.error(err);
+            if (failure) failure();
+          });
+      },
+    });
+    return source;
+  }
+
+  private fountains_layer_source = this.create_osm_source(
+    (ext) =>
+      `[out:json];(nwr[amenity~"drinking_water|fountain|water_point"](${ext[1]},${ext[0]},${ext[3]},${ext[2]});nwr[man_made~"water_well|water_tap"](${ext[1]},${ext[0]},${ext[3]},${ext[2]}););out qt center;`,
+  );
+
+  private notfall_layer_source = this.create_osm_source(
+    (ext) =>
+      `[out:json];(nwr[amenity~"hospital|clinic|pharmacy"](${ext[1]},${ext[0]},${ext[3]},${ext[2]}););out qt center;`,
+  );
+
+  private feuerstellen_layer_source = this.create_osm_source(
+    (ext) =>
+      `[out:json];(nwr[amenity="bbq"](${ext[1]},${ext[0]},${ext[3]},${ext[2]});nwr[leisure="firepit"](${ext[1]},${ext[0]},${ext[3]},${ext[2]}););out qt center;`,
+  );
+
+  private shelter_layer_source = this.create_osm_source(
+    (ext) =>
+      `[out:json];(nwr[amenity="shelter"](${ext[1]},${ext[0]},${ext[3]},${ext[2]});nwr[tourism="alpine_hut"](${ext[1]},${ext[0]},${ext[3]},${ext[2]});nwr[tourism="wilderness_hut"](${ext[1]},${ext[0]},${ext[3]},${ext[2]}););out qt center;`,
+  );
 
   private map: Map | undefined;
-  private pointer: number[] | undefined | null;
   private map_animator: MapAnimatorService | undefined;
+  private drawingRenderer!: MapDrawingRenderer;
+  private exportRenderer!: MapExportRenderer;
 
+  public get_map(): Map | undefined {
+    return this.map;
+  }
 
   public link_animator(map_animator: MapAnimatorService) {
-
     this.map_animator = map_animator;
 
     // adjust the map center to the route
-    map_animator.map_center$.subscribe(center =>
-      this.map?.getView().setCenter([center.x, center.y])
+    map_animator.map_center$.subscribe((center) =>
+      this.map?.getView().setCenter([center.x, center.y]),
     );
+  }
 
-    map_animator.path$.subscribe(path => {
+  public updateLayerOpacity(name: string, opacity: number) {
+    if (!this.map) return;
+    const layers = this.map.getLayers().getArray();
+    for (const layer of layers) {
+      if (layer.get('name') === name) {
+        layer.setOpacity(opacity);
+      }
+      if (
+        name === 'schutzgebiete' &&
+        layer.get('name')?.startsWith('schutzgebiete_')
+      ) {
+        layer.setOpacity(opacity);
+      }
+    }
+  }
 
-      const feature = new Feature({
-        geometry: new LineString(path.map(p => [p.x, p.y]))
+  public draw_map(
+    layerLabel: string = 'pixelkarte',
+    overlays: Partial<MapOverlays> = {},
+    target_canvas: string = 'map-canvas',
+    opacities: Record<string, number> = {},
+  ) {
+    let oldCenter: number[] | undefined;
+    let oldResolution: number | undefined;
+
+    if (this.map) {
+      const view = this.map.getView();
+      oldCenter = view.getCenter();
+      oldResolution = view.getResolution();
+      this.map.setTarget(undefined);
+    }
+
+    const bgLayer = layerLabel;
+
+    let wmtsLayer: Layer | null = null;
+    if (bgLayer === 'opentopomap') {
+      wmtsLayer = new TileLayer({
+        source: new XYZ({
+          url: 'https://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png',
+          attributions:
+            'Map data: &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org" target="_blank">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org" target="_blank">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank">CC-BY-SA</a>)',
+        }),
+        opacity: opacities['opentopomap'] ?? 1.0,
       });
-
-      feature.setStyle(new Style({
-        stroke: new Stroke({color: '#efa038', width: 5})
-      }));
-
-      this.path_layer_source.clear();
-      this.path_layer_source.addFeature(feature);
-
-    });
-
-
-    /*
-     * Check if the map center must be updated, after the pointer has moved.
-     * We will update the map center if the pointer is close to the edge of the map extent.
-     *
-     */
-    map_animator.pointer$.subscribe(p => {
-
-      if (p == null) {
-        this.pointer = null;
-        return
-      }
-
-      this.pointer = [p?.x, p?.y];
-
-      const extend: Extent | undefined = this.map?.getView().calculateExtent(this.map?.getSize())
-      if (extend == null) return;
-
-      // Calculate the relative border size based on the current map extent and scale.
-      const extent = this.map?.getView().calculateExtent(this.map?.getSize());
-      if (extent == null) return;
-      const min_border = Math.min(extent[2] - extent[0], extent[3] - extent[1]) * 0.05;
-
-      // calculate the offset of the map center to the pointer coordinates
-      const map_center = [(extend[2] + extend[0]) / 2, (extend[3] + extend[1]) / 2];
-      const max_offset = [(extend[2] - extend[0]) / 2 - min_border, (extend[3] - extend[1]) / 2 - min_border];
-      const offset = [p.x - map_center[0], p.y - map_center[1]];
-
-      // build up the new map center
-      const new_center = [...map_center];
-      if (offset[0] > max_offset[0]) {
-        new_center[0] = map_center[0] + (offset[0] - max_offset[0]);
-      } else if (offset[0] < -max_offset[0]) {
-        new_center[0] = map_center[0] + (offset[0] + max_offset[0]);
-      }
-      if (offset[1] > max_offset[1]) {
-        new_center[1] = map_center[1] + (offset[1] - max_offset[1]);
-      } else if (offset[1] < -max_offset[1]) {
-        new_center[1] = map_center[1] + (offset[1] + max_offset[1]);
-      }
-
-
-      // Check if the map center has moved.
-      if (new_center[0] == map_center[0] && new_center[1] == map_center[1]) {
-        this.map?.render(); // We need to rerender the map anyway to show the new pointer location.
-        return;
-      }
-
-      this.map_animator?.set_map_center({x: new_center[0], y: new_center [1]});
-
-    });
-
-
-    combineLatest([map_animator.way_points$, map_animator.pois$])
-      .subscribe(([way_points, pois]) => {
-
-        this.way_points_layer_source.clear();
-
-        way_points.forEach(way_point => {
-
-          const feature = new Feature({
-            geometry: new Circle([way_point.x, way_point.y], 10)
-          });
-
-          feature.setStyle(new Style({
-            fill: new Fill({color: '#fff'}),
-            stroke: new Stroke({color: '#EFA038', width: 8}),
-          }));
-
-          this.way_points_layer_source.addFeature(feature);
-
-        });
-
-
-        pois.forEach(way_point => {
-
-          const feature = new Feature({
-            geometry: new Circle([way_point.x, way_point.y], 10)
-          });
-
-          // check if the poi is actually selected
-          const is_selected = way_points.find(p => p.x == way_point.x && p.y == way_point.y) != undefined;
-
-          feature.setStyle(new Style({
-            fill: new Fill({color: '#fff'}),
-            stroke: is_selected ? new Stroke({color: '#2043d7', width: 8}) : new Stroke({color: '#2043d750', width: 8}),
-            text: new Text({
-              text: way_point.name,
-              fill: new Fill({color: '#2043d7'}),
-              font: 'bold 16px Open Sans'
-            })
-          }));
-
-          this.way_points_layer_source.addFeature(feature);
-
-        });
-
-
-      });
-
-  }
-
-
-
-  public draw_map(layerLabel: string = 'pixelkarte', target_canvas: string = 'map-canvas') {
-
-    // get base layers
-    const wmtsLayer = this.get_base_WMTS_layer(layerLabel);
-    const wmtsLayer_overlay = this.get_base_WMTS_layer(layerLabel);
-    if (wmtsLayer == null || wmtsLayer_overlay == null) return;
-
-    this.map = this.create_map_from_layers([
-      wmtsLayer,
-      new VectorLayer({source: this.path_layer_source}),
-      wmtsLayer_overlay,
-      new VectorLayer({source: this.pointer_layer_source}),
-      new VectorLayer({source: this.way_points_layer_source}),
-    ], target_canvas);
-
-    this.render_pointer(wmtsLayer_overlay);
-    this.register_listeners();
-
-  }
-
-  private register_listeners() {
-
-    this.map?.on('pointermove', async (evt) => {
-
-      if (this.map_animator?.has_route) {
-        const [nearest_point, dist] = await this.get_nearest_path_point(evt);
-        if (dist <= 50 && nearest_point) this.map_animator?.move_pointer(nearest_point);
-        else this.map_animator?.move_pointer(null);
-      } else {
-
-        // draw the pointer (we are in the drawing mode)
-        this.pointer = evt.coordinate;
-        this.pointer_layer_source.clear();
-
-      }
-
-    });
-
-    this.map?.on('click', async (evt) => {
-
-      if (this.map_animator?.has_route) {
-
-        const [nearest_point, dist] = await this.get_nearest_path_point(evt);
-        const [nearest_poi, dist_poi] = await this.get_nearest_poi(evt);
-
-        if (dist <= 50 && nearest_point && dist_poi >= 50) this.map_animator?.add_point_of_interest(nearest_point);
-        else if (dist_poi <= 50 && nearest_poi) this.map_animator?.delete_poi(nearest_poi);
-
-        return
-      }
-
-      await this.map_animator?.add_way_point({x: evt.coordinate[0], y: evt.coordinate[1]});
-
-
-    });
-
-  }
-
-  private async get_nearest_poi(event: MapBrowserEvent<any>): Promise<[LV95_Waypoint | null, number]> {
-
-    const p = event.coordinate;
-
-    if (this.map_animator == undefined) return [null, Infinity];
-
-    return new Promise((resolve, _) => {
-
-      if (this.map_animator == undefined) return resolve([null, Infinity]);
-
-      this.map_animator?.pois$.pipe(take(1))
-        .subscribe((pois) => {
-
-          if (pois.length == 0) return resolve([null, Infinity]);
-
-          // get the coordinates of the point neares to the p
-          const nearest_point = pois.reduce((prev, curr) => {
-            const prev_dist = Math.sqrt(Math.pow(prev.x - p[0], 2) + Math.pow(prev.y - p[1], 2));
-            const curr_dist = Math.sqrt(Math.pow(curr.x - p[0], 2) + Math.pow(curr.y - p[1], 2));
-            return prev_dist < curr_dist ? prev : curr;
-          });
-
-          const dist = Math.sqrt(Math.pow(nearest_point.x - p[0], 2) + Math.pow(nearest_point.y - p[1], 2));
-
-          resolve([nearest_point, dist])
-
-        });
-
-    });
-
-  }
-
-
-  private async get_nearest_path_point(event: MapBrowserEvent<any>): Promise<[LV95_Waypoint | null, number]> {
-
-    const p = event.coordinate;
-
-    if (this.map_animator == undefined) return [null, Infinity];
-
-    return new Promise((resolve, _) => {
-      this.map_animator?.path$.pipe(take(1))
-        .subscribe(path => {
-
-          if (path == null || path.length == 0) return resolve([null, Infinity]);
-
-          // get the coordinates of the point neares to the p
-          const nearest_point = path.reduce((prev, curr) => {
-            const prev_dist = Math.sqrt(Math.pow(prev.x - p[0], 2) + Math.pow(prev.y - p[1], 2));
-            const curr_dist = Math.sqrt(Math.pow(curr.x - p[0], 2) + Math.pow(curr.y - p[1], 2));
-            return prev_dist < curr_dist ? prev : curr;
-          });
-
-          const dist = Math.sqrt(Math.pow(nearest_point.x - p[0], 2) + Math.pow(nearest_point.y - p[1], 2));
-
-          resolve([nearest_point, dist])
-
-        });
-
-    });
-
-  }
-
-
-  private render_pointer(wmtsLayer: Tile<WMTS>) {
-
-    const radius = 12;
-
-    // before rendering the layer, do some clipping
-    wmtsLayer.on('prerender', (event) => {
-
-      const ctx = event.context as CanvasRenderingContext2D;
-      ctx.save();
-      ctx.beginPath();
-
-      if (this.pointer != null) {
-
-        const pointer = this.map?.getPixelFromCoordinate(this.pointer);
-
-        if (pointer != null) {
-          // only show a circle around the mouse
-          const pixel = getRenderPixel(event, pointer);
-          const offset = getRenderPixel(event, [
-            pointer[0] + radius,
-            pointer[1],
-          ]);
-          const canvasRadius = Math.sqrt(
-            Math.pow(offset[0] - pixel[0], 2) + Math.pow(offset[1] - pixel[1], 2)
-          );
-          ctx.arc(pixel[0], pixel[1], canvasRadius, 0, 2 * Math.PI);
-          ctx.lineWidth = (12 * canvasRadius) / radius;
-          ctx.strokeStyle = '#EFA038FF';
-          ctx.stroke();
+    } else if (layerLabel !== 'keine') {
+      wmtsLayer = this.get_base_WMTS_layer(layerLabel) || null;
+    }
+
+    const layers: Layer[] = [];
+    if (wmtsLayer) layers.push(wmtsLayer);
+
+    const overlayKeys: (keyof MapOverlays)[] = [
+      'haltestellen',
+      'hangneigung',
+      'wanderwege',
+      'sperrungen',
+      'schiessanzeigen',
+      'herdenschutzhunde',
+    ];
+
+    overlayKeys.forEach((key) => {
+      if (overlays[key]) {
+        const layer = this.get_base_WMTS_layer(key, opacities[key] ?? 1.0);
+        if (layer) {
+          layer.set('name', key);
+          layers.push(layer);
         }
-
       }
-
-      ctx.clip();
-
     });
 
-    // after rendering the layer, restore the canvas context
-    wmtsLayer.on('postrender', function (event) {
-      const ctx = event.context as CanvasRenderingContext2D;
-      ctx.restore();
+    if (overlays.schutzgebiete) {
+      const schutzgebiete_layers = [
+        'naturschutzgebiete',
+        'nationalpark',
+        'jagdbanngebiete',
+        'wildruhezonen',
+      ];
+      schutzgebiete_layers.forEach((key) => {
+        const layer = this.get_base_WMTS_layer(
+          key,
+          opacities['schutzgebiete'] ?? 1.0,
+        );
+        if (layer) {
+          layer.set('name', 'schutzgebiete_' + key);
+          layers.push(layer);
+        }
+      });
+    }
+
+    const addOsmVectorLayer = (
+      source: VectorSource,
+      name: string,
+      svgPath: string,
+    ) => {
+      layers.push(
+        new VectorLayer({
+          source: source,
+          opacity: opacities[name] ?? 1.0,
+          properties: { name: name },
+          style: new Style({
+            image: new Icon({
+              src: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="26" height="26">${svgPath}</svg>`,
+              anchor: [0.5, 0.5],
+              scale: 1,
+            }),
+          }),
+        }),
+      );
+    };
+
+    if (overlays.fountains) {
+      addOsmVectorLayer(
+        this.fountains_layer_source,
+        'fountains',
+        '<path d="M480-120q-125 0-212.5-87.5T180-420q0-73 35.5-131T294-656l186-224 186 224q43 51 78.5 109T780-420q0 125-87.5 212.5T480-120Z" fill="%230070FF" stroke="white" stroke-width="40"/>',
+      );
+    }
+    if (overlays.notfall) {
+      addOsmVectorLayer(
+        this.notfall_layer_source,
+        'notfall',
+        '<path d="M400-240v-160H240v-160h160v-160h160v160h160v160H560v160H400Z" fill="%23D32F2F" stroke="white" stroke-width="40"/>',
+      );
+    }
+    if (overlays.feuerstellen) {
+      addOsmVectorLayer(
+        this.feuerstellen_layer_source,
+        'feuerstellen',
+        '<path d="M480-120q-100 0-170-70t-70-170q0-51 24.5-98.5T332-540q19 14 36 30t32 36q18-35 43-69.5t57-70.5q18 17 38 41t44 57q22-19 32-41.5t10-48.5q32 40 49 86t17 96q0 100-70 170t-170 70Z" fill="%23F57C00" stroke="white" stroke-width="30"/>',
+      );
+    }
+    if (overlays.shelter) {
+      addOsmVectorLayer(
+        this.shelter_layer_source,
+        'shelter',
+        '<path d="M160-120v-480l320-240 320 240v480H560v-280H400v280H160Z" fill="%23388E3C" stroke="white" stroke-width="40"/>',
+      );
+    }
+
+    this.map = this.create_map_from_layers(layers, target_canvas);
+
+    const popupContainer = document.getElementById('feature-popup');
+    const popupContent = document.getElementById('feature-popup-content');
+    const popupCloser = document.getElementById('feature-popup-closer');
+
+    let popupOverlay: Overlay | null = null;
+    if (popupContainer && popupContent && popupCloser) {
+      popupOverlay = new Overlay({
+        element: popupContainer,
+        autoPan: {
+          animation: {
+            duration: 250,
+          },
+        },
+      });
+      popupCloser.onclick = () => {
+        popupOverlay?.setPosition(undefined);
+        popupCloser.blur();
+        return false;
+      };
+      this.map.addOverlay(popupOverlay);
+    }
+
+    this.map.on('singleclick', (evt) => {
+      if (!this.map || !popupOverlay || !popupContent) return;
+      const feature = this.map.forEachFeatureAtPixel(evt.pixel, (feat) => feat);
+
+      if (feature) {
+        const props = feature.getProperties();
+        const excludeKeys = ['geometry', 'name'];
+        const tags = Object.keys(props).filter(
+          (k) => !excludeKeys.includes(k) && props[k] !== undefined,
+        );
+
+        if (tags.length > 0 || props['name']) {
+          const coords = evt.coordinate;
+          let html = '';
+
+          if (props['name']) {
+            html += `<h3>${props['name']}</h3>`;
+          } else {
+            const fallbackName =
+              props['amenity'] || props['leisure'] || 'Point of Interest';
+            html += `<h3>${fallbackName.toString().charAt(0).toUpperCase() + fallbackName.toString().slice(1)}</h3>`;
+          }
+
+          html += '<div style="max-height: 200px; overflow-y: auto;">';
+          for (const t of tags) {
+            html += `<p><strong>${t}:</strong> ${props[t]}</p>`;
+          }
+
+          if (props['amenity'] === 'bbq' || props['leisure'] === 'firepit') {
+            let origin = evt.coordinate;
+            const geom = feature.getGeometry();
+            if (geom && typeof (geom as any).getCoordinates === 'function') {
+              const coords = (geom as any).getCoordinates();
+              if (coords && coords.length >= 2) {
+                origin = coords;
+              }
+            }
+
+            let closest = null;
+            let min_distSq = 2500; // 50m tolerance
+            for (const b of braetlistellenData) {
+              const dx = b.x - origin[0];
+              const dy = b.y - origin[1];
+              const distSq = dx * dx + dy * dy;
+              if (distSq < min_distSq) {
+                min_distSq = distSq;
+                closest = b;
+              }
+            }
+            if (closest && closest.url) {
+              html += `<p style="margin-top:10px;"><a href="${closest.url}" target="_blank" style="color:#1976D2; text-decoration: underline;">Link zu brätlistellen.ch</a></p>`;
+            }
+          }
+
+          html += '</div>';
+
+          popupContent.innerHTML = html;
+          popupOverlay.setPosition(coords);
+        } else {
+          popupOverlay.setPosition(undefined);
+        }
+      } else {
+        popupOverlay.setPosition(undefined);
+      }
     });
 
+    this.map.getViewport().addEventListener('contextmenu', (evt) => {
+      evt.preventDefault();
+      if (!this.map || !popupOverlay || !popupContent) return;
+
+      const coords = this.map.getEventCoordinate(evt);
+      if (coords) {
+        const formatCoord = (val: number) => {
+          return Math.round(val).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "’");
+        };
+        const xStr = formatCoord(coords[0]);
+        const yStr = formatCoord(coords[1]);
+
+        let html = `<h3 style="margin-top:0; margin-bottom:8px;">Koordinaten (LV95)</h3>`;
+        html += `<p style="margin:2px 0; font-family:monospace; font-size:16px;">${xStr}, ${yStr}</p>`;
+
+        popupContent.innerHTML = html;
+        popupOverlay.setPosition(coords);
+      }
+    });
+
+    if (oldCenter && oldResolution) {
+      this.map.getView().setCenter(oldCenter);
+      this.map.getView().setResolution(oldResolution);
+    } else {
+      const url = new URL(window.location.href);
+      const centerUrl = url.searchParams.get('center');
+      const zUrl = url.searchParams.get('z');
+      if (centerUrl) {
+        const parts = centerUrl.split(',');
+        if (parts.length === 2) {
+          this.map
+            .getView()
+            .setCenter([parseFloat(parts[0]), parseFloat(parts[1])]);
+        }
+      }
+      if (zUrl) {
+        this.map.getView().setZoom(parseFloat(zUrl));
+      }
+    }
+
+    this.map.on('moveend', () => {
+      if (!this.map) return;
+      const center = this.map.getView().getCenter();
+      const zoom = this.map.getView().getZoom();
+      const urlObj = new URL(window.location.href);
+      if (center) {
+        urlObj.searchParams.set(
+          'center',
+          `${center[0].toFixed(2)},${center[1].toFixed(2)}`,
+        );
+      }
+      if (zoom !== undefined) {
+        urlObj.searchParams.set('z', zoom.toFixed(3));
+      }
+      urlObj.searchParams.set('bgLayer', bgLayer);
+      window.history.replaceState(null, '', urlObj.toString());
+    });
+
+    if (this.map_animator) {
+      const animator = this.map_animator;
+
+      this.drawingRenderer?.destroy();
+      this.exportRenderer?.destroy();
+
+      this.drawingRenderer = new MapDrawingRenderer(this.map, animator);
+      this.exportRenderer = new MapExportRenderer(this.map, animator);
+
+      // Wire up decoupled interactions from Drawing Mode
+      this.drawingRenderer.onWaypointAdded.subscribe((pt) =>
+        animator.add_way_point(pt),
+      );
+      this.drawingRenderer.onWaypointDeleted.subscribe((pt) =>
+        animator.delete_route_waypoint(pt),
+      );
+      this.drawingRenderer.onRouteModified.subscribe((payload) =>
+        animator.handle_modify_event(payload),
+      );
+      this.drawingRenderer.onUndoRequested.subscribe(() => {
+        if (animator.can_undo()) {
+          animator.undo();
+        }
+      });
+    }
   }
 
+  ngOnDestroy(): void {
+    this.drawingRenderer?.destroy();
+    this.exportRenderer?.destroy();
+  }
 }

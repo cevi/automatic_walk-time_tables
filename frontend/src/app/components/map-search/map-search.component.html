@@ -1,0 +1,40 @@
+<div class="search-container">
+  <mat-form-field appearance="outline" class="search-field">
+    <mat-icon matPrefix>search</mat-icon>
+    <input
+      type="text"
+      matInput
+      placeholder="Orte, Adressen, Flurnamen..."
+      [formControl]="searchControl"
+      [matAutocomplete]="auto"
+    />
+    <button
+      *ngIf="searchControl.value"
+      matSuffix
+      mat-icon-button
+      aria-label="Clear"
+      (click)="searchControl.setValue('')"
+    >
+      <mat-icon>close</mat-icon>
+    </button>
+    <mat-autocomplete
+      #auto="matAutocomplete"
+      [displayWith]="displayFn"
+      (optionSelected)="onResultSelected($event)"
+      class="premium-autocomplete"
+    >
+      <mat-option
+        *ngFor="let result of results$ | async"
+        [value]="result"
+        class="search-option"
+      >
+        <div class="option-content">
+          <div class="result-label" [innerHTML]="result.attrs.label"></div>
+          <div class="result-details" *ngIf="result.attrs.detail">
+            {{ result.attrs.detail }}
+          </div>
+        </div>
+      </mat-option>
+    </mat-autocomplete>
+  </mat-form-field>
+</div>

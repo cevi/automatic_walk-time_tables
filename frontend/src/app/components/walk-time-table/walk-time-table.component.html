@@ -1,0 +1,98 @@
+<div class="table-container">
+  <table class="marschzeit-table">
+    <thead>
+      <tr>
+        <th class="col-name">Ort, Flurname, Koordinaten</th>
+        <th>Höhe</th>
+        <th>hm</th>
+        <th>km</th>
+        <th>Lkm</th>
+        <th>h:mm</th>
+        <th>hh:mm</th>
+        <th class="col-break">Pausen</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngIf="rows.length === 0">
+        <td colspan="8" class="empty-state">
+          <h3>Keine Wegpunkte gefunden</h3>
+          <p>
+            Du hast noch keine Wegpunkte eingezeichnet. Sollen wir Punkte
+            automatisch für dich positionieren?
+          </p>
+          <button
+            mat-flat-button
+            color="primary"
+            (click)="generateAutoWaypoints()"
+          >
+            <mat-icon
+              inline="true"
+              style="margin-right: 6px; vertical-align: middle"
+              >auto_awesome</mat-icon
+            >
+            Automatische Wegpunkte generieren
+          </button>
+        </td>
+      </tr>
+      <tr
+        *ngFor="
+          let row of rows;
+          let first = first;
+          let i = index;
+          trackBy: trackByFn
+        "
+        [class.row-highlighted]="highlightedRowIndex === i"
+        (mouseenter)="onRowHover(row)"
+        (mouseleave)="onRowLeave()"
+      >
+        <td class="col-name">
+          <div style="display: flex; align-items: center; width: 100%">
+            <input
+              type="text"
+              [(ngModel)]="row.waypoint.name"
+              [disabled]="autoWaypoints"
+              placeholder="{{ row.waypoint.x | number: '1.0-0' }}, {{
+                row.waypoint.y | number: '1.0-0'
+              }}"
+              (ngModelChange)="onFieldChange()"
+            />
+            <mat-icon
+              *ngIf="!autoWaypoints"
+              class="action-icon"
+              matTooltip="Automatisch benennen"
+              (click)="autoName(row)"
+              >auto_awesome</mat-icon
+            >
+          </div>
+        </td>
+        <td class="text-right">{{ row.waypoint.h | number: "1.0-0" }}</td>
+        <td class="text-right">
+          {{ first ? "" : (row.delta_h | number: "1.0-0") }}
+        </td>
+        <td class="text-right">
+          {{ first ? "" : (row.delta_dist | number: "1.1-1") }}
+        </td>
+        <td class="text-right sum-col">
+          {{ first ? "" : (row.lkm | number: "1.1-1") }}
+        </td>
+        <td class="text-right">
+          {{ first ? "" : formatDuration(row.time_hours) }}
+        </td>
+        <td class="highlight-col">
+          <span class="time-badge">{{
+            row.planned_arrival | date: "HH:mm"
+          }}</span>
+        </td>
+        <td class="col-break">
+          <input
+            type="number"
+            [disabled]="autoWaypoints"
+            [(ngModel)]="row.waypoint.break_duration"
+            placeholder="Minuten"
+            (ngModelChange)="onFieldChange()"
+          />
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

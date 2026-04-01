@@ -1,0 +1,1291 @@
+import { Feature, MapBrowserEvent } from 'ol';
+import Map from 'ol/Map';
+import VectorSource from 'ol/source/Vector';
+import VectorLayer from 'ol/layer/Vector';
+import { LineString, Point } from 'ol/geom';
+import { Modify, Snap } from 'ol/interaction';
+import { Fill, Stroke, Style, Circle as CircleStyle, Text } from 'ol/style';
+import { MapAnimatorService } from './map-animator.service';
+import { EventEmitter } from '@angular/core';
+import { LV95_Coordinates, LV95_Waypoint } from '../helpers/coordinates';
+import Overlay from 'ol/Overlay';
+import { Subscription } from 'rxjs';
+import { GeometryUtils } from '../utils/geometry.utils';
+import { braetlistellenData } from '../../assets/braetlistellen';
+
+export class MapDrawingRenderer {
+  private map: Map;
+  private map_animator: MapAnimatorService;
+
+  // Active Drawing Layers
+  private path_layer_source = new VectorSource();
+  private path_layer = new VectorLayer({
+    source: this.path_layer_source,
+    zIndex: 10,
+  });
+
+  private anchor_points_layer_source = new VectorSource();
+  private anchor_points_layer = new VectorLayer({
+    source: this.anchor_points_layer_source,
+    zIndex: 11,
+  });
+
+  private pointer_layer_source = new VectorSource();
+  private pointer_layer = new VectorLayer({
+    source: this.pointer_layer_source,
+    zIndex: 100,
+  });
+
+  private pointer: number[] | null = null;
+  public is_modifying: boolean = false;
+
+  private modifyInteraction!: Modify;
+  private snapInteraction!: Snap;
+  private tooltipOverlay!: Overlay;
+  private tooltipElement!: HTMLDivElement;
+  private infoOverlay!: Overlay;
+  private infoElement!: HTMLDivElement;
+  private hovered_anchor: LV95_Waypoint | undefined;
+  private is_hovering_interactive_feature: boolean = false;
+  private hoverIdentifyTimeout: any;
+  private is_hovering_tooltip: boolean = false;
+  private interactive_feature_cache: { x: number; y: number; html: string }[] =
+    [];
+  private is_mouse_over_dom_tooltip: boolean = false;
+  private dragged_anchor: LV95_Waypoint | null = null;
+  private modifystart_coord: number[] | null = null;
+  public onRouteModified = new EventEmitter<{
+    new_coords: number[][];
+    dragged_anchor: LV95_Waypoint | null;
+    mousedown_coord: number[];
+  }>();
+  public onWaypointAdded = new EventEmitter<LV95_Coordinates>();
+  public onWaypointDeleted = new EventEmitter<LV95_Waypoint>();
+  public onUndoRequested = new EventEmitter<void>();
+
+  private path_sub!: Subscription;
+  private external_pointer_layer_source = new VectorSource();
+  private external_pointer_layer = new VectorLayer({
+    source: this.external_pointer_layer_source,
+    zIndex: 100,
+  });
+
+  private export_mode_sub!: Subscription;
+  private anchor_points_sub!: Subscription;
+
+  constructor(map: Map, animator: MapAnimatorService) {
+    this.map = map;
+    this.map_animator = animator;
+    this.map.addLayer(this.path_layer);
+    this.map.addLayer(this.anchor_points_layer);
+    this.map.addLayer(this.pointer_layer);
+    this.map.addLayer(this.external_pointer_layer);
+
+    this.setupInteractions();
+    this.setupSubscriptions();
+
+    // Clear pointer when mouse leaves the map viewport
+    this.map.getViewport().addEventListener('pointerleave', () => {
+      this.map_animator.move_pointer(null);
+    });
+  }
+
+  private setupInteractions() {
+    this.setupTooltipOverlay();
+    this.setupInfoOverlay();
+    this.setupModifyInteraction();
+    this.setupSnapInteraction();
+    this.setupHoverLogic();
+    this.setupUndoInteraction();
+    this.setupDrawInteraction();
+  }
+
+  private setupTooltipOverlay() {
+    this.tooltipElement = document.createElement('div');
+    this.tooltipElement.className = 'ol-tooltip ol-tooltip-measure';
+    this.tooltipElement.style.background = 'rgba(60, 60, 60, 0.9)';
+    this.tooltipElement.style.color = 'white';
+    this.tooltipElement.style.padding = '4px 8px';
+    this.tooltipElement.style.borderRadius = '4px';
+    this.tooltipElement.style.fontFamily = '"Open Sans", sans-serif';
+    this.tooltipElement.style.fontSize = '12px';
+    this.tooltipElement.style.whiteSpace = 'nowrap';
+    this.tooltipElement.style.pointerEvents = 'auto';
+
+    this.tooltipElement.addEventListener(
+      'mouseenter',
+      () => (this.is_mouse_over_dom_tooltip = true),
+    );
+    this.tooltipElement.addEventListener(
+      'mouseleave',
+      () => (this.is_mouse_over_dom_tooltip = false),
+    );
+
+    this.tooltipOverlay = new Overlay({
+      element: this.tooltipElement,
+      offset: [15, 15],
+      positioning: 'top-left',
+    });
+    this.map.addOverlay(this.tooltipOverlay);
+  }
+
+  private setupInfoOverlay() {
+    this.infoElement = document.createElement('div');
+    this.infoElement.className = 'ol-popup';
+    this.infoElement.style.background = 'white';
+    this.infoElement.style.padding = '8px 12px';
+    this.infoElement.style.borderRadius = '4px';
+    this.infoElement.style.border = '1px solid #ccc';
+    this.infoElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+    this.infoElement.style.fontFamily = '"Open Sans", sans-serif';
+    this.infoElement.style.fontSize = '13px';
+    this.infoElement.style.color = '#333';
+    this.infoElement.style.display = 'none';
+    this.infoElement.style.maxWidth = '380px';
+    this.infoElement.style.lineHeight = '1.4';
+    this.infoElement.style.wordWrap = 'break-word';
+
+    this.infoOverlay = new Overlay({
+      element: this.infoElement,
+      offset: [0, -15],
+      positioning: 'bottom-center',
+    });
+    this.map.addOverlay(this.infoOverlay);
+
+    // Hide info overlay on map pan
+    this.map.on('movestart', () => {
+      this.infoElement.style.display = 'none';
+      this.infoOverlay.setPosition(undefined);
+    });
+  }
+
+  private setupModifyInteraction() {
+    this.modifyInteraction = new Modify({
+      source: this.path_layer_source,
+      pixelTolerance: 25,
+    });
+
+    this.modifyInteraction.on('modifystart', (evt: any) => {
+      this.is_modifying = true;
+      this.map_animator.is_modifying = true;
+
+      // Synchronously verify anchor hits to prevent fast-drag ghosting
+      let hit_anchor: LV95_Waypoint | null = null;
+      const pixel = this.map?.getPixelFromCoordinate(
+        evt.mapBrowserEvent.coordinate,
+      );
+      if (pixel) {
+        this.map?.forEachFeatureAtPixel(
+          pixel,
+          (feature, layer) => {
+            if (layer === this.anchor_points_layer) {
+              const center = (feature.getGeometry() as Point).getCoordinates();
+              hit_anchor = { x: center[0], y: center[1] } as LV95_Waypoint;
+            }
+          },
+          { hitTolerance: 25 },
+        );
+      }
+
+      this.dragged_anchor = hit_anchor || this.hovered_anchor || null;
+      this.modifystart_coord = evt.mapBrowserEvent.coordinate;
+      this.tooltipOverlay.setPosition(undefined);
+      this.pointer_layer_source.clear();
+      this.refreshAnchors();
+    });
+
+    this.modifyInteraction.on('modifyend', (evt: any) => {
+      this.is_modifying = false;
+      this.map_animator.is_modifying = false;
+      let new_coords: any = [];
+      const features = evt.features.getArray();
+      if (features.length > 0) {
+        const geom = features[0].getGeometry() as LineString;
+        new_coords = geom.getCoordinates();
+      }
+      this.onRouteModified.emit({
+        new_coords,
+        dragged_anchor: this.dragged_anchor,
+        mousedown_coord: this.modifystart_coord!,
+      });
+      this.dragged_anchor = null;
+      this.modifystart_coord = null;
+      this.hovered_anchor = undefined;
+      this.is_hovering_tooltip = false;
+      this.pointer_layer_source.clear();
+      this.tooltipOverlay.setPosition(undefined);
+    });
+
+    this.map.addInteraction(this.modifyInteraction);
+  }
+
+  private setupSnapInteraction() {
+    this.snapInteraction = new Snap({
+      source: this.anchor_points_layer_source,
+      pixelTolerance: 25,
+    });
+    this.map.addInteraction(this.snapInteraction);
+  }
+
+  private setupHoverLogic() {
+    this.map.on('pointermove', (evt) => {
+      if (this.map_animator) {
+        const targetElement = this.map.getTargetElement();
+        if (targetElement.style.cursor === 'pointer') {
+          targetElement.style.cursor = '';
+        }
+
+        if (this.hoverIdentifyTimeout) clearTimeout(this.hoverIdentifyTimeout);
+        this.is_hovering_interactive_feature = false;
+
+        let foundAnchor = false;
+        if (!this.map_animator.export_mode) {
+          this.map.forEachFeatureAtPixel(
+            evt.pixel,
+            (f, l) => {
+              if (
+                l &&
+                (l as any).getSource() === this.anchor_points_layer_source
+              ) {
+                const geom = f.getGeometry() as Point;
+                const center = geom.getCoordinates();
+                this.tooltipOverlay.setPosition(center);
+                this.hovered_anchor = {
+                  x: center[0],
+                  y: center[1],
+                } as LV95_Waypoint;
+                foundAnchor = true;
+              }
+            },
+            { hitTolerance: 25 },
+          );
+        }
+
+        if (!foundAnchor && !this.is_mouse_over_dom_tooltip) {
+          this.hovered_anchor = undefined;
+        }
+
+        if (
+          !foundAnchor &&
+          !this.is_hovering_tooltip &&
+          !this.is_mouse_over_dom_tooltip
+        ) {
+          this.tooltipOverlay.setPosition(undefined);
+        }
+
+        if (this.map_animator.export_mode) {
+          if (this.tooltipElement.innerHTML !== '') {
+            this.tooltipElement.innerHTML = '';
+          }
+          this.tooltipOverlay.setPosition(undefined);
+        } else if (this.is_modifying) {
+          if (this.tooltipElement.innerHTML !== '') {
+            this.tooltipElement.innerHTML = '';
+          }
+          this.tooltipOverlay.setPosition(undefined);
+        } else if (foundAnchor) {
+          const content =
+            'Ziehen zum verschieben<br><span style="color:#ff5252; cursor:pointer" id="delete-anchor-btn">Klicken zum Löschen</span>';
+          if (this.tooltipElement.innerHTML !== content) {
+            this.tooltipElement.innerHTML = content;
+            const deleteBtn =
+              this.tooltipElement.querySelector('#delete-anchor-btn');
+            if (deleteBtn) {
+              deleteBtn.addEventListener(
+                'pointerdown',
+                (e) => {
+                  e.stopPropagation();
+                  if (this.hovered_anchor) {
+                    this.onWaypointDeleted.emit(this.hovered_anchor);
+                    this.tooltipOverlay.setPosition(undefined);
+                  }
+                },
+                { once: true },
+              );
+            }
+          }
+          this.tooltipOverlay.setPosition([
+            this.hovered_anchor!.x,
+            this.hovered_anchor!.y,
+          ]);
+        } else if (this.is_hovering_tooltip) {
+          const content = 'Ziehen um Punkt zu erstellen';
+          if (this.tooltipElement.innerHTML !== content)
+            this.tooltipElement.innerHTML = content;
+        } else if (this.map_animator.magnetic_paths) {
+          const content = 'Klicken um Punkt anzuhängen';
+          if (this.tooltipElement.innerHTML !== content)
+            this.tooltipElement.innerHTML = content;
+        } else {
+          if (this.tooltipElement.innerHTML !== '')
+            this.tooltipElement.innerHTML = '';
+          this.tooltipOverlay.setPosition(undefined);
+        }
+
+        // Bi-Directional Hover Sync: Emitting Map cursor to ECharts
+        let map_hover_coord: LV95_Waypoint | null = null;
+        if (!this.is_modifying && !this.hovered_anchor) {
+          let hit_path = false;
+          let hit_vector = false;
+
+          this.map.forEachFeatureAtPixel(
+            evt.pixel,
+            (f, l) => {
+              if (l === this.path_layer) hit_path = true;
+              if (
+                l &&
+                ['fountains', 'notfall', 'feuerstellen', 'shelter'].includes(
+                  l.get('name') as string,
+                )
+              ) {
+                hit_vector = true;
+              }
+            },
+            { hitTolerance: 25 },
+          );
+
+          if (hit_vector && !this.hovered_anchor) {
+            this.is_hovering_interactive_feature = true;
+            targetElement.style.cursor = 'pointer';
+          } else {
+            const wmtsLayerNames: Record<string, string> = {
+              haltestellen: 'ch.bav.haltestellen-oev',
+              schiessanzeigen: 'ch.vbs.schiessanzeigen',
+              herdenschutzhunde: 'ch.bafu.alpweiden-herdenschutzhunde',
+              schutzgebiete_naturschutzgebiete:
+                'ch.pronatura.naturschutzgebiete',
+              schutzgebiete_jagdbanngebiete:
+                'ch.bafu.wrz-jagdbanngebiete_select',
+              schutzgebiete_wildruhezonen: 'ch.bafu.wrz-wildruhezonen_portal',
+            };
+
+            let activeIdentifyLayers: string[] = [];
+            this.map.getLayers().forEach((l) => {
+              const name = l.get('name') as string;
+              if (name && wmtsLayerNames[name]) {
+                activeIdentifyLayers.push(wmtsLayerNames[name]);
+              }
+            });
+
+            if (
+              activeIdentifyLayers.length > 0 &&
+              !this.is_hovering_tooltip &&
+              !this.hovered_anchor
+            ) {
+              // 1. Check local cache first (radius 25m)
+              let cachedHit = false;
+              for (const hc of this.interactive_feature_cache) {
+                const dx = hc.x - evt.coordinate[0];
+                const dy = hc.y - evt.coordinate[1];
+                if (Math.sqrt(dx * dx + dy * dy) < 25) {
+                  cachedHit = true;
+                  break;
+                }
+              }
+
+              if (cachedHit) {
+                this.is_hovering_interactive_feature = true;
+                targetElement.style.cursor = 'pointer';
+              } else {
+                // 2. Debounce API fetch
+                this.hoverIdentifyTimeout = setTimeout(async () => {
+                  const ext = this.map
+                    .getView()
+                    .calculateExtent(this.map.getSize());
+                  const size = this.map.getSize() || [800, 600];
+                  const layersStr = `all:${activeIdentifyLayers.join(',')}`;
+                  const url = `https://api3.geo.admin.ch/rest/services/all/MapServer/identify?geometry=${evt.coordinate[0]},${evt.coordinate[1]}&geometryFormat=geojson&geometryType=esriGeometryPoint&imageDisplay=${size[0]},${size[1]},96&mapExtent=${ext.join(',')}&sr=2056&tolerance=15&layers=${layersStr}`;
+                  try {
+                    const res = await fetch(url);
+                    if (res.ok) {
+                      const data = await res.json();
+                      if (data.results && data.results.length > 0) {
+                        const pt = data.results[0].geometry.coordinates[0];
+
+                        let htmlResult = '';
+                        const seenFeatures = new Set<string>();
+                        for (const result of data.results) {
+                          const featureKey =
+                            result.layerBodId + '_' + result.featureId;
+                          if (seenFeatures.has(featureKey)) continue;
+                          seenFeatures.add(featureKey);
+
+                          const props = result.properties || {};
+                          let title = result.layerBodId || 'Metadaten';
+                          // Lookup friendly title if possible
+                          if (title === 'ch.bav.haltestellen-oev')
+                            title = 'ÖV-Haltestelle';
+                          else if (title === 'ch.vbs.schiessanzeigen')
+                            title = 'Schiessanzeigen';
+                          else if (
+                            title === 'ch.bafu.alpweiden-herdenschutzhunde'
+                          )
+                            title = 'Herdenschutzhunde';
+                          else if (
+                            title.includes('schutzgebiete') ||
+                            title.includes('wrz')
+                          )
+                            title = 'Schutzgebiet';
+
+                          let subtitle =
+                            props.wrz_name ||
+                            props.jb_name ||
+                            props.name ||
+                            props.nom ||
+                            props.titre ||
+                            props.title ||
+                            '';
+                          htmlResult += `<b>${title}</b>`;
+                          if (subtitle) htmlResult += `<br>${subtitle}`;
+                          htmlResult +=
+                            '<div style="max-height: 200px; overflow-y: auto; margin-top: 5px; font-size: 0.9em;">';
+                          htmlResult += this.formatPopupProperties(
+                            props,
+                            result.layerBodId,
+                          );
+                          htmlResult += '</div><hr style="margin:5px 0;">';
+                        }
+
+                        this.interactive_feature_cache.push({
+                          x: pt[0],
+                          y: pt[1],
+                          html: htmlResult,
+                        });
+
+                        this.is_hovering_interactive_feature = true;
+                        this.map.getTargetElement().style.cursor = 'pointer';
+                        this.render_pointer();
+                      }
+                    }
+                  } catch (e) {}
+                }, 150);
+              }
+            }
+          }
+
+          if (
+            !this.map_animator.export_mode &&
+            hit_path &&
+            this.map_animator.path.length > 0
+          ) {
+            let min_dist = Infinity;
+            for (const wp of this.map_animator.path) {
+              const d =
+                Math.pow(wp.x - evt.coordinate[0], 2) +
+                Math.pow(wp.y - evt.coordinate[1], 2);
+              if (d < min_dist) {
+                min_dist = d;
+                map_hover_coord = wp;
+              }
+            }
+          }
+        }
+
+        if (!this.map_animator.export_mode) {
+          this.pointer = [evt.coordinate[0], evt.coordinate[1]];
+          this.render_pointer();
+          this.map_animator.move_pointer(map_hover_coord);
+        }
+      }
+    });
+  }
+
+  private setupUndoInteraction() {
+    const viewport = this.map?.getViewport();
+    if (viewport) {
+      viewport.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        if (
+          this.map_animator &&
+          !this.map_animator.export_mode &&
+          this.map_animator.can_undo()
+        ) {
+          this.onUndoRequested.emit();
+        }
+      });
+    }
+  }
+
+  private setupDrawInteraction() {
+    this.map.on('singleclick', async (evt) => {
+      this.infoElement.style.display = 'none';
+      this.infoOverlay.setPosition(undefined);
+
+      if (!this.map_animator.export_mode && this.hovered_anchor) {
+        // Explicitly hit an anchor without dragging -> delete it
+        this.onWaypointDeleted.emit(this.hovered_anchor);
+        this.tooltipOverlay.setPosition(undefined);
+        return;
+      }
+
+      // 1. Check if user clicked an Interactive Vector feature
+      let clickedVector = false;
+      let vectorName = '';
+      let vectorProperties: any = null;
+      let vectorGeometry: any = null;
+
+      this.map.forEachFeatureAtPixel(evt.pixel, (feature, layer) => {
+        if (layer) {
+          const lName = layer.get('name') as string;
+          if (
+            ['fountains', 'notfall', 'feuerstellen', 'shelter'].includes(lName)
+          ) {
+            clickedVector = true;
+            vectorName = lName;
+            vectorProperties = feature.getProperties();
+            vectorGeometry = feature.getGeometry();
+          }
+        }
+      });
+
+      if (clickedVector && vectorProperties) {
+        let title = '';
+        let subtitle = '';
+
+        if (vectorName === 'fountains') {
+          title = 'Brunnen';
+          let isDrinkable = 'Unbekannt';
+          if (
+            vectorProperties['amenity'] === 'drinking_water' ||
+            vectorProperties['drinking_water'] === 'yes'
+          )
+            isDrinkable = 'Ja';
+          else if (vectorProperties['drinking_water'] === 'no')
+            isDrinkable = 'Nein';
+          subtitle = `Trinkwasser: ${isDrinkable}`;
+        } else if (vectorName === 'notfall') {
+          title = 'Medizinische Einrichtung';
+          const typeMap: Record<string, string> = {
+            hospital: 'Spital',
+            clinic: 'Klinik',
+            pharmacy: 'Apotheke',
+            doctors: 'Arztpraxis',
+            dentist: 'Zahnarzt',
+          };
+          const rawType =
+            vectorProperties['amenity'] ||
+            vectorProperties['healthcare'] ||
+            'Unbekannt';
+          const type = typeMap[rawType] || rawType;
+
+          let name = vectorProperties['name'] || '-';
+          let phone =
+            vectorProperties['phone'] ||
+            vectorProperties['contact:phone'] ||
+            '';
+          let emergency =
+            vectorProperties['emergency'] === 'yes' ? 'Notaufnahme: Ja' : '';
+
+          subtitle = `<b>${type}</b><br>Name: ${name}`;
+          if (phone) subtitle += `<br>Tel: ${phone}`;
+          if (emergency)
+            subtitle += `<br><span style="color:#d32f2f">${emergency}</span>`;
+        } else if (vectorName === 'feuerstellen') {
+          title = 'Feuerstelle';
+          subtitle = vectorProperties['name'] || 'Öffentlicher Grillplatz';
+          
+          let origin = evt.coordinate;
+          if (vectorGeometry && typeof vectorGeometry.getCoordinates === 'function') {
+            const coords = vectorGeometry.getCoordinates();
+            if (coords && coords.length >= 2) {
+              origin = coords;
+            }
+          }
+
+          let closest = null;
+          let min_distSq = 2500; // 50m tolerance
+          for (const b of braetlistellenData) {
+            const dx = b.x - origin[0];
+            const dy = b.y - origin[1];
+            const distSq = dx * dx + dy * dy;
+            if (distSq < min_distSq) {
+              min_distSq = distSq;
+              closest = b;
+            }
+          }
+          if (closest && closest.url) {
+            subtitle += `<br><a href="${closest.url}" target="_blank" style="color:#1976D2; text-decoration: underline;">Link zu brätlistellen.ch</a>`;
+          }
+        } else if (vectorName === 'shelter') {
+          title = 'Unterstand';
+          subtitle = vectorProperties['name'] || 'Schutzhütte';
+          
+          let details = [];
+          let shelterType = vectorProperties['shelter_type'] || vectorProperties['tourism'];
+          
+          if (shelterType === 'alpine_hut') {
+            title = 'Berghütte';
+            subtitle = vectorProperties['name'] || 'SAC-Hütte / Berghütte';
+          } else if (shelterType === 'wilderness_hut') {
+            title = 'Schutzhütte';
+          }
+
+          if (shelterType) {
+             let translatedType = shelterType.replace(/_/g, ' ');
+             if (shelterType === 'public_transport') translatedType = 'ÖV-Wartehäuschen';
+             else if (shelterType === 'alpine_hut') translatedType = 'Bewirtschaftete Berghütte';
+             else if (shelterType === 'wilderness_hut') translatedType = 'Unbewirtschaftete Schutzhütte';
+             else if (shelterType === 'basic_hut') translatedType = 'Einfache Hütte';
+             else if (shelterType === 'weather_shelter') translatedType = 'Wetterschutz';
+             else if (shelterType === 'picnic_shelter') translatedType = 'Picknick-Unterstand';
+             else if (shelterType === 'lean_to') translatedType = 'Offener Unterstand';
+             details.push(`Art: ${translatedType}`);
+          }
+
+          if (vectorProperties['ele']) details.push(`Höhe: ${vectorProperties['ele']} m.ü.M.`);
+          if (vectorProperties['fireplace'] === 'yes' || vectorProperties['bbq'] === 'yes') details.push('Feuerstelle: Ja');
+          if (vectorProperties['access']) details.push(`Zugang: ${vectorProperties['access']}`);
+          if (vectorProperties['description']) details.push(`Beschreibung: <span style="font-size: 0.9em;">${vectorProperties['description']}</span>`);
+          
+          let websiteLink = vectorProperties['website'] || vectorProperties['url'] || vectorProperties['contact:website'];
+          if (websiteLink) {
+              let href = websiteLink.startsWith('http') ? websiteLink : `http://${websiteLink}`;
+              details.push(`<a href="${href}" target="_blank" style="color:#1976D2; text-decoration: underline;">Webseite / Link</a>`);
+          }
+
+          if (details.length > 0) {
+              subtitle += `<br><div style="margin-top: 5px; font-size: 0.9em; line-height: 1.4;">` + details.join('<br>') + `</div>`;
+          }
+        }
+
+        this.infoElement.innerHTML = `<b>${title}</b><br>${subtitle}`;
+        this.infoElement.style.display = 'block';
+        this.infoOverlay.setPosition(evt.coordinate);
+        return;
+      }
+
+      // 2. Check if user clicked any WMTS Interactive Layers
+      const wmtsLayerNames: Record<string, string> = {
+        haltestellen: 'ch.bav.haltestellen-oev',
+        schiessanzeigen: 'ch.vbs.schiessanzeigen',
+        herdenschutzhunde: 'ch.bafu.alpweiden-herdenschutzhunde',
+        schutzgebiete_naturschutzgebiete: 'ch.pronatura.naturschutzgebiete',
+        schutzgebiete_jagdbanngebiete: 'ch.bafu.wrz-jagdbanngebiete_select',
+        schutzgebiete_wildruhezonen: 'ch.bafu.wrz-wildruhezonen_portal',
+      };
+
+      let activeIdentifyLayers: string[] = [];
+      this.map.getLayers().forEach((l) => {
+        const name = l.get('name') as string;
+        if (name && wmtsLayerNames[name]) {
+          activeIdentifyLayers.push(wmtsLayerNames[name]);
+        }
+      });
+
+      if (activeIdentifyLayers.length > 0 && !this.is_hovering_tooltip) {
+        // Check cache first
+        let cachedHit = null;
+        for (const hc of this.interactive_feature_cache) {
+          const dx = hc.x - evt.coordinate[0];
+          const dy = hc.y - evt.coordinate[1];
+          if (Math.sqrt(dx * dx + dy * dy) < 25) {
+            cachedHit = hc;
+            break;
+          }
+        }
+
+        if (cachedHit) {
+          this.infoElement.innerHTML = cachedHit.html;
+          this.infoElement.style.display = 'block';
+          this.infoOverlay.setPosition(evt.coordinate);
+          return;
+        }
+
+        // Show loading instantly & perform async check
+        this.infoElement.innerHTML = `<b>Metadaten</b><br><span style="color:#666">Laden...</span>`;
+        this.infoElement.style.display = 'block';
+        this.infoOverlay.setPosition(evt.coordinate);
+
+        const ext = this.map.getView().calculateExtent(this.map.getSize());
+        const size = this.map.getSize() || [800, 600];
+        const layersStr = `all:${activeIdentifyLayers.join(',')}`;
+        const url = `https://api3.geo.admin.ch/rest/services/all/MapServer/identify?geometry=${evt.coordinate[0]},${evt.coordinate[1]}&geometryFormat=geojson&geometryType=esriGeometryPoint&imageDisplay=${size[0]},${size[1]},96&mapExtent=${ext.join(',')}&sr=2056&tolerance=20&layers=${layersStr}`;
+
+        fetch(url)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.results && data.results.length > 0) {
+              const pt = data.results[0].geometry.coordinates[0];
+              let htmlResult = '';
+              const seenFeatures = new Set<string>();
+              for (const result of data.results) {
+                const featureKey = result.layerBodId + '_' + result.featureId;
+                if (seenFeatures.has(featureKey)) continue;
+                seenFeatures.add(featureKey);
+
+                const props = result.properties || {};
+                let title = result.layerBodId || 'Metadaten';
+                // Lookup friendly title if possible
+                if (title === 'ch.bav.haltestellen-oev')
+                  title = 'ÖV-Haltestelle';
+                else if (title === 'ch.vbs.schiessanzeigen')
+                  title = 'Schiessanzeigen';
+                else if (title === 'ch.bafu.alpweiden-herdenschutzhunde')
+                  title = 'Herdenschutzhunde';
+                else if (
+                  title.includes('schutzgebiete') ||
+                  title.includes('wrz')
+                )
+                  title = 'Schutzgebiet';
+
+                let subtitle =
+                  props.wrz_name ||
+                  props.jb_name ||
+                  props.name ||
+                  props.nom ||
+                  props.titre ||
+                  props.title ||
+                  '';
+                htmlResult += `<b>${title}</b>`;
+                if (subtitle) htmlResult += `<br>${subtitle}`;
+                htmlResult +=
+                  '<div style="max-height: 200px; overflow-y: auto; margin-top: 5px; font-size: 0.9em;">';
+                htmlResult += this.formatPopupProperties(
+                  props,
+                  result.layerBodId,
+                );
+                htmlResult += '</div><hr style="margin:5px 0;">';
+              }
+
+              this.interactive_feature_cache.push({
+                x: pt[0],
+                y: pt[1],
+                html: htmlResult,
+              });
+              this.infoElement.innerHTML = htmlResult;
+            } else {
+              // False alarm, not a feature. Hide overlay and append anchor fallback.
+              this.infoElement.style.display = 'none';
+              this.infoOverlay.setPosition(undefined);
+              if (!this.map_animator.export_mode && !this.is_hovering_tooltip) {
+                this.pointer_layer_source.clear();
+                this.onWaypointAdded.emit({
+                  x: evt.coordinate[0],
+                  y: evt.coordinate[1],
+                });
+              }
+            }
+          })
+          .catch((err) => {
+            console.error('Identify fetch failed', err);
+            this.infoElement.style.display = 'none';
+            this.infoOverlay.setPosition(undefined);
+          });
+
+        return; // Return immediately to prevent synchronous cursor freezing
+      }
+
+      if (this.map_animator.export_mode) return;
+
+      if (!this.is_hovering_tooltip) {
+        // Hit empty map -> append new anchor
+        this.pointer_layer_source.clear();
+        this.onWaypointAdded.emit({
+          x: evt.coordinate[0], // MUST use locked event coordinate, not this.pointer
+          y: evt.coordinate[1], // MUST use locked event coordinate, not this.pointer
+        });
+      }
+    });
+  }
+
+  private setupSubscriptions() {
+    this.export_mode_sub = this.map_animator.export_mode$.subscribe(
+      (is_export) => {
+        this.modifyInteraction.setActive(!is_export);
+        this.snapInteraction.setActive(!is_export);
+        this.anchor_points_layer.setVisible(!is_export);
+        this.pointer_layer.setVisible(!is_export);
+
+        if (is_export) {
+          this.tooltipOverlay.setPosition(undefined);
+        } else {
+          this.map_animator.trigger_path_redraw();
+          this.refreshAnchors();
+        }
+      },
+    );
+
+    this.path_sub = this.map_animator.path$.subscribe((path) => {
+      this.draw_path(path);
+    });
+
+    this.anchor_points_sub = this.map_animator.anchor_points$.subscribe(() => {
+      this.refreshAnchors();
+    });
+
+    this.map_animator.pointer$.subscribe((coord) => {
+      this.external_pointer_layer_source.clear();
+      // Only show in editing mode, and not when hovering/modifying an anchor
+      if (
+        coord &&
+        !this.map_animator.export_mode &&
+        !this.hovered_anchor &&
+        !this.is_modifying
+      ) {
+        const feature = new Feature({
+          geometry: new Point([coord.x, coord.y]),
+        });
+        feature.setStyle(
+          new Style({
+            image: new CircleStyle({
+              radius: 6,
+              fill: new Fill({ color: '#2196F3' }),
+              stroke: new Stroke({ color: '#fff', width: 2 }),
+            }),
+          }),
+        );
+        this.external_pointer_layer_source.addFeature(feature);
+      }
+    });
+  }
+
+  private draw_path(path: LV95_Waypoint[]) {
+    this.path_layer_source.clear();
+    if (!path || path.length === 0) return;
+
+    if (path.length === 1) {
+      this.path_layer_source.addFeature(
+        this.create_single_point_feature(path[0]),
+      );
+      return;
+    }
+
+    const feature = new Feature({
+      geometry: new LineString(path.map((p) => [p.x, p.y])),
+    });
+
+    feature.setStyle((feature, resolution) => {
+      const geometry = feature.getGeometry() as LineString;
+      const coords = geometry.getCoordinates();
+
+      if (this.is_modifying && this.map_animator) {
+        const changed_idx = this.find_changed_index(path, coords);
+        if (changed_idx !== -1) {
+          return this.build_modification_styles(path, coords, changed_idx);
+        }
+      }
+
+      return this.get_default_path_styles();
+    });
+
+    this.path_layer_source.addFeature(feature);
+  }
+
+  private create_single_point_feature(point: LV95_Waypoint): Feature {
+    const feature = new Feature({ geometry: new Point([point.x, point.y]) });
+    feature.setStyle(
+      new Style({
+        image: new CircleStyle({
+          radius: 6,
+          fill: new Fill({ color: '#efa038' }),
+          stroke: new Stroke({ color: '#fff', width: 2 }),
+        }),
+      }),
+    );
+    return feature;
+  }
+
+  private get_default_path_styles(): Style[] {
+    return [
+      new Style({ stroke: new Stroke({ color: '#fff', width: 9 }) }),
+      new Style({ stroke: new Stroke({ color: '#efa038', width: 5 }) }),
+    ];
+  }
+
+  private find_changed_index(
+    path: LV95_Waypoint[],
+    coords: number[][],
+  ): number {
+    const is_insert = coords.length > path.length;
+    let dragged_idx = -1;
+
+    if (is_insert) {
+      for (let i = 0; i < path.length; i++) {
+        if (
+          Math.abs(coords[i][0] - path[i].x) > 0.1 ||
+          Math.abs(coords[i][1] - path[i].y) > 0.1
+        ) {
+          return i;
+        }
+      }
+      return coords.length - 1;
+    } else {
+      let max_dist = 0;
+      for (let i = 0; i < Math.min(coords.length, path.length); i++) {
+        const dist =
+          Math.pow(coords[i][0] - path[i].x, 2) +
+          Math.pow(coords[i][1] - path[i].y, 2);
+        if (dist > max_dist) {
+          max_dist = dist;
+          dragged_idx = i;
+        }
+      }
+      return dragged_idx;
+    }
+  }
+
+  private get_preview_bounds(
+    path: LV95_Waypoint[],
+    coords: number[][],
+    changed_idx: number,
+  ) {
+    let start_idx = -1;
+    let found_start = false;
+    let end_idx = -1;
+    let found_end = false;
+
+    let is_insert = coords.length > path.length;
+
+    if (!is_insert && this.dragged_anchor) {
+      // MOVES: Strict Topological Lookup for preview bounds
+      let target_anchor_idx = -1;
+      let anchor_count = 0;
+
+      for (let i = 0; i < path.length; i++) {
+        if (path[i].is_waypoint) {
+          if (GeometryUtils.pointsMatch(path[i], this.dragged_anchor)) {
+            target_anchor_idx = anchor_count;
+          }
+          anchor_count++;
+        }
+      }
+
+      if (target_anchor_idx !== -1) {
+        let current_anchor_count = 0;
+        for (let i = 0; i < path.length; i++) {
+          if (path[i].is_waypoint) {
+            if (current_anchor_count === target_anchor_idx - 1) {
+              start_idx = i;
+              found_start = true;
+            }
+            if (current_anchor_count === target_anchor_idx + 1) {
+              end_idx = i;
+              found_end = true;
+            }
+            current_anchor_count++;
+          }
+        }
+      }
+    } else {
+      // INSERTS: Spatial scanning
+      for (let i = changed_idx - 1; i >= 0; i--) {
+        if (path[i].is_waypoint) {
+          start_idx = i;
+          found_start = true;
+          break;
+        }
+      }
+      let search_fw_start = is_insert ? changed_idx : changed_idx + 1;
+      for (let i = search_fw_start; i < path.length; i++) {
+        if (path[i].is_waypoint) {
+          end_idx = i;
+          found_end = true;
+          break;
+        }
+      }
+    }
+
+    return {
+      start_anchor_idx: start_idx,
+      found_start,
+      end_anchor_idx: end_idx,
+      found_end,
+    };
+  }
+
+  private formatPopupProperties(props: any, layerBodId: string): string {
+    let result = '';
+    const excludeKeys = [
+      'geometry',
+      'name',
+      'nom',
+      'titre',
+      'title',
+      'label',
+      'wrz_name',
+      'jb_name',
+    ];
+
+    for (const key of Object.keys(props)) {
+      if (
+        excludeKeys.includes(key) ||
+        props[key] === null ||
+        props[key] === undefined ||
+        typeof props[key] === 'object'
+      ) {
+        continue;
+      }
+
+      let displayKey = key;
+      let val = props[key];
+
+      // Herdenschutzhunde Mappings
+      if (layerBodId === 'ch.bafu.alpweiden-herdenschutzhunde') {
+        if (key === 'code_refverhalten') {
+          displayKey = 'Verhaltensregeln';
+          val =
+            'http://www.protectiondestroupeaux.ch/de/herdenschutzhunde/tourismus-und-herdenschutzhunde/sichere-begegnungen-mit-herdenschutzhunden/';
+        } else if (key === 'code_hundepraesenz') {
+          displayKey = 'Anwesenheit Schutzhunde';
+          if (val === 1049)
+            val =
+              "In der Regel zwischen Anfang Juni und Anfang Juli und im Oktober auf den Weiden zwischen Vercorin und Le Crêt du Midi. Und zwischen Anfang Juli bis Ende September auf den Weiden zwischen Le Crêt du Midi und le Roc d'Orzival.";
+          else if (val === 1000)
+            val = 'In der Regel von Mitte Mai bis Mitte September.';
+          else if (val === 1001)
+            val = 'In der Regel von Anfang Juni bis Mitte September.';
+          else if (val === 1014)
+            val = 'In der Regel von Mitte Mai bis Ende September.';
+          else if (val === 1038)
+            val = 'In der Regel von Ende Mai bis Ende September.';
+          else val = 'Je nach Saison (Details siehe Swisstopo Info)';
+        } else if (key === 'code_hinweis') {
+          displayKey = 'Hinweis';
+          if (val === 0) val = 'Keine besonderen Hinweise.';
+          else if (val === 51)
+            val =
+              'Um Interaktionen zwischen Herdenschutzhunden und Touristen zu minimieren, können einige Wanderwege vorübergehend geschlossen und umgeleitet werden.';
+          else if (val === 60 || val === 92)
+            val =
+              'Bitte beachten Sie die lokalen Signalisationen und Hinweise.';
+          else val = '-';
+        } else if (key === 'kontname') {
+          displayKey = 'Kontakt Name';
+        } else if (key === 'konttel') {
+          displayKey = 'Kontakt Telefon';
+        } else if (key === 'kontemail') {
+          displayKey = 'Kontakt E-Mail';
+        } else if (key === 'refmeldungbeweidungszone') {
+          displayKey = 'Aktuelle Beweidungszone';
+        }
+      }
+
+      // Global Localization Filter (Keep only _de variations and strip _de postfix)
+      if (
+        key.endsWith('_fr') ||
+        key.endsWith('_it') ||
+        key.endsWith('_en') ||
+        key.endsWith('_rm')
+      ) {
+        continue;
+      }
+      if (key.endsWith('_de')) {
+        displayKey = key.replace('_de', '');
+      }
+
+      // Schutzgebiete Mappings
+      if (layerBodId.includes('schutzgebiete') || layerBodId.includes('wrz')) {
+        if (key === 'wrz_name') {
+          displayKey = 'Name';
+        }
+        if (key === 'schutzs_de') {
+          displayKey = 'Schutzstatus';
+        }
+        if (key === 'einschraenkungen') {
+          displayKey = 'Einschränkungen';
+        }
+      }
+
+      // Format Links and Line Breaks
+      if (typeof val === 'string') {
+        if (val.startsWith('http')) {
+          val = `<a href="${val}" target="_blank" style="color:#1976D2; text-decoration: underline;">Link</a>`;
+        } else {
+          val = val.replace(/;\s+/g, ';<br>');
+        }
+      }
+
+      // Format Key Name
+      displayKey = displayKey.replace(/_/g, ' ');
+      displayKey = displayKey.charAt(0).toUpperCase() + displayKey.slice(1);
+
+      result += `<p style="margin:2px 0;"><strong>${displayKey}:</strong> ${val}</p>`;
+    }
+
+    // External Link to Swisstopo for accurate source
+    if (layerBodId) {
+      result += `<p style="margin:6px 0 2px 0;"><a href="https://map.geo.admin.ch/?layers=${layerBodId}&lang=de" target="_blank" style="color:#1976D2; text-decoration: underline;">Auf Swisstopo ansehen</a></p>`;
+    }
+
+    return result;
+  }
+
+  private create_line_segment_style(
+    coords: number[][],
+    color: string,
+    width: number,
+  ): Style {
+    return new Style({
+      geometry: new LineString(coords),
+      stroke: new Stroke({ color, width }),
+    });
+  }
+
+  private build_modification_styles(
+    path: LV95_Waypoint[],
+    coords: number[][],
+    changed_idx: number,
+  ): Style[] {
+    const styles: Style[] = [];
+    const { start_anchor_idx, found_start, end_anchor_idx, found_end } =
+      this.get_preview_bounds(path, coords, changed_idx);
+
+    // Head original segment
+    if (found_start && start_anchor_idx > 0) {
+      const headCoords = path
+        .slice(0, start_anchor_idx + 1)
+        .map((p: any) => [p.x, p.y]);
+      if (headCoords.length >= 2) {
+        styles.push(this.create_line_segment_style(headCoords, '#fff', 9));
+        styles.push(this.create_line_segment_style(headCoords, '#efa038', 5));
+      }
+    }
+
+    // Tail original segment
+    if (found_end && end_anchor_idx < path.length - 1) {
+      const tailCoords = path.slice(end_anchor_idx).map((p: any) => [p.x, p.y]);
+      if (tailCoords.length >= 2) {
+        styles.push(this.create_line_segment_style(tailCoords, '#fff', 9));
+        styles.push(this.create_line_segment_style(tailCoords, '#efa038', 5));
+      }
+    }
+
+    // Semi-transparent original segment
+    const sliceStart = found_start ? start_anchor_idx : 0;
+    const sliceEnd = found_end ? end_anchor_idx : path.length - 1;
+    const oldSegment = path
+      .slice(sliceStart, sliceEnd + 1)
+      .map((p: any) => [p.x, p.y]);
+    if (oldSegment.length >= 2) {
+      styles.push(
+        this.create_line_segment_style(
+          oldSegment,
+          'rgba(255, 255, 255, 0.4)',
+          9,
+        ),
+      );
+      styles.push(
+        this.create_line_segment_style(
+          oldSegment,
+          'rgba(239, 160, 56, 0.4)',
+          5,
+        ),
+      );
+    }
+
+    // V shape preview
+    const draggedPoint = coords[changed_idx];
+    const V_Coords = [];
+    if (found_start)
+      V_Coords.push([path[start_anchor_idx].x, path[start_anchor_idx].y]);
+    V_Coords.push(draggedPoint);
+    if (found_end)
+      V_Coords.push([path[end_anchor_idx].x, path[end_anchor_idx].y]);
+
+    if (V_Coords.length >= 2) {
+      styles.push(this.create_line_segment_style(V_Coords, '#fff', 9));
+      styles.push(this.create_line_segment_style(V_Coords, '#efa038', 5));
+    }
+
+    return styles;
+  }
+
+  private refreshAnchors() {
+    this.anchor_points_layer_source.clear();
+    if (this.map_animator.export_mode) return;
+
+    const anchors = this.map_animator.anchor_points;
+    anchors.forEach((pt: any) => {
+      if (
+        this.is_modifying &&
+        this.dragged_anchor &&
+        GeometryUtils.pointsMatch(pt, this.dragged_anchor)
+      ) {
+        return; // Suppress duplicate rendering under the interaction point
+      }
+      const feature = new Feature({ geometry: new Point([pt.x, pt.y]) });
+      feature.setStyle(
+        new Style({
+          image: new CircleStyle({
+            radius: 6,
+            fill: new Fill({ color: '#efa038' }),
+            stroke: new Stroke({ color: '#fff', width: 2 }),
+          }),
+        }),
+      );
+      this.anchor_points_layer_source.addFeature(feature);
+    });
+  }
+
+  private render_pointer() {
+    this.pointer_layer_source.clear();
+
+    if (
+      this.pointer != null &&
+      !this.map_animator?.export_mode &&
+      !this.hovered_anchor &&
+      !this.is_modifying
+    ) {
+      if (this.is_hovering_interactive_feature) {
+        // Suppress pointer circle if hovering interactive elements
+        return;
+      }
+
+      this.is_hovering_tooltip = false;
+      const pixel = this.map?.getPixelFromCoordinate(this.pointer);
+      if (pixel) {
+        this.map?.forEachFeatureAtPixel(
+          pixel,
+          (feature, layer) => {
+            if (layer === this.path_layer) this.is_hovering_tooltip = true;
+          },
+          { hitTolerance: 25 },
+        );
+      }
+
+      if (!this.is_hovering_tooltip && !this.hovered_anchor) {
+        const feature = new Feature({ geometry: new Point(this.pointer) });
+        feature.setStyle(
+          new Style({
+            image: new CircleStyle({
+              radius: 8,
+              fill: new Fill({ color: 'transparent' }),
+              stroke: new Stroke({ color: '#efa038', width: 3 }),
+            }),
+          }),
+        );
+        this.pointer_layer_source.addFeature(feature);
+        if (this.tooltipElement.innerHTML !== '') {
+          this.tooltipElement.style.display = 'block';
+          this.tooltipOverlay.setPosition(this.pointer);
+        } else {
+          this.tooltipElement.style.display = 'none';
+          this.tooltipOverlay.setPosition(undefined);
+        }
+      } else {
+        if (this.tooltipElement.innerHTML !== '') {
+          this.tooltipElement.style.display = 'block';
+          this.tooltipOverlay.setPosition(this.pointer);
+        } else {
+          this.tooltipElement.style.display = 'none';
+          this.tooltipOverlay.setPosition(undefined);
+        }
+      }
+    }
+  }
+
+  public destroy() {
+    this.path_sub?.unsubscribe();
+    this.anchor_points_sub?.unsubscribe();
+    this.export_mode_sub?.unsubscribe();
+    if (this.map) {
+      this.map.removeLayer(this.path_layer);
+      this.map.removeLayer(this.anchor_points_layer);
+      this.map.removeLayer(this.pointer_layer);
+      this.map.removeInteraction(this.modifyInteraction);
+      this.map.removeInteraction(this.snapInteraction);
+      if (this.tooltipOverlay) this.map.removeOverlay(this.tooltipOverlay);
+      if (this.infoOverlay) this.map.removeOverlay(this.infoOverlay);
+    }
+  }
+}
