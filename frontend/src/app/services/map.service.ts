@@ -94,7 +94,7 @@ export class MapService extends SwisstopoMap implements OnDestroy {
 
   private shelter_layer_source = this.create_osm_source(
     (ext) =>
-      `[out:json];(nwr[amenity="shelter"](${ext[1]},${ext[0]},${ext[3]},${ext[2]}););out qt center;`,
+      `[out:json];(nwr[amenity="shelter"](${ext[1]},${ext[0]},${ext[3]},${ext[2]});nwr[tourism="alpine_hut"](${ext[1]},${ext[0]},${ext[3]},${ext[2]});nwr[tourism="wilderness_hut"](${ext[1]},${ext[0]},${ext[3]},${ext[2]}););out qt center;`,
   );
 
   private map: Map | undefined;

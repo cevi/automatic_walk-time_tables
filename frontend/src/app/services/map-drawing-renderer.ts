@@ -609,6 +609,43 @@ export class MapDrawingRenderer {
         } else if (vectorName === 'shelter') {
           title = 'Unterstand';
           subtitle = vectorProperties['name'] || 'Schutzhütte';
+          
+          let details = [];
+          let shelterType = vectorProperties['shelter_type'] || vectorProperties['tourism'];
+          
+          if (shelterType === 'alpine_hut') {
+            title = 'Berghütte';
+            subtitle = vectorProperties['name'] || 'SAC-Hütte / Berghütte';
+          } else if (shelterType === 'wilderness_hut') {
+            title = 'Schutzhütte';
+          }
+
+          if (shelterType) {
+             let translatedType = shelterType.replace(/_/g, ' ');
+             if (shelterType === 'public_transport') translatedType = 'ÖV-Wartehäuschen';
+             else if (shelterType === 'alpine_hut') translatedType = 'Bewirtschaftete Berghütte';
+             else if (shelterType === 'wilderness_hut') translatedType = 'Unbewirtschaftete Schutzhütte';
+             else if (shelterType === 'basic_hut') translatedType = 'Einfache Hütte';
+             else if (shelterType === 'weather_shelter') translatedType = 'Wetterschutz';
+             else if (shelterType === 'picnic_shelter') translatedType = 'Picknick-Unterstand';
+             else if (shelterType === 'lean_to') translatedType = 'Offener Unterstand';
+             details.push(`Art: ${translatedType}`);
+          }
+
+          if (vectorProperties['ele']) details.push(`Höhe: ${vectorProperties['ele']} m.ü.M.`);
+          if (vectorProperties['fireplace'] === 'yes' || vectorProperties['bbq'] === 'yes') details.push('Feuerstelle: Ja');
+          if (vectorProperties['access']) details.push(`Zugang: ${vectorProperties['access']}`);
+          if (vectorProperties['description']) details.push(`Beschreibung: <span style="font-size: 0.9em;">${vectorProperties['description']}</span>`);
+          
+          let websiteLink = vectorProperties['website'] || vectorProperties['url'] || vectorProperties['contact:website'];
+          if (websiteLink) {
+              let href = websiteLink.startsWith('http') ? websiteLink : `http://${websiteLink}`;
+              details.push(`<a href="${href}" target="_blank" style="color:#1976D2; text-decoration: underline;">Webseite / Link</a>`);
+          }
+
+          if (details.length > 0) {
+              subtitle += `<br><div style="margin-top: 5px; font-size: 0.9em; line-height: 1.4;">` + details.join('<br>') + `</div>`;
+          }
         }
 
         this.infoElement.innerHTML = `<b>${title}</b><br>${subtitle}`;
