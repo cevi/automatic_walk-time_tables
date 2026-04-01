@@ -8,10 +8,10 @@ import { LV95_Coordinates, LV95_Waypoint } from '../helpers/coordinates';
 export class RouteHistoryService {
   private _pathHistory: LV95_Waypoint[][] = [];
   private _pathRedoHistory: LV95_Waypoint[][] = [];
-  
+
   private _poisHistory: LV95_Waypoint[][] = [];
   private _poisRedoHistory: LV95_Waypoint[][] = [];
-  
+
   private _anchorPointsHistory: LV95_Coordinates[][] = [];
   private _anchorPointsRedoHistory: LV95_Coordinates[][] = [];
 
@@ -28,7 +28,7 @@ export class RouteHistoryService {
   public commitState(
     path: LV95_Waypoint[],
     pois: LV95_Waypoint[],
-    anchors: LV95_Coordinates[]
+    anchors: LV95_Coordinates[],
   ): void {
     // Preserve copies securely using native high-performance cloning
     this._pathHistory.push(structuredClone(path));
@@ -56,7 +56,9 @@ export class RouteHistoryService {
     }
 
     if (this._anchorPointsHistory.length > 0) {
-      this._anchorPointsRedoHistory.push(structuredClone(this.mapState.anchor_points));
+      this._anchorPointsRedoHistory.push(
+        structuredClone(this.mapState.anchor_points),
+      );
       const previous_anchors = this._anchorPointsHistory.pop()!;
       this.mapState.updateAnchorPoints(previous_anchors);
     }
@@ -77,7 +79,9 @@ export class RouteHistoryService {
     }
 
     if (this._anchorPointsRedoHistory.length > 0) {
-      this._anchorPointsHistory.push(structuredClone(this.mapState.anchor_points));
+      this._anchorPointsHistory.push(
+        structuredClone(this.mapState.anchor_points),
+      );
       const next_anchors = this._anchorPointsRedoHistory.pop()!;
       this.mapState.updateAnchorPoints(next_anchors);
     }
@@ -93,7 +97,8 @@ export class RouteHistoryService {
     // Snapshot current state
     this.commitState(current_path, current_pois, current_anchors);
 
-    const total_dist = current_path[current_path.length - 1].accumulated_distance;
+    const total_dist =
+      current_path[current_path.length - 1].accumulated_distance;
 
     const reversed_path = [...current_path].reverse().map((p) => ({
       ...p,

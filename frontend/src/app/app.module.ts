@@ -33,10 +33,15 @@ import { RetrieveDataComponent } from './pages/retrieve-data/retrieve-data.compo
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { HttpClientModule } from '@angular/common/http';
+import { MapSearchComponent } from './components/map-search/map-search.component';
+
 @NgModule({
   declarations: [
     AppComponent,
     MapBackgroundComponent,
+    MapSearchComponent,
     AppFooterComponent,
     ExportSettingsComponent,
     RetrieveDataComponent,
@@ -73,6 +78,8 @@ import { MatDividerModule } from '@angular/material/divider';
     MatMenuModule,
     MatDividerModule,
     FormsModule,
+    MatAutocompleteModule,
+    HttpClientModule,
   ],
   providers: [provideZoneChangeDetection()],
   bootstrap: [AppComponent],

@@ -137,19 +137,36 @@ export class SwisstopoMap {
       label: 'Wildruhezonen',
       timestamps: ['current'],
     },
+    'schiessanzeigen': {
+      "attribution": "VBS",
+      "format": "png",
+      "serverLayerName": "ch.vbs.schiessanzeigen",
+      "attributionUrl": "https://www.vbs.admin.ch/",
+      "label": "Schiessanzeigen",
+      "timestamps": ["current"]
+    },
+    'herdenschutzhunde': {
+      "attribution": "BAFU",
+      "format": "png",
+      "serverLayerName": "ch.bafu.alpweiden-herdenschutzhunde",
+      "attributionUrl": "https://www.bafu.admin.ch/",
+      "label": "Herdenschutzhunde",
+      "timestamps": ["current"]
+    }
   };
 
   protected get_projection(): Projection {
     return <Projection>get('EPSG:2056');
   }
 
-  protected get_base_WMTS_layer(layerLabel: string) {
+  protected get_base_WMTS_layer(layerLabel: string, opacity: number = 1.0) {
     // get the projection object for the "EPSG:2056" projection
     const projection = this.get_projection();
     if (projection === null) return;
     projection.setExtent(SwisstopoMap.EXTEND);
 
     return new Tile({
+      opacity: opacity,
       source: this.createWMTSSource(this.layer_configs[layerLabel], projection),
     });
   }
@@ -175,7 +192,7 @@ export class SwisstopoMap {
       matrixSet: '2056',
       style: 'default',
       url:
-        '//wmts{1-10}.geo.admin.ch/1.0.0/{Layer}/{style}/' +
+        'https://wmts{1-10}.geo.admin.ch/1.0.0/{Layer}/{style}/' +
         timestamp +
         '/2056/{TileMatrix}/{TileCol}/{TileRow}.' +
         extension,

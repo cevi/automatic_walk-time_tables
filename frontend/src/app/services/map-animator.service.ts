@@ -37,7 +37,7 @@ export class MapAnimatorService implements OnDestroy {
         takeUntil(this.destroy$),
       )
       .subscribe(() => {
-        this.update_export_mode();
+        this.update_app_mode_from_drawer();
       });
   }
 
@@ -59,6 +59,9 @@ export class MapAnimatorService implements OnDestroy {
   public get map_center$() {
     return this.state.map_center$;
   }
+  public get app_mode$() {
+    return this.state.app_mode$;
+  }
   public get export_mode$() {
     return this.state.export_mode$;
   }
@@ -72,7 +75,9 @@ export class MapAnimatorService implements OnDestroy {
     return this.state.velocity$;
   }
 
-  // Synchronous Facade Getters
+  public get app_mode() {
+    return this.state.app_mode;
+  }
   public get export_mode(): boolean {
     return this.state.export_mode;
   }
@@ -112,7 +117,27 @@ export class MapAnimatorService implements OnDestroy {
   }
   public set drawer_open(val: boolean) {
     this.state.drawer_open = val;
-    this.update_export_mode();
+    this.update_app_mode_from_drawer();
+  }
+
+  public setAppMode(mode: 'edit' | 'view' | 'table') {
+    this.state.setAppMode(mode);
+    if (mode === 'table') {
+      this.state.drawer_open = true;
+    } else {
+      this.state.drawer_open = false;
+    }
+
+    // If we transition to table or view, we must bake waypoints
+    if (
+      mode !== 'edit' &&
+      this.state.path.length > 0 &&
+      this.state.path.some((p) => p.h === 0)
+    ) {
+      this.start_export_mode();
+    } else {
+      this.state.updatePOIs(this.state.pois); // force POIs refresh
+    }
   }
 
   public toggle_magnetic_paths() {
@@ -153,18 +178,14 @@ export class MapAnimatorService implements OnDestroy {
     this._error_handler = handler;
   }
 
-  private update_export_mode() {
+  private update_app_mode_from_drawer() {
     const is_export =
       this.state.drawer_open && this.router.url.split('?')[0] === '/';
-    if (
-      is_export &&
-      this.state.path.length > 0 &&
-      this.state.path.some((p) => p.h === 0)
-    ) {
-      this.start_export_mode();
-    } else {
-      this.state.setExportMode(is_export);
-      this.state.updatePOIs(this.state.pois); // force POIs refresh
+
+    if (is_export) {
+      this.setAppMode('table');
+    } else if (this.app_mode === 'table' && !this.state.drawer_open) {
+      this.setAppMode('edit');
     }
   }
 

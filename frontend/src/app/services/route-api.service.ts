@@ -58,7 +58,10 @@ export class RouteApiService {
     return path;
   }
 
-  public async parseRouteFile(fileContent: string, fileType: string): Promise<any> {
+  public async parseRouteFile(
+    fileContent: string,
+    fileType: string,
+  ): Promise<any> {
     const formData = new FormData();
     formData.append(
       'options',
@@ -116,10 +119,13 @@ export class RouteApiService {
   }
 
   public async retrieveDataStatus(uuid: string): Promise<number> {
-    const response = await fetch(RouteApiService.BASE_URL + 'retrieve/' + uuid, {
-      method: 'GET',
-      headers: { Accept: 'application/json' },
-    });
+    const response = await fetch(
+      RouteApiService.BASE_URL + 'retrieve/' + uuid,
+      {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+      },
+    );
     const result = await response.json();
     if (result.status === 'running' || result.status === 'success') {
       return result.uuid;
@@ -169,7 +175,8 @@ export class RouteApiService {
       );
       export_request['pois_distance'] = pois
         .sort((a, b) => a.accumulated_distance - b.accumulated_distance)
-        .map(p => `${p.accumulated_distance * 1_000}`).join(',');
+        .map((p) => `${p.accumulated_distance * 1_000}`)
+        .join(',');
     }
 
     const response = await fetch(RouteApiService.BASE_URL + 'create_map', {

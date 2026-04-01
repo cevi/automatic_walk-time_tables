@@ -50,16 +50,34 @@ export class MapBackgroundComponent implements OnInit, AfterViewInit {
   public showWanderwege: boolean = false;
   public showSperrungen: boolean = false;
   public showSchutzgebiete: boolean = false;
+  public showSchiessanzeigen: boolean = false;
+  public showHerdenschutzhunde: boolean = false;
+  public showNotfall: boolean = false;
+  public showFeuerstellen: boolean = false;
+  public showShelter: boolean = false;
+
+  public mapOpacities: Record<string, number> = {};
+  public expandedSettings: string | null = null;
 
   private redrawMap() {
-    this.mapService?.draw_map(this.currentLayer, {
-      fountains: this.showFountains,
-      haltestellen: this.showHaltestellen,
-      hangneigung: this.showHangneigung,
-      wanderwege: this.showWanderwege,
-      sperrungen: this.showSperrungen,
-      schutzgebiete: this.showSchutzgebiete,
-    });
+    this.mapService?.draw_map(
+      this.currentLayer,
+      {
+        fountains: this.showFountains,
+        haltestellen: this.showHaltestellen,
+        hangneigung: this.showHangneigung,
+        wanderwege: this.showWanderwege,
+        sperrungen: this.showSperrungen,
+        schutzgebiete: this.showSchutzgebiete,
+        schiessanzeigen: this.showSchiessanzeigen,
+        herdenschutzhunde: this.showHerdenschutzhunde,
+        notfall: this.showNotfall,
+        feuerstellen: this.showFeuerstellen,
+        shelter: this.showShelter,
+      },
+      'map-canvas',
+      this.mapOpacities,
+    );
   }
 
   ngAfterViewInit() {
@@ -107,13 +125,46 @@ export class MapBackgroundComponent implements OnInit, AfterViewInit {
     this.redrawMap();
   }
 
+  toggleSchiessanzeigen(event: Event) {
+    event.stopPropagation();
+    this.showSchiessanzeigen = !this.showSchiessanzeigen;
+    this.redrawMap();
+  }
+
+  toggleHerdenschutzhunde(event: Event) {
+    event.stopPropagation();
+    this.showHerdenschutzhunde = !this.showHerdenschutzhunde;
+    this.redrawMap();
+  }
+
+  toggleNotfall(event: Event) {
+    event.stopPropagation();
+    this.showNotfall = !this.showNotfall;
+    this.redrawMap();
+  }
+
+  toggleFeuerstellen(event: Event) {
+    event.stopPropagation();
+    this.showFeuerstellen = !this.showFeuerstellen;
+    this.redrawMap();
+  }
+
+  toggleShelter(event: Event) {
+    event.stopPropagation();
+    this.showShelter = !this.showShelter;
+    this.redrawMap();
+  }
+
   toggle_drawer_table() {
-    if (this.router.url === '/guide') {
-      this.router.navigate(['/']);
-      this.mapAnimator.drawer_open = true;
+    if (this.mapAnimator.app_mode === 'table') {
+      this.setAppMode('edit');
     } else {
-      this.mapAnimator.drawer_open = !this.mapAnimator.drawer_open;
+      this.setAppMode('table');
     }
+  }
+
+  setAppMode(mode: 'view' | 'edit' | 'table') {
+    this.mapAnimator.setAppMode(mode);
   }
 
   toggle_drawer_guide() {
@@ -123,6 +174,34 @@ export class MapBackgroundComponent implements OnInit, AfterViewInit {
     } else {
       this.mapAnimator.drawer_open = !this.mapAnimator.drawer_open;
     }
+  }
+
+  handleToggle(event: Event, layerMethodName: string) {
+    const fnName = ('toggle' + layerMethodName) as keyof MapBackgroundComponent;
+    const fn = this[fnName];
+    if (typeof fn === 'function') {
+      (fn as Function).call(this, event);
+    }
+  }
+
+  handleSettingsClick(layerKey: string, event: Event) {
+    event.stopPropagation();
+    event.preventDefault();
+    if (this.expandedSettings === layerKey) {
+      this.expandedSettings = null;
+    } else {
+      this.expandedSettings = layerKey;
+    }
+  }
+
+  getOpacity(layerKey: string): number {
+    return this.mapOpacities[layerKey] ?? 1.0;
+  }
+
+  setOpacity(layerKey: string, value: string | number) {
+    const numericValue = typeof value === 'string' ? parseFloat(value) : value;
+    this.mapOpacities[layerKey] = numericValue;
+    this.mapService?.updateLayerOpacity(layerKey, numericValue);
   }
 
   triggerUpload() {

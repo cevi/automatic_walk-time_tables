@@ -25,7 +25,7 @@
 
 .mat-stepper-vertical {
   background-color: transparent;
-  font-family: 'Open Sans', 'Inter', 'Roboto', sans-serif;
+  font-family: "Open Sans", "Inter", "Roboto", sans-serif;
 }
 
 .slider label {
@@ -38,10 +38,12 @@
   margin-bottom: 24px;
   background: #ffffff;
   border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04), 0 1px 4px rgba(0, 0, 0, 0.02);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.04),
+    0 1px 4px rgba(0, 0, 0, 0.02);
   border: 1px solid rgba(0, 0, 0, 0.05);
   padding: 24px;
-  
+
   p {
     color: #5f6368;
     line-height: 1.5;
@@ -68,14 +70,15 @@
   color: #d93025;
 }
 
-.mat-mdc-unelevated-button, .mat-mdc-outlined-button {
+.mat-mdc-unelevated-button,
+.mat-mdc-outlined-button {
   border-radius: 20px !important;
   letter-spacing: 0.3px;
   margin: 0 10px 0 0;
 }
 
 .export-dialog h2 {
-  font-family: 'Open Sans', 'Inter', 'Roboto', sans-serif;
+  font-family: "Open Sans", "Inter", "Roboto", sans-serif;
   font-weight: 600;
   color: #202124;
   margin-bottom: 24px;
@@ -85,7 +88,7 @@
 /* Premium Stepper Redesign */
 ::ng-deep .mat-stepper-vertical {
   background-color: transparent !important;
-  font-family: 'Open Sans', 'Inter', 'Roboto', sans-serif;
+  font-family: "Open Sans", "Inter", "Roboto", sans-serif;
 }
 
 ::ng-deep .mat-stepper-vertical-line::before {
@@ -132,11 +135,10 @@
   flex-direction: column;
   gap: 16px;
   margin-bottom: 12px;
-  
+
   @media (min-width: 600px) {
     flex-direction: row;
     flex-wrap: wrap;
     gap: 24px;
   }
 }
-

@@ -12,13 +12,23 @@ import { LV95_Waypoint } from '../helpers/coordinates';
 
 export class MapExportRenderer {
   private pois_layer_source = new VectorSource({ wrapX: false });
-  public pois_layer = new VectorLayer({ source: this.pois_layer_source, zIndex: 20 });
+  public pois_layer = new VectorLayer({
+    source: this.pois_layer_source,
+    zIndex: 20,
+  });
 
   private labels_layer_source = new VectorSource({ wrapX: false });
-  private labels_layer = new VectorLayer({ source: this.labels_layer_source, zIndex: 21, declutter: true });
+  private labels_layer = new VectorLayer({
+    source: this.labels_layer_source,
+    zIndex: 21,
+    declutter: true,
+  });
 
   private pointer_layer_source = new VectorSource();
-  private pointer_layer = new VectorLayer({ source: this.pointer_layer_source, zIndex: 30 });
+  private pointer_layer = new VectorLayer({
+    source: this.pointer_layer_source,
+    zIndex: 30,
+  });
 
   private map: Map;
   private map_animator: MapAnimatorService;
@@ -41,7 +51,13 @@ export class MapExportRenderer {
 
   private setupHoverHandler() {
     this.map.on('pointermove', (evt) => {
-      if (!this.map_animator.export_mode) return;
+      if (
+        !this.map_animator.export_mode ||
+        this.map_animator.app_mode === 'view'
+      ) {
+        this.map_animator.move_pointer(null);
+        return;
+      }
 
       const path = this.map_animator.path;
       if (!path || path.length === 0) {
@@ -54,7 +70,9 @@ export class MapExportRenderer {
       let nearest: LV95_Waypoint | null = null;
       let min_dist = Infinity;
       for (const pt of path) {
-        const d = Math.pow(pt.x - evt.coordinate[0], 2) + Math.pow(pt.y - evt.coordinate[1], 2);
+        const d =
+          Math.pow(pt.x - evt.coordinate[0], 2) +
+          Math.pow(pt.y - evt.coordinate[1], 2);
         if (d < min_dist) {
           min_dist = d;
           nearest = pt;
@@ -72,7 +90,11 @@ export class MapExportRenderer {
 
   private setupClickHandler() {
     this.map.on('singleclick', (evt) => {
-      if (!this.map_animator.export_mode) return;
+      if (
+        !this.map_animator.export_mode ||
+        this.map_animator.app_mode === 'view'
+      )
+        return;
 
       const path = this.map_animator.path;
       if (!path || path.length === 0) return;
@@ -83,7 +105,8 @@ export class MapExportRenderer {
       let min_poi_dist = Infinity;
       for (const poi of pois) {
         const d = Math.sqrt(
-          Math.pow(poi.x - evt.coordinate[0], 2) + Math.pow(poi.y - evt.coordinate[1], 2),
+          Math.pow(poi.x - evt.coordinate[0], 2) +
+            Math.pow(poi.y - evt.coordinate[1], 2),
         );
         if (d < min_poi_dist) {
           min_poi_dist = d;
@@ -104,7 +127,8 @@ export class MapExportRenderer {
       let min_path_dist = Infinity;
       for (const pt of path) {
         const d = Math.sqrt(
-          Math.pow(pt.x - evt.coordinate[0], 2) + Math.pow(pt.y - evt.coordinate[1], 2),
+          Math.pow(pt.x - evt.coordinate[0], 2) +
+            Math.pow(pt.y - evt.coordinate[1], 2),
         );
         if (d < min_path_dist) {
           min_path_dist = d;
@@ -142,7 +166,9 @@ export class MapExportRenderer {
     this.sub4 = this.map_animator.pointer$.subscribe((coord) => {
       this.pointer_layer_source.clear();
       if (coord && this.map_animator.export_mode) {
-        const feature = new Feature({ geometry: new Point([coord.x, coord.y]) });
+        const feature = new Feature({
+          geometry: new Point([coord.x, coord.y]),
+        });
         feature.setStyle(
           new Style({
             image: new CircleStyle({
@@ -164,7 +190,9 @@ export class MapExportRenderer {
     const pois = this.map_animator.pois;
     pois.forEach((poi: any) => {
       // Circle marker (always visible)
-      const circleFeature = new Feature({ geometry: new Point([poi.x, poi.y]) });
+      const circleFeature = new Feature({
+        geometry: new Point([poi.x, poi.y]),
+      });
       circleFeature.setStyle(
         new Style({
           image: new CircleStyle({
@@ -178,7 +206,9 @@ export class MapExportRenderer {
 
       // Text label (decluttered)
       if (poi.name) {
-        const labelFeature = new Feature({ geometry: new Point([poi.x, poi.y]) });
+        const labelFeature = new Feature({
+          geometry: new Point([poi.x, poi.y]),
+        });
         labelFeature.setStyle(
           new Style({
             text: new Text({

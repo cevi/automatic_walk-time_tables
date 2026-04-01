@@ -5,7 +5,9 @@
   margin-bottom: 30px;
   background: #ffffff;
   border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.02);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.04),
+    0 2px 8px rgba(0, 0, 0, 0.02);
   border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
@@ -13,7 +15,7 @@
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  font-family: 'Open Sans', 'Inter', 'Roboto', sans-serif;
+  font-family: "Open Sans", "Inter", "Roboto", sans-serif;
   font-size: 14px;
   white-space: nowrap;
 
@@ -33,7 +35,7 @@
         text-align: left;
         padding-left: 20px;
       }
-      
+
       &:last-child {
         padding-right: 20px;
       }
@@ -103,7 +105,7 @@
 
         input[type="number"] {
           text-align: center;
-          
+
           &::placeholder {
             color: #80868b;
             font-size: 13px;
@@ -167,21 +169,21 @@
 .empty-state {
   text-align: center;
   padding: 48px 20px !important;
-  
+
   h3 {
     margin-bottom: 8px;
     font-weight: 600;
     color: #202124;
     font-size: 18px;
   }
-  
+
   p {
     margin-top: 0;
     color: #5f6368;
     margin-bottom: 24px;
     font-size: 14px;
   }
-  
+
   button {
     border-radius: 20px;
     padding: 0 24px;

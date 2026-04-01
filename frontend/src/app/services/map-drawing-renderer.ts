@@ -48,7 +48,8 @@ export class MapDrawingRenderer {
   private is_hovering_interactive_feature: boolean = false;
   private hoverIdentifyTimeout: any;
   private is_hovering_tooltip: boolean = false;
-  private haltestellen_cache: { x: number; y: number; name: string }[] = [];
+  private interactive_feature_cache: { x: number; y: number; html: string }[] =
+    [];
   private is_mouse_over_dom_tooltip: boolean = false;
   private dragged_anchor: LV95_Waypoint | null = null;
   private modifystart_coord: number[] | null = null;
@@ -139,6 +140,9 @@ export class MapDrawingRenderer {
     this.infoElement.style.fontSize = '13px';
     this.infoElement.style.color = '#333';
     this.infoElement.style.display = 'none';
+    this.infoElement.style.maxWidth = '380px';
+    this.infoElement.style.lineHeight = '1.4';
+    this.infoElement.style.wordWrap = 'break-word';
 
     this.infoOverlay = new Overlay({
       element: this.infoElement,
@@ -224,7 +228,7 @@ export class MapDrawingRenderer {
 
   private setupHoverLogic() {
     this.map.on('pointermove', (evt) => {
-      if (this.map_animator && !this.map_animator.export_mode) {
+      if (this.map_animator) {
         const targetElement = this.map.getTargetElement();
         if (targetElement.style.cursor === 'pointer') {
           targetElement.style.cursor = '';
@@ -234,25 +238,27 @@ export class MapDrawingRenderer {
         this.is_hovering_interactive_feature = false;
 
         let foundAnchor = false;
-        this.map.forEachFeatureAtPixel(
-          evt.pixel,
-          (f, l) => {
-            if (
-              l &&
-              (l as any).getSource() === this.anchor_points_layer_source
-            ) {
-              const geom = f.getGeometry() as Point;
-              const center = geom.getCoordinates();
-              this.tooltipOverlay.setPosition(center);
-              this.hovered_anchor = {
-                x: center[0],
-                y: center[1],
-              } as LV95_Waypoint;
-              foundAnchor = true;
-            }
-          },
-          { hitTolerance: 25 },
-        );
+        if (!this.map_animator.export_mode) {
+          this.map.forEachFeatureAtPixel(
+            evt.pixel,
+            (f, l) => {
+              if (
+                l &&
+                (l as any).getSource() === this.anchor_points_layer_source
+              ) {
+                const geom = f.getGeometry() as Point;
+                const center = geom.getCoordinates();
+                this.tooltipOverlay.setPosition(center);
+                this.hovered_anchor = {
+                  x: center[0],
+                  y: center[1],
+                } as LV95_Waypoint;
+                foundAnchor = true;
+              }
+            },
+            { hitTolerance: 25 },
+          );
+        }
 
         if (!foundAnchor && !this.is_mouse_over_dom_tooltip) {
           this.hovered_anchor = undefined;
@@ -266,7 +272,12 @@ export class MapDrawingRenderer {
           this.tooltipOverlay.setPosition(undefined);
         }
 
-        if (this.is_modifying) {
+        if (this.map_animator.export_mode) {
+          if (this.tooltipElement.innerHTML !== '') {
+            this.tooltipElement.innerHTML = '';
+          }
+          this.tooltipOverlay.setPosition(undefined);
+        } else if (this.is_modifying) {
           if (this.tooltipElement.innerHTML !== '') {
             this.tooltipElement.innerHTML = '';
           }
@@ -314,34 +325,55 @@ export class MapDrawingRenderer {
         let map_hover_coord: LV95_Waypoint | null = null;
         if (!this.is_modifying && !this.hovered_anchor) {
           let hit_path = false;
-          let hit_fountain = false;
+          let hit_vector = false;
 
           this.map.forEachFeatureAtPixel(
             evt.pixel,
             (f, l) => {
               if (l === this.path_layer) hit_path = true;
-              if (l && l.get('name') === 'fountains') hit_fountain = true;
+              if (
+                l &&
+                ['fountains', 'notfall', 'feuerstellen', 'shelter'].includes(
+                  l.get('name') as string,
+                )
+              ) {
+                hit_vector = true;
+              }
             },
             { hitTolerance: 25 },
           );
 
-          if (hit_fountain && !this.hovered_anchor) {
+          if (hit_vector && !this.hovered_anchor) {
             this.is_hovering_interactive_feature = true;
             targetElement.style.cursor = 'pointer';
           } else {
-            let hasHaltestellen = false;
+            const wmtsLayerNames: Record<string, string> = {
+              haltestellen: 'ch.bav.haltestellen-oev',
+              schiessanzeigen: 'ch.vbs.schiessanzeigen',
+              herdenschutzhunde: 'ch.bafu.alpweiden-herdenschutzhunde',
+              schutzgebiete_naturschutzgebiete:
+                'ch.pronatura.naturschutzgebiete',
+              schutzgebiete_jagdbanngebiete:
+                'ch.bafu.wrz-jagdbanngebiete_select',
+              schutzgebiete_wildruhezonen: 'ch.bafu.wrz-wildruhezonen_portal',
+            };
+
+            let activeIdentifyLayers: string[] = [];
             this.map.getLayers().forEach((l) => {
-              if (l.get('name') === 'haltestellen') hasHaltestellen = true;
+              const name = l.get('name') as string;
+              if (name && wmtsLayerNames[name]) {
+                activeIdentifyLayers.push(wmtsLayerNames[name]);
+              }
             });
 
             if (
-              hasHaltestellen &&
+              activeIdentifyLayers.length > 0 &&
               !this.is_hovering_tooltip &&
               !this.hovered_anchor
             ) {
               // 1. Check local cache first (radius 25m)
               let cachedHit = false;
-              for (const hc of this.haltestellen_cache) {
+              for (const hc of this.interactive_feature_cache) {
                 const dx = hc.x - evt.coordinate[0];
                 const dy = hc.y - evt.coordinate[1];
                 if (Math.sqrt(dx * dx + dy * dy) < 25) {
@@ -360,19 +392,63 @@ export class MapDrawingRenderer {
                     .getView()
                     .calculateExtent(this.map.getSize());
                   const size = this.map.getSize() || [800, 600];
-                  const url = `https://api3.geo.admin.ch/rest/services/all/MapServer/identify?geometry=${evt.coordinate[0]},${evt.coordinate[1]}&geometryFormat=geojson&geometryType=esriGeometryPoint&imageDisplay=${size[0]},${size[1]},96&mapExtent=${ext.join(',')}&sr=2056&tolerance=15&layers=all:ch.bav.haltestellen-oev`;
+                  const layersStr = `all:${activeIdentifyLayers.join(',')}`;
+                  const url = `https://api3.geo.admin.ch/rest/services/all/MapServer/identify?geometry=${evt.coordinate[0]},${evt.coordinate[1]}&geometryFormat=geojson&geometryType=esriGeometryPoint&imageDisplay=${size[0]},${size[1]},96&mapExtent=${ext.join(',')}&sr=2056&tolerance=15&layers=${layersStr}`;
                   try {
                     const res = await fetch(url);
                     if (res.ok) {
                       const data = await res.json();
                       if (data.results && data.results.length > 0) {
                         const pt = data.results[0].geometry.coordinates[0];
-                        const name =
-                          data.results[0].properties?.name || 'Unbekannt';
-                        this.haltestellen_cache.push({
+
+                        let htmlResult = '';
+                        const seenFeatures = new Set<string>();
+                        for (const result of data.results) {
+                          const featureKey =
+                            result.layerBodId + '_' + result.featureId;
+                          if (seenFeatures.has(featureKey)) continue;
+                          seenFeatures.add(featureKey);
+
+                          const props = result.properties || {};
+                          let title = result.layerBodId || 'Metadaten';
+                          // Lookup friendly title if possible
+                          if (title === 'ch.bav.haltestellen-oev')
+                            title = 'ÖV-Haltestelle';
+                          else if (title === 'ch.vbs.schiessanzeigen')
+                            title = 'Schiessanzeigen';
+                          else if (
+                            title === 'ch.bafu.alpweiden-herdenschutzhunde'
+                          )
+                            title = 'Herdenschutzhunde';
+                          else if (
+                            title.includes('schutzgebiete') ||
+                            title.includes('wrz')
+                          )
+                            title = 'Schutzgebiet';
+
+                          let subtitle =
+                            props.wrz_name ||
+                            props.jb_name ||
+                            props.name ||
+                            props.nom ||
+                            props.titre ||
+                            props.title ||
+                            '';
+                          htmlResult += `<b>${title}</b>`;
+                          if (subtitle) htmlResult += `<br>${subtitle}`;
+                          htmlResult +=
+                            '<div style="max-height: 200px; overflow-y: auto; margin-top: 5px; font-size: 0.9em;">';
+                          htmlResult += this.formatPopupProperties(
+                            props,
+                            result.layerBodId,
+                          );
+                          htmlResult += '</div><hr style="margin:5px 0;">';
+                        }
+
+                        this.interactive_feature_cache.push({
                           x: pt[0],
                           y: pt[1],
-                          name,
+                          html: htmlResult,
                         });
 
                         this.is_hovering_interactive_feature = true;
@@ -386,7 +462,11 @@ export class MapDrawingRenderer {
             }
           }
 
-          if (hit_path && this.map_animator.path.length > 0) {
+          if (
+            !this.map_animator.export_mode &&
+            hit_path &&
+            this.map_animator.path.length > 0
+          ) {
             let min_dist = Infinity;
             for (const wp of this.map_animator.path) {
               const d =
@@ -399,9 +479,12 @@ export class MapDrawingRenderer {
             }
           }
         }
-        this.pointer = [evt.coordinate[0], evt.coordinate[1]];
-        this.render_pointer();
-        this.map_animator.move_pointer(map_hover_coord);
+
+        if (!this.map_animator.export_mode) {
+          this.pointer = [evt.coordinate[0], evt.coordinate[1]];
+          this.render_pointer();
+          this.map_animator.move_pointer(map_hover_coord);
+        }
       }
     });
   }
@@ -424,54 +507,112 @@ export class MapDrawingRenderer {
 
   private setupDrawInteraction() {
     this.map.on('singleclick', async (evt) => {
-      if (this.map_animator.export_mode) return;
-
       this.infoElement.style.display = 'none';
       this.infoOverlay.setPosition(undefined);
 
-      if (this.hovered_anchor) {
+      if (!this.map_animator.export_mode && this.hovered_anchor) {
         // Explicitly hit an anchor without dragging -> delete it
         this.onWaypointDeleted.emit(this.hovered_anchor);
         this.tooltipOverlay.setPosition(undefined);
         return;
       }
 
-      // 1. Check if user clicked a Fountain (Vector feature)
-      let clickedFountain = false;
-      let fountainProperties: any = null;
+      // 1. Check if user clicked an Interactive Vector feature
+      let clickedVector = false;
+      let vectorName = '';
+      let vectorProperties: any = null;
 
       this.map.forEachFeatureAtPixel(evt.pixel, (feature, layer) => {
-        if (layer && layer.get('name') === 'fountains') {
-          clickedFountain = true;
-          fountainProperties = feature.getProperties();
+        if (layer) {
+          const lName = layer.get('name') as string;
+          if (
+            ['fountains', 'notfall', 'feuerstellen', 'shelter'].includes(lName)
+          ) {
+            clickedVector = true;
+            vectorName = lName;
+            vectorProperties = feature.getProperties();
+          }
         }
       });
 
-      if (clickedFountain && fountainProperties) {
-        let isDrinkable = 'Unbekannt';
-        if (fountainProperties['amenity'] === 'drinking_water')
-          isDrinkable = 'Ja';
-        else if (fountainProperties['drinking_water'] === 'yes')
-          isDrinkable = 'Ja';
-        else if (fountainProperties['drinking_water'] === 'no')
-          isDrinkable = 'Nein';
+      if (clickedVector && vectorProperties) {
+        let title = '';
+        let subtitle = '';
 
-        this.infoElement.innerHTML = `<b>Brunnen</b><br>Trinkwasser: ${isDrinkable}`;
+        if (vectorName === 'fountains') {
+          title = 'Brunnen';
+          let isDrinkable = 'Unbekannt';
+          if (
+            vectorProperties['amenity'] === 'drinking_water' ||
+            vectorProperties['drinking_water'] === 'yes'
+          )
+            isDrinkable = 'Ja';
+          else if (vectorProperties['drinking_water'] === 'no')
+            isDrinkable = 'Nein';
+          subtitle = `Trinkwasser: ${isDrinkable}`;
+        } else if (vectorName === 'notfall') {
+          title = 'Medizinische Einrichtung';
+          const typeMap: Record<string, string> = {
+            hospital: 'Spital',
+            clinic: 'Klinik',
+            pharmacy: 'Apotheke',
+            doctors: 'Arztpraxis',
+            dentist: 'Zahnarzt',
+          };
+          const rawType =
+            vectorProperties['amenity'] ||
+            vectorProperties['healthcare'] ||
+            'Unbekannt';
+          const type = typeMap[rawType] || rawType;
+
+          let name = vectorProperties['name'] || '-';
+          let phone =
+            vectorProperties['phone'] ||
+            vectorProperties['contact:phone'] ||
+            '';
+          let emergency =
+            vectorProperties['emergency'] === 'yes' ? 'Notaufnahme: Ja' : '';
+
+          subtitle = `<b>${type}</b><br>Name: ${name}`;
+          if (phone) subtitle += `<br>Tel: ${phone}`;
+          if (emergency)
+            subtitle += `<br><span style="color:#d32f2f">${emergency}</span>`;
+        } else if (vectorName === 'feuerstellen') {
+          title = 'Feuerstelle';
+          subtitle = vectorProperties['name'] || 'Öffentlicher Grillplatz';
+        } else if (vectorName === 'shelter') {
+          title = 'Unterstand';
+          subtitle = vectorProperties['name'] || 'Schutzhütte';
+        }
+
+        this.infoElement.innerHTML = `<b>${title}</b><br>${subtitle}`;
         this.infoElement.style.display = 'block';
         this.infoOverlay.setPosition(evt.coordinate);
         return;
       }
 
-      // 2. Check if user clicked Haltestellen (WMTS Layer -> GeoAdmin Identify API)
-      let hasHaltestellen = false;
+      // 2. Check if user clicked any WMTS Interactive Layers
+      const wmtsLayerNames: Record<string, string> = {
+        haltestellen: 'ch.bav.haltestellen-oev',
+        schiessanzeigen: 'ch.vbs.schiessanzeigen',
+        herdenschutzhunde: 'ch.bafu.alpweiden-herdenschutzhunde',
+        schutzgebiete_naturschutzgebiete: 'ch.pronatura.naturschutzgebiete',
+        schutzgebiete_jagdbanngebiete: 'ch.bafu.wrz-jagdbanngebiete_select',
+        schutzgebiete_wildruhezonen: 'ch.bafu.wrz-wildruhezonen_portal',
+      };
+
+      let activeIdentifyLayers: string[] = [];
       this.map.getLayers().forEach((l) => {
-        if (l.get('name') === 'haltestellen') hasHaltestellen = true;
+        const name = l.get('name') as string;
+        if (name && wmtsLayerNames[name]) {
+          activeIdentifyLayers.push(wmtsLayerNames[name]);
+        }
       });
 
-      if (hasHaltestellen && !this.is_hovering_tooltip) {
+      if (activeIdentifyLayers.length > 0 && !this.is_hovering_tooltip) {
         // Check cache first
         let cachedHit = null;
-        for (const hc of this.haltestellen_cache) {
+        for (const hc of this.interactive_feature_cache) {
           const dx = hc.x - evt.coordinate[0];
           const dy = hc.y - evt.coordinate[1];
           if (Math.sqrt(dx * dx + dy * dy) < 25) {
@@ -481,34 +622,79 @@ export class MapDrawingRenderer {
         }
 
         if (cachedHit) {
-          this.infoElement.innerHTML = `<b>ÖV-Haltestelle</b><br>${cachedHit.name}`;
+          this.infoElement.innerHTML = cachedHit.html;
           this.infoElement.style.display = 'block';
           this.infoOverlay.setPosition(evt.coordinate);
           return;
         }
 
         // Show loading instantly & perform async check
-        this.infoElement.innerHTML = `<b>ÖV-Haltestelle</b><br><span style="color:#666">Laden...</span>`;
+        this.infoElement.innerHTML = `<b>Metadaten</b><br><span style="color:#666">Laden...</span>`;
         this.infoElement.style.display = 'block';
         this.infoOverlay.setPosition(evt.coordinate);
 
         const ext = this.map.getView().calculateExtent(this.map.getSize());
         const size = this.map.getSize() || [800, 600];
-        const url = `https://api3.geo.admin.ch/rest/services/all/MapServer/identify?geometry=${evt.coordinate[0]},${evt.coordinate[1]}&geometryFormat=geojson&geometryType=esriGeometryPoint&imageDisplay=${size[0]},${size[1]},96&mapExtent=${ext.join(',')}&sr=2056&tolerance=20&layers=all:ch.bav.haltestellen-oev`;
+        const layersStr = `all:${activeIdentifyLayers.join(',')}`;
+        const url = `https://api3.geo.admin.ch/rest/services/all/MapServer/identify?geometry=${evt.coordinate[0]},${evt.coordinate[1]}&geometryFormat=geojson&geometryType=esriGeometryPoint&imageDisplay=${size[0]},${size[1]},96&mapExtent=${ext.join(',')}&sr=2056&tolerance=20&layers=${layersStr}`;
 
         fetch(url)
           .then((res) => res.json())
           .then((data) => {
             if (data.results && data.results.length > 0) {
               const pt = data.results[0].geometry.coordinates[0];
-              const name = data.results[0].properties?.name || 'Unbekannt';
-              this.haltestellen_cache.push({ x: pt[0], y: pt[1], name });
-              this.infoElement.innerHTML = `<b>ÖV-Haltestelle</b><br>${name}`;
+              let htmlResult = '';
+              const seenFeatures = new Set<string>();
+              for (const result of data.results) {
+                const featureKey = result.layerBodId + '_' + result.featureId;
+                if (seenFeatures.has(featureKey)) continue;
+                seenFeatures.add(featureKey);
+
+                const props = result.properties || {};
+                let title = result.layerBodId || 'Metadaten';
+                // Lookup friendly title if possible
+                if (title === 'ch.bav.haltestellen-oev')
+                  title = 'ÖV-Haltestelle';
+                else if (title === 'ch.vbs.schiessanzeigen')
+                  title = 'Schiessanzeigen';
+                else if (title === 'ch.bafu.alpweiden-herdenschutzhunde')
+                  title = 'Herdenschutzhunde';
+                else if (
+                  title.includes('schutzgebiete') ||
+                  title.includes('wrz')
+                )
+                  title = 'Schutzgebiet';
+
+                let subtitle =
+                  props.wrz_name ||
+                  props.jb_name ||
+                  props.name ||
+                  props.nom ||
+                  props.titre ||
+                  props.title ||
+                  '';
+                htmlResult += `<b>${title}</b>`;
+                if (subtitle) htmlResult += `<br>${subtitle}`;
+                htmlResult +=
+                  '<div style="max-height: 200px; overflow-y: auto; margin-top: 5px; font-size: 0.9em;">';
+                htmlResult += this.formatPopupProperties(
+                  props,
+                  result.layerBodId,
+                );
+                htmlResult += '</div><hr style="margin:5px 0;">';
+              }
+
+              this.interactive_feature_cache.push({
+                x: pt[0],
+                y: pt[1],
+                html: htmlResult,
+              });
+              this.infoElement.innerHTML = htmlResult;
             } else {
-              // False alarm, not a Haltestelle. Hide overlay and append anchor fallback.
+              // False alarm, not a feature. Hide overlay and append anchor fallback.
               this.infoElement.style.display = 'none';
               this.infoOverlay.setPosition(undefined);
-              if (!this.is_hovering_tooltip) {
+              if (!this.map_animator.export_mode && !this.is_hovering_tooltip) {
                 this.pointer_layer_source.clear();
                 this.onWaypointAdded.emit({
                   x: evt.coordinate[0],
@@ -525,6 +711,8 @@ export class MapDrawingRenderer {
 
         return; // Return immediately to prevent synchronous cursor freezing
       }
+
+      if (this.map_animator.export_mode) return;
 
       if (!this.is_hovering_tooltip) {
         // Hit empty map -> append new anchor
@@ -740,6 +928,123 @@ export class MapDrawingRenderer {
       end_anchor_idx: end_idx,
       found_end,
     };
+  }
+
+  private formatPopupProperties(props: any, layerBodId: string): string {
+    let result = '';
+    const excludeKeys = [
+      'geometry',
+      'name',
+      'nom',
+      'titre',
+      'title',
+      'label',
+      'wrz_name',
+      'jb_name',
+    ];
+
+    for (const key of Object.keys(props)) {
+      if (
+        excludeKeys.includes(key) ||
+        props[key] === null ||
+        props[key] === undefined ||
+        typeof props[key] === 'object'
+      ) {
+        continue;
+      }
+
+      let displayKey = key;
+      let val = props[key];
+
+      // Herdenschutzhunde Mappings
+      if (layerBodId === 'ch.bafu.alpweiden-herdenschutzhunde') {
+        if (key === 'code_refverhalten') {
+          displayKey = 'Verhaltensregeln';
+          val =
+            'http://www.protectiondestroupeaux.ch/de/herdenschutzhunde/tourismus-und-herdenschutzhunde/sichere-begegnungen-mit-herdenschutzhunden/';
+        } else if (key === 'code_hundepraesenz') {
+          displayKey = 'Anwesenheit Schutzhunde';
+          if (val === 1049)
+            val =
+              "In der Regel zwischen Anfang Juni und Anfang Juli und im Oktober auf den Weiden zwischen Vercorin und Le Crêt du Midi. Und zwischen Anfang Juli bis Ende September auf den Weiden zwischen Le Crêt du Midi und le Roc d'Orzival.";
+          else if (val === 1000)
+            val = 'In der Regel von Mitte Mai bis Mitte September.';
+          else if (val === 1001)
+            val = 'In der Regel von Anfang Juni bis Mitte September.';
+          else if (val === 1014)
+            val = 'In der Regel von Mitte Mai bis Ende September.';
+          else if (val === 1038)
+            val = 'In der Regel von Ende Mai bis Ende September.';
+          else val = 'Je nach Saison (Details siehe Swisstopo Info)';
+        } else if (key === 'code_hinweis') {
+          displayKey = 'Hinweis';
+          if (val === 0) val = 'Keine besonderen Hinweise.';
+          else if (val === 51)
+            val =
+              'Um Interaktionen zwischen Herdenschutzhunden und Touristen zu minimieren, können einige Wanderwege vorübergehend geschlossen und umgeleitet werden.';
+          else if (val === 60 || val === 92)
+            val =
+              'Bitte beachten Sie die lokalen Signalisationen und Hinweise.';
+          else val = '-';
+        } else if (key === 'kontname') {
+          displayKey = 'Kontakt Name';
+        } else if (key === 'konttel') {
+          displayKey = 'Kontakt Telefon';
+        } else if (key === 'kontemail') {
+          displayKey = 'Kontakt E-Mail';
+        } else if (key === 'refmeldungbeweidungszone') {
+          displayKey = 'Aktuelle Beweidungszone';
+        }
+      }
+
+      // Global Localization Filter (Keep only _de variations and strip _de postfix)
+      if (
+        key.endsWith('_fr') ||
+        key.endsWith('_it') ||
+        key.endsWith('_en') ||
+        key.endsWith('_rm')
+      ) {
+        continue;
+      }
+      if (key.endsWith('_de')) {
+        displayKey = key.replace('_de', '');
+      }
+
+      // Schutzgebiete Mappings
+      if (layerBodId.includes('schutzgebiete') || layerBodId.includes('wrz')) {
+        if (key === 'wrz_name') {
+          displayKey = 'Name';
+        }
+        if (key === 'schutzs_de') {
+          displayKey = 'Schutzstatus';
+        }
+        if (key === 'einschraenkungen') {
+          displayKey = 'Einschränkungen';
+        }
+      }
+
+      // Format Links and Line Breaks
+      if (typeof val === 'string') {
+        if (val.startsWith('http')) {
+          val = `<a href="${val}" target="_blank" style="color:#1976D2; text-decoration: underline;">Link</a>`;
+        } else {
+          val = val.replace(/;\s+/g, ';<br>');
+        }
+      }
+
+      // Format Key Name
+      displayKey = displayKey.replace(/_/g, ' ');
+      displayKey = displayKey.charAt(0).toUpperCase() + displayKey.slice(1);
+
+      result += `<p style="margin:2px 0;"><strong>${displayKey}:</strong> ${val}</p>`;
+    }
+
+    // External Link to Swisstopo for accurate source
+    if (layerBodId) {
+      result += `<p style="margin:6px 0 2px 0;"><a href="https://map.geo.admin.ch/?layers=${layerBodId}&lang=de" target="_blank" style="color:#1976D2; text-decoration: underline;">Auf Swisstopo ansehen</a></p>`;
+    }
+
+    return result;
   }
 
   private create_line_segment_style(

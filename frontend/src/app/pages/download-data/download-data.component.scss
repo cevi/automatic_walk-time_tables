@@ -1,7 +1,7 @@
 .page-container {
   max-width: 600px;
   margin: 40px auto;
-  font-family: 'Open Sans', 'Inter', 'Roboto', sans-serif;
+  font-family: "Open Sans", "Inter", "Roboto", sans-serif;
   text-align: center;
   color: #3c4043;
 }
@@ -37,11 +37,11 @@
   margin-bottom: 32px;
   max-height: 240px;
   overflow-y: auto;
-  font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
+  font-family: "JetBrains Mono", "Roboto Mono", monospace;
   font-size: 13px;
-  
+
   .log-title {
-    font-family: 'Open Sans', 'Inter', sans-serif;
+    font-family: "Open Sans", "Inter", sans-serif;
     font-weight: 600;
     color: #202124;
     margin-top: 0;
@@ -62,9 +62,11 @@
 
     &.error {
       color: #d93025;
-      .timestamp { color: #d93025; }
+      .timestamp {
+        color: #d93025;
+      }
     }
-    
+
     &.success {
       color: #1e8e3e;
       font-weight: 500;
@@ -75,11 +77,13 @@
 .action-card {
   background: #ffffff;
   border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04), 0 1px 4px rgba(0, 0, 0, 0.02);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.04),
+    0 1px 4px rgba(0, 0, 0, 0.02);
   border: 1px solid rgba(0, 0, 0, 0.05);
   padding: 32px 24px;
   margin-bottom: 32px;
-  
+
   p {
     margin-top: 0;
     color: #5f6368;
@@ -98,7 +102,7 @@
 .share-section {
   text-align: left;
   margin-bottom: 32px;
-  
+
   mat-form-field {
     width: 100%;
   }
@@ -116,7 +120,7 @@
   border: 1px solid rgba(0, 0, 0, 0.05);
   padding: 24px;
   margin-bottom: 24px;
-  
+
   p {
     font-weight: 500;
     margin-top: 0;

@@ -1,4 +1,13 @@
-import { Component, Input, OnInit, OnDestroy, OnChanges, SimpleChanges, Output, EventEmitter } from '@angular/core';
+import {
+  Component,
+  Input,
+  OnInit,
+  OnDestroy,
+  OnChanges,
+  SimpleChanges,
+  Output,
+  EventEmitter,
+} from '@angular/core';
 import { MapAnimatorService } from '../../services/map-animator.service';
 import { LV95_Waypoint } from '../../helpers/coordinates';
 import { Subscription } from 'rxjs';
@@ -17,7 +26,7 @@ export interface TableRow {
   selector: 'app-walk-time-table',
   templateUrl: './walk-time-table.component.html',
   styleUrls: ['./walk-time-table.component.scss'],
-  standalone: false
+  standalone: false,
 })
 export class WalkTimeTableComponent implements OnInit, OnDestroy, OnChanges {
   @Input() velocity: number = 4.5;
@@ -33,7 +42,10 @@ export class WalkTimeTableComponent implements OnInit, OnDestroy, OnChanges {
   private pointerSub: Subscription | null = null;
   private currentWps: LV95_Waypoint[] = [];
 
-  constructor(public mapAnimator: MapAnimatorService, private mapService: MapService) {}
+  constructor(
+    public mapAnimator: MapAnimatorService,
+    private mapService: MapService,
+  ) {}
 
   ngOnInit() {
     this.sub = this.mapAnimator.pois$.subscribe((wps: LV95_Waypoint[]) => {
@@ -47,9 +59,11 @@ export class WalkTimeTableComponent implements OnInit, OnDestroy, OnChanges {
         this.highlightedRowIndex = -1;
         return;
       }
-      const idx = this.currentWps.findIndex(wp =>
-        wp.accumulated_distance === coord.accumulated_distance &&
-        wp.x === coord.x && wp.y === coord.y
+      const idx = this.currentWps.findIndex(
+        (wp) =>
+          wp.accumulated_distance === coord.accumulated_distance &&
+          wp.x === coord.x &&
+          wp.y === coord.y,
       );
       this.highlightedRowIndex = idx;
     });
@@ -86,14 +100,17 @@ export class WalkTimeTableComponent implements OnInit, OnDestroy, OnChanges {
 
   async autoName(row: TableRow) {
     if (!row.waypoint) return;
-    const oldName = row.waypoint.name || "";
-    row.waypoint.name = "Lade...";
+    const oldName = row.waypoint.name || '';
+    row.waypoint.name = 'Lade...';
     try {
-       const resp = await this.mapAnimator.get_name_from_coords(row.waypoint.x, row.waypoint.y);
-       row.waypoint.name = resp || "";
-       this.onFieldChange();
+      const resp = await this.mapAnimator.get_name_from_coords(
+        row.waypoint.x,
+        row.waypoint.y,
+      );
+      row.waypoint.name = resp || '';
+      this.onFieldChange();
     } catch {
-       row.waypoint.name = oldName;
+      row.waypoint.name = oldName;
     }
   }
 
@@ -106,9 +123,9 @@ export class WalkTimeTableComponent implements OnInit, OnDestroy, OnChanges {
     const str = String(durationStr);
     // format "hh:mm" or just "minutes"
     if (str.includes(':')) {
-       const parts = str.split(':');
-       const val = parseInt(parts[0]) + (parseInt(parts[1] || '0') / 60.0);
-       return isNaN(val) ? 0 : val;
+      const parts = str.split(':');
+      const val = parseInt(parts[0]) + parseInt(parts[1] || '0') / 60.0;
+      return isNaN(val) ? 0 : val;
     }
     const val = parseFloat(str);
     return isNaN(val) ? 0 : val / 60.0; // Fallback assumes minutes if just a flat number is typed
@@ -129,47 +146,54 @@ export class WalkTimeTableComponent implements OnInit, OnDestroy, OnChanges {
     let sum_dist = 0;
     let sum_lkm = 0;
     let accumulated_time_hours = 0;
-    
-    let departureDate = this.departureTime ? new Date(this.departureTime) : new Date();
+
+    let departureDate = this.departureTime
+      ? new Date(this.departureTime)
+      : new Date();
     let oldPoint: LV95_Waypoint | null = null;
 
     for (let i = 0; i < wps.length; i++) {
-       const pt = wps[i];
-       
-       let delta_h = 0;
-       let delta_dist = 0;
-       let lkm = 0;
-       let time_hours = 0;
-       let gradient = 0;
+      const pt = wps[i];
 
-       if (oldPoint) {
-          delta_h = pt.h - oldPoint.h;
-          delta_dist = Math.abs(pt.accumulated_distance - oldPoint.accumulated_distance);
-          
-          lkm = delta_dist + (delta_h > 0 ? (delta_h / 100.0) : 0);
-          time_hours = lkm / (this.velocity || 4.5);
-       }
+      let delta_h = 0;
+      let delta_dist = 0;
+      let lkm = 0;
+      let time_hours = 0;
+      let gradient = 0;
 
-       accumulated_time_hours += time_hours;
-       
-       let total_hours_from_start = accumulated_time_hours;
-       let total_break_hours = 0;
-       for(let j = 0; j < i; j++) {
-          total_break_hours += this.parseBreakDuration(wps[j].break_duration);
-       }
-       
-       let planned_arrival = new Date(departureDate.getTime() + (total_hours_from_start + total_break_hours) * 3600 * 1000);
+      if (oldPoint) {
+        delta_h = pt.h - oldPoint.h;
+        delta_dist = Math.abs(
+          pt.accumulated_distance - oldPoint.accumulated_distance,
+        );
 
-       this.rows.push({
-           waypoint: pt,
-           delta_h,
-           delta_dist,
-           lkm,
-           time_hours,
-           planned_arrival
-       });
+        lkm = delta_dist + (delta_h > 0 ? delta_h / 100.0 : 0);
+        time_hours = lkm / (this.velocity || 4.5);
+      }
 
-       oldPoint = pt;
+      accumulated_time_hours += time_hours;
+
+      let total_hours_from_start = accumulated_time_hours;
+      let total_break_hours = 0;
+      for (let j = 0; j < i; j++) {
+        total_break_hours += this.parseBreakDuration(wps[j].break_duration);
+      }
+
+      let planned_arrival = new Date(
+        departureDate.getTime() +
+          (total_hours_from_start + total_break_hours) * 3600 * 1000,
+      );
+
+      this.rows.push({
+        waypoint: pt,
+        delta_h,
+        delta_dist,
+        lkm,
+        time_hours,
+        planned_arrival,
+      });
+
+      oldPoint = pt;
     }
   }
 }
