@@ -1,10 +1,14 @@
 #!/bin/bash
 
+# The Google Drive ID for the pre-built routing graph container archive (valhalla_tiles.tar).
+# If you build a new graph locally, upload it to drive and swap this string!
+VALHALLA_TILE_ID="11OUl2HTd0dVTdAC3CDHbXIOxEShx9gUz"
+
 # check if /custom_files contains some files apart from .gitkeep or file_hashes.txt
 # (the latter is should be ignored to recover from failed downloads / startups)
 if ! [ "$(ls -A /custom_files | grep -Ev '.gitkeep' | file_hashes.txt)" ]; then
 
-  echo "No custom files found in /custom_files. Start downloading default files..."
+  echo "No local routing files found in /custom_files. Pulling default graph from GDrive..."
 
   # Install dependencies for downloading files
   sudo apt update
@@ -19,9 +23,8 @@ if ! [ "$(ls -A /custom_files | grep -Ev '.gitkeep' | file_hashes.txt)" ]; then
   sudo chmod 777 /custom_files
 
   # download pre-computed valhalla tiles
-  # these tiles are generated for valhalla version 3.5.0 or higher
-  # based on swissTLM3D released at 2024-03
-  gdown 11OUl2HTd0dVTdAC3CDHbXIOxEShx9gUz -O /custom_files/
+  # these tiles are generated based on swissTLM3D released at 2026-04
+  gdown $VALHALLA_TILE_ID -O /custom_files/
 
   # rename the downloaded file
   mv /custom_files/valhalla_tiles_*.tar /custom_files/valhalla_tiles.tar
