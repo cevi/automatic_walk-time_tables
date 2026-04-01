@@ -181,7 +181,7 @@ def get_name():
                 best_flur_dist = 99999
                 for n in swiss_names:
                     obj_lower = n.object_type.lower() if n.object_type else ""
-                    if "flurname" in obj_lower or "lokaler name" in obj_lower:
+                    if "flurname" in obj_lower or "lokalname" in obj_lower:
                         tlm_pkt = Point((n.x, n.y))
                         d = round(req_pkt.distance(tlm_pkt))
                         if d < best_flur_dist and d <= 250:

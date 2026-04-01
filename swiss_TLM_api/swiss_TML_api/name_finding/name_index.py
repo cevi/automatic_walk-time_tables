@@ -49,11 +49,25 @@ class NameIndex:
 
         self.index_file_path = "./index_cache/swissname_data_index"
 
-        # Check if index files exist
-        # If the index does not exist and force_rebuild is False,
-        # we download the index from Google Drive
-        if not force_rebuild and not os.path.isfile(self.index_file_path + ".dat"):
-            file_id = "1gESYkWDCrAJ06ADBwM-c2SrEpri6I5P0"
+        # Check if index files exist and match the current file_id version
+        # If the index does not exist or the version differs, and force_rebuild is False,
+        # we redownload the index from Google Drive
+        file_id = "1gESYkWDCrAJ06ADBwM-c2SrEpri6I5P0"
+        INDEX_CACHE_VERSION = "v1-2026-04-01"  # Bump this string to force production to redownload
+        
+        version_file = "./index_cache/.version"
+        current_version = None
+        
+        if os.path.isfile(version_file):
+            with open(version_file, "r") as f:
+                current_version = f.read().strip()
+
+        if not force_rebuild and (not os.path.isfile(self.index_file_path + ".dat") or current_version != INDEX_CACHE_VERSION):
+            if current_version != INDEX_CACHE_VERSION and os.path.isfile(self.index_file_path + ".dat"):
+                logger.info(f"New index cache version detected: '{INDEX_CACHE_VERSION}'. Invalidating old index cache...")
+                delete_file("./index_cache/*.dat")
+                delete_file("./index_cache/*.idx")
+                
             output = "./index_cache/index_cache.tar.xz"
             gdown.download(id=file_id, output=output, quiet=False)
             logger.info("Downloading index from Google Drive completed")
@@ -61,6 +75,10 @@ class NameIndex:
             shutil.unpack_archive(output, "./index_cache/")
             logger.info("Extracting index completed")
             os.remove(output)
+            
+            # Save the new version
+            with open(version_file, "w") as f:
+                f.write(INDEX_CACHE_VERSION)
 
         # If force_rebuild is enabled, we recreate the index file.
         if force_rebuild:
