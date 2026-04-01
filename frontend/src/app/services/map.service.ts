@@ -14,6 +14,8 @@ import { MapDrawingRenderer } from './map-drawing-renderer';
 import { MapExportRenderer } from './map-export-renderer';
 import Overlay from 'ol/Overlay';
 import { braetlistellenData } from '../../assets/braetlistellen';
+import TileLayer from 'ol/layer/Tile';
+import XYZ from 'ol/source/XYZ';
 
 export interface MapOverlays {
   fountains: boolean;
@@ -147,10 +149,21 @@ export class MapService extends SwisstopoMap implements OnDestroy {
       this.map.setTarget(undefined);
     }
 
-    // get base layers
     const bgLayer = layerLabel;
-    const wmtsLayer =
-      layerLabel !== 'keine' ? this.get_base_WMTS_layer(layerLabel) : null;
+
+    let wmtsLayer: Layer | null = null;
+    if (bgLayer === 'opentopomap') {
+      wmtsLayer = new TileLayer({
+        source: new XYZ({
+          url: 'https://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png',
+          attributions:
+            'Map data: &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org" target="_blank">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org" target="_blank">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank">CC-BY-SA</a>)',
+        }),
+        opacity: opacities['opentopomap'] ?? 1.0,
+      });
+    } else if (layerLabel !== 'keine') {
+      wmtsLayer = this.get_base_WMTS_layer(layerLabel) || null;
+    }
 
     const layers: Layer[] = [];
     if (wmtsLayer) layers.push(wmtsLayer);
@@ -330,6 +343,26 @@ export class MapService extends SwisstopoMap implements OnDestroy {
         }
       } else {
         popupOverlay.setPosition(undefined);
+      }
+    });
+
+    this.map.getViewport().addEventListener('contextmenu', (evt) => {
+      evt.preventDefault();
+      if (!this.map || !popupOverlay || !popupContent) return;
+
+      const coords = this.map.getEventCoordinate(evt);
+      if (coords) {
+        const formatCoord = (val: number) => {
+          return Math.round(val).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "’");
+        };
+        const xStr = formatCoord(coords[0]);
+        const yStr = formatCoord(coords[1]);
+
+        let html = `<h3 style="margin-top:0; margin-bottom:8px;">Koordinaten (LV95)</h3>`;
+        html += `<p style="margin:2px 0; font-family:monospace; font-size:16px;">${xStr}, ${yStr}</p>`;
+
+        popupContent.innerHTML = html;
+        popupOverlay.setPosition(coords);
       }
     });
 

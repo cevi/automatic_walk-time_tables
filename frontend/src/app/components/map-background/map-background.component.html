@@ -157,6 +157,26 @@
             </button>
             <button
               mat-menu-item
+              (click)="setMapLayer('opentopomap')"
+              class="custom-menu-item"
+            >
+              <div class="menu-item-content">
+                <mat-icon class="type-icon trail-icon">terrain</mat-icon>
+                <mat-icon
+                  *ngIf="currentLayer === 'opentopomap'"
+                  class="check-icon"
+                  >check_circle</mat-icon
+                >
+                <mat-icon
+                  *ngIf="currentLayer !== 'opentopomap'"
+                  class="uncheck-icon"
+                  >radio_button_unchecked</mat-icon
+                >
+                <span class="item-label">OSM Wanderkarte</span>
+              </div>
+            </button>
+            <button
+              mat-menu-item
               (click)="setMapLayer('keine')"
               class="custom-menu-item"
             >
