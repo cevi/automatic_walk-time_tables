@@ -42,6 +42,8 @@ export class MapDrawingRenderer {
   private snapInteraction!: Snap;
   private tooltipOverlay!: Overlay;
   private tooltipElement!: HTMLDivElement;
+  private infoOverlay!: Overlay;
+  private infoElement!: HTMLDivElement;
   private hovered_anchor: LV95_Waypoint | undefined;
   private is_hovering_tooltip: boolean = false;
   private is_mouse_over_dom_tooltip: boolean = false;
@@ -85,6 +87,7 @@ export class MapDrawingRenderer {
 
   private setupInteractions() {
     this.setupTooltipOverlay();
+    this.setupInfoOverlay();
     this.setupModifyInteraction();
     this.setupSnapInteraction();
     this.setupHoverLogic();
@@ -121,6 +124,33 @@ export class MapDrawingRenderer {
     this.map.addOverlay(this.tooltipOverlay);
   }
 
+  private setupInfoOverlay() {
+    this.infoElement = document.createElement('div');
+    this.infoElement.className = 'ol-popup';
+    this.infoElement.style.background = 'white';
+    this.infoElement.style.padding = '8px 12px';
+    this.infoElement.style.borderRadius = '4px';
+    this.infoElement.style.border = '1px solid #ccc';
+    this.infoElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+    this.infoElement.style.fontFamily = '"Open Sans", sans-serif';
+    this.infoElement.style.fontSize = '13px';
+    this.infoElement.style.color = '#333';
+    this.infoElement.style.display = 'none';
+
+    this.infoOverlay = new Overlay({
+      element: this.infoElement,
+      offset: [0, -15],
+      positioning: 'bottom-center',
+    });
+    this.map.addOverlay(this.infoOverlay);
+
+    // Hide info overlay on map pan
+    this.map.on('movestart', () => {
+      this.infoElement.style.display = 'none';
+      this.infoOverlay.setPosition(undefined);
+    });
+  }
+
   private setupModifyInteraction() {
     this.modifyInteraction = new Modify({
       source: this.path_layer_source,
@@ -133,14 +163,20 @@ export class MapDrawingRenderer {
 
       // Synchronously verify anchor hits to prevent fast-drag ghosting
       let hit_anchor: LV95_Waypoint | null = null;
-      const pixel = this.map?.getPixelFromCoordinate(evt.mapBrowserEvent.coordinate);
+      const pixel = this.map?.getPixelFromCoordinate(
+        evt.mapBrowserEvent.coordinate,
+      );
       if (pixel) {
-        this.map?.forEachFeatureAtPixel(pixel, (feature, layer) => {
-          if (layer === this.anchor_points_layer) {
-            const center = (feature.getGeometry() as Point).getCoordinates();
-            hit_anchor = { x: center[0], y: center[1] } as LV95_Waypoint;
-          }
-        }, { hitTolerance: 25 });
+        this.map?.forEachFeatureAtPixel(
+          pixel,
+          (feature, layer) => {
+            if (layer === this.anchor_points_layer) {
+              const center = (feature.getGeometry() as Point).getCoordinates();
+              hit_anchor = { x: center[0], y: center[1] } as LV95_Waypoint;
+            }
+          },
+          { hitTolerance: 25 },
+        );
       }
 
       this.dragged_anchor = hit_anchor || this.hovered_anchor || null;
@@ -232,7 +268,9 @@ export class MapDrawingRenderer {
             const deleteBtn =
               this.tooltipElement.querySelector('#delete-anchor-btn');
             if (deleteBtn) {
-              deleteBtn.addEventListener('pointerdown', (e) => {
+              deleteBtn.addEventListener(
+                'pointerdown',
+                (e) => {
                   e.stopPropagation();
                   if (this.hovered_anchor) {
                     this.onWaypointDeleted.emit(this.hovered_anchor);
@@ -271,15 +309,22 @@ export class MapDrawingRenderer {
           let hit_path = false;
           this.map.forEachFeatureAtPixel(
             evt.pixel,
-            (f, l) => { if (l === this.path_layer) hit_path = true; },
-            { hitTolerance: 25 }
+            (f, l) => {
+              if (l === this.path_layer) hit_path = true;
+            },
+            { hitTolerance: 25 },
           );
 
           if (hit_path && this.map_animator.path.length > 0) {
             let min_dist = Infinity;
             for (const wp of this.map_animator.path) {
-              const d = Math.pow(wp.x - evt.coordinate[0], 2) + Math.pow(wp.y - evt.coordinate[1], 2);
-              if (d < min_dist) { min_dist = d; map_hover_coord = wp; }
+              const d =
+                Math.pow(wp.x - evt.coordinate[0], 2) +
+                Math.pow(wp.y - evt.coordinate[1], 2);
+              if (d < min_dist) {
+                min_dist = d;
+                map_hover_coord = wp;
+              }
             }
           }
         }
@@ -308,11 +353,71 @@ export class MapDrawingRenderer {
     this.map.on('singleclick', async (evt) => {
       if (this.map_animator.export_mode) return;
 
+      this.infoElement.style.display = 'none';
+      this.infoOverlay.setPosition(undefined);
+
       if (this.hovered_anchor) {
         // Explicitly hit an anchor without dragging -> delete it
         this.onWaypointDeleted.emit(this.hovered_anchor);
         this.tooltipOverlay.setPosition(undefined);
-      } else if (!this.is_hovering_tooltip) {
+        return;
+      }
+
+      // 1. Check if user clicked a Fountain (Vector feature)
+      let clickedFountain = false;
+      let fountainProperties: any = null;
+
+      this.map.forEachFeatureAtPixel(evt.pixel, (feature, layer) => {
+        if (layer && layer.get('name') === 'fountains') {
+          clickedFountain = true;
+          fountainProperties = feature.getProperties();
+        }
+      });
+
+      if (clickedFountain && fountainProperties) {
+        let isDrinkable = 'Unbekannt';
+        if (fountainProperties['amenity'] === 'drinking_water')
+          isDrinkable = 'Ja';
+        else if (fountainProperties['drinking_water'] === 'yes')
+          isDrinkable = 'Ja';
+        else if (fountainProperties['drinking_water'] === 'no')
+          isDrinkable = 'Nein';
+
+        this.infoElement.innerHTML = `<b>Brunnen</b><br>Trinkwasser: ${isDrinkable}`;
+        this.infoElement.style.display = 'block';
+        this.infoOverlay.setPosition(evt.coordinate);
+        return;
+      }
+
+      // 2. Check if user clicked Haltestellen (WMTS Layer -> GeoAdmin Identify API)
+      let hasHaltestellen = false;
+      this.map.getLayers().forEach((l) => {
+        if (l.get('name') === 'haltestellen') hasHaltestellen = true;
+      });
+
+      if (hasHaltestellen && !this.is_hovering_tooltip) {
+        const ext = this.map.getView().calculateExtent(this.map.getSize());
+        const size = this.map.getSize() || [800, 600];
+        const url = `https://api3.geo.admin.ch/rest/services/all/MapServer/identify?geometry=${evt.coordinate[0]},${evt.coordinate[1]}&geometryFormat=geojson&geometryType=esriGeometryPoint&imageDisplay=${size[0]},${size[1]},96&mapExtent=${ext.join(',')}&sr=2056&tolerance=20&layers=all:ch.bav.haltestellen-oev`;
+
+        try {
+          const res = await fetch(url);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.results && data.results.length > 0) {
+              const name = data.results[0].properties?.name || 'Unbekannt';
+              this.infoElement.innerHTML = `<b>ÖV-Haltestelle</b><br>${name}`;
+              this.infoElement.style.display = 'block';
+              this.infoOverlay.setPosition(evt.coordinate);
+              return;
+            }
+          }
+        } catch (e) {
+          console.error('Identify fetch failed', e);
+        }
+      }
+
+      if (!this.is_hovering_tooltip) {
         // Hit empty map -> append new anchor
         this.pointer_layer_source.clear();
         this.onWaypointAdded.emit({
@@ -351,8 +456,15 @@ export class MapDrawingRenderer {
     this.map_animator.pointer$.subscribe((coord) => {
       this.external_pointer_layer_source.clear();
       // Only show in editing mode, and not when hovering/modifying an anchor
-      if (coord && !this.map_animator.export_mode && !this.hovered_anchor && !this.is_modifying) {
-        const feature = new Feature({ geometry: new Point([coord.x, coord.y]) });
+      if (
+        coord &&
+        !this.map_animator.export_mode &&
+        !this.hovered_anchor &&
+        !this.is_modifying
+      ) {
+        const feature = new Feature({
+          geometry: new Point([coord.x, coord.y]),
+        });
         feature.setStyle(
           new Style({
             image: new CircleStyle({
@@ -429,7 +541,10 @@ export class MapDrawingRenderer {
 
     if (is_insert) {
       for (let i = 0; i < path.length; i++) {
-        if (Math.abs(coords[i][0] - path[i].x) > 0.1 || Math.abs(coords[i][1] - path[i].y) > 0.1) {
+        if (
+          Math.abs(coords[i][0] - path[i].x) > 0.1 ||
+          Math.abs(coords[i][1] - path[i].y) > 0.1
+        ) {
           return i;
         }
       }
@@ -437,7 +552,9 @@ export class MapDrawingRenderer {
     } else {
       let max_dist = 0;
       for (let i = 0; i < Math.min(coords.length, path.length); i++) {
-        const dist = Math.pow(coords[i][0] - path[i].x, 2) + Math.pow(coords[i][1] - path[i].y, 2);
+        const dist =
+          Math.pow(coords[i][0] - path[i].x, 2) +
+          Math.pow(coords[i][1] - path[i].y, 2);
         if (dist > max_dist) {
           max_dist = dist;
           dragged_idx = i;
@@ -447,7 +564,11 @@ export class MapDrawingRenderer {
     }
   }
 
-  private get_preview_bounds(path: LV95_Waypoint[], coords: number[][], changed_idx: number) {
+  private get_preview_bounds(
+    path: LV95_Waypoint[],
+    coords: number[][],
+    changed_idx: number,
+  ) {
     let start_idx = -1;
     let found_start = false;
     let end_idx = -1;
@@ -459,43 +580,49 @@ export class MapDrawingRenderer {
       // MOVES: Strict Topological Lookup for preview bounds
       let target_anchor_idx = -1;
       let anchor_count = 0;
-      
-      for(let i = 0; i < path.length; i++) {
-         if(path[i].is_waypoint) {
-            if(GeometryUtils.pointsMatch(path[i], this.dragged_anchor)) {
-               target_anchor_idx = anchor_count;
-            }
-            anchor_count++;
-         }
+
+      for (let i = 0; i < path.length; i++) {
+        if (path[i].is_waypoint) {
+          if (GeometryUtils.pointsMatch(path[i], this.dragged_anchor)) {
+            target_anchor_idx = anchor_count;
+          }
+          anchor_count++;
+        }
       }
 
-      if(target_anchor_idx !== -1) {
-         let current_anchor_count = 0;
-         for (let i = 0; i < path.length; i++) {
-           if (path[i].is_waypoint) {
-             if (current_anchor_count === target_anchor_idx - 1) { start_idx = i; found_start = true; }
-             if (current_anchor_count === target_anchor_idx + 1) { end_idx = i; found_end = true; }
-             current_anchor_count++;
-           }
-         }
+      if (target_anchor_idx !== -1) {
+        let current_anchor_count = 0;
+        for (let i = 0; i < path.length; i++) {
+          if (path[i].is_waypoint) {
+            if (current_anchor_count === target_anchor_idx - 1) {
+              start_idx = i;
+              found_start = true;
+            }
+            if (current_anchor_count === target_anchor_idx + 1) {
+              end_idx = i;
+              found_end = true;
+            }
+            current_anchor_count++;
+          }
+        }
       }
     } else {
-       // INSERTS: Spatial scanning
-       for (let i = changed_idx - 1; i >= 0; i--) {
-         if (path[i].is_waypoint) {
-           start_idx = i;
-           found_start = true;
-           break;
-         }
-       }
-       let search_fw_start = is_insert ? changed_idx : changed_idx + 1;
-       for (let i = search_fw_start; i < path.length; i++) {
-         if (path[i].is_waypoint) {
-           end_idx = i;
-           found_end = true;
-           break;
-         }
-       }
+      // INSERTS: Spatial scanning
+      for (let i = changed_idx - 1; i >= 0; i--) {
+        if (path[i].is_waypoint) {
+          start_idx = i;
+          found_start = true;
+          break;
+        }
+      }
+      let search_fw_start = is_insert ? changed_idx : changed_idx + 1;
+      for (let i = search_fw_start; i < path.length; i++) {
+        if (path[i].is_waypoint) {
+          end_idx = i;
+          found_end = true;
+          break;
+        }
+      }
     }
 
     return {
@@ -625,9 +752,13 @@ export class MapDrawingRenderer {
       this.is_hovering_tooltip = false;
       const pixel = this.map?.getPixelFromCoordinate(this.pointer);
       if (pixel) {
-        this.map?.forEachFeatureAtPixel(pixel, (feature, layer) => {
-          if (layer === this.path_layer) this.is_hovering_tooltip = true;
-        }, { hitTolerance: 25 });
+        this.map?.forEachFeatureAtPixel(
+          pixel,
+          (feature, layer) => {
+            if (layer === this.path_layer) this.is_hovering_tooltip = true;
+          },
+          { hitTolerance: 25 },
+        );
       }
 
       if (!this.is_hovering_tooltip && !this.hovered_anchor) {
@@ -643,19 +774,19 @@ export class MapDrawingRenderer {
         );
         this.pointer_layer_source.addFeature(feature);
         if (this.tooltipElement.innerHTML !== '') {
-            this.tooltipElement.style.display = 'block';
-            this.tooltipOverlay.setPosition(this.pointer);
+          this.tooltipElement.style.display = 'block';
+          this.tooltipOverlay.setPosition(this.pointer);
         } else {
-            this.tooltipElement.style.display = 'none';
-            this.tooltipOverlay.setPosition(undefined);
+          this.tooltipElement.style.display = 'none';
+          this.tooltipOverlay.setPosition(undefined);
         }
       } else {
         if (this.tooltipElement.innerHTML !== '') {
-            this.tooltipElement.style.display = 'block';
-            this.tooltipOverlay.setPosition(this.pointer);
+          this.tooltipElement.style.display = 'block';
+          this.tooltipOverlay.setPosition(this.pointer);
         } else {
-            this.tooltipElement.style.display = 'none';
-            this.tooltipOverlay.setPosition(undefined);
+          this.tooltipElement.style.display = 'none';
+          this.tooltipOverlay.setPosition(undefined);
         }
       }
     }
@@ -672,6 +803,7 @@ export class MapDrawingRenderer {
       this.map.removeInteraction(this.modifyInteraction);
       this.map.removeInteraction(this.snapInteraction);
       if (this.tooltipOverlay) this.map.removeOverlay(this.tooltipOverlay);
+      if (this.infoOverlay) this.map.removeOverlay(this.infoOverlay);
     }
   }
 }

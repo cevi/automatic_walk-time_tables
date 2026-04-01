@@ -91,11 +91,11 @@ export class MapService extends SwisstopoMap implements OnDestroy {
     const bgLayer = layerLabel;
     const wmtsLayer =
       layerLabel !== 'keine' ? this.get_base_WMTS_layer(layerLabel) : null;
-    const wmtsLayer_overlay =
-      layerLabel !== 'keine' ? this.get_base_WMTS_layer(layerLabel) : null;
     const haltestellen_overlay = showHaltestellen
       ? this.get_base_WMTS_layer('haltestellen')
       : null;
+
+    if (haltestellen_overlay) haltestellen_overlay.set('name', 'haltestellen');
 
     const layers: Layer[] = [];
     if (wmtsLayer) layers.push(wmtsLayer);
@@ -105,6 +105,7 @@ export class MapService extends SwisstopoMap implements OnDestroy {
       layers.push(
         new VectorLayer({
           source: this.fountains_layer_source,
+          properties: { name: 'fountains' },
           style: new Style({
             image: new Icon({
               src: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="24" height="24"><path d="M480-120q-106 0-180-71.5T226-365q0-67 43-138.5T387-644q20-20 41.5-40t46.5-41q25 21 46.5 41t41.5 40q76 71 119 140.5T734-365q0 102-74 173.5T480-120Z" fill="%230070FF" stroke="white" stroke-width="40"/></svg>',
@@ -115,7 +116,6 @@ export class MapService extends SwisstopoMap implements OnDestroy {
         }),
       );
     }
-    if (wmtsLayer_overlay) layers.push(wmtsLayer_overlay);
 
     this.map = this.create_map_from_layers(layers, target_canvas);
 
@@ -173,7 +173,7 @@ export class MapService extends SwisstopoMap implements OnDestroy {
       this.drawingRenderer.onWaypointDeleted.subscribe((pt) =>
         animator.delete_route_waypoint(pt),
       );
-      this.drawingRenderer.onRouteModified.subscribe(payload =>
+      this.drawingRenderer.onRouteModified.subscribe((payload) =>
         animator.handle_modify_event(payload),
       );
       this.drawingRenderer.onUndoRequested.subscribe(() => {
