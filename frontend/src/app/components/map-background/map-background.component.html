@@ -90,14 +90,20 @@
           </button>
           <mat-menu #mapMenu="matMenu">
             <button mat-menu-item (click)="setMapLayer('pixelkarte')">
-               <mat-icon *ngIf="currentLayer === 'pixelkarte'" color="primary">check</mat-icon>
-               <mat-icon *ngIf="currentLayer !== 'pixelkarte'"></mat-icon>
-               <span>Basiskarte Farbig</span>
+              <mat-icon *ngIf="currentLayer === 'pixelkarte'" color="primary"
+                >check</mat-icon
+              >
+              <mat-icon *ngIf="currentLayer !== 'pixelkarte'"></mat-icon>
+              <span>Basiskarte Farbig</span>
             </button>
             <button mat-menu-item (click)="setMapLayer('pixelkarte-grau')">
-               <mat-icon *ngIf="currentLayer === 'pixelkarte-grau'" color="primary">check</mat-icon>
-               <mat-icon *ngIf="currentLayer !== 'pixelkarte-grau'"></mat-icon>
-               <span>Basiskarte S/W</span>
+              <mat-icon
+                *ngIf="currentLayer === 'pixelkarte-grau'"
+                color="primary"
+                >check</mat-icon
+              >
+              <mat-icon *ngIf="currentLayer !== 'pixelkarte-grau'"></mat-icon>
+              <span>Basiskarte S/W</span>
             </button>
             <button mat-menu-item (click)="setMapLayer('luftbild')">
               <mat-icon *ngIf="currentLayer === 'luftbild'" color="primary"
@@ -131,6 +137,42 @@
                 >check_box_outline_blank</mat-icon
               >
               <span>ÖV-Haltestellen</span>
+            </button>
+            <button mat-menu-item (click)="toggleHangneigung($event)">
+              <mat-icon *ngIf="showHangneigung" color="primary"
+                >check_box</mat-icon
+              >
+              <mat-icon *ngIf="!showHangneigung"
+                >check_box_outline_blank</mat-icon
+              >
+              <span>Hangneigung über 30°</span>
+            </button>
+            <button mat-menu-item (click)="toggleWanderwege($event)">
+              <mat-icon *ngIf="showWanderwege" color="primary"
+                >check_box</mat-icon
+              >
+              <mat-icon *ngIf="!showWanderwege"
+                >check_box_outline_blank</mat-icon
+              >
+              <span>Wanderwege</span>
+            </button>
+            <button mat-menu-item (click)="toggleSperrungen($event)">
+              <mat-icon *ngIf="showSperrungen" color="primary"
+                >check_box</mat-icon
+              >
+              <mat-icon *ngIf="!showSperrungen"
+                >check_box_outline_blank</mat-icon
+              >
+              <span>Sperrungen Wanderwege</span>
+            </button>
+            <button mat-menu-item (click)="toggleSchutzgebiete($event)">
+              <mat-icon *ngIf="showSchutzgebiete" color="primary"
+                >check_box</mat-icon
+              >
+              <mat-icon *ngIf="!showSchutzgebiete"
+                >check_box_outline_blank</mat-icon
+              >
+              <span>Schutzgebiete (Kombiniert)</span>
             </button>
           </mat-menu>
         </div>
@@ -250,5 +292,3 @@
     </as-split>
   </ng-template>
 </div>
-
-

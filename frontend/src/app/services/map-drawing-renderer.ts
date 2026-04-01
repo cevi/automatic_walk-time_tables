@@ -45,7 +45,10 @@ export class MapDrawingRenderer {
   private infoOverlay!: Overlay;
   private infoElement!: HTMLDivElement;
   private hovered_anchor: LV95_Waypoint | undefined;
+  private is_hovering_interactive_feature: boolean = false;
+  private hoverIdentifyTimeout: any;
   private is_hovering_tooltip: boolean = false;
+  private haltestellen_cache: { x: number; y: number; name: string }[] = [];
   private is_mouse_over_dom_tooltip: boolean = false;
   private dragged_anchor: LV95_Waypoint | null = null;
   private modifystart_coord: number[] | null = null;
@@ -222,6 +225,14 @@ export class MapDrawingRenderer {
   private setupHoverLogic() {
     this.map.on('pointermove', (evt) => {
       if (this.map_animator && !this.map_animator.export_mode) {
+        const targetElement = this.map.getTargetElement();
+        if (targetElement.style.cursor === 'pointer') {
+          targetElement.style.cursor = '';
+        }
+
+        if (this.hoverIdentifyTimeout) clearTimeout(this.hoverIdentifyTimeout);
+        this.is_hovering_interactive_feature = false;
+
         let foundAnchor = false;
         this.map.forEachFeatureAtPixel(
           evt.pixel,
@@ -299,21 +310,81 @@ export class MapDrawingRenderer {
           this.tooltipOverlay.setPosition(undefined);
         }
 
-        // Update the drawing pointer location
-        this.pointer = [evt.coordinate[0], evt.coordinate[1]];
-        this.render_pointer();
-
         // Bi-Directional Hover Sync: Emitting Map cursor to ECharts
         let map_hover_coord: LV95_Waypoint | null = null;
         if (!this.is_modifying && !this.hovered_anchor) {
           let hit_path = false;
+          let hit_fountain = false;
+
           this.map.forEachFeatureAtPixel(
             evt.pixel,
             (f, l) => {
               if (l === this.path_layer) hit_path = true;
+              if (l && l.get('name') === 'fountains') hit_fountain = true;
             },
             { hitTolerance: 25 },
           );
+
+          if (hit_fountain && !this.hovered_anchor) {
+            this.is_hovering_interactive_feature = true;
+            targetElement.style.cursor = 'pointer';
+          } else {
+            let hasHaltestellen = false;
+            this.map.getLayers().forEach((l) => {
+              if (l.get('name') === 'haltestellen') hasHaltestellen = true;
+            });
+
+            if (
+              hasHaltestellen &&
+              !this.is_hovering_tooltip &&
+              !this.hovered_anchor
+            ) {
+              // 1. Check local cache first (radius 25m)
+              let cachedHit = false;
+              for (const hc of this.haltestellen_cache) {
+                const dx = hc.x - evt.coordinate[0];
+                const dy = hc.y - evt.coordinate[1];
+                if (Math.sqrt(dx * dx + dy * dy) < 25) {
+                  cachedHit = true;
+                  break;
+                }
+              }
+
+              if (cachedHit) {
+                this.is_hovering_interactive_feature = true;
+                targetElement.style.cursor = 'pointer';
+              } else {
+                // 2. Debounce API fetch
+                this.hoverIdentifyTimeout = setTimeout(async () => {
+                  const ext = this.map
+                    .getView()
+                    .calculateExtent(this.map.getSize());
+                  const size = this.map.getSize() || [800, 600];
+                  const url = `https://api3.geo.admin.ch/rest/services/all/MapServer/identify?geometry=${evt.coordinate[0]},${evt.coordinate[1]}&geometryFormat=geojson&geometryType=esriGeometryPoint&imageDisplay=${size[0]},${size[1]},96&mapExtent=${ext.join(',')}&sr=2056&tolerance=15&layers=all:ch.bav.haltestellen-oev`;
+                  try {
+                    const res = await fetch(url);
+                    if (res.ok) {
+                      const data = await res.json();
+                      if (data.results && data.results.length > 0) {
+                        const pt = data.results[0].geometry.coordinates[0];
+                        const name =
+                          data.results[0].properties?.name || 'Unbekannt';
+                        this.haltestellen_cache.push({
+                          x: pt[0],
+                          y: pt[1],
+                          name,
+                        });
+
+                        this.is_hovering_interactive_feature = true;
+                        this.map.getTargetElement().style.cursor = 'pointer';
+                        this.render_pointer();
+                      }
+                    }
+                  } catch (e) {}
+                }, 150);
+              }
+            }
+          }
 
           if (hit_path && this.map_animator.path.length > 0) {
             let min_dist = Infinity;
@@ -328,6 +399,8 @@ export class MapDrawingRenderer {
             }
           }
         }
+        this.pointer = [evt.coordinate[0], evt.coordinate[1]];
+        this.render_pointer();
         this.map_animator.move_pointer(map_hover_coord);
       }
     });
@@ -396,25 +469,61 @@ export class MapDrawingRenderer {
       });
 
       if (hasHaltestellen && !this.is_hovering_tooltip) {
+        // Check cache first
+        let cachedHit = null;
+        for (const hc of this.haltestellen_cache) {
+          const dx = hc.x - evt.coordinate[0];
+          const dy = hc.y - evt.coordinate[1];
+          if (Math.sqrt(dx * dx + dy * dy) < 25) {
+            cachedHit = hc;
+            break;
+          }
+        }
+
+        if (cachedHit) {
+          this.infoElement.innerHTML = `<b>ÖV-Haltestelle</b><br>${cachedHit.name}`;
+          this.infoElement.style.display = 'block';
+          this.infoOverlay.setPosition(evt.coordinate);
+          return;
+        }
+
+        // Show loading instantly & perform async check
+        this.infoElement.innerHTML = `<b>ÖV-Haltestelle</b><br><span style="color:#666">Laden...</span>`;
+        this.infoElement.style.display = 'block';
+        this.infoOverlay.setPosition(evt.coordinate);
+
         const ext = this.map.getView().calculateExtent(this.map.getSize());
         const size = this.map.getSize() || [800, 600];
         const url = `https://api3.geo.admin.ch/rest/services/all/MapServer/identify?geometry=${evt.coordinate[0]},${evt.coordinate[1]}&geometryFormat=geojson&geometryType=esriGeometryPoint&imageDisplay=${size[0]},${size[1]},96&mapExtent=${ext.join(',')}&sr=2056&tolerance=20&layers=all:ch.bav.haltestellen-oev`;
 
-        try {
-          const res = await fetch(url);
-          if (res.ok) {
-            const data = await res.json();
+        fetch(url)
+          .then((res) => res.json())
+          .then((data) => {
             if (data.results && data.results.length > 0) {
+              const pt = data.results[0].geometry.coordinates[0];
               const name = data.results[0].properties?.name || 'Unbekannt';
+              this.haltestellen_cache.push({ x: pt[0], y: pt[1], name });
               this.infoElement.innerHTML = `<b>ÖV-Haltestelle</b><br>${name}`;
-              this.infoElement.style.display = 'block';
-              this.infoOverlay.setPosition(evt.coordinate);
-              return;
+            } else {
+              // False alarm, not a Haltestelle. Hide overlay and append anchor fallback.
+              this.infoElement.style.display = 'none';
+              this.infoOverlay.setPosition(undefined);
+              if (!this.is_hovering_tooltip) {
+                this.pointer_layer_source.clear();
+                this.onWaypointAdded.emit({
+                  x: evt.coordinate[0],
+                  y: evt.coordinate[1],
+                });
+              }
             }
-          }
-        } catch (e) {
-          console.error('Identify fetch failed', e);
-        }
+          })
+          .catch((err) => {
+            console.error('Identify fetch failed', err);
+            this.infoElement.style.display = 'none';
+            this.infoOverlay.setPosition(undefined);
+          });
+
+        return; // Return immediately to prevent synchronous cursor freezing
       }
 
       if (!this.is_hovering_tooltip) {
@@ -749,6 +858,11 @@ export class MapDrawingRenderer {
       !this.hovered_anchor &&
       !this.is_modifying
     ) {
+      if (this.is_hovering_interactive_feature) {
+        // Suppress pointer circle if hovering interactive elements
+        return;
+      }
+
       this.is_hovering_tooltip = false;
       const pixel = this.map?.getPixelFromCoordinate(this.pointer);
       if (pixel) {

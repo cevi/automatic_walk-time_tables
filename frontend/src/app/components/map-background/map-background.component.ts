@@ -39,49 +39,72 @@ export class MapBackgroundComponent implements OnInit, AfterViewInit {
     // set action listener for window resize
     window.addEventListener('resize', () => {
       this.setHorizontal = window.innerWidth > window.innerHeight;
-      this.mapService?.draw_map(
-        this.currentLayer,
-        this.showFountains,
-        this.showHaltestellen,
-      );
+      this.redrawMap();
     });
   }
 
   public currentLayer: string = 'pixelkarte';
   public showFountains: boolean = false;
   public showHaltestellen: boolean = false;
+  public showHangneigung: boolean = false;
+  public showWanderwege: boolean = false;
+  public showSperrungen: boolean = false;
+  public showSchutzgebiete: boolean = false;
+
+  private redrawMap() {
+    this.mapService?.draw_map(this.currentLayer, {
+      fountains: this.showFountains,
+      haltestellen: this.showHaltestellen,
+      hangneigung: this.showHangneigung,
+      wanderwege: this.showWanderwege,
+      sperrungen: this.showSperrungen,
+      schutzgebiete: this.showSchutzgebiete,
+    });
+  }
 
   ngAfterViewInit() {
-    this.mapService?.draw_map(
-      this.currentLayer,
-      this.showFountains,
-      this.showHaltestellen,
-    );
+    this.redrawMap();
   }
 
   setMapLayer(layer: string) {
     this.currentLayer = layer;
-    this.mapService?.draw_map(layer, this.showFountains, this.showHaltestellen);
+    this.redrawMap();
   }
 
   toggleFountains(event: Event) {
     event.stopPropagation();
     this.showFountains = !this.showFountains;
-    this.mapService?.draw_map(
-      this.currentLayer,
-      this.showFountains,
-      this.showHaltestellen,
-    );
+    this.redrawMap();
   }
 
   toggleHaltestellen(event: Event) {
     event.stopPropagation();
     this.showHaltestellen = !this.showHaltestellen;
-    this.mapService?.draw_map(
-      this.currentLayer,
-      this.showFountains,
-      this.showHaltestellen,
-    );
+    this.redrawMap();
+  }
+
+  toggleHangneigung(event: Event) {
+    event.stopPropagation();
+    this.showHangneigung = !this.showHangneigung;
+    this.redrawMap();
+  }
+
+  toggleWanderwege(event: Event) {
+    event.stopPropagation();
+    this.showWanderwege = !this.showWanderwege;
+    this.redrawMap();
+  }
+
+  toggleSperrungen(event: Event) {
+    event.stopPropagation();
+    this.showSperrungen = !this.showSperrungen;
+    this.redrawMap();
+  }
+
+  toggleSchutzgebiete(event: Event) {
+    event.stopPropagation();
+    this.showSchutzgebiete = !this.showSchutzgebiete;
+    this.redrawMap();
   }
 
   toggle_drawer_table() {

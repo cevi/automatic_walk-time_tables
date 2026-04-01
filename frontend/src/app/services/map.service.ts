@@ -13,6 +13,15 @@ import { SwisstopoMap } from '../helpers/swisstopo-map';
 import { MapDrawingRenderer } from './map-drawing-renderer';
 import { MapExportRenderer } from './map-export-renderer';
 
+export interface MapOverlays {
+  fountains: boolean;
+  haltestellen: boolean;
+  hangneigung: boolean;
+  wanderwege: boolean;
+  sperrungen: boolean;
+  schutzgebiete: boolean;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -73,8 +82,7 @@ export class MapService extends SwisstopoMap implements OnDestroy {
 
   public draw_map(
     layerLabel: string = 'pixelkarte',
-    showFountains: boolean = false,
-    showHaltestellen: boolean = false,
+    overlays: Partial<MapOverlays> = {},
     target_canvas: string = 'map-canvas',
   ) {
     let oldCenter: number[] | undefined;
@@ -91,17 +99,44 @@ export class MapService extends SwisstopoMap implements OnDestroy {
     const bgLayer = layerLabel;
     const wmtsLayer =
       layerLabel !== 'keine' ? this.get_base_WMTS_layer(layerLabel) : null;
-    const haltestellen_overlay = showHaltestellen
-      ? this.get_base_WMTS_layer('haltestellen')
-      : null;
-
-    if (haltestellen_overlay) haltestellen_overlay.set('name', 'haltestellen');
 
     const layers: Layer[] = [];
     if (wmtsLayer) layers.push(wmtsLayer);
-    if (haltestellen_overlay) layers.push(haltestellen_overlay);
 
-    if (showFountains) {
+    const overlayKeys: (keyof MapOverlays)[] = [
+      'haltestellen',
+      'hangneigung',
+      'wanderwege',
+      'sperrungen',
+    ];
+
+    overlayKeys.forEach((key) => {
+      if (overlays[key]) {
+        const layer = this.get_base_WMTS_layer(key);
+        if (layer) {
+          layer.set('name', key);
+          layers.push(layer);
+        }
+      }
+    });
+
+    if (overlays.schutzgebiete) {
+      const schutzgebiete_layers = [
+        'naturschutzgebiete',
+        'nationalpark',
+        'jagdbanngebiete',
+        'wildruhezonen',
+      ];
+      schutzgebiete_layers.forEach((key) => {
+        const layer = this.get_base_WMTS_layer(key);
+        if (layer) {
+          layer.set('name', key);
+          layers.push(layer);
+        }
+      });
+    }
+
+    if (overlays.fountains) {
       layers.push(
         new VectorLayer({
           source: this.fountains_layer_source,
