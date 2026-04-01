@@ -49,6 +49,9 @@ export default {
                         {
                             text: 'Local Setup', link: '/documentation/frontend/local-setup'
                         },
+                        {
+                            text: 'Updating Brätlistellen', link: '/documentation/frontend/braetlistellen-data'
+                        },
                     ]
                 },
                 {
