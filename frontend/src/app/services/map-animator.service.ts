@@ -9,6 +9,7 @@ import { RouteApiService } from './route-api.service';
 import { GeometryUtils } from '../utils/geometry.utils';
 import { decode } from '@googlemaps/polyline-codec';
 import { environment } from '../../environments/environment';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Injectable({
   providedIn: 'root',
@@ -24,6 +25,7 @@ export class MapAnimatorService implements OnDestroy {
     private state: MapStateService,
     private history: RouteHistoryService,
     private api: RouteApiService,
+    private snackBar: MatSnackBar,
   ) {
     this.state.pois$.pipe(takeUntil(this.destroy$)).subscribe((wp) => {
       this._recalculate_route_stats(wp);
@@ -32,7 +34,7 @@ export class MapAnimatorService implements OnDestroy {
     this.router.events
       .pipe(
         filter((e) => e instanceof NavigationEnd),
-        takeUntil(this.destroy$)
+        takeUntil(this.destroy$),
       )
       .subscribe(() => {
         this.update_export_mode();
@@ -43,7 +45,6 @@ export class MapAnimatorService implements OnDestroy {
     this.destroy$.next();
     this.destroy$.complete();
   }
-
 
   // --- Facade Getters bounds to MapStateService ---
   public get path$() {
@@ -130,8 +131,14 @@ export class MapAnimatorService implements OnDestroy {
         let nearest_poi: LV95_Waypoint | null = null;
         let min_dist = Infinity;
         for (const poi of pois) {
-          const d = Math.abs((poi.accumulated_distance || 0) - (coords.accumulated_distance || 0));
-          if (d < min_dist) { min_dist = d; nearest_poi = poi; }
+          const d = Math.abs(
+            (poi.accumulated_distance || 0) -
+              (coords.accumulated_distance || 0),
+          );
+          if (d < min_dist) {
+            min_dist = d;
+            nearest_poi = poi;
+          }
         }
 
         if (nearest_poi && min_dist <= snapThreshold) {
@@ -184,6 +191,14 @@ export class MapAnimatorService implements OnDestroy {
 
   public async add_way_point(point: LV95_Coordinates) {
     if (this.export_mode) return;
+
+    if (this.state.pois.length >= 21) {
+      this.snackBar.open('Maximal 21 Wegpunkte erlaubt', 'Schliessen', {
+        duration: 3000,
+      });
+      return;
+    }
+
     const current_path = this.state.path;
     const current_anchors = this.state.anchor_points;
     const start_anchor =
@@ -234,7 +249,7 @@ export class MapAnimatorService implements OnDestroy {
 
     const syncedAnchors = mergedRoute
       .filter((p) => p.is_waypoint)
-      .map((p) => ({ x: p.x, y: p.y } as LV95_Coordinates));
+      .map((p) => ({ x: p.x, y: p.y }) as LV95_Coordinates);
     this.state.updateAnchorPoints(syncedAnchors);
 
     this.regenerateWalkTimeTable();
@@ -245,8 +260,8 @@ export class MapAnimatorService implements OnDestroy {
     const current_path = this.state.path;
     const current_anchors = this.state.anchor_points;
 
-    const anchor_idx = current_anchors.findIndex(
-      (a) => GeometryUtils.pointsMatch(a, point)
+    const anchor_idx = current_anchors.findIndex((a) =>
+      GeometryUtils.pointsMatch(a, point),
     );
     if (anchor_idx === -1) return;
 
@@ -300,18 +315,18 @@ export class MapAnimatorService implements OnDestroy {
     }
 
     if (path_node_idx !== -1) {
-        for (let i = path_node_idx - 1; i >= 0; i--) {
-          if (current_path[i].is_waypoint) {
-            start_path_idx = i;
-            break;
-          }
+      for (let i = path_node_idx - 1; i >= 0; i--) {
+        if (current_path[i].is_waypoint) {
+          start_path_idx = i;
+          break;
         }
-        for (let i = path_node_idx + 1; i < current_path.length; i++) {
-          if (current_path[i].is_waypoint) {
-            end_path_idx = i;
-            break;
-          }
+      }
+      for (let i = path_node_idx + 1; i < current_path.length; i++) {
+        if (current_path[i].is_waypoint) {
+          end_path_idx = i;
+          break;
         }
+      }
     }
 
     const queryLocations = GeometryUtils.buildRoutingQuery(
@@ -346,7 +361,7 @@ export class MapAnimatorService implements OnDestroy {
 
     const syncedAnchors = mergedRoute
       .filter((p) => p.is_waypoint)
-      .map((p) => ({ x: p.x, y: p.y } as LV95_Coordinates));
+      .map((p) => ({ x: p.x, y: p.y }) as LV95_Coordinates);
     this.state.updateAnchorPoints(syncedAnchors);
 
     this.regenerateWalkTimeTable();
@@ -358,7 +373,17 @@ export class MapAnimatorService implements OnDestroy {
     mousedown_coord: number[];
   }) {
     if (this.export_mode) return;
+
     const { new_coords, dragged_anchor, mousedown_coord } = event;
+    const isInsert = !dragged_anchor;
+
+    if (isInsert && this.state.pois.length >= 21) {
+      this.snackBar.open('Maximal 21 Wegpunkte erlaubt', 'Schliessen', {
+        duration: 3000,
+      });
+      return;
+    }
+
     const current_path = this.state.path;
     const current_anchors = this.state.anchor_points;
 
@@ -366,12 +391,13 @@ export class MapAnimatorService implements OnDestroy {
     let end_path_idx = -1;
     let dragged_idx = -1;
     let dragged_point: LV95_Waypoint;
-    const isInsert = !dragged_anchor;
 
     if (!isInsert && dragged_anchor) {
       // MOVES: Strict Topological Lookup via known dragged_anchor
-      let anchor_idx = current_anchors.findIndex(a => GeometryUtils.pointsMatch(a, dragged_anchor));
-      
+      let anchor_idx = current_anchors.findIndex((a) =>
+        GeometryUtils.pointsMatch(a, dragged_anchor),
+      );
+
       if (anchor_idx !== -1) {
         let current_anchor_count = 0;
         for (let i = 0; i < current_path.length; i++) {
@@ -384,13 +410,19 @@ export class MapAnimatorService implements OnDestroy {
         }
       }
       // Safety fallback if coordinate sync failed
-      if (dragged_idx === -1) dragged_idx = find_spatial_index(new_coords, current_path);
-      dragged_point = { x: new_coords[dragged_idx][0], y: new_coords[dragged_idx][1] } as LV95_Waypoint;
-      
+      if (dragged_idx === -1)
+        dragged_idx = find_spatial_index(new_coords, current_path);
+      dragged_point = {
+        x: new_coords[dragged_idx][0],
+        y: new_coords[dragged_idx][1],
+      } as LV95_Waypoint;
     } else {
       // INSERTS: Array divergence logic
       for (let i = 0; i < current_path.length; i++) {
-        if (Math.abs(new_coords[i][0] - current_path[i].x) > 0.1 || Math.abs(new_coords[i][1] - current_path[i].y) > 0.1) {
+        if (
+          Math.abs(new_coords[i][0] - current_path[i].x) > 0.1 ||
+          Math.abs(new_coords[i][1] - current_path[i].y) > 0.1
+        ) {
           dragged_idx = i;
           break;
         }
@@ -398,25 +430,40 @@ export class MapAnimatorService implements OnDestroy {
       if (dragged_idx === -1) dragged_idx = new_coords.length - 1;
 
       for (let i = dragged_idx - 1; i >= 0; i--) {
-        if (current_path[i].is_waypoint) { start_path_idx = i; break; }
+        if (current_path[i].is_waypoint) {
+          start_path_idx = i;
+          break;
+        }
       }
       for (let i = dragged_idx; i < current_path.length; i++) {
-        if (current_path[i].is_waypoint) { end_path_idx = i; break; }
+        if (current_path[i].is_waypoint) {
+          end_path_idx = i;
+          break;
+        }
       }
-      dragged_point = { x: new_coords[dragged_idx][0], y: new_coords[dragged_idx][1] } as LV95_Waypoint;
+      dragged_point = {
+        x: new_coords[dragged_idx][0],
+        y: new_coords[dragged_idx][1],
+      } as LV95_Waypoint;
     }
 
     this.history.commitState(current_path, this.state.pois, current_anchors);
 
-    const start_anchor = start_path_idx !== -1 ? current_path[start_path_idx] : null;
+    const start_anchor =
+      start_path_idx !== -1 ? current_path[start_path_idx] : null;
     const end_anchor = end_path_idx !== -1 ? current_path[end_path_idx] : null;
 
     // Helper function scoped inside handle_modify_event to prevent duplication
     function find_spatial_index(nc: number[][], cp: LV95_Waypoint[]) {
-      let max_d = 0, idx = 0;
+      let max_d = 0,
+        idx = 0;
       for (let i = 0; i < Math.min(nc.length, cp.length); i++) {
-        const d = Math.pow(nc[i][0] - cp[i].x, 2) + Math.pow(nc[i][1] - cp[i].y, 2);
-        if (d > max_d) { max_d = d; idx = i; }
+        const d =
+          Math.pow(nc[i][0] - cp[i].x, 2) + Math.pow(nc[i][1] - cp[i].y, 2);
+        if (d > max_d) {
+          max_d = d;
+          idx = i;
+        }
       }
       return idx;
     }
@@ -493,13 +540,19 @@ export class MapAnimatorService implements OnDestroy {
 
     const syncedAnchors = mergedRoute
       .filter((p) => p.is_waypoint)
-      .map((p) => ({ x: p.x, y: p.y } as LV95_Coordinates));
+      .map((p) => ({ x: p.x, y: p.y }) as LV95_Coordinates);
     this.state.updateAnchorPoints(syncedAnchors);
 
     this.regenerateWalkTimeTable();
   }
 
   public add_point_of_interest(pkt: LV95_Waypoint) {
+    if (this.state.pois.length >= 21) {
+      this.snackBar.open('Maximal 21 Wegpunkte erlaubt', 'Schliessen', {
+        duration: 3000,
+      });
+      return;
+    }
     this.state.updatePOIs([...this.state.pois, pkt]);
     this.regenerateWalkTimeTable();
   }
@@ -723,11 +776,13 @@ export class MapAnimatorService implements OnDestroy {
 
     const old_anchors = this.state.anchor_points;
     if (old_anchors.length > 0) {
-      old_anchors.forEach(old_anchor => {
+      old_anchors.forEach((old_anchor) => {
         let min_dist = Infinity;
         let closest_idx = -1;
         for (let i = 0; i < way_points.length; i++) {
-          const d = Math.pow(way_points[i].x - old_anchor.x, 2) + Math.pow(way_points[i].y - old_anchor.y, 2);
+          const d =
+            Math.pow(way_points[i].x - old_anchor.x, 2) +
+            Math.pow(way_points[i].y - old_anchor.y, 2);
           if (d < min_dist) {
             min_dist = d;
             closest_idx = i;
@@ -750,7 +805,7 @@ export class MapAnimatorService implements OnDestroy {
 
     const syncedAnchors = way_points
       .filter((p) => p.is_waypoint)
-      .map((p) => ({ x: p.x, y: p.y } as LV95_Coordinates));
+      .map((p) => ({ x: p.x, y: p.y }) as LV95_Coordinates);
     this.state.updateAnchorPoints(syncedAnchors);
 
     return new Promise<void>((resolve, reject) =>
