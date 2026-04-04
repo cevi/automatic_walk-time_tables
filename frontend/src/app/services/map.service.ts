@@ -16,6 +16,8 @@ import Overlay from 'ol/Overlay';
 import { braetlistellenData } from '../../assets/braetlistellen';
 import TileLayer from 'ol/layer/Tile';
 import XYZ from 'ol/source/XYZ';
+import GeoJSON from 'ol/format/GeoJSON';
+import { Stroke, Fill } from 'ol/style';
 
 export interface MapOverlays {
   fountains: boolean;
@@ -189,7 +191,6 @@ export class MapService extends SwisstopoMap implements OnDestroy {
 
     if (overlays.schutzgebiete) {
       const schutzgebiete_layers = [
-        'naturschutzgebiete',
         'nationalpark',
         'jagdbanngebiete',
         'wildruhezonen',
@@ -204,6 +205,60 @@ export class MapService extends SwisstopoMap implements OnDestroy {
           layers.push(layer);
         }
       });
+
+      // Swisstopo's raster WMTS generation completely drops polygons for certain Naturschutzgebiete (e.g. Frauenwinkel).
+      // To strictly guarantee mapping parity while maintaining live data without static JSON files, we pivot to a BBOX vector strategy.
+      const naturschutzSource = new VectorSource({
+        format: new GeoJSON(),
+        strategy: bbox,
+        loader: function (extent, resolution, projection, success, failure) {
+          const e = extent;
+          const url = `https://api3.geo.admin.ch/rest/services/all/MapServer/identify?geometry=${e.join(',')}&geometryFormat=geojson&geometryType=esriGeometryEnvelope&imageDisplay=800,600,96&mapExtent=${e.join(',')}&sr=2056&tolerance=0&layers=all:ch.pronatura.naturschutzgebiete`;
+          
+          fetch(url)
+            .then(res => res.json())
+            .then(data => {
+              if (data && data.results) {
+                const format = new GeoJSON();
+                const features = [];
+                for (const r of data.results) {
+                  if (r.geometry) {
+                     try {
+                        const feat = format.readFeature(r, { dataProjection: 'EPSG:2056', featureProjection: 'EPSG:2056' });
+                        if (Array.isArray(feat)) {
+                          features.push(...feat);
+                        } else {
+                          features.push(feat);
+                        }
+                     } catch(err) {
+                        console.error("GeoJSON parser error:", err);
+                     }
+                  }
+                }
+                naturschutzSource.addFeatures(features as Feature<any>[]);
+                if (success) success(features as Feature<any>[]);
+              } else {
+                if (success) success([]);
+              }
+            })
+            .catch(err => {
+              console.error(err);
+              if (failure) failure();
+            });
+        }
+      });
+
+      const naturschutzLayer = new VectorLayer({
+        source: naturschutzSource,
+        className: 'ol-layer-naturschutzgebiete',
+        style: new Style({
+          stroke: new Stroke({ color: 'rgba(168, 100, 168, 0.9)', width: 2 }),
+          fill: new Fill({ color: 'rgba(168, 100, 168, 0.25)' }) 
+        }),
+        opacity: opacities['schutzgebiete'] ?? 1.0,
+        properties: { name: 'schutzgebiete_naturschutzgebiete' }
+      });
+      layers.push(naturschutzLayer);
     }
 
     const addOsmVectorLayer = (
@@ -282,7 +337,13 @@ export class MapService extends SwisstopoMap implements OnDestroy {
 
     this.map.on('singleclick', (evt) => {
       if (!this.map || !popupOverlay || !popupContent) return;
-      const feature = this.map.forEachFeatureAtPixel(evt.pixel, (feat) => feat);
+      const feature = this.map.forEachFeatureAtPixel(evt.pixel, (feat, layer) => {
+        const lyrName = layer?.get('name');
+        if (typeof lyrName === 'string' && (lyrName.startsWith('schutzgebiete_') || lyrName.includes('highlight'))) {
+          return undefined; // Handled exclusively by Swisstopo identify API
+        }
+        return feat;
+      });
 
       if (feature) {
         const props = feature.getProperties();
@@ -353,7 +414,9 @@ export class MapService extends SwisstopoMap implements OnDestroy {
       const coords = this.map.getEventCoordinate(evt);
       if (coords) {
         const formatCoord = (val: number) => {
-          return Math.round(val).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "’");
+          return Math.round(val)
+            .toString()
+            .replace(/\B(?=(\d{3})+(?!\d))/g, '’');
         };
         const xStr = formatCoord(coords[0]);
         const yStr = formatCoord(coords[1]);

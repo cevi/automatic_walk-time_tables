@@ -23,3 +23,28 @@ h2 {
   position: absolute;
   height: 100px !important;
 }
+
+/* Semi-transparent overlays blending white background */
+.ol-layer-schiessanzeigen,
+.ol-layer-herdenschutzhunde {
+  mix-blend-mode: multiply;
+  opacity: 0.8 !important;
+}
+
+/* Absolute Perfect Uniform Violet Schutzgebiete */
+.ol-layer-jagdbanngebiete,
+.ol-layer-wildruhezonen,
+.ol-layer-nationalpark {
+  /* Grayscale completely destroys the native disparate colors (dark orange, pale yellow) into pure luminosity maps. 
+     Sepia turns the gray into brown. Hue-rotate 240 shifts it precisely to standard violet. */
+  filter: grayscale(1) sepia(1) hue-rotate(240deg) saturate(3) brightness(0.9);
+  opacity: 0.9 !important;
+}
+
+/* Synthetically Filled Violet Naturschutzgebiete */
+.ol-layer-naturschutzgebiete {
+  /* Swisstopo provides NO FILL. The previous drop-shadow caused full WebGL canvas culling on some clients. 
+     We rely gracefully on the standard outline now, augmented by the new interactive click-highlights. */
+  filter: grayscale(1) sepia(1) hue-rotate(240deg) saturate(3) brightness(0.9);
+  opacity: 0.9 !important;
+}

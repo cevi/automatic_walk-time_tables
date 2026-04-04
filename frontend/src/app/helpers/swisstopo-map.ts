@@ -167,6 +167,7 @@ export class SwisstopoMap {
 
     return new Tile({
       opacity: opacity,
+      className: `ol-layer-${layerLabel}`,
       source: this.createWMTSSource(this.layer_configs[layerLabel], projection),
     });
   }

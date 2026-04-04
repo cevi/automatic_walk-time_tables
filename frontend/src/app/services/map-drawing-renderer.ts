@@ -6,6 +6,7 @@ import VectorLayer from 'ol/layer/Vector';
 import { LineString, Point } from 'ol/geom';
 import { Modify, Snap } from 'ol/interaction';
 import { Fill, Stroke, Style, Circle as CircleStyle, Text } from 'ol/style';
+import GeoJSON from 'ol/format/GeoJSON';
 import { MapAnimatorService } from './map-animator.service';
 import { EventEmitter } from '@angular/core';
 import { LV95_Coordinates, LV95_Waypoint } from '../helpers/coordinates';
@@ -50,7 +51,7 @@ export class MapDrawingRenderer {
   private is_hovering_interactive_feature: boolean = false;
   private hoverIdentifyTimeout: any;
   private is_hovering_tooltip: boolean = false;
-  private interactive_feature_cache: { x: number; y: number; html: string }[] =
+  private interactive_feature_cache: { x: number; y: number; html: string; data?: any }[] =
     [];
   private negative_identify_cache: { x: number; y: number; time: number }[] =
     [];
@@ -81,6 +82,17 @@ export class MapDrawingRenderer {
     zIndex: 100,
   });
 
+  private highlight_layer_source = new VectorSource();
+  private highlight_layer = new VectorLayer({
+    source: this.highlight_layer_source,
+    style: new Style({
+      stroke: new Stroke({ color: '#A864A8', width: 4 }),
+      fill: new Fill({ color: 'rgba(168, 100, 168, 0.25)' })
+    }),
+    properties: { name: 'highlight_layer' },
+    zIndex: 150,
+  });
+
   private export_mode_sub!: Subscription;
   private anchor_points_sub!: Subscription;
 
@@ -91,9 +103,16 @@ export class MapDrawingRenderer {
     this.map.addLayer(this.anchor_points_layer);
     this.map.addLayer(this.pointer_layer);
     this.map.addLayer(this.external_pointer_layer);
+    this.map.addLayer(this.highlight_layer);
 
     this.setupInteractions();
     this.setupSubscriptions();
+
+    document.addEventListener('closeMapPopup', () => {
+      this.infoElement.style.display = 'none';
+      this.infoOverlay.setPosition(undefined);
+      this.highlight_layer_source.clear();
+    });
 
     // Clear pointer when mouse leaves the map viewport
     this.map.getViewport().addEventListener('pointerleave', () => {
@@ -144,10 +163,9 @@ export class MapDrawingRenderer {
     this.infoElement = document.createElement('div');
     this.infoElement.className = 'ol-popup';
     this.infoElement.style.background = 'white';
-    this.infoElement.style.padding = '8px 12px';
-    this.infoElement.style.borderRadius = '4px';
-    this.infoElement.style.border = '1px solid #ccc';
-    this.infoElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+    this.infoElement.style.padding = '8px';
+    this.infoElement.style.borderRadius = '12px';
+    this.infoElement.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
     this.infoElement.style.fontFamily = '"Open Sans", sans-serif';
     this.infoElement.style.fontSize = '13px';
     this.infoElement.style.color = '#333';
@@ -399,78 +417,7 @@ export class MapDrawingRenderer {
               targetElement.style.cursor = 'pointer';
             }
 
-            // Sync identify in background with optimization
-            const now = Date.now();
-            let distanceMove = Infinity;
-            if (this.lastIdentifyCoord) {
-              const dx = this.lastIdentifyCoord[0] - evt.coordinate[0];
-              const dy = this.lastIdentifyCoord[1] - evt.coordinate[1];
-              distanceMove = Math.sqrt(dx * dx + dy * dy);
-            }
 
-            // Only trigger if mouse has moved at least 20m from the last attempt (reduce noise)
-            if (!cachedHit && !knownMiss && distanceMove > 20) {
-              clearTimeout(this.hoverIdentifyTimeout);
-              this.hoverIdentifyTimeout = setTimeout(async () => {
-                const queryLayers = activeIdentifyLayers.join(',');
-                const identifyKey = `${evt.coordinate[0].toFixed(1)},${evt.coordinate[1].toFixed(1)}:${queryLayers}`;
-                
-                if (this.inFlightIdentifyRequests.has(identifyKey)) return;
-
-                // Abort previous in-flight identify
-                if (this.currentIdentifyAbortController) {
-                  this.currentIdentifyAbortController.abort();
-                }
-                this.currentIdentifyAbortController = new AbortController();
-
-                const ext = this.map.getView().calculateExtent(this.map.getSize());
-                const sz = this.map.getSize() || [800, 600];
-                const url = `https://api3.geo.admin.ch/rest/services/all/MapServer/identify?geometry=${evt.coordinate[0]},${evt.coordinate[1]}&geometryFormat=geojson&geometryType=esriGeometryPoint&imageDisplay=${sz[0]},${sz[1]},96&mapExtent=${ext.join(',')}&sr=2056&tolerance=15&layers=all:${queryLayers}`;
-                
-                try {
-                  this.inFlightIdentifyRequests.add(identifyKey);
-                  this.lastIdentifyCoord = evt.coordinate;
-                  const res = await fetch(url, { signal: this.currentIdentifyAbortController.signal });
-                  if (res.ok) {
-                    let data = await res.json();
-                    
-                    // Filter: Only keep main stations (LoD 0) to avoid perron/platform clutter
-                    if (data.results) {
-                      data.results = data.results.filter((r: any) => {
-                        if (r.layerBodId === 'ch.bav.haltestellen-oev') {
-                          const lod = r.properties?.lod;
-                          const name = String(r.properties?.name || '');
-                          const typ = String(r.properties?.betriebspunkttyp_de || '');
-                          
-                          // lod '0' is the master station. Avoid technical ch: names
-                          const isMaster = lod === '0' || (lod === undefined && !name.startsWith('ch:'));
-                          // Filter out junctions / Vzw
-                          const isVzw = typ.includes('Verzweigung') || name.includes('(Vzw)');
-                          
-                          return isMaster && !isVzw;
-                        }
-                        return true;
-                      });
-                    }
-
-                    if (data.results && data.results.length > 0) {
-                      const pt = data.results[0].geometry.coordinates[0];
-                      const htmlRes = this.formatIdentifyResults(data);
-                      this.interactive_feature_cache.push({ x: pt[0], y: pt[1], html: htmlRes });
-                      this.is_hovering_interactive_feature = true;
-                      this.map.getTargetElement().style.cursor = 'pointer';
-                      this.render_pointer();
-                    } else {
-                      this.negative_identify_cache.push({ x: evt.coordinate[0], y: evt.coordinate[1], time: now });
-                    }
-                  }
-                } catch (e: any) {
-                  if (e.name === 'AbortError') return;
-                } finally {
-                  this.inFlightIdentifyRequests.delete(identifyKey);
-                }
-              }, 250); // Increased debounce to 250ms
-            }
           }
         }
 
@@ -519,8 +466,7 @@ export class MapDrawingRenderer {
 
   private setupDrawInteraction() {
     this.map.on('singleclick', async (evt) => {
-      this.infoElement.style.display = 'none';
-      this.infoOverlay.setPosition(undefined);
+      document.dispatchEvent(new CustomEvent('closeMapPopup'));
 
       if (!this.map_animator.export_mode && this.hovered_anchor) {
         // Explicitly hit an anchor without dragging -> delete it
@@ -636,7 +582,23 @@ export class MapDrawingRenderer {
           }
         }
 
-        this.infoElement.innerHTML = `<b>${title}</b><br>${subtitle}`;
+        const closeIcon = `<svg onclick="document.dispatchEvent(new CustomEvent('closeMapPopup'))" style="cursor: pointer; fill: #999;" width="24" height="24" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>`;
+        
+        this.infoElement.innerHTML = `
+          <div style="position: absolute; top: 12px; right: 12px; z-index: 100; background: rgba(255,255,255,0.8); border-radius: 50%; display: flex;">
+            ${closeIcon}
+          </div>
+          <div style="max-height: 440px; overflow-y: auto; overflow-x: hidden; padding-right: 12px;">
+            <div style="min-width: 250px; margin-bottom: 8px;">
+              <div style="margin-bottom: 8px; padding-right: 24px;">
+                <h3 style="margin: 0; color: #000; font-size: 1.4em; font-weight: 800; line-height: 1.1;">${title}</h3>
+              </div>
+              <div style="padding: 0 4px; font-size: 0.95em; line-height: 1.4;">
+                ${subtitle}
+              </div>
+            </div>
+          </div>
+        `;
         this.infoElement.style.display = 'block';
         this.infoOverlay.setPosition(evt.coordinate);
         return;
@@ -673,16 +635,17 @@ export class MapDrawingRenderer {
         }
 
         if (cachedHit) {
-          this.infoElement.innerHTML = cachedHit.html;
+          if (cachedHit.data) {
+            this.infoElement.innerHTML = this.formatIdentifyResults(cachedHit.data);
+          } else {
+            this.infoElement.innerHTML = cachedHit.html;
+          }
           this.infoElement.style.display = 'block';
           this.infoOverlay.setPosition(evt.coordinate);
           return;
         }
 
-        // Show loading instantly & perform async check
-        this.infoElement.innerHTML = `<b>Metadaten</b><br><span style="color:#666">Laden...</span>`;
-        this.infoElement.style.display = 'block';
-        this.infoOverlay.setPosition(evt.coordinate);
+
 
         const ext = this.map.getView().calculateExtent(this.map.getSize());
         const size = this.map.getSize() || [800, 600];
@@ -699,7 +662,7 @@ export class MapDrawingRenderer {
                      const name = String(r.properties?.name || '');
                      const typ = String(r.properties?.betriebspunkttyp_de || '');
                      
-                     const isMaster = lod === '0' || (lod === undefined && !name.startsWith('ch:'));
+                     const isMaster = (lod === '0' || lod === undefined) && !name.startsWith('ch:');
                      const isVzw = typ.includes('Verzweigung') || name.includes('(Vzw)');
                      
                      return isMaster && !isVzw;
@@ -716,8 +679,34 @@ export class MapDrawingRenderer {
                    x: pt[0],
                    y: pt[1],
                    html: htmlResult,
+                   data: data,
                  });
+                 
+                 // Draw dynamic highlight feature geometry
+                 this.highlight_layer_source.clear();
+                 const format = new GeoJSON();
+                 const features = [];
+                 for(let i=0; i<data.results.length; i++) {
+                   if(data.results[i].geometry) {
+                     try {
+                        const feat = format.readFeature(data.results[i], { dataProjection: 'EPSG:2056', featureProjection: 'EPSG:2056' });
+                        if (Array.isArray(feat)) {
+                          features.push(...(feat as Feature<any>[]));
+                        } else {
+                          features.push(feat as Feature<any>);
+                        }
+                     } catch(err) {
+                        console.error("Failed parsing highlight geom", err);
+                     }
+                   }
+                 }
+                 if(features.length > 0) {
+                    this.highlight_layer_source.addFeatures(features);
+                 }
+
                  this.infoElement.innerHTML = htmlResult;
+                 this.infoElement.style.display = 'block';
+                 this.infoOverlay.setPosition(evt.coordinate);
                } else {
                  // False alarm, hide overlay and append anchor fallback.
                  this.infoElement.style.display = 'none';
@@ -733,8 +722,7 @@ export class MapDrawingRenderer {
           })
           .catch((err) => {
             console.error('Identify fetch failed', err);
-            this.infoElement.style.display = 'none';
-            this.infoOverlay.setPosition(undefined);
+            document.dispatchEvent(new CustomEvent('closeMapPopup'));
           });
 
         return;
@@ -926,8 +914,17 @@ export class MapDrawingRenderer {
   }
 
   private formatIdentifyResults(data: any): string {
-    let htmlResult = '';
+    const closeIcon = `<svg onclick="document.dispatchEvent(new CustomEvent('closeMapPopup'))" style="cursor: pointer; fill: #999;" width="24" height="24" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>`;
+
+    let htmlResult = `
+      <div style="position: absolute; top: 12px; right: 12px; z-index: 100; background: rgba(255,255,255,0.8); border-radius: 50%; display: flex;">
+        ${closeIcon}
+      </div>
+      <div style="max-height: 440px; overflow-y: auto; overflow-x: hidden; padding-right: 12px;">
+    `;
+
     const seenNames = new Set<string>();
+    let elementCount = 0;
 
     for (const result of data.results) {
       const props = result.properties || {};
@@ -937,6 +934,11 @@ export class MapDrawingRenderer {
       const dedupeKey = `${layerId}_${stopName}`;
       if (seenNames.has(dedupeKey)) continue;
       seenNames.add(dedupeKey);
+
+      if (elementCount > 0) {
+        htmlResult += '<hr style="margin: 16px 0; border: 0; border-top: 1px solid #ccc;">';
+      }
+      elementCount++;
 
       // --- PREMIUM STATION CARD 2.0 (INTEGRATED DEPARTURES + VIADI STYLE) ---
       if (layerId === 'ch.bav.haltestellen-oev') {
@@ -957,9 +959,9 @@ export class MapDrawingRenderer {
         setTimeout(() => this.fetchStationboard(uic, stopName, containerId), 50);
 
         htmlResult += `
-          <div style="background: white; border-radius: 12px; font-family: 'Open Sans', sans-serif; min-width: 300px; padding: 4px;">
+          <div style="min-width: 300px;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; padding: 4px 8px;">
-              <h3 style="margin: 0; color: #000; font-size: 1.4em; font-weight: 800; line-height: 1.1; flex: 1;">${stopName}</h3>
+              <h3 style="margin: 0; color: #000; font-size: 1.4em; font-weight: 800; line-height: 1.1; flex: 1; padding-right: 24px;">${stopName}</h3>
             </div>
             
             <div style="padding: 0 8px 12px 8px; border-bottom: 1px solid #f0f0f0;">
@@ -999,13 +1001,22 @@ export class MapDrawingRenderer {
 
       let subtitle = props.wrz_name || props.jb_name || props.name || props.nom || props.titre || props.title || '';
 
-      htmlResult += `<b>${title}</b>`;
-      if (subtitle) htmlResult += `<br>${subtitle}`;
-      
-      htmlResult += '<div style="max-height: 200px; overflow-y: auto; margin-top: 5px; font-size: 0.92em;">';
-      htmlResult += this.formatPopupProperties(props, layerId);
-      htmlResult += '</div><hr style="margin:8px 0; border:0; border-top: 1px solid #eee;">';
+      htmlResult += `
+        <div style="min-width: 250px; margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; padding: 4px 8px;">
+            <div style="flex: 1; padding-right: 24px;">
+              <h3 style="margin: 0; color: #000; font-size: 1.4em; font-weight: 800; line-height: 1.1;">${title}</h3>
+              ${subtitle ? `<div style="font-size: 0.9em; color: #666; margin-top: 4px;">${subtitle}</div>` : ''}
+            </div>
+          </div>
+          <div style="padding: 0 8px; font-size: 0.95em;">
+            ${this.formatPopupProperties(props, layerId)}
+          </div>
+        </div>
+      `;
     }
+    
+    htmlResult += `</div>`;
     return htmlResult;
   }
 
@@ -1038,32 +1049,173 @@ export class MapDrawingRenderer {
       }
 
       if (layerBodId === 'ch.bafu.alpweiden-herdenschutzhunde') {
+        // ... (existing herdenschutzhunde handling)
+        const keyMap: Record<string, string> = {
+          code_refverhalten: 'Verhaltensregeln',
+          code_hundepraesenz: 'Anwesenheit Schutzhunde',
+          code_hinweis: 'Hinweis',
+          refmeldungbeweidungszone: 'Aktuelle Beweidungszone',
+          kontname: 'Kontakt Name',
+          konttel: 'Kontakt Telefon',
+          kontemail: 'Kontakt E-Mail',
+          name: 'Objektname'
+        };
+        if (keyMap[key]) displayKey = keyMap[key];
+
         if (key === 'code_refverhalten') {
-          displayKey = 'Verhaltensregeln';
           val = 'http://www.protectiondestroupeaux.ch/de/herdenschutzhunde/tourismus-und-herdenschutzhunde/sichere-begegnungen-mit-herdenschutzhunden/';
+        } else if (key === 'code_hundepraesenz') {
+          const pMap: Record<number, string> = {
+            1000: 'Es ist ganzjährig mit der Anwesenheit von Herdenschutzhunden zu rechnen.',
+            1001: 'In der Regel von Anfang Juni bis Ende September.',
+            1008: 'In der Regel von Anfang Juni bis Ende September. Beachten Sie nach Möglichkeit die aktuellen Präsenzangaben auf den Infotafeln vor Ort.',
+            1010: 'In der Regel zwischen Anfang Juni und Ende September.',
+            1011: 'In der Regel zwischen Anfang Juni und Mitte September. Beachten Sie nach Möglichkeit die aktuellen Präsenzangaben auf den Infotafeln vor Ort.',
+            1014: 'In der Regel zwischen Ende Mai bis Bettag (ca. Mitte September).',
+            1016: 'In der Regel zwischen Ende Mai und Ende September. Auf dem Alpinwanderweg Vorderjoch - Gandispitz - Zingel ist nicht mit Begegnungen mit Herdenschutzhunden zu rechnen.',
+            1017: 'In der Regel zwischen Ende Mai und Mitte Oktober.',
+            1018: 'In der Regel zwischen Mitte April und Anfang Dezember.',
+            1019: 'In der Regel zwischen Mitte Juni und Ende September.',
+            1020: 'In der Regel zwischen Mitte Juni und Ende September. Beachten Sie nach Möglichkeit die aktuellen Präsenzangaben auf den Infotafeln vor Ort.',
+            1021: 'In der Regel zwischen Mitte Juni und Mitte September.',
+            1022: 'Von Anfang August bis Mitte September ist auf dem Wanderweg von der Canalbrücke aus Richtung Zapporthütte damit zu rechnen, auf Herdenschutzhunde zu treffen.',
+            1024: 'In der Regel zwischen Anfang Juni und Mitte September.',
+            1025: 'In der Regel Ende Mai bis Ende Juni auf der Weide Lavanchy-Poy. Mitte Juni bis Ende September auf der Alp Taveyanne.',
+            1026: 'In der Regel Ende Mai bis Mitte Juni auf dem unteren Teil der Alpweide. Mitte August bis Anfang Oktober auf der ganzen Alp.',
+            1027: 'In der Regel Anfang Juni bis Mitte Oktober. Die Herde mit den Herdenschutzhunden befindet sich im August in der Region um die Seen.',
+            1028: 'Mitte April - Mitte Juni: Weiden Rossboden und Älpli bei Malans. Mitte Juni - Anfang Juli und September: Grüscheralp (Alpweide um Golrosa, Cavell, Schafbüel). Ab Juli - Anfang September: Alp Drusa (Alpweide rund um Carschinahütte und Schafberg).',
+            1032: 'In der Regel Mitte Mai bis Ende Juni (Gommer Höhenweg) und Ende September bis Ende Oktober (Hofmatte).',
+            1033: 'In der Regel zwischen Anfang Juni und Anfang Juli und im Oktober auf der Weiden zwischen Vercorin und Le Crêt du Midi. Und zwischen Anfang Juli bis Ende September auf der Weiden zwischen Le Crêt du Midi und le Roc d&#39;Orzival.',
+            1034: 'In der Regel von Anfang Mai bis Ende Mai für die Weiden um das Dorf Ramosch. Von Ende Mai bis Ende September für die Alp Russena. Und von Ende September bis Anfang November für die Alp Arina.',
+            1035: 'In der Regel von Anfang Juni bis Mitte Juli für den Sektor Cani und Sanalada und von Mitte Juli bis Ende September für den oberen Teil der Alp. Beachten Sie nach Möglichkeit die aktuellen Präsenzangaben auf den Infotafeln vor Ort.',
+            1036: 'Die Herde und die Herdenschutzhunde sind von Anfang Juni bis Mitte Septembre in Lavaz und von Mitte September bis Mitte Oktober in Val Plattas anzutreffen. Beachten Sie nach Möglichkeit die aktuellen Präsenzangaben auf den Infotafeln vor Ort.',
+            1037: 'In der Regel zwischen Mitte Mai und Ende September.',
+            1038: 'In der Regel zwischen Mitte Mai und Mitte Oktober.',
+            1039: 'In der Regel zwischen Ende Juli und Ende September.',
+            1040: 'In der Regel zwischen Mitte Juni und Ende Juli.',
+            1041: 'In der Regel Anfang Juni bis Mitte August auf der Alp Curtegns. Mitte August bis Ende September auf der Alp Val Nandro.',
+            1042: 'In der Regel, Anfang Juni - Mitte Juli und Anfang September - Mitte September: Alp Schärm Obergross Stäfe (Studen). Mitte Juli - Anfang September: Hochalp Silbern.',
+            1043: 'In der Regel zwischen Anfang Mai und Ende Oktober.',
+            1044: 'In der Regel zwischen Anfang Mai bis Ende Juni und im Oktober.',
+            1045: 'In der Regel zwischen Mitte Mai und Ende September.',
+            1046: 'In der Regel. Juni: Combi. Juli - September: Balachaux.',
+            1047: 'In der Regel zwischen Anfang Mai und Ende Mai. Und zwischen Anfang September und Mitte November.',
+            1048: 'In der Regel zwischen Anfang Juni und Mitte Oktober.',
+            1049: 'In der Regel zwischen Mitte Juni und Mitte Oktober.',
+            1050: 'In der Regel zwischen Mitte Juni und Ende September.',
+            1051: 'In der Regel zwischen Mitte Mai und Mitte Oktober.',
+            1052: 'In der Regel zwischen Anfang Juli und Ende September.',
+            1053: 'In der Regel zwischen Anfang Juni und Ende Oktober.',
+            1055: 'In der Regel zwischen Anfang Mai und Mitte November.',
+            1056: 'In der Regel zwischen Anfang Juli und Mitte Oktober.'
+          };
+          val = pMap[val as number] || val;
+        } else if (key === 'code_hinweis') {
+          const hMap: Record<number, string> = {
+            0: 'n.n.',
+            4: 'Der Wanderweg am Lag da Pigniu ist bei Anwesenheit der Herdenschutzhunde ausgezäunt, so dass Sie in der Regel nicht direkt auf die geschützte Herde treffen. Mit Begleithunden - unbedingt angeleint - bitte zügig an der geschützten Weide vorbeigehen.',
+            30: 'Der Weg durch die Combe de Dreveneuse ist während der Zeit, in der die Herde dort weidet, gesperrt.',
+            36: 'Der direkte Wanderweg zum Fürstein ist jeweils während der Beweidungsdauer (2 Wochen) temporär gesperrt. Der Wanderweg ist über die Ostseite umgeleitet.',
+            37: 'Um Interaktionen zwischen Herdenschutzhunden und Touristen zu minimieren, können einige Wanderwege vorübergehend geschlossen und umgeleitet werden.',
+            45: 'Der eingezäunten, geschützten Herde auf dem Guferli kann problemlos ausgewichen werden.',
+            51: 'Die Wanderwege sind ausgezäunt, so dass Sie in der Regel nicht direkt auf die geschützte Herde treffen. Mit Begleithunden - unbedingt angeleint - bitte zügig an der geschützten Weide vorbeigehen.',
+            60: 'Der Wanderweg südlich des Bärried ist abgezäunt. Mit Begleithunden - unbedingt angeleint - bitte zügig an der geschützten Weide vorbeigehen.',
+            77: 'Der WW vom Bruchgeereberg über Pkt. 1652 und weiter Richtung Chummli ist ausgezäunt. Einzig während rund 2 Wochen ist auf dem Wegabschnitt Pkt. 1652-Chummli damit zu rechnen, direkt auf die geschützte Herde zu treffen (Auskünfte: NP Diemtigtal).',
+            92: 'Empfehlungen zum korrekten Verhalten bei Begegnungen mit Mutterkuhherden finden Sie auf der Website der Schweizer Wanderwege.',
+            123: 'im Sektor Lavanchy-Poy, die Strasse ist ausgezäunt - es ist nicht damit zu rechnen, direkt auf die geschützte Herde zu treffen.',
+            135: 'Als Alternative zum Weg Unteri Rippa - Bremingard - Col du Chamois wird bei Präsenz Hunde die Route Unteri Rippa - Cerniets - Col du Chamois empfohlen. Zwischen dem Col du Chamois und Cerniets wurde diese Alternativroute im Feld neu gekennzeichnet.',
+            138: 'Der tiefer verlaufende Weg von der Niwenalp zum Stafel ist ausgezäunt; der höher parallel verlaufende Weg über Nibubedu hingegen quert in den Mt. Juni u. Sept. die geschützte Herde (Juli/Aug. befindet sich die Herde in höher gelegenen Weidesektoren).',
+            145: 'Die Herde und die Herdenschutzhunde sind zwar während dem Sommer einige Tage auf dem Kaiseregg-Pass, jedoch ausschliesslich unter der Woche.',
+            150: 'Der Weg vom Vord. Sänntum zum Turtmannsee (westl. der Turtmänna) sowie der Höhenweg über Biele zur Turtmannhütte (östl. der Turtmänna) sind ausgezäunt. Für Juli wird empfohlen, den Weg vom Vord. Sänntum über Holustei nach Biele nicht zu nutzen.',
+            154: 'Um die Sömmerung der Schafe auf der Alp Rappental zu ermöglichen, wurde der Herdenschutz verstärkt. Um Interaktionen zwischen den Herdenschutzhunden und den Touristen zu minimieren, werden einige Wanderwege vorübergehend umgeleitet oder gesperrt.',
+            163: 'Befindet sich die geschützte Herde in der Nähe des Wanderweges, so ist dieser ausgezäunt, so dass Sie in der Regel nicht auf die geschützte Herde treffen. Vom Mitführen von Hunden wird abgeraten.',
+            174: 'Um die Interaktionen zwischen den HSHs und den Touristen zu minimieren, wird der Wanderweg entlang des Glattgrats während der Beweidungsdauer (Anfang Juni bis Mitte Juli) vorübergehend umgeleitet.',
+            220: 'Auf dem markierten Gebiet im Val Segnas ist nur im Oktober damit zu rechnen, Herdenschutzhunde anzutreffen.',
+            226: 'Der Mountainbiketrail ist ausgezäunt, so dass Sie in der Regel nicht direkt auf die geschützte Herde treffen. Mit Begleithunden - unbedingt angeleint - bitte zügig an der geschützten Weide vorbeigehen.',
+            252: 'Der Bergwanderweg durch das Rappenloch ist von Anfang Juni bis Mitte Juni gesperrt.'
+          };
+          val = hMap[val as number] || val;
         }
       }
 
-      // Language filter
+      // Language filter and clean key extraction
       if (key.endsWith('_fr') || key.endsWith('_it') || key.endsWith('_en') || key.endsWith('_rm')) continue;
-      if (key.endsWith('_de')) displayKey = key.replace('_de', '');
+      
+      let cleanKey = key;
+      if (key.endsWith('_de')) {
+        cleanKey = key.replace('_de', '');
+      }
+
+      // Hide internal redundant BAFU regulation codes (e.g. R90) since 'best_de' provides the human-readable text.
+      if (cleanKey === 'bestimmung') continue;
+
+      displayKey = cleanKey;
+
+      if (layerBodId === 'ch.bafu.wrz-jagdbanngebiete_select' || layerBodId === 'ch.bafu.wrz-wildruhezonen_portal' || layerBodId === 'ch.bafu.schutzgebiete-schweizerischer_nationalpark') {
+        const keyMap: Record<string, string> = {
+          jb_name: 'Name',
+          wrz_name: 'Name',
+          schutzs: 'Schutzstatus',
+          best: 'Zusatzbestimmungen',
+          kanton: 'Kanton',
+          beschlussjahr: 'Beschlussjahr',
+          grundlage: 'Grundlage',
+          name: 'Name' // Fallback for nationalpark
+        };
+        if (keyMap[cleanKey]) displayKey = keyMap[cleanKey];
+      }
 
       if (typeof val === 'string') {
         if (val.startsWith('http')) {
           val = `<a href="${val}" target="_blank" style="color:#1976D2; text-decoration: underline;">Detail-Infos</a>`;
-        } else {
-          val = val.replace(/;\s+/g, ';<br>');
+        } else if (val.includes(';')) {
+          const listItems = val.split(';')
+                             .map(s => s.trim())
+                             .filter(s => s)
+                             .join(';</li><li style="margin-bottom: 4px;">');
+          val = `<ul style="margin: 4px 0 0 0; padding-left: 18px; line-height: 1.35;"><li style="margin-bottom: 4px;">${listItems}</li></ul>`;
         }
       }
 
       displayKey = displayKey.replace(/_/g, ' ');
       displayKey = displayKey.charAt(0).toUpperCase() + displayKey.slice(1);
-      result += `<p style="margin:2px 0;"><strong>${displayKey}:</strong> ${val}</p>`;
+      
+      // Inline block so the ul drops nicely below or stays inline if it's plain text
+      result += `<div style="margin-bottom: 6px; line-height: 1.35;"><strong>${displayKey}:</strong> ${val}</div>`;
     }
 
     // No special action buttons needed here anymore as Haltestellen are handled above
     if (layerBodId !== 'ch.bav.haltestellen-oev' && layerBodId) {
-      result += `<p style="margin:6px 0 2px 0;"><a href="https://map.geo.admin.ch/?layers=${layerBodId}&lang=de" target="_blank" style="color:#1976D2; text-decoration: underline;">Auf Swisstopo ansehen</a></p>`;
+      const view = this.map.getView();
+      const center = view.getCenter();
+      
+      let e = 2600000;
+      let n = 1200000;
+      if (center) {
+        e = center[0];
+        n = center[1];
+      }
+      
+      const currentRes = view.getResolution() || 250;
+      const geoAdminResolutions = [4000, 2000, 1000, 500, 250, 100, 50, 20, 10, 5, 2.5, 2, 1.5, 1, 0.5];
+      let swisstopoZoom = 4;
+      let minDiff = Infinity;
+      for (let i = 0; i < geoAdminResolutions.length; i++) {
+        const diff = Math.abs(geoAdminResolutions[i] - currentRes);
+        if (diff < minDiff) { 
+          minDiff = diff; 
+          swisstopoZoom = i; 
+        }
+      }
+      
+      const externalIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: text-bottom;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>`;
+      const swisstopoUrl = `https://map.geo.admin.ch/?layers=${layerBodId}&lang=de&E=${e}&N=${n}&zoom=${swisstopoZoom}`;
+
+      result += `<p style="margin:8px 0 2px 0;">
+        <a href="${swisstopoUrl}" target="_blank" style="color:#1976D2; text-decoration: none; display: inline-flex; align-items: center; font-weight: 600;">
+          ${externalIcon} <span style="text-decoration: underline;">map.geo.admin.ch</span>
+        </a>
+      </p>`;
     }
 
     return result;
