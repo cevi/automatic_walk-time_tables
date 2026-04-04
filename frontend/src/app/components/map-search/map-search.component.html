@@ -21,6 +21,7 @@
       #auto="matAutocomplete"
       [displayWith]="displayFn"
       (optionSelected)="onResultSelected($event)"
+      (optionActivated)="onOptionActivated($event)"
       class="premium-autocomplete"
     >
       <mat-option
@@ -29,10 +30,7 @@
         class="search-option"
       >
         <div class="option-content">
-          <div class="result-label" [innerHTML]="result.attrs.label"></div>
-          <div class="result-details" *ngIf="result.attrs.detail">
-            {{ result.attrs.detail }}
-          </div>
+          <div class="result-label" [innerHTML]="highlightLabel(result.attrs.label, searchControl.value)"></div>
         </div>
       </mat-option>
     </mat-autocomplete>

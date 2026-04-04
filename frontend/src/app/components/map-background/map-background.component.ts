@@ -26,6 +26,23 @@ export class MapBackgroundComponent implements OnInit, AfterViewInit {
     if (bgLayerUrl) {
       this.currentLayer = bgLayerUrl;
     }
+    
+    const metaLayersUrl = url.searchParams.get('metaLayers');
+    if (metaLayersUrl) {
+      const layers = metaLayersUrl.split(',');
+      if (layers.includes('fountains')) this.showFountains = true;
+      if (layers.includes('haltestellen')) this.showHaltestellen = true;
+      if (layers.includes('hangneigung')) this.showHangneigung = true;
+      if (layers.includes('wanderwege')) this.showWanderwege = true;
+      if (layers.includes('sperrungen')) this.showSperrungen = true;
+      if (layers.includes('schutzgebiete')) this.showSchutzgebiete = true;
+      if (layers.includes('schiessanzeigen')) this.showSchiessanzeigen = true;
+      if (layers.includes('herdenschutzhunde')) this.showHerdenschutzhunde = true;
+      if (layers.includes('notfall')) this.showNotfall = true;
+      if (layers.includes('feuerstellen')) this.showFeuerstellen = true;
+      if (layers.includes('shelter')) this.showShelter = true;
+    }
+
 
     this.mapService.link_animator(this.mapAnimator);
 
@@ -59,7 +76,35 @@ export class MapBackgroundComponent implements OnInit, AfterViewInit {
   public mapOpacities: Record<string, number> = {};
   public expandedSettings: string | null = null;
 
+  private saveStateToUrl() {
+    const url = new URL(window.location.href);
+    url.searchParams.set('bgLayer', this.currentLayer);
+    
+    const metaLayers = [];
+    if (this.showFountains) metaLayers.push('fountains');
+    if (this.showHaltestellen) metaLayers.push('haltestellen');
+    if (this.showHangneigung) metaLayers.push('hangneigung');
+    if (this.showWanderwege) metaLayers.push('wanderwege');
+    if (this.showSperrungen) metaLayers.push('sperrungen');
+    if (this.showSchutzgebiete) metaLayers.push('schutzgebiete');
+    if (this.showSchiessanzeigen) metaLayers.push('schiessanzeigen');
+    if (this.showHerdenschutzhunde) metaLayers.push('herdenschutzhunde');
+    if (this.showNotfall) metaLayers.push('notfall');
+    if (this.showFeuerstellen) metaLayers.push('feuerstellen');
+    if (this.showShelter) metaLayers.push('shelter');
+
+    if (metaLayers.length > 0) {
+      url.searchParams.set('metaLayers', metaLayers.join(','));
+    } else {
+      url.searchParams.delete('metaLayers');
+    }
+
+    window.history.replaceState({}, '', url.toString());
+  }
+
   private redrawMap() {
+    this.saveStateToUrl();
+
     this.mapService?.draw_map(
       this.currentLayer,
       {
