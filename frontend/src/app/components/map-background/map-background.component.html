@@ -115,8 +115,33 @@
                   >radio_button_unchecked</mat-icon
                 >
                 <span class="item-label">Basiskarte Farbig</span>
+                <span
+                  class="material-icons settings-btn"
+                  [class.disabled]="currentLayer !== 'pixelkarte'"
+                  (click)="handleSettingsClick('pixelkarte', $event)"
+                  >settings</span
+                >
               </div>
             </button>
+            <div
+              *ngIf="expandedSettings === 'pixelkarte'"
+              class="layer-settings-panel"
+              (click)="$event.stopPropagation()"
+            >
+              <span class="slider-label"
+                >Sättigung:
+                {{ getSaturation("pixelkarte") * 100 | number: "1.0-0" }}%</span
+              >
+              <input
+                type="range"
+                class="opacity-slider"
+                min="0"
+                max="1"
+                step="0.05"
+                [value]="getSaturation('pixelkarte')"
+                (input)="setSaturation('pixelkarte', $any($event.target).value)"
+              />
+            </div>
             <button
               mat-menu-item
               (click)="setMapLayer('pixelkarte-grau')"
@@ -137,6 +162,7 @@
                 <span class="item-label">Basiskarte S/W</span>
               </div>
             </button>
+
             <button
               mat-menu-item
               (click)="setMapLayer('luftbild')"
@@ -153,28 +179,33 @@
                   >radio_button_unchecked</mat-icon
                 >
                 <span class="item-label">Luftbild</span>
+                <span
+                  class="material-icons settings-btn"
+                  [class.disabled]="currentLayer !== 'luftbild'"
+                  (click)="handleSettingsClick('luftbild', $event)"
+                  >settings</span
+                >
               </div>
             </button>
-            <button
-              mat-menu-item
-              (click)="setMapLayer('opentopomap')"
-              class="custom-menu-item"
+            <div
+              *ngIf="expandedSettings === 'luftbild'"
+              class="layer-settings-panel"
+              (click)="$event.stopPropagation()"
             >
-              <div class="menu-item-content">
-                <mat-icon class="type-icon basis-icon">terrain</mat-icon>
-                <mat-icon
-                  *ngIf="currentLayer === 'opentopomap'"
-                  class="check-icon"
-                  >check_circle</mat-icon
-                >
-                <mat-icon
-                  *ngIf="currentLayer !== 'opentopomap'"
-                  class="uncheck-icon"
-                  >radio_button_unchecked</mat-icon
-                >
-                <span class="item-label">OSM Wanderkarte</span>
-              </div>
-            </button>
+              <span class="slider-label"
+                >Sättigung:
+                {{ getSaturation("luftbild") * 100 | number: "1.0-0" }}%</span
+              >
+              <input
+                type="range"
+                class="opacity-slider"
+                min="0"
+                max="1"
+                step="0.05"
+                [value]="getSaturation('luftbild')"
+                (input)="setSaturation('luftbild', $any($event.target).value)"
+              />
+            </div>
             <button
               mat-menu-item
               (click)="setMapLayer('keine')"

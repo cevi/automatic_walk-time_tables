@@ -26,7 +26,7 @@ export class MapBackgroundComponent implements OnInit, AfterViewInit {
     if (bgLayerUrl) {
       this.currentLayer = bgLayerUrl;
     }
-    
+
     const metaLayersUrl = url.searchParams.get('metaLayers');
     if (metaLayersUrl) {
       const layers = metaLayersUrl.split(',');
@@ -37,12 +37,12 @@ export class MapBackgroundComponent implements OnInit, AfterViewInit {
       if (layers.includes('sperrungen')) this.showSperrungen = true;
       if (layers.includes('schutzgebiete')) this.showSchutzgebiete = true;
       if (layers.includes('schiessanzeigen')) this.showSchiessanzeigen = true;
-      if (layers.includes('herdenschutzhunde')) this.showHerdenschutzhunde = true;
+      if (layers.includes('herdenschutzhunde'))
+        this.showHerdenschutzhunde = true;
       if (layers.includes('notfall')) this.showNotfall = true;
       if (layers.includes('feuerstellen')) this.showFeuerstellen = true;
       if (layers.includes('shelter')) this.showShelter = true;
     }
-
 
     this.mapService.link_animator(this.mapAnimator);
 
@@ -73,13 +73,18 @@ export class MapBackgroundComponent implements OnInit, AfterViewInit {
   public showFeuerstellen: boolean = false;
   public showShelter: boolean = false;
 
-  public mapOpacities: Record<string, number> = {};
+  public mapOpacities: Record<string, number> = {
+    hangneigung: 0.35,
+  };
+  public mapSaturations: Record<string, number> = {
+    pixelkarte: 0.65,
+  };
   public expandedSettings: string | null = null;
 
   private saveStateToUrl() {
     const url = new URL(window.location.href);
     url.searchParams.set('bgLayer', this.currentLayer);
-    
+
     const metaLayers = [];
     if (this.showFountains) metaLayers.push('fountains');
     if (this.showHaltestellen) metaLayers.push('haltestellen');
@@ -122,6 +127,7 @@ export class MapBackgroundComponent implements OnInit, AfterViewInit {
       },
       'map-canvas',
       this.mapOpacities,
+      this.mapSaturations,
     );
   }
 
@@ -247,6 +253,16 @@ export class MapBackgroundComponent implements OnInit, AfterViewInit {
     const numericValue = typeof value === 'string' ? parseFloat(value) : value;
     this.mapOpacities[layerKey] = numericValue;
     this.mapService?.updateLayerOpacity(layerKey, numericValue);
+  }
+
+  getSaturation(layerKey: string): number {
+    return this.mapSaturations[layerKey] ?? 1.0;
+  }
+
+  setSaturation(layerKey: string, value: string | number) {
+    const numericValue = typeof value === 'string' ? parseFloat(value) : value;
+    this.mapSaturations[layerKey] = numericValue;
+    this.mapService?.updateLayerSaturation(layerKey, numericValue);
   }
 
   triggerUpload() {

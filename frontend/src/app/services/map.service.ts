@@ -134,11 +134,29 @@ export class MapService extends SwisstopoMap implements OnDestroy {
     }
   }
 
+  public updateLayerSaturation(name: string, saturation: number) {
+    if (!this.map) return;
+    const layers = this.map.getLayers().getArray();
+    for (const layer of layers) {
+      if (layer.get('name') === name) {
+        layer.set('saturation', saturation);
+      }
+      if (
+        name === 'schutzgebiete' &&
+        layer.get('name')?.startsWith('schutzgebiete_')
+      ) {
+        layer.set('saturation', saturation);
+      }
+    }
+    this.map.render();
+  }
+
   public draw_map(
     layerLabel: string = 'pixelkarte',
     overlays: Partial<MapOverlays> = {},
     target_canvas: string = 'map-canvas',
     opacities: Record<string, number> = {},
+    saturations: Record<string, number> = {},
   ) {
     let oldCenter: number[] | undefined;
     let oldResolution: number | undefined;
@@ -167,7 +185,22 @@ export class MapService extends SwisstopoMap implements OnDestroy {
     }
 
     const layers: Layer[] = [];
-    if (wmtsLayer) layers.push(wmtsLayer);
+    if (wmtsLayer) {
+      wmtsLayer.set('name', layerLabel);
+      wmtsLayer.set('saturation', saturations[layerLabel] ?? 1.0);
+      wmtsLayer.on('prerender', (evt: any) => {
+        const ctx = evt.context as CanvasRenderingContext2D;
+        if (ctx) {
+          const sat = wmtsLayer!.get('saturation') ?? 1.0;
+          if (sat !== 1.0) ctx.filter = `saturate(${sat * 100}%)`;
+        }
+      });
+      wmtsLayer.on('postrender', (evt: any) => {
+        const ctx = evt.context as CanvasRenderingContext2D;
+        if (ctx && wmtsLayer!.get('saturation') !== 1.0) ctx.filter = 'none';
+      });
+      layers.push(wmtsLayer);
+    }
 
     const overlayKeys: (keyof MapOverlays)[] = [
       'hangneigung',
