@@ -1,3 +1,12 @@
+.marschzeit-card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04), 0 1px 4px rgba(0, 0, 0, 0.02);
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
 #export-button {
   margin-top: 25px;
   border-radius: 24px;
@@ -12,53 +21,15 @@
   width: 100%;
 }
 
-.slider {
-  margin: 16px 0 16px 0;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-}
-
 .help-button {
   margin: 0 20px 0 0;
-}
-
-.mat-stepper-vertical {
-  background-color: transparent;
-  font-family: "Open Sans", "Inter", "Roboto", sans-serif;
-}
-
-.slider label {
-  font-weight: 500;
-  color: #3c4043;
-  margin-right: 16px;
-}
-
-.content-block {
-  margin-bottom: 24px;
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.04),
-    0 1px 4px rgba(0, 0, 0, 0.02);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  padding: 24px;
-
-  p {
-    color: #5f6368;
-    line-height: 1.5;
-    margin-top: 0;
-  }
+  display: block;
+  width: 200px;
+  margin: 0 auto;
 }
 
 .full-width {
   width: 100%;
-}
-
-.help-button {
-  display: block;
-  width: 200px;
-  margin: 0 auto;
 }
 
 .upload-area {
@@ -66,15 +37,42 @@
   display: block;
 }
 
-.error {
+.error, .error_message {
   color: #d93025;
 }
 
-.mat-mdc-unelevated-button,
-.mat-mdc-outlined-button {
-  border-radius: 20px !important;
+.action-buttons-container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 16px;
+  padding-top: 16px;
+}
+
+.btn-primary-pill {
+  border-radius: 999px !important;
+  padding: 4px 32px !important;
+  font-weight: 600 !important;
   letter-spacing: 0.3px;
-  margin: 0 10px 0 0;
+  
+  &:hover {
+    transform: translateY(-1px);
+  }
+}
+
+.btn-advanced {
+  border-radius: 999px !important;
+  color: #5f6368 !important;
+  font-weight: 500 !important;
+  padding: 0 16px 0 8px !important;
+  background-color: #f1f3f4 !important;
+  transition: all 0.2s ease !important;
+
+  &:hover {
+    background-color: #e8eaed !important;
+    color: #202124 !important;
+  }
 }
 
 .export-dialog h2 {
@@ -85,60 +83,105 @@
   letter-spacing: -0.2px;
 }
 
-/* Premium Stepper Redesign */
-::ng-deep .mat-stepper-vertical {
-  background-color: transparent !important;
-  font-family: "Open Sans", "Inter", "Roboto", sans-serif;
+.settings-form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
 }
 
-::ng-deep .mat-stepper-vertical-line::before {
-  display: none !important; /* Eradicate the ugly connecting line */
+.settings-section {
+  display: flex;
+  flex-direction: column;
 }
 
-::ng-deep .mat-vertical-content-container {
-  margin-left: 0 !important; /* Push content completely flush with left edge */
-  padding-bottom: 24px !important;
-}
-
-::ng-deep .mat-vertical-content {
-  padding: 0 !important; /* Remove internal padding */
-}
-
-::ng-deep .mat-step-header {
-  padding: 16px 12px !important;
-  border-radius: 12px;
-  background: transparent !important;
-  transition: all 0.2s ease;
-  margin-bottom: 8px;
-
-  &:hover {
-    background: rgba(0, 0, 0, 0.02) !important;
-  }
-}
-
-::ng-deep .mat-step-label {
-  font-size: 16px !important;
-  font-weight: 600 !important;
-  color: #3c4043 !important;
+.section-title {
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 24px;
   letter-spacing: -0.2px;
 }
 
-::ng-deep .mat-step-icon {
-  background-color: #1a73e8 !important;
-  color: white !important;
-  width: 28px !important;
-  height: 28px !important;
+.settings-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+
+  @media (min-width: 768px) {
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: stretch;
+  }
 }
 
-.toggle-group {
+.settings-card {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-bottom: 12px;
+  gap: 20px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04), 0 1px 4px rgba(0, 0, 0, 0.02);
+  border: 1px solid #e2e8f0;
+  padding: 32px;
+  align-items: flex-start;
+  text-align: left;
+  
+  p {
+    color: #334155;
+    font-weight: 600;
+    margin-bottom: 12px;
+    margin-top: 0;
+  }
+  
+  .mat-mdc-slide-toggle {
+    margin-top: 6px;
+    margin-bottom: 6px;
+  }
+}
 
-  @media (min-width: 600px) {
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 24px;
+.slider-container {
+  width: 100%;
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  
+  label {
+    font-weight: 500;
+    color: #334155;
+    margin-bottom: 16px;
+  }
+  
+  mat-slider {
+    width: 100%;
+    margin: 0;
+    --mdc-slider-handle-color: #3f51b5;
+    --mdc-slider-active-track-color: #3f51b5;
+    --mdc-slider-focus-handle-color: #3f51b5;
+    --mdc-slider-hover-handle-color: #3f51b5;
+    --mdc-slider-label-container-color: #3f51b5;
+  }
+}
+
+// Override slide-toggle to use indigo instead of default pink
+::ng-deep .mat-mdc-slide-toggle {
+  --mdc-switch-selected-track-color: #3f51b5 !important;
+  --mdc-switch-selected-handle-color: #fff !important;
+  --mdc-switch-selected-hover-track-color: #3949ab !important;
+  --mdc-switch-selected-focus-track-color: #3949ab !important;
+  --mdc-switch-selected-pressed-track-color: #3949ab !important;
+}
+
+.export-action-section {
+  display: flex;
+  justify-content: flex-end;
+  padding: 24px 0 64px 0;
+  margin-top: 16px;
+
+  #export-button {
+    width: auto !important;
+    min-width: 200px;
+    margin: 0;
   }
 }

@@ -82,6 +82,27 @@ def get_name():
         return jsonify({"name": ""})
 
 
+@app.route("/map_numbers", methods=["POST"])
+def get_map_numbers():
+    try:
+        data = request.json
+        if not data or not isinstance(data, list):
+            return jsonify({"error": "Expected a list of coords"}), 400
+
+        url = "http://awt-swiss-tml-api:1848/map_numbers"
+        payload = json.dumps(data)
+        headers = {"Content-Type": "application/json"}
+
+        # we send a GET with body to the swiss-tml-api
+        req = requests.request("GET", url, headers=headers, data=payload)
+        resp = req.text
+        return jsonify({"map_numbers": resp})
+
+    except Exception:
+        logger.error("Error retrieving map_numbers")
+        traceback.print_exc()
+        return jsonify({"map_numbers": ""})
+
 @app.route("/parse_route", methods=["POST"])
 def parse_route():
     options = json.loads(request.form["options"])

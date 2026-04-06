@@ -11,109 +11,66 @@
   }
 
   @if (error_message == "") {
-    <form [formGroup]="options">
-      <mat-stepper orientation="vertical">
-        <mat-step>
-          <ng-template matStepLabel
-            >Einstellungen zur Marschzeittabelle</ng-template
-          >
-          <div class="content-block">
-            <div class="slider">
-              <label>Geschwindigkeit: {{ velocity.value }} Lkm/h</label>
-              <mat-slider min="0.5" max="20" step="0.25">
-                <input matSliderThumb #velocity formControlName="velocity" />
-              </mat-slider>
-            </div>
-            <mat-form-field appearance="fill" class="full-width">
-              <mat-label>Routen-Name</mat-label>
-              <input matInput type="text" formControlName="route_name" />
-            </mat-form-field>
-            <br />
-            <mat-form-field appearance="fill" class="full-width">
-              <mat-label>Dein Name</mat-label>
-              <input matInput type="text" formControlName="creator_name" />
-            </mat-form-field>
-            <br />
-            <mat-form-field appearance="fill" class="full-width">
-              <mat-label>Abmarsch Zeit</mat-label>
-              <input
-                matInput
-                type="datetime-local"
-                formControlName="departure_time"
-              />
-            </mat-form-field>
-          </div>
-          <button
-            mat-stroked-button
-            color="primary"
-            matStepperNext
-            id="goto-step-3"
-          >
-            Weiter
-          </button>
-        </mat-step>
+    <form [formGroup]="options" class="settings-form-container">
 
-        <mat-step>
-          <ng-template matStepLabel>Einstellungen zum Höhenprofil</ng-template>
+      <!-- Marschzeittabelle + Elevation Profile in one card -->
+      <div class="marschzeit-card">
+        <app-walk-time-table
+          [formGroup]="options"
+          (userEdited)="onUserEdited()"
+        >
+        </app-walk-time-table>
 
-          <app-walk-time-table
-            [velocity]="options.value.velocity"
-            [departureTime]="options.value.departure_time"
-            [autoWaypoints]="options.value.automatic_waypoint_selection"
-            (autoGenerate)="onAutoGenerate()"
-            (userEdited)="onUserEdited()"
+        <app-elevation-profile></app-elevation-profile>
+      </div>
+
+      @if (showAdvancedSettings) {
+        <div class="content-block mt-4">
+          <p>
+            Hier kannst du einstellen, wo die Legende im Höhenprofil angezeigt
+            wird. Das Höhenprofil wird deinem Export als Bild beigefügt.
+          </p>
+          <mat-select
+            appearance="fill"
+            placeholder="Position der Legende"
+            formControlName="legend_position"
           >
-          </app-walk-time-table>
+            <mat-option value="upper left">Oben Links</mat-option>
+            <mat-option value="lower left">Unten Links</mat-option>
+            <mat-option value="upper right">Oben Rechts</mat-option>
+            <mat-option value="lower right">Unten Rechts</mat-option>
+          </mat-select>
+        </div>
+      }
 
-          <app-elevation-profile></app-elevation-profile>
-          <br />
-          <div class="content-block">
-            <p>
-              Hier kannst du einstellen, wo die Legende im Höhenprofil angezeigt
-              wird. Das Höhenprofil wird deinem Export als Bild beigefügt.
-            </p>
-            <mat-select
-              appearance="fill"
-              placeholder="Position der Legende"
-              formControlName="legend_position"
-            >
-              <mat-option value="upper left">Oben Links</mat-option>
-              <mat-option value="lower left">Unten Links</mat-option>
-              <mat-option value="upper right">Oben Rechts</mat-option>
-              <mat-option value="lower right">Unten Rechts</mat-option>
-            </mat-select>
-          </div>
-          <button
-            mat-stroked-button
-            color="primary"
-            matStepperNext
-            id="goto-step-4"
-          >
-            Weiter
-          </button>
-        </mat-step>
+      <div class="action-buttons-container" style="justify-content: flex-start; margin-bottom: 32px;">
+        <button mat-button type="button" (click)="showAdvancedSettings = !showAdvancedSettings" class="btn-advanced" disableRipple>
+          <mat-icon>{{ showAdvancedSettings ? 'expand_less' : 'expand_more' }}</mat-icon>
+          Erweiterte Einstellungen
+        </button>
+      </div>
 
-        <mat-step>
-          <ng-template matStepLabel>Einstellungen zur Karte</ng-template>
-          <div class="content-block">
+      <div class="settings-section">
+        <h3 class="section-title">Einstellungen zur Karte</h3>
+        <div class="settings-grid">
+          <div class="settings-card">
             <mat-slide-toggle formControlName="auto_scale"
               >Massstab automatisch wählen</mat-slide-toggle
             >
-            <br />
             <mat-slide-toggle formControlName="name_points_in_export"
               >Punkte beschriften</mat-slide-toggle
             >
             <mat-slide-toggle formControlName="number_points_in_export"
               >Punkte nummerieren</mat-slide-toggle
             >
-            <div class="slider">
+            <div class="slider-container">
               <label>Kartenmassstab: 1:{{ slider.value }}</label>
               <mat-slider min="5000" max="100000" step="5000">
                 <input matSliderThumb #slider formControlName="map_scaling" />
               </mat-slider>
             </div>
           </div>
-          <div class="content-block">
+          <div class="settings-card">
             <p>Kartenlayer auswählen:</p>
             <mat-select
               appearance="fill"
@@ -141,31 +98,22 @@
               </mat-option>
             </mat-select>
           </div>
-          <button
-            mat-stroked-button
-            color="primary"
-            matStepperNext
-            id="goto-step-5"
-          >
-            Weiter
-          </button>
-        </mat-step>
-        <mat-step>
-          <ng-template matStepLabel>Marschzeittabelle Erstellen</ng-template>
-          <div class="content-block">
-            <p>Nun sind wir bereit deine Marschzeittabelle zu erstellen:</p>
-            <button
-              mat-stroked-button
-              color="primary"
-              [disabled]="!route_uploaded"
-              id="export-button"
-              (click)="download_map()"
-            >
-              Generieren lassen
-            </button>
-          </div>
-        </mat-step>
-      </mat-stepper>
+        </div>
+      </div>
+
+      <div class="settings-section export-action-section">
+        <button
+          mat-flat-button
+          color="primary"
+          class="btn-primary-pill"
+          [disabled]="!route_uploaded"
+          id="export-button"
+          (click)="download_map()"
+        >
+          Herunterladen
+        </button>
+      </div>
+
     </form>
   }
 </div>

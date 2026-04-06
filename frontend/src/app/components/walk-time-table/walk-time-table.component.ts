@@ -7,7 +7,9 @@ import {
   SimpleChanges,
   Output,
   EventEmitter,
+  ChangeDetectorRef,
 } from '@angular/core';
+import { UntypedFormGroup } from '@angular/forms';
 import { MapAnimatorService } from '../../services/map-animator.service';
 import { LV95_Waypoint } from '../../helpers/coordinates';
 import { Subscription } from 'rxjs';
@@ -29,12 +31,21 @@ export interface TableRow {
   standalone: false,
 })
 export class WalkTimeTableComponent implements OnInit, OnDestroy, OnChanges {
-  @Input() velocity: number = 4.5;
-  @Input() departureTime: string = '';
-  @Input() autoWaypoints: boolean = false;
+  @Input() formGroup!: UntypedFormGroup;
 
-  @Output() autoGenerate = new EventEmitter<void>();
   @Output() userEdited = new EventEmitter<void>();
+
+  get velocity(): number {
+    return this.formGroup?.value?.velocity || 4.5;
+  }
+
+  get departureTime(): string {
+    return this.formGroup?.value?.departure_time || '';
+  }
+
+  get autoWaypoints(): boolean {
+    return this.formGroup?.value?.automatic_waypoint_selection || false;
+  }
 
   rows: TableRow[] = [];
   highlightedRowIndex: number = -1;
@@ -42,12 +53,26 @@ export class WalkTimeTableComponent implements OnInit, OnDestroy, OnChanges {
   private pointerSub: Subscription | null = null;
   private currentWps: LV95_Waypoint[] = [];
 
+  mapNumbers: string = '';
+
   constructor(
     public mapAnimator: MapAnimatorService,
     private mapService: MapService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit() {
+    this.mapAnimator.mapNumbers$.subscribe((num) => {
+      this.mapNumbers = num;
+      this.cdr.detectChanges();
+    });
+
+    if (this.formGroup) {
+      this.formGroup.valueChanges.subscribe(() => {
+        this.recalculate(this.currentWps);
+      });
+    }
+
     this.sub = this.mapAnimator.pois$.subscribe((wps: LV95_Waypoint[]) => {
       this.currentWps = wps;
       this.recalculate(this.currentWps);
@@ -70,7 +95,7 @@ export class WalkTimeTableComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['velocity'] || changes['departureTime']) {
+    if (changes['formGroup'] && this.formGroup) {
       this.recalculate(this.currentWps);
     }
   }
@@ -94,9 +119,7 @@ export class WalkTimeTableComponent implements OnInit, OnDestroy, OnChanges {
     this.recalculate(this.currentWps);
   }
 
-  generateAutoWaypoints() {
-    this.autoGenerate.emit();
-  }
+
 
   isAutoNamed(row: TableRow): boolean {
     if (!row.waypoint) return false;
@@ -104,6 +127,11 @@ export class WalkTimeTableComponent implements OnInit, OnDestroy, OnChanges {
     return (
       !!row.waypoint.auto_name && row.waypoint.name === row.waypoint.auto_name
     );
+  }
+
+  deletePoi(waypoint: any) {
+    // Deletion is purely local — service handles state update directly
+    this.mapAnimator.delete_poi(waypoint);
   }
 
   async autoName(row: TableRow) {

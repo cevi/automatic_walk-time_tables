@@ -25,6 +25,7 @@ export class ExportSettingsComponent {
   public error_message: string = '';
   protected readonly location = location;
   public has_valid_path: boolean = false;
+  public showAdvancedSettings: boolean = false;
   private _suppress_auto_waypoint_trigger: boolean = false;
 
   constructor(
@@ -99,6 +100,13 @@ export class ExportSettingsComponent {
       this.has_valid_path = path.length !== 0;
       this.route_uploaded = this.has_valid_path;
     });
+
+    this.mapAnimator?.suggestedRouteName$.subscribe((name) => {
+      const currentName = this.options.get('route_name')?.value;
+      if (!currentName || currentName.trim() === '') {
+        this.options.patchValue({ route_name: name });
+      }
+    });
   }
 
   ngOnInit() {
@@ -114,6 +122,7 @@ export class ExportSettingsComponent {
   }
 
   onUserEdited() {
+    this.mapAnimator.set_automatic_waypoint_selection(false);
     this._suppress_auto_waypoint_trigger = true;
     this.options
       .get('automatic_waypoint_selection')
@@ -123,9 +132,7 @@ export class ExportSettingsComponent {
     }, 50);
   }
 
-  onAutoGenerate() {
-    this.options.get('automatic_waypoint_selection')?.setValue(true);
-  }
+
 
   public new_route_uploaded(route_file: File) {
     this.loading = true;

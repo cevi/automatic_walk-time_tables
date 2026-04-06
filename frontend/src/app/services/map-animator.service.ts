@@ -1,6 +1,6 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { LV95_Coordinates, LV95_Waypoint } from '../helpers/coordinates';
-import { combineLatest, Subject } from 'rxjs';
+import { combineLatest, Subject, BehaviorSubject } from 'rxjs';
 import { take, filter, takeUntil } from 'rxjs/operators';
 import { Router, NavigationEnd } from '@angular/router';
 import { MapStateService } from './map-state.service';
@@ -74,6 +74,9 @@ export class MapAnimatorService implements OnDestroy {
   public get velocity$() {
     return this.state.velocity$;
   }
+
+  public mapNumbers$ = new BehaviorSubject<string>('');
+  public suggestedRouteName$ = new BehaviorSubject<string>('');
 
   public get app_mode() {
     return this.state.app_mode;
@@ -586,10 +589,18 @@ export class MapAnimatorService implements OnDestroy {
       });
       return;
     }
-    pkt.name = 'Lade...';
-    this.state.updatePOIs([...this.state.pois, pkt]);
-    this.regenerateWalkTimeTable();
+    // Ensure we're in manual mode after any user-initiated POI change
+    this.state.auto_waypoints = false;
 
+    pkt.name = 'Lade...';
+    // Insert the new POI in sorted order by accumulated_distance
+    const new_pois = [...this.state.pois, pkt].sort(
+      (a, b) => (a.accumulated_distance || 0) - (b.accumulated_distance || 0),
+    );
+    this.state.updatePOIs(new_pois);
+    this._recalculate_route_stats(new_pois);
+
+    // Fetch the name — purely local update, no backend call
     try {
       const resp = await this.get_name_from_coords(pkt.x, pkt.y);
       const pois = this.state.pois;
@@ -730,11 +741,20 @@ export class MapAnimatorService implements OnDestroy {
       throw new Error('Unvollständige Antwort vom Server.');
     }
 
+    // If we are in auto mode, we "bake" the waypoints now by switching to manual mode.
+    // This ensures that any subsequent user edits (like deletions) don't trigger another auto-generation.
+    if (this.state.auto_waypoints) {
+      this.state.auto_waypoints = false;
+      this.auto_waypoints_baked$.next();
+    }
+
     const pois_coords = decode(resp.selected_way_points || resp.pois, 0);
     const pois_elev = decode(
       resp.selected_way_points_elevation || resp.pois_elevation,
       0,
     );
+
+    const tasks: Promise<any>[] = [];
 
     const pois: LV95_Waypoint[] = pois_coords.map((p, i) => {
       const x = p[0];
@@ -757,28 +777,14 @@ export class MapAnimatorService implements OnDestroy {
       const needs_naming = !name && !auto_name;
       if (needs_naming) {
         name = 'Lade...';
-        this.get_name_from_coords(x, y)
-          .then((resp) => {
-            const current_pois = this.state.pois;
-            const target = current_pois.find(
-              (p) => Math.abs(p.x - x) < 0.1 && Math.abs(p.y - y) < 0.1,
-            );
-            if (target) {
-              target.name = resp || '';
-              target.auto_name = target.name;
-            }
-            this.state.updatePOIs([...current_pois]);
+        const task = this.get_name_from_coords(x, y)
+          .then((title) => {
+            return { x, y, title };
           })
           .catch(() => {
-            const current_pois = this.state.pois;
-            const target = current_pois.find(
-              (p) => Math.abs(p.x - x) < 0.1 && Math.abs(p.y - y) < 0.1,
-            );
-            if (target && target.name === 'Lade...') {
-              target.name = '';
-            }
-            this.state.updatePOIs([...current_pois]);
+            return { x, y, title: '' };
           });
+        tasks.push(task);
       }
 
       return {
@@ -795,6 +801,91 @@ export class MapAnimatorService implements OnDestroy {
 
     this.state.updatePOIs(pois);
     this._recalculate_route_stats(pois);
+
+    // BATCH NAMING: Wait for all naming tasks to complete before updating state again
+    if (tasks.length > 0) {
+      Promise.all(tasks).then((results) => {
+        const current_pois = this.state.pois;
+        results.forEach((res: any) => {
+          const target = current_pois.find(
+            (p) => Math.abs(p.x - res.x) < 0.1 && Math.abs(p.y - res.y) < 0.1,
+          );
+          if (target && target.name === 'Lade...') {
+            target.name = res.title || '';
+            target.auto_name = target.name;
+          }
+        });
+        this.state.updatePOIs([...current_pois]);
+        this.generateRouteName();
+        this.fetchMapNumbers();
+      });
+    } else {
+      this.generateRouteName();
+      this.fetchMapNumbers();
+    }
+  }
+
+  public async fetchMapNumbers() {
+    const activePois = this.state.pois;
+    if (activePois.length === 0) {
+      this.mapNumbers$.next('');
+      return;
+    }
+    this.mapNumbers$.next('Lade...');
+    try {
+      const coords = activePois.map((p) => [Math.round(p.x), Math.round(p.y)]);
+      const resp = await fetch(environment.API_URL + 'map_numbers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(coords),
+      });
+      if (!resp.ok) {
+        this.mapNumbers$.next('');
+        return;
+      }
+      const data = await resp.json();
+      this.mapNumbers$.next(data.map_numbers || '');
+    } catch {
+      this.mapNumbers$.next('');
+    }
+  }
+
+  public generateRouteName() {
+    const pois = this.state.pois;
+    if (pois.length < 2) return;
+
+    let start = pois[0];
+    let end = pois[pois.length - 1];
+
+    let highest = null;
+    let maxH = -Infinity;
+    for (let i = 1; i < pois.length - 1; i++) {
+        const p = pois[i];
+        if (p.h > maxH && p.h > Math.max(start.h, end.h) + 100) {
+            maxH = p.h;
+            highest = p;
+        }
+    }
+
+    const startName = start.name && start.name !== 'Lade...' ? start.name : 'Start';
+    const endName = end.name && end.name !== 'Lade...' ? end.name : 'Ziel';
+
+    let routeName = '';
+    
+    // Simple Loop Detection (if start and end are close enough, ~100m)
+    const isLoop = Math.sqrt(Math.pow(start.x - end.x, 2) + Math.pow(start.y - end.y, 2)) < 100;
+
+    if (isLoop) {
+       routeName = highest && highest.name && highest.name !== 'Lade...'
+          ? `Rundweg ${startName} über ${highest.name}`
+          : `Rundweg ${startName}`;
+    } else {
+       routeName = highest && highest.name && highest.name !== 'Lade...'
+          ? `${startName} - ${highest.name} - ${endName}`
+          : `${startName} - ${endName}`;
+    }
+
+    this.suggestedRouteName$.next(routeName);
   }
 
   public can_undo(): boolean {
@@ -915,13 +1006,21 @@ export class MapAnimatorService implements OnDestroy {
   }
 
   public delete_poi(point: LV95_Waypoint) {
+    // Lock manual mode and update state purely locally — no backend call.
+    this.state.auto_waypoints = false;
+
     const pois = this.state.pois;
+
+    // Never delete the first or last POI (route start/end)
+    if (pois.length <= 2) return;
     const idx = pois.findIndex((p) => GeometryUtils.pointsMatch(p, point));
+    if (idx === 0 || idx === pois.length - 1) return;
+
     if (idx !== -1) {
       const new_pois = [...pois];
       new_pois.splice(idx, 1);
       this.state.updatePOIs(new_pois);
-      this.regenerateWalkTimeTable();
+      this._recalculate_route_stats(new_pois);
     }
   }
 
@@ -931,7 +1030,11 @@ export class MapAnimatorService implements OnDestroy {
 
   set_automatic_waypoint_selection(val: boolean) {
     this.state.auto_waypoints = val;
-    this.regenerateWalkTimeTable();
+    // Only call the backend when switching TO auto mode (to generate new waypoints).
+    // Switching to manual mode is just locking in the current state — no backend call needed.
+    if (val) {
+      this.regenerateWalkTimeTable();
+    }
   }
 
   /**

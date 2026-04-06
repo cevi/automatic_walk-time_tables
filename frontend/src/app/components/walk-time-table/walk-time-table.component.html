@@ -1,7 +1,54 @@
-<div class="table-container">
-  <table class="marschzeit-table">
+<div class="table-container" *ngIf="formGroup" [formGroup]="formGroup">
+  <table class="marschzeit-table excel-header">
     <thead>
-      <tr>
+      <tr class="header-row-1">
+        <th class="label-cell">Route:</th>
+        <th colspan="5" class="input-cell">
+          <input
+            type="text"
+            formControlName="route_name"
+            class="export-input"
+          />
+        </th>
+        <th class="label-cell" colspan="2" style="border-left: 1px solid #ccc">
+          Geschwindigkeitsfaktor (Lkm / h):
+        </th>
+      </tr>
+      <tr class="header-row-2">
+        <th class="label-cell">Datum:</th>
+        <th class="input-cell" colspan="5">
+          <input
+            type="datetime-local"
+            formControlName="departure_time"
+            class="export-input"
+          />
+        </th>
+        <th class="input-cell text-center" colspan="2" style="border-left: 1px solid #ccc">
+          <input
+            type="number"
+            formControlName="velocity"
+            step="0.25"
+            class="export-input text-center bold-input"
+          />
+        </th>
+      </tr>
+      <tr class="header-row-3">
+        <th class="label-cell">erstellt von:</th>
+        <th colspan="7" class="input-cell">
+          <input
+            type="text"
+            formControlName="creator_name"
+            class="export-input"
+          />
+        </th>
+      </tr>
+      <tr class="header-row-4">
+        <th class="label-cell">Landeskarten:</th>
+        <th colspan="7" class="input-cell map-number-cell">
+          {{ mapNumbers || "Lade..." }}
+        </th>
+      </tr>
+      <tr class="column-names">
         <th class="col-name">Ort, Flurname, Koordinaten</th>
         <th>Höhe</th>
         <th>hm</th>
@@ -15,29 +62,18 @@
     <tbody>
       <tr *ngIf="rows.length === 0">
         <td colspan="8" class="empty-state">
-          <h3>Keine Wegpunkte gefunden</h3>
+          <h3>Noch keine Route vorhanden</h3>
           <p>
-            Du hast noch keine Wegpunkte eingezeichnet. Sollen wir Punkte
-            automatisch für dich positionieren?
+            Zeichne zuerst einen Pfad auf der Karte ein oder importiere eine Datei, 
+            um eine Marschzeittabelle zu erstellen.
           </p>
-          <button
-            mat-flat-button
-            color="primary"
-            (click)="generateAutoWaypoints()"
-          >
-            <mat-icon
-              inline="true"
-              style="margin-right: 6px; vertical-align: middle"
-              >auto_awesome</mat-icon
-            >
-            Automatische Wegpunkte generieren
-          </button>
         </td>
       </tr>
       <tr
         *ngFor="
           let row of rows;
           let first = first;
+          let last = last;
           let i = index;
           trackBy: trackByFn
         "
@@ -50,6 +86,7 @@
             <input
               type="text"
               [(ngModel)]="row.waypoint.name"
+              [ngModelOptions]="{standalone: true}"
               [disabled]="autoWaypoints"
               placeholder="{{ row.waypoint.x | number: '1.0-0' }}, {{
                 row.waypoint.y | number: '1.0-0'
@@ -63,6 +100,13 @@
               matTooltip="Automatisch benennen"
               (click)="!isAutoNamed(row) && autoName(row)"
               >auto_awesome</mat-icon
+            >
+            <mat-icon
+              *ngIf="!autoWaypoints && !first && !last"
+              class="action-icon delete-icon"
+              matTooltip="Wegpunkt löschen"
+              (click)="deletePoi(row.waypoint)"
+              >delete_outline</mat-icon
             >
           </div>
         </td>
@@ -89,6 +133,7 @@
             type="number"
             [disabled]="autoWaypoints"
             [(ngModel)]="row.waypoint.break_duration"
+            [ngModelOptions]="{standalone: true}"
             placeholder="Minuten"
             (ngModelChange)="onFieldChange()"
           />
