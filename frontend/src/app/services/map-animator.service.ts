@@ -191,10 +191,22 @@ export class MapAnimatorService implements OnDestroy {
 
   public start_export_mode() {
     this.state.setExportMode(true);
+    const should_auto_generate = this.state.pois.length <= 2;
+    if (should_auto_generate) {
+      this.auto_waypoints = true;
+    }
+
     const path = this.state.path.map(
       (p) => ({ x: p.x, y: p.y }) as LV95_Coordinates,
     );
-    this.replace_route(path).catch(this._error_handler);
+    this.replace_route(path)
+      .then(() => {
+        if (should_auto_generate) {
+          this.auto_waypoints = false;
+          this.auto_waypoints_baked$.next();
+        }
+      })
+      .catch(this._error_handler);
   }
 
   public is_anchor(point: LV95_Coordinates | LV95_Waypoint): boolean {
@@ -714,12 +726,15 @@ export class MapAnimatorService implements OnDestroy {
 
   private applyWalkTimeTableResponse(resp: any) {
     if (resp?.status === 'error') throw new Error(resp.message);
-    if (!resp?.pois || !resp?.pois_elevation) {
+    if (!resp?.selected_way_points && !resp?.pois) {
       throw new Error('Unvollständige Antwort vom Server.');
     }
 
-    const pois_coords = decode(resp.pois, 0);
-    const pois_elev = decode(resp.pois_elevation, 0);
+    const pois_coords = decode(resp.selected_way_points || resp.pois, 0);
+    const pois_elev = decode(
+      resp.selected_way_points_elevation || resp.pois_elevation,
+      0,
+    );
 
     const pois: LV95_Waypoint[] = pois_coords.map((p, i) => {
       const x = p[0];
