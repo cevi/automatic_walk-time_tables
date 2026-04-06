@@ -186,6 +186,13 @@ export class MapDrawingRenderer {
     this.infoElement.style.lineHeight = '1.4';
     this.infoElement.style.wordWrap = 'break-word';
 
+    this.infoElement.addEventListener('mouseenter', () => {
+      this.is_mouse_over_dom_tooltip = true;
+    });
+    this.infoElement.addEventListener('mouseleave', () => {
+      this.is_mouse_over_dom_tooltip = false;
+    });
+
     this.infoOverlay = new Overlay({
       element: this.infoElement,
       offset: [0, -10],
@@ -280,12 +287,24 @@ export class MapDrawingRenderer {
         targetElement.style.cursor = '';
       }
 
-      // 1. Anchor Hover Logic
+      // 1. Feature Hover Logic
       let foundAnchor = false;
+      let hit_path = false;
+      let hit_vector = false;
+
       if (!this.is_mouse_over_dom_tooltip) {
         this.map.forEachFeatureAtPixel(
           evt.pixel,
           (f, l) => {
+            if (l === this.path_layer) hit_path = true;
+            if (
+              l &&
+              ['fountains', 'notfall', 'feuerstellen', 'shelter', 'haltestellen'].includes(
+                l.get('name') as string,
+              )
+            ) {
+              hit_vector = true;
+            }
             if (
               l &&
               (l as any).getSource() === this.anchor_points_layer_source
@@ -308,7 +327,7 @@ export class MapDrawingRenderer {
         this.hovered_anchor = undefined;
       }
 
-      if (!foundAnchor && !this.is_hovering_tooltip && !this.is_mouse_over_dom_tooltip) {
+      if (!foundAnchor && !hit_path && !this.is_hovering_tooltip && !this.is_mouse_over_dom_tooltip) {
         this.tooltipOverlay.setPosition(undefined);
         // Cancel any pending identify when we stop hovering something likely
         if (this.currentIdentifyAbortController) {
@@ -323,36 +342,26 @@ export class MapDrawingRenderer {
       } else if (this.is_modifying) {
         this.tooltipOverlay.setPosition(undefined);
       } else if (foundAnchor) {
-        const content =
-          'Ziehen zum verschieben<br><span style="color:#ff5252; cursor:pointer" id="delete-anchor-btn">Klicken zum Löschen</span>';
+        const content = 'Ziehen zum verschieben';
         if (this.tooltipElement.innerHTML !== content) {
           this.tooltipElement.innerHTML = content;
-          const deleteBtn =
-            this.tooltipElement.querySelector('#delete-anchor-btn');
-          if (deleteBtn) {
-            deleteBtn.addEventListener(
-              'pointerdown',
-              (e) => {
-                e.stopPropagation();
-                if (this.hovered_anchor) {
-                  this.onWaypointDeleted.emit(this.hovered_anchor);
-                  this.tooltipOverlay.setPosition(undefined);
-                }
-              },
-              { once: true },
-            );
-          }
         }
         this.tooltipOverlay.setPosition([
           this.hovered_anchor!.x,
           this.hovered_anchor!.y,
         ]);
+      } else if (hit_path && !this.is_mouse_over_dom_tooltip) {
+        const content = 'Ziehen zum verschieben';
+        if (this.tooltipElement.innerHTML !== content) {
+          this.tooltipElement.innerHTML = content;
+        }
+        this.tooltipOverlay.setPosition(evt.coordinate);
       } else if (this.is_hovering_tooltip) {
         const content = 'Ziehen um Punkt zu erstellen';
         if (this.tooltipElement.innerHTML !== content)
           this.tooltipElement.innerHTML = content;
-      } else if (this.map_animator.magnetic_paths) {
-        const content = 'Klicken um Punkt anzuhängen';
+      } else if (this.map_animator.magnetic_paths && !this.is_mouse_over_dom_tooltip) {
+        const content = 'Klicken, um Punkt anzuhängen';
         if (this.tooltipElement.innerHTML !== content)
           this.tooltipElement.innerHTML = content;
       } else {
@@ -364,25 +373,6 @@ export class MapDrawingRenderer {
       // Identify & Path Hover Logic (Sync Identify in Background)
       let map_hover_coord: LV95_Waypoint | null = null;
       if (!this.is_modifying && !this.hovered_anchor) {
-        let hit_path = false;
-        let hit_vector = false;
-
-        this.map.forEachFeatureAtPixel(
-          evt.pixel,
-          (f, l) => {
-            if (l === this.path_layer) hit_path = true;
-            if (
-              l &&
-              ['fountains', 'notfall', 'feuerstellen', 'shelter', 'haltestellen'].includes(
-                l.get('name') as string,
-              )
-            ) {
-              hit_vector = true;
-            }
-          },
-          { hitTolerance: 20 },
-        );
-
         if (hit_vector) {
           this.is_hovering_interactive_feature = true;
           targetElement.style.cursor = 'pointer';
