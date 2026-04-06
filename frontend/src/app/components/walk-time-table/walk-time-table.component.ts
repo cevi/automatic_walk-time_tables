@@ -214,7 +214,7 @@ export class WalkTimeTableComponent implements OnInit, OnDestroy, OnChanges {
 
       let total_hours_from_start = accumulated_time_hours;
       let total_break_hours = 0;
-      for (let j = 0; j < i; j++) {
+      for (let j = 0; j <= i; j++) {
         total_break_hours += this.parseBreakDuration(wps[j].break_duration);
       }
 
