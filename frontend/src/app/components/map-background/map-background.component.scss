@@ -68,6 +68,8 @@
   padding: 8px 16px;
   max-width: fit-content;
   margin-top: 0;
+  height: 56px;
+  box-sizing: border-box;
 
   .toolbar-label-btn {
     display: flex;
