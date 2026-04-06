@@ -77,7 +77,7 @@ export class MapBackgroundComponent implements OnInit, AfterViewInit {
     hangneigung: 0.35,
   };
   public mapSaturations: Record<string, number> = {
-    pixelkarte: 0.65,
+    pixelkarte: 0.85,
   };
   public expandedSettings: string | null = null;
 
