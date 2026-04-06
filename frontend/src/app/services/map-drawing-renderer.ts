@@ -201,30 +201,59 @@ export class MapDrawingRenderer {
 
   private setupModifyInteraction() {
     this.modifyInteraction = new Modify({
-      source: this.anchor_points_layer_source,
-      pixelTolerance: 20,
+      source: this.path_layer_source,
+      pixelTolerance: 25,
     });
 
     this.modifyInteraction.on('modifystart', (evt: any) => {
       this.is_modifying = true;
-      const coords = evt.features.getArray()[0].getGeometry().getCoordinates();
-      this.modifystart_coord = coords;
-      this.dragged_anchor = { x: coords[0], y: coords[1] } as any;
+      this.map_animator.is_modifying = true;
+
+      // Synchronously verify anchor hits to prevent fast-drag ghosting
+      let hit_anchor: LV95_Waypoint | null = null;
+      const pixel = this.map?.getPixelFromCoordinate(
+        evt.mapBrowserEvent.coordinate,
+      );
+      if (pixel) {
+        this.map?.forEachFeatureAtPixel(
+          pixel,
+          (feature, layer) => {
+            if (layer === this.anchor_points_layer) {
+              const center = (feature.getGeometry() as Point).getCoordinates();
+              hit_anchor = { x: center[0], y: center[1] } as LV95_Waypoint;
+            }
+          },
+          { hitTolerance: 25 },
+        );
+      }
+
+      this.dragged_anchor = hit_anchor || this.hovered_anchor || null;
+      this.modifystart_coord = evt.mapBrowserEvent.coordinate;
+      this.tooltipOverlay.setPosition(undefined);
+      this.pointer_layer_source.clear();
+      this.refreshAnchors();
     });
 
     this.modifyInteraction.on('modifyend', (evt: any) => {
       this.is_modifying = false;
-      const feature = evt.features.getArray()[0];
-      const new_coords = feature.getGeometry().getCoordinates();
-
+      this.map_animator.is_modifying = false;
+      let new_coords: any = [];
+      const features = evt.features.getArray();
+      if (features.length > 0) {
+        const geom = features[0].getGeometry() as LineString;
+        new_coords = geom.getCoordinates();
+      }
       this.onRouteModified.emit({
-        new_coords: [new_coords],
+        new_coords,
         dragged_anchor: this.dragged_anchor,
         mousedown_coord: this.modifystart_coord!,
       });
-
       this.dragged_anchor = null;
       this.modifystart_coord = null;
+      this.hovered_anchor = undefined;
+      this.is_hovering_tooltip = false;
+      this.pointer_layer_source.clear();
+      this.tooltipOverlay.setPosition(undefined);
     });
 
     this.map.addInteraction(this.modifyInteraction);
@@ -233,6 +262,7 @@ export class MapDrawingRenderer {
   private setupSnapInteraction() {
     this.snapInteraction = new Snap({
       source: this.anchor_points_layer_source,
+      pixelTolerance: 25,
     });
     this.map.addInteraction(this.snapInteraction);
   }
@@ -1261,27 +1291,154 @@ export class MapDrawingRenderer {
     this.path_layer_source.clear();
     if (!path || path.length === 0) return;
 
-    const coords = path.map((p) => [p.x, p.y]);
-    const routeFeature = new Feature({
-      geometry: new LineString(coords),
+    if (path.length === 1) {
+      this.path_layer_source.addFeature(
+        this.create_single_point_feature(path[0]),
+      );
+      return;
+    }
+
+    const feature = new Feature({
+      geometry: new LineString(path.map((p) => [p.x, p.y])),
     });
 
-    routeFeature.setStyle([
-      new Style({
-        stroke: new Stroke({
-          color: '#fff',
-          width: 9,
-        }),
-      }),
-      new Style({
-        stroke: new Stroke({
-          color: '#efa038',
-          width: 5,
-        }),
-      }),
-    ]);
+    feature.setStyle((feature, resolution) => {
+      const geometry = feature.getGeometry() as LineString;
+      const coords = geometry.getCoordinates();
 
-    this.path_layer_source.addFeature(routeFeature);
+      if (this.is_modifying && this.map_animator) {
+        const changed_idx = this.find_changed_index(path, coords);
+        if (changed_idx !== -1) {
+          return this.build_modification_styles(path, coords, changed_idx);
+        }
+      }
+
+      return this.get_default_path_styles();
+    });
+
+    this.path_layer_source.addFeature(feature);
+  }
+
+  private create_single_point_feature(point: LV95_Waypoint): Feature {
+    const feature = new Feature({ geometry: new Point([point.x, point.y]) });
+    feature.setStyle(
+      new Style({
+        image: new CircleStyle({
+          radius: 6,
+          fill: new Fill({ color: '#efa038' }),
+          stroke: new Stroke({ color: '#fff', width: 2 }),
+        }),
+      }),
+    );
+    return feature;
+  }
+
+  private get_default_path_styles(): Style[] {
+    return [
+      new Style({ stroke: new Stroke({ color: '#fff', width: 9 }) }),
+      new Style({ stroke: new Stroke({ color: '#efa038', width: 5 }) }),
+    ];
+  }
+
+  private find_changed_index(
+    path: LV95_Waypoint[],
+    coords: number[][],
+  ): number {
+    const is_insert = coords.length > path.length;
+    let dragged_idx = -1;
+
+    if (is_insert) {
+      for (let i = 0; i < path.length; i++) {
+        if (
+          Math.abs(coords[i][0] - path[i].x) > 0.1 ||
+          Math.abs(coords[i][1] - path[i].y) > 0.1
+        ) {
+          return i;
+        }
+      }
+      return coords.length - 1;
+    } else {
+      let max_dist = 0;
+      for (let i = 0; i < Math.min(coords.length, path.length); i++) {
+        const dist =
+          Math.pow(coords[i][0] - path[i].x, 2) +
+          Math.pow(coords[i][1] - path[i].y, 2);
+        if (dist > max_dist) {
+          max_dist = dist;
+          dragged_idx = i;
+        }
+      }
+      return dragged_idx;
+    }
+  }
+
+  private get_preview_bounds(
+    path: LV95_Waypoint[],
+    coords: number[][],
+    changed_idx: number,
+  ) {
+    let start_idx = -1;
+    let found_start = false;
+    let end_idx = -1;
+    let found_end = false;
+
+    let is_insert = coords.length > path.length;
+
+    if (!is_insert && this.dragged_anchor) {
+      // MOVES: Strict Topological Lookup for preview bounds
+      let target_anchor_idx = -1;
+      let anchor_count = 0;
+
+      for (let i = 0; i < path.length; i++) {
+        if (path[i].is_waypoint) {
+          if (GeometryUtils.pointsMatch(path[i], this.dragged_anchor)) {
+            target_anchor_idx = anchor_count;
+          }
+          anchor_count++;
+        }
+      }
+
+      if (target_anchor_idx !== -1) {
+        let current_anchor_count = 0;
+        for (let i = 0; i < path.length; i++) {
+          if (path[i].is_waypoint) {
+            if (current_anchor_count === target_anchor_idx - 1) {
+              start_idx = i;
+              found_start = true;
+            }
+            if (current_anchor_count === target_anchor_idx + 1) {
+              end_idx = i;
+              found_end = true;
+            }
+            current_anchor_count++;
+          }
+        }
+      }
+    } else {
+      // INSERTS: Spatial scanning
+      for (let i = changed_idx - 1; i >= 0; i--) {
+        if (path[i].is_waypoint) {
+          start_idx = i;
+          found_start = true;
+          break;
+        }
+      }
+      let search_fw_start = is_insert ? changed_idx : changed_idx + 1;
+      for (let i = search_fw_start; i < path.length; i++) {
+        if (path[i].is_waypoint) {
+          end_idx = i;
+          found_end = true;
+          break;
+        }
+      }
+    }
+
+    return {
+      start_anchor_idx: start_idx,
+      found_start,
+      end_anchor_idx: end_idx,
+      found_end,
+    };
   }
 
   private create_line_segment_style(coords: number[][], color: string, width: number): Style {
@@ -1291,10 +1448,86 @@ export class MapDrawingRenderer {
     });
   }
 
+  private build_modification_styles(
+    path: LV95_Waypoint[],
+    coords: number[][],
+    changed_idx: number,
+  ): Style[] {
+    const styles: Style[] = [];
+    const { start_anchor_idx, found_start, end_anchor_idx, found_end } =
+      this.get_preview_bounds(path, coords, changed_idx);
+
+    // Head original segment
+    if (found_start && start_anchor_idx > 0) {
+      const headCoords = path
+        .slice(0, start_anchor_idx + 1)
+        .map((p: any) => [p.x, p.y]);
+      if (headCoords.length >= 2) {
+        styles.push(this.create_line_segment_style(headCoords, '#fff', 9));
+        styles.push(this.create_line_segment_style(headCoords, '#efa038', 5));
+      }
+    }
+
+    // Tail original segment
+    if (found_end && end_anchor_idx < path.length - 1) {
+      const tailCoords = path.slice(end_anchor_idx).map((p: any) => [p.x, p.y]);
+      if (tailCoords.length >= 2) {
+        styles.push(this.create_line_segment_style(tailCoords, '#fff', 9));
+        styles.push(this.create_line_segment_style(tailCoords, '#efa038', 5));
+      }
+    }
+
+    // Semi-transparent original segment
+    const sliceStart = found_start ? start_anchor_idx : 0;
+    const sliceEnd = found_end ? end_anchor_idx : path.length - 1;
+    const oldSegment = path
+      .slice(sliceStart, sliceEnd + 1)
+      .map((p: any) => [p.x, p.y]);
+    if (oldSegment.length >= 2) {
+      styles.push(
+        this.create_line_segment_style(
+          oldSegment,
+          'rgba(255, 255, 255, 0.4)',
+          9,
+        ),
+      );
+      styles.push(
+        this.create_line_segment_style(
+          oldSegment,
+          'rgba(239, 160, 56, 0.4)',
+          5,
+        ),
+      );
+    }
+
+    // V shape preview
+    const draggedPoint = coords[changed_idx];
+    const V_Coords = [];
+    if (found_start)
+      V_Coords.push([path[start_anchor_idx].x, path[start_anchor_idx].y]);
+    V_Coords.push(draggedPoint);
+    if (found_end)
+      V_Coords.push([path[end_anchor_idx].x, path[end_anchor_idx].y]);
+
+    if (V_Coords.length >= 2) {
+      styles.push(this.create_line_segment_style(V_Coords, '#fff', 9));
+      styles.push(this.create_line_segment_style(V_Coords, '#efa038', 5));
+    }
+
+    return styles;
+  }
+
   private refreshAnchors() {
     this.anchor_points_layer_source.clear();
     const anchors = this.map_animator.anchor_points;
     anchors.forEach((pt: any) => {
+      if (
+        this.is_modifying &&
+        this.dragged_anchor &&
+        GeometryUtils.pointsMatch(pt, this.dragged_anchor)
+      ) {
+        return; // Suppress duplicate rendering under the interaction point
+      }
       const feature = new Feature({ geometry: new Point([pt.x, pt.y]) });
       feature.setStyle(
         new Style({
