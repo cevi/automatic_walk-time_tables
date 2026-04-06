@@ -113,10 +113,13 @@ export class WalkTimeTableComponent implements OnInit, OnDestroy, OnChanges {
     this.mapAnimator.move_pointer(null);
   }
 
-  onFieldChange() {
+  onFieldChange(row?: TableRow) {
     this.userEdited.emit();
     this.mapAnimator.update_poi_names(this.currentWps);
     this.recalculate(this.currentWps);
+    if (row && row.waypoint) {
+      this.mapAnimator.move_pointer(row.waypoint);
+    }
   }
 
 

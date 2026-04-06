@@ -135,6 +135,14 @@ export class ElevationProfileComponent {
               symbol: 'circle',
               symbolSize: 8,
               showSymbol: true,
+              emphasis: {
+                itemStyle: {
+                  color: '#2196F3',
+                  borderColor: '#fff',
+                  borderWidth: 2,
+                },
+                scale: true,
+              },
             },
           ],
         };
@@ -189,17 +197,40 @@ export class ElevationProfileComponent {
           type: 'downplay',
           seriesIndex: 0,
         });
+        this.echartsInstance.dispatchAction({
+          type: 'downplay',
+          seriesIndex: 1,
+        });
         this.hover_snapped_poi = null;
       } else {
         // Track if we're snapped to a POI (for click-to-delete)
         const pois = this.mapAnimator.pois;
-        this.hover_snapped_poi =
-          pois.find(
+        const snappedPoi = pois.find(
             (p) =>
               p.x === coord.x &&
               p.y === coord.y &&
               p.accumulated_distance === coord.accumulated_distance,
           ) || null;
+        this.hover_snapped_poi = snappedPoi;
+
+        // Highlight snapped POI in blue on the chart
+        if (snappedPoi) {
+          const poiIndex = pois.indexOf(snappedPoi);
+          this.echartsInstance.dispatchAction({
+            type: 'downplay',
+            seriesIndex: 1,
+          });
+          this.echartsInstance.dispatchAction({
+            type: 'highlight',
+            seriesIndex: 1,
+            dataIndex: poiIndex,
+          });
+        } else {
+          this.echartsInstance.dispatchAction({
+            type: 'downplay',
+            seriesIndex: 1,
+          });
+        }
 
         this.mapAnimator.path$.pipe(take(1)).subscribe((path) => {
           const dataIndex = path.findIndex(

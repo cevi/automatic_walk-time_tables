@@ -798,15 +798,31 @@ export class MapDrawingRenderer {
         const feature = new Feature({
           geometry: new Point([coord.x, coord.y]),
         });
-        feature.setStyle(
+        const styles = [
           new Style({
             image: new CircleStyle({
               radius: 6,
               fill: new Fill({ color: '#2196F3' }),
               stroke: new Stroke({ color: '#fff', width: 2 }),
             }),
-          }),
-        );
+          })
+        ];
+        
+        if (coord.name) {
+          styles.push(
+            new Style({
+              text: new Text({
+                text: coord.name,
+                fill: new Fill({ color: '#2196F3' }), // Blue text for highlighted POI
+                stroke: new Stroke({ color: '#fff', width: 3 }),
+                font: 'bold 16px Open Sans',
+                offsetY: -15,
+              }),
+            })
+          );
+        }
+        
+        feature.setStyle(styles);
         this.external_pointer_layer_source.addFeature(feature);
       }
     });

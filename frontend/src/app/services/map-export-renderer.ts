@@ -169,15 +169,31 @@ export class MapExportRenderer {
         const feature = new Feature({
           geometry: new Point([coord.x, coord.y]),
         });
-        feature.setStyle(
+        const styles = [
           new Style({
             image: new CircleStyle({
               radius: 6,
               fill: new Fill({ color: '#2196F3' }),
               stroke: new Stroke({ color: '#fff', width: 2 }),
             }),
-          }),
-        );
+          })
+        ];
+
+        if ((coord as any).name) {
+          styles.push(
+            new Style({
+              text: new Text({
+                text: (coord as any).name,
+                fill: new Fill({ color: '#2196F3' }),
+                stroke: new Stroke({ color: '#fff', width: 3 }),
+                font: 'bold 16px Open Sans',
+                offsetY: -15,
+              }),
+            })
+          );
+        }
+        
+        feature.setStyle(styles);
         this.pointer_layer_source.addFeature(feature);
       }
     });

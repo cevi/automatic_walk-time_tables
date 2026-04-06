@@ -91,7 +91,7 @@
               placeholder="{{ row.waypoint.x | number: '1.0-0' }}, {{
                 row.waypoint.y | number: '1.0-0'
               }}"
-              (ngModelChange)="onFieldChange()"
+              (ngModelChange)="onFieldChange(row)"
             />
             <mat-icon
               *ngIf="!autoWaypoints"
