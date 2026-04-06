@@ -567,15 +567,38 @@ export class MapAnimatorService implements OnDestroy {
     this.regenerateWalkTimeTable();
   }
 
-  public add_point_of_interest(pkt: LV95_Waypoint) {
+  public async add_point_of_interest(pkt: LV95_Waypoint) {
     if (this.state.pois.length >= 21) {
       this.snackBar.open('Maximal 21 Wegpunkte erlaubt', 'Schliessen', {
         duration: 3000,
       });
       return;
     }
+    pkt.name = 'Lade...';
     this.state.updatePOIs([...this.state.pois, pkt]);
     this.regenerateWalkTimeTable();
+
+    try {
+      const resp = await this.get_name_from_coords(pkt.x, pkt.y);
+      const pois = this.state.pois;
+      const target = pois.find(
+        (p) => Math.abs(p.x - pkt.x) < 0.1 && Math.abs(p.y - pkt.y) < 0.1,
+      );
+      if (target) {
+        target.name = resp || '';
+        target.auto_name = target.name;
+      }
+      this.state.updatePOIs([...pois]);
+    } catch {
+      const pois = this.state.pois;
+      const target = pois.find(
+        (p) => Math.abs(p.x - pkt.x) < 0.1 && Math.abs(p.y - pkt.y) < 0.1,
+      );
+      if (target) {
+        target.name = '';
+      }
+      this.state.updatePOIs([...pois]);
+    }
   }
 
   public async retrieve_data(uuid: string): Promise<number> {
@@ -702,6 +725,7 @@ export class MapAnimatorService implements OnDestroy {
       const x = p[0];
       const y = p[1];
       let name = '';
+      let auto_name = '';
       let break_duration = '';
       let is_waypoint = true;
 
@@ -710,8 +734,36 @@ export class MapAnimatorService implements OnDestroy {
       );
       if (old_wp) {
         name = old_wp.name || '';
+        auto_name = old_wp.auto_name || '';
         break_duration = old_wp.break_duration || '';
         is_waypoint = old_wp.is_waypoint;
+      }
+
+      const needs_naming = !name && !auto_name;
+      if (needs_naming) {
+        name = 'Lade...';
+        this.get_name_from_coords(x, y)
+          .then((resp) => {
+            const current_pois = this.state.pois;
+            const target = current_pois.find(
+              (p) => Math.abs(p.x - x) < 0.1 && Math.abs(p.y - y) < 0.1,
+            );
+            if (target) {
+              target.name = resp || '';
+              target.auto_name = target.name;
+            }
+            this.state.updatePOIs([...current_pois]);
+          })
+          .catch(() => {
+            const current_pois = this.state.pois;
+            const target = current_pois.find(
+              (p) => Math.abs(p.x - x) < 0.1 && Math.abs(p.y - y) < 0.1,
+            );
+            if (target && target.name === 'Lade...') {
+              target.name = '';
+            }
+            this.state.updatePOIs([...current_pois]);
+          });
       }
 
       return {
@@ -721,6 +773,7 @@ export class MapAnimatorService implements OnDestroy {
         accumulated_distance: pois_elev[i][0] / 1000,
         is_waypoint,
         name,
+        auto_name,
         break_duration,
       };
     });

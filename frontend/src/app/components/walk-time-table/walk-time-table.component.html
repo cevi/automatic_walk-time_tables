@@ -59,8 +59,9 @@
             <mat-icon
               *ngIf="!autoWaypoints"
               class="action-icon"
+              [class.disabled-icon]="isAutoNamed(row)"
               matTooltip="Automatisch benennen"
-              (click)="autoName(row)"
+              (click)="!isAutoNamed(row) && autoName(row)"
               >auto_awesome</mat-icon
             >
           </div>

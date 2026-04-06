@@ -98,8 +98,18 @@ export class WalkTimeTableComponent implements OnInit, OnDestroy, OnChanges {
     this.autoGenerate.emit();
   }
 
+  isAutoNamed(row: TableRow): boolean {
+    if (!row.waypoint) return false;
+    if (row.waypoint.name === 'Lade...') return true;
+    return (
+      !!row.waypoint.auto_name && row.waypoint.name === row.waypoint.auto_name
+    );
+  }
+
   async autoName(row: TableRow) {
     if (!row.waypoint) return;
+    if (this.isAutoNamed(row)) return;
+
     const oldName = row.waypoint.name || '';
     row.waypoint.name = 'Lade...';
     try {
@@ -108,6 +118,7 @@ export class WalkTimeTableComponent implements OnInit, OnDestroy, OnChanges {
         row.waypoint.y,
       );
       row.waypoint.name = resp || '';
+      row.waypoint.auto_name = resp || '';
       this.onFieldChange();
     } catch {
       row.waypoint.name = oldName;

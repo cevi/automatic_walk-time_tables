@@ -160,9 +160,15 @@
   transition: all 0.2s ease;
   margin-left: 8px;
 
-  &:hover {
+  &:not(.disabled-icon):hover {
     color: #fbbc04;
     transform: scale(1.1);
+  }
+
+  &.disabled-icon {
+    opacity: 0.4;
+    pointer-events: none;
+    cursor: default;
   }
 }
 
