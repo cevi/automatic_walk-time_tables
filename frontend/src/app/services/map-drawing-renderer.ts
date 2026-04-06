@@ -85,10 +85,22 @@ export class MapDrawingRenderer {
   private highlight_layer_source = new VectorSource();
   private highlight_layer = new VectorLayer({
     source: this.highlight_layer_source,
-    style: new Style({
-      stroke: new Stroke({ color: '#A864A8', width: 4 }),
-      fill: new Fill({ color: 'rgba(168, 100, 168, 0.25)' })
-    }),
+    style: (feature) => {
+      const geomType = feature.getGeometry()?.getType();
+      if (geomType === 'Point' || geomType === 'MultiPoint') {
+        return new Style({
+          image: new CircleStyle({
+            radius: 14,
+            stroke: new Stroke({ color: '#2a5ba8', width: 3 }),
+            fill: new Fill({ color: 'rgba(42, 91, 168, 0.25)' })
+          })
+        });
+      }
+      return new Style({
+        stroke: new Stroke({ color: '#A864A8', width: 4 }),
+        fill: new Fill({ color: 'rgba(168, 100, 168, 0.25)' })
+      });
+    },
     properties: { name: 'highlight_layer' },
     zIndex: 150,
   });
@@ -331,7 +343,7 @@ export class MapDrawingRenderer {
             if (l === this.path_layer) hit_path = true;
             if (
               l &&
-              ['fountains', 'notfall', 'feuerstellen', 'shelter'].includes(
+              ['fountains', 'notfall', 'feuerstellen', 'shelter', 'haltestellen'].includes(
                 l.get('name') as string,
               )
             ) {
@@ -658,14 +670,23 @@ export class MapDrawingRenderer {
                if (data.results) {
                  data.results = data.results.filter((r: any) => {
                    if (r.layerBodId === 'ch.bav.haltestellen-oev') {
-                     const lod = r.properties?.lod;
-                     const name = String(r.properties?.name || '');
+                     const lod = String(r.properties?.lod || '0');
+                     const name = String(r.properties?.name || r.id || r.featureId || '');
                      const typ = String(r.properties?.betriebspunkttyp_de || '');
                      
-                     const isMaster = (lod === '0' || lod === undefined) && !name.startsWith('ch:');
+                     const isMaster = (lod === '0' || lod === 'undefined') && !name.startsWith('ch:');
                      const isVzw = typ.includes('Verzweigung') || name.includes('(Vzw)');
+                     const isGleisende = typ.includes('Gleisende');
+                     const isZugeordnet = typ.includes('Zugeordneter Betriebspunkt');
+                     const isBedienpunkt = typ === 'Bedienpunkt';
+                     const isSpurwechsel = typ.includes('Spurwechsel');
+                     const isSpurtrennung = typ.includes('Spurtrennung');
+                     const isWendeschleife = typ.includes('Wendeschleife');
+                     const isDienststation = typ.includes('Dienststation');
+                     const isAusweiche = typ.includes('Ausweiche');
+                     const isAnschlusspunkt = typ.includes('Anschlusspunkt');
                      
-                     return isMaster && !isVzw;
+                     return isMaster && !isVzw && !isGleisende && !isZugeordnet && !isBedienpunkt && !isSpurwechsel && !isSpurtrennung && !isWendeschleife && !isDienststation && !isAusweiche && !isAnschlusspunkt;
                    }
                    return true;
                  });
@@ -874,7 +895,7 @@ export class MapDrawingRenderer {
       const destination = dep.to;
       
       // Detailed Transit Icons (High-Clarity Filled Silhouettes)
-      const svgHeader = '<svg width="18" height="18" viewBox="0 0 24 24" fill="#000" style="display: block;">';
+      const svgHeader = '<svg width="18" height="18" viewBox="0 0 24 24" fill="#000" fill-rule="evenodd" style="display: block;">';
       
       const busIcon = `${svgHeader}<path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm14-5H6V6h12v5z"/></svg>`;
       const trainIcon = `${svgHeader}<path d="M12 2c-4 0-8 .5-8 4v9.5C4 17.43 5.57 19 7.5 19L6 20.5v.5h12v-.5L16.5 19c1.93 0 3.5-1.57 3.5-3.5V6c0-3.5-4-4-8-4zM17 11H7V6h10v5h-6z"/></svg>`;
@@ -1032,7 +1053,7 @@ export class MapDrawingRenderer {
     ];
 
     for (const key of Object.keys(props)) {
-      if (excludeKeys.includes(key) || props[key] === null || props[key] === undefined || typeof props[key] === 'object') {
+      if (excludeKeys.includes(key) || props[key] === null || props[key] === undefined || typeof props[key] === 'object' || props[key] === '') {
         continue;
       }
 
@@ -1041,11 +1062,10 @@ export class MapDrawingRenderer {
 
       // Layer-specific filters
       if (layerBodId === 'ch.bav.haltestellen-oev') {
-        const ovExclude = ['uic_name', 'uic_code', 'bav_name', 'betriebspunkttyp', 'lod', 'nummer_text', 'betrieblichebezeichnung'];
+        const ovExclude = ['uic_name', 'uic_code', 'bav_name', 'betriebspunkttyp', 'betriebspunkttyp_de', 'betriebspunkttyp_fr', 'lod', 'nummer_text', 'betrieblichebezeichnung'];
         if (ovExclude.includes(key)) continue;
         if (key === 'tuabkuerzung') displayKey = 'Verkehrsunternehmen';
         if (key === 'transport_means_de') displayKey = 'Verkehrsmittel';
-        if (key === 'betriebspunkttyp_de') displayKey = 'Betriebspunkttyp';
       }
 
       if (layerBodId === 'ch.bafu.alpweiden-herdenschutzhunde') {
