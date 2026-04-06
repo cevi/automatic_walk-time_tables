@@ -219,11 +219,15 @@ export class MapBackgroundComponent implements OnInit, AfterViewInit {
   }
 
   toggle_drawer_guide() {
-    if (this.router.url !== '/guide') {
-      this.router.navigate(['/guide']);
+    const isGuideUrl = this.router.url.split('?')[0] === '/guide';
+    if (!isGuideUrl) {
+      this.router.navigate(['/guide'], { queryParamsHandling: 'preserve' });
       this.mapAnimator.drawer_open = true;
     } else {
       this.mapAnimator.drawer_open = !this.mapAnimator.drawer_open;
+      if (!this.mapAnimator.drawer_open) {
+        this.router.navigate(['/'], { queryParamsHandling: 'preserve' });
+      }
     }
   }
 
