@@ -9,3 +9,4 @@
 
 # Folders to ignore
 frontend/node_modules
+frontend/pnpm-lock.yaml

@@ -954,6 +954,9 @@ export class MapAnimatorService implements OnDestroy {
       way_points[way_points.length - 1].break_duration = old_end_break;
     }
 
+    // Ping Valhalla locally to securely snap properties directly to the rendered generic track!
+    await this.api.applyValhallaSurfaces(way_points);
+
     const old_anchors = this.state.anchor_points;
     if (old_anchors.length > 0) {
       old_anchors.forEach((old_anchor) => {

@@ -45,15 +45,64 @@ export class RouteApiService {
     }
     const data = await response.json();
 
-    let path: LV95_Coordinates[] = [];
+    let path: any[] = [];
     for (const leg of data.trip.legs) {
-      const decoded_leg = decode(leg.shape, 6).map((p) =>
-        transform([p[1], p[0]], 'EPSG:4326', 'EPSG:2056'),
-      );
+      let decoded_leg_wgs = decode(leg.shape, 6);
+
+      // Fetch trace attributes for this segment to get surface
+      let leg_surfaces = new Array(decoded_leg_wgs.length).fill('unknown');
+      let leg_names = new Array(decoded_leg_wgs.length).fill('');
+      try {
+        const traceUrl = `${RouteApiService.VALHALLA_URL}trace_attributes`;
+        const traceResp = await fetch(traceUrl, {
+          method: 'POST',
+          body: JSON.stringify({
+            encoded_polyline: leg.shape,
+            costing: 'pedestrian',
+            shape_match: 'edge_walk',
+            filters: {
+              attributes: ['edge.surface', 'edge.names', 'edge.begin_shape_index', 'edge.end_shape_index'],
+              action: 'include',
+            },
+          }),
+        });
+        if (traceResp.ok) {
+          const traceData = await traceResp.json();
+          if (traceData.edges) {
+            for (const edge of traceData.edges) {
+              for (
+                let i = edge.begin_shape_index;
+                i <= edge.end_shape_index;
+                i++
+              ) {
+                if (i < leg_surfaces.length) {
+                  leg_surfaces[i] = edge.surface || 'unknown';
+                  if (edge.names && edge.names.length > 0) {
+                    leg_names[i] = edge.names[0];
+                  }
+                }
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Failed to trace surface', e);
+      }
+
+      const decoded_leg = decoded_leg_wgs.map((p, idx) => {
+        const lv95 = transform([p[1], p[0]], 'EPSG:4326', 'EPSG:2056');
+        return {
+          x: lv95[0],
+          y: lv95[1],
+          surface: leg_surfaces[idx],
+          road_name: leg_names[idx],
+        } as any;
+      });
+
       if (path.length > 0) {
         decoded_leg.shift();
       }
-      path = path.concat(decoded_leg.map((p) => ({ x: p[0], y: p[1] })));
+      path = path.concat(decoded_leg);
     }
     return path;
   }
@@ -188,5 +237,49 @@ export class RouteApiService {
       body: JSON.stringify(export_request),
     });
     return response.json();
+  }
+
+  public async applyValhallaSurfaces(path: LV95_Waypoint[]): Promise<void> {
+    if (path.length < 2) return;
+
+    try {
+      const valhalla_locations = path.map((p) => {
+        const wgs = transform([p.x, p.y], 'EPSG:2056', 'EPSG:4326');
+        return [wgs[1], wgs[0]]; // Valhalla encode expects [lat, lng]
+      });
+      const encoded_polyline = encode(valhalla_locations, 6);
+
+      const traceUrl = `${RouteApiService.VALHALLA_URL}trace_attributes`;
+      const traceResp = await fetch(traceUrl, {
+        method: 'POST',
+        body: JSON.stringify({
+          encoded_polyline,
+          costing: 'pedestrian',
+          shape_match: 'map_snap',
+          filters: {
+            attributes: ['edge.surface', 'edge.names', 'edge.begin_shape_index', 'edge.end_shape_index'],
+            action: 'include',
+          },
+        }),
+      });
+
+      if (!traceResp.ok) return;
+
+      const traceData = await traceResp.json();
+      if (traceData.edges) {
+        for (const edge of traceData.edges) {
+          for (let i = edge.begin_shape_index; i <= edge.end_shape_index; i++) {
+            if (i < path.length) {
+              path[i].surface = edge.surface || 'unknown';
+              if (edge.names && edge.names.length > 0) {
+                path[i].road_name = edge.names[0] || path[i].road_name;
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to apply valhalla surfaces geoprojection', e);
+    }
   }
 }

@@ -120,6 +120,8 @@ export class GeometryUtils {
       is_waypoint: false,
       name: '',
       break_duration: '',
+      surface: (p as any).surface || 'paved',
+      road_name: (p as any).road_name || '',
     }));
 
     if (start_anchor_idx !== -1 && new_segment_mapped.length > 0) {
@@ -199,10 +201,13 @@ export class GeometryUtils {
       return {
         x: p[0],
         y: p[1],
-        h: elevation[i][1],
-        accumulated_distance: elevation[i][0] / 1_000,
+        h: elevation.length > i ? elevation[i][1] : 0,
+        accumulated_distance:
+          elevation.length > i ? elevation[i][0] / 1_000 : 0,
         name: names && names.length > 0 ? names[i] : '',
         is_waypoint: false,
+        surface: 'unknown', // default if not traced
+        road_name: '',
       };
     });
   }

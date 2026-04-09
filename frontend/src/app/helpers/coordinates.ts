@@ -12,4 +12,6 @@ export interface LV95_Waypoint extends Coordinates {
   auto_name?: string;
   is_waypoint: boolean;
   break_duration?: string;
+  surface?: string;
+  road_name?: string;
 }

@@ -42,7 +42,13 @@ Make sure you have an internet connection during the first container boot or exe
 
 Processing Swisstopo's massive datasets into a high-performance memory-mapped KD-Tree locally takes quite a while. To prevent this slow process on boot in Production environments, a robust pre-compiled `index_cache.tar.xz` snapshot is downloaded dynamically from Google Drive.
 
-- **Cache Invalidation:** The `name_index.py` handles programmatic cache invalidation natively! It creates an internal local `.version` file whenever it decompresses an index. If you choose to manually regenerate the `.tar.xz` file and upload a newly packed snapshot to your Google Drive to update Production, simply **bump the `INDEX_CACHE_VERSION` string** at the top of the file. Production will cleanly wipe its old cache components and natively stream your new Index zip the next time it boots.
+- **Cache Invalidation:** The `name_index.py` manages programmatic cache invalidation natively via a localized `.version` file. To bypass manual index generation in production:
+  1. Once `index_cache.tar.xz` is generated, upload it to your engineering Google Drive partition.
+  2. Ensure the file has public viewer permissions, and extract its raw **File ID**.
+  3. Inside `swiss_TML_api/name_finding/name_index.py`, manually paste the new target string footprint into `INDEX_CACHE_FILE_ID` (or `INDEX_CACHE_URL`).
+  4. Finally, **bump the `INDEX_CACHE_VERSION` string** at the top of the file! 
+  
+  Production will inherently detect the sequential bump, wipe its stale cache directory, and cleanly deploy the newly referenced Index payload.
 
 ### 2. "Höhenpunkte"
 
