@@ -227,12 +227,11 @@ class GeoFileParser(object):
             ]
 
         path_ = path.Path(coordinates)
-        path_.route_name = route_name if route_name else ""
 
         # KML files from swisstopo often include elevation=0 for all points.
         # Detect this and fetch real elevation data from the API instead.
         if not path_.has_elevation_for_all_points() and self.fetch_elevation:
             path_ = self.height_fetcher.transform(path_)
-            path_.route_name = route_name if route_name else ""
 
+        path_.route_name = route_name if route_name else ""
         return path_
