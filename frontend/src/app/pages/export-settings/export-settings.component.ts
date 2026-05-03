@@ -7,6 +7,7 @@ import {
 } from '@angular/forms';
 import { MapAnimatorService } from '../../services/map-animator.service';
 import { Router } from '@angular/router';
+import { MapService } from '../../services/map.service';
 
 @Component({
   selector: 'app-export-settings',
@@ -32,6 +33,7 @@ export class ExportSettingsComponent {
     private mapAnimator: MapAnimatorService,
     fb: UntypedFormBuilder,
     private router: Router,
+    private mapService: MapService,
   ) {
     this.mapAnimator.set_error_handler((err) => {
       this.error_message = err;
@@ -142,6 +144,7 @@ export class ExportSettingsComponent {
       .replace_route(route_file)
       .then((route_name) => {
         this.options.patchValue({ route_name: route_name });
+        this.mapService.zoom_to_route_area(this.mapAnimator.path);
         this.route_uploaded = true;
         this.loading = false;
       })

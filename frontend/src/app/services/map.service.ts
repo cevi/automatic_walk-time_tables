@@ -17,6 +17,7 @@ import { braetlistellenData } from '../../assets/braetlistellen';
 import TileLayer from 'ol/layer/Tile';
 import XYZ from 'ol/source/XYZ';
 import GeoJSON from 'ol/format/GeoJSON';
+import { LV95_Coordinates, LV95_Waypoint } from '../helpers/coordinates';
 
 export interface MapOverlays {
   fountains: boolean;
@@ -36,6 +37,48 @@ export interface MapOverlays {
   providedIn: 'root',
 })
 export class MapService extends SwisstopoMap implements OnDestroy {
+  public zoom_to_route_area(path: (LV95_Coordinates | LV95_Waypoint)[]) {
+    if (!this.map || !path || path.length === 0) return;
+
+    if (path.length === 1) {
+      this.map.getView().animate({
+        center: [path[0].x, path[0].y],
+        zoom: 15,
+        duration: 700,
+      });
+      return;
+    }
+
+    let minX = path[0].x;
+    let minY = path[0].y;
+    let maxX = path[0].x;
+    let maxY = path[0].y;
+
+    for (const point of path) {
+      if (point.x < minX) minX = point.x;
+      if (point.y < minY) minY = point.y;
+      if (point.x > maxX) maxX = point.x;
+      if (point.y > maxY) maxY = point.y;
+    }
+
+    const width = maxX - minX;
+    const height = maxY - minY;
+    if (width < 1 && height < 1) {
+      this.map.getView().animate({
+        center: [(minX + maxX) / 2, (minY + maxY) / 2],
+        zoom: 15,
+        duration: 700,
+      });
+      return;
+    }
+
+    this.map.getView().fit([minX, minY, maxX, maxY], {
+      padding: [64, 64, 64, 64],
+      duration: 700,
+      maxZoom: 16,
+    });
+  }
+
   private create_osm_source(queryFn: (ext: number[]) => string): VectorSource {
     const source = new VectorSource({
       strategy: bbox,
