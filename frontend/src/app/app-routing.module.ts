@@ -5,10 +5,12 @@ import { UserGuideComponent } from './pages/user-guide/user-guide.component';
 import { DownloadPendingComponent } from './pages/download-pending/download-pending.component';
 import { DownloadDataComponent } from './pages/download-data/download-data.component';
 import { RetrieveDataComponent } from './pages/retrieve-data/retrieve-data.component';
+import { StatisticsPageComponent } from './pages/statistics-page/statistics-page.component';
 
 const routes: Routes = [
   { path: '', component: ExportSettingsComponent },
   { path: 'guide', component: UserGuideComponent },
+  { path: 'statistics', component: StatisticsPageComponent },
   { path: 'pending/:uuid', component: DownloadPendingComponent },
   { path: 'download/:uuid', component: DownloadDataComponent },
   { path: 'retrieve/:uuid', component: RetrieveDataComponent },

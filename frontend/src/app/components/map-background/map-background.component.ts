@@ -231,6 +231,21 @@ export class MapBackgroundComponent implements OnInit, AfterViewInit {
     }
   }
 
+  toggle_drawer_statistics() {
+    const isStatisticsUrl = this.router.url.split('?')[0] === '/statistics';
+    if (!isStatisticsUrl) {
+      this.router.navigate(['/statistics'], {
+        queryParamsHandling: 'preserve',
+      });
+      this.mapAnimator.drawer_open = true;
+    } else {
+      this.mapAnimator.drawer_open = !this.mapAnimator.drawer_open;
+      if (!this.mapAnimator.drawer_open) {
+        this.router.navigate(['/'], { queryParamsHandling: 'preserve' });
+      }
+    }
+  }
+
   handleToggle(event: Event, layerMethodName: string) {
     const fnName = ('toggle' + layerMethodName) as keyof MapBackgroundComponent;
     const fn = this[fnName];

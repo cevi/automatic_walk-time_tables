@@ -494,6 +494,36 @@ def generate_qr_image(uuid):
     return send_file(io.BytesIO(qr_data), mimetype="image/jpg")
 
 
+@app.route("/statistics")
+def retrieve_statistics():
+    days = request.args.get("days", default=30, type=int)
+
+    try:
+        response = requests.get(
+            os.environ["STORE_API_URL"] + "/statistics",
+            params={"days": days},
+            timeout=10,
+        )
+    except requests.RequestException as exc:
+        logger.error("Error retrieving statistics: %s", exc)
+        return app.response_class(
+            response=json.dumps(
+                {
+                    "status": GeneratorStatus.ERROR,
+                    "message": "Die Statistiken konnten nicht geladen werden.",
+                }
+            ),
+            status=502,
+            mimetype="application/json",
+        )
+
+    return app.response_class(
+        response=response.text,
+        status=response.status_code,
+        mimetype="application/json",
+    )
+
+
 @app.route("/retrieve/<uuid>")
 def retrieve_route(uuid):
     data = fetch_data_for_uuid(uuid)

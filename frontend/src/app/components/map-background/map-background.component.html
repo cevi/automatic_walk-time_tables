@@ -88,6 +88,15 @@
           <div class="toolbar-divider"></div>
           <button
             mat-icon-button
+            (click)="toggle_drawer_statistics()"
+            matTooltip="Statistiken"
+            color="primary"
+          >
+            <mat-icon>monitoring</mat-icon>
+          </button>
+          <div class="toolbar-divider"></div>
+          <button
+            mat-icon-button
             [matMenuTriggerFor]="mapMenu"
             matTooltip="Hintergrundkarte"
             color="primary"

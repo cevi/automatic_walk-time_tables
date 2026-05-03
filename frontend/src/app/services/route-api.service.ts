@@ -11,6 +11,21 @@ export interface RouteStats {
   duration: number;
 }
 
+export interface DailyRouteStatistic {
+  date: string;
+  routesCount: number;
+  totalLengthM: number;
+}
+
+export interface RouteGenerationStatistics {
+  days: number;
+  rangeStart: string;
+  rangeEnd: string;
+  dailyStats: DailyRouteStatistic[];
+  totalRoutes: number;
+  totalLengthM: number;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -180,6 +195,24 @@ export class RouteApiService {
       return result.uuid;
     }
     throw result;
+  }
+
+  public async getRouteGenerationStatistics(
+    days: number = 30,
+  ): Promise<RouteGenerationStatistics> {
+    const response = await fetch(
+      RouteApiService.BASE_URL + `statistics?days=${days}`,
+      {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error('Die Statistiken konnten nicht geladen werden.');
+    }
+
+    return response.json();
   }
 
   public async exportPdf(

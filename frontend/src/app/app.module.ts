@@ -36,6 +36,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { HttpClientModule } from '@angular/common/http';
 import { MapSearchComponent } from './components/map-search/map-search.component';
+import { StatisticsPageComponent } from './pages/statistics-page/statistics-page.component';
 
 @NgModule({
   declarations: [
@@ -44,6 +45,7 @@ import { MapSearchComponent } from './components/map-search/map-search.component
     MapSearchComponent,
     AppFooterComponent,
     ExportSettingsComponent,
+    StatisticsPageComponent,
     RetrieveDataComponent,
     UserGuideComponent,
     DownloadPendingComponent,
