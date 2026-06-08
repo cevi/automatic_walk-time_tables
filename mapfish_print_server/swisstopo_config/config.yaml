@@ -51,11 +51,6 @@ templates:
                       strokeWidth: 0.1
                       strokeOpacity: 0.5
                       strokeColor: gray
-                    - type: "text"
-                      label: "[name]"
-                      haloColor: "#FFFFFF"
-                      haloRadius: 3
-                      fontColor: "black"
 
       scalebar: !scalebar
         width: 200
