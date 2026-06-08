@@ -133,7 +133,7 @@ class MapCreator:
             base_url = "{}://{}:{}".format(
                 print_api_protocol, print_api_base_url, print_api_port
             )
-            url = "{}/print/default/report.pdf".format(base_url)
+            url = "{}/print/swisstopo/report.pdf".format(base_url)
 
             self.logger.debug("Posting to mapfish: " + url)
 
