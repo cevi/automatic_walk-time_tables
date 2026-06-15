@@ -14,7 +14,7 @@ from threading import Thread
 
 import polyline
 import requests
-from flask import Flask, request, send_file, redirect
+from flask import Flask, request, send_file, redirect, jsonify
 from flask_cors import CORS
 
 from automatic_walk_time_tables.path_transformers.douglas_peucker_transformer import (
@@ -54,6 +54,54 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
+
+
+@app.route("/get_name", methods=["POST"])
+def get_name():
+    try:
+        data = request.json
+        lat = data.get("lat")
+        lon = data.get("lon")
+
+        url = "http://awt-swiss-tml-api:1848/swiss_name"
+        payload = json.dumps([[lat, lon]])
+        headers = {"Content-Type": "application/json"}
+
+        req = requests.request("GET", url, headers=headers, data=payload)
+        resp = req.json()
+
+        name = ""
+        if len(resp) > 0 and resp[0]["offset"] <= 100:
+            name = resp[0]["swiss_name"]
+
+        return jsonify({"name": name})
+    except Exception as e:
+        import traceback
+
+        traceback.print_exc()
+        return jsonify({"name": ""})
+
+
+@app.route("/map_numbers", methods=["POST"])
+def get_map_numbers():
+    try:
+        data = request.json
+        if not data or not isinstance(data, list):
+            return jsonify({"error": "Expected a list of coords"}), 400
+
+        url = "http://awt-swiss-tml-api:1848/map_numbers"
+        payload = json.dumps(data)
+        headers = {"Content-Type": "application/json"}
+
+        # we send a GET with body to the swiss-tml-api
+        req = requests.request("GET", url, headers=headers, data=payload)
+        resp = req.text
+        return jsonify({"map_numbers": resp})
+
+    except Exception:
+        logger.error("Error retrieving map_numbers")
+        traceback.print_exc()
+        return jsonify({"map_numbers": ""})
 
 
 @app.route("/parse_route", methods=["POST"])
@@ -277,6 +325,15 @@ def create_export(options, uuid):
             path = extract_path(options, "route", "route_elevation")
             way_points = extract_path(options, "way_points", "way_points_elevation")
 
+            if "way_points_details" in options:
+                import json
+
+                details = json.loads(options["way_points_details"])
+                for i, wp in enumerate(way_points.way_points):
+                    if i < len(details):
+                        wp.name = details[i].get("name", "")
+                        wp.break_duration = details[i].get("break_duration", "")
+
             # calc POIs for the path
             pois_transformer = POIsTransformer(
                 pois_list_as_str=options["pois"] if "pois" in options else "",
@@ -436,6 +493,36 @@ def download(uuid):
 def generate_qr_image(uuid):
     qr_data = build_qr_code_image_string(uuid, raw=True)
     return send_file(io.BytesIO(qr_data), mimetype="image/jpg")
+
+
+@app.route("/statistics")
+def retrieve_statistics():
+    days = request.args.get("days", default=30, type=int)
+
+    try:
+        response = requests.get(
+            os.environ["STORE_API_URL"] + "/statistics",
+            params={"days": days},
+            timeout=10,
+        )
+    except requests.RequestException as exc:
+        logger.error("Error retrieving statistics: %s", exc)
+        return app.response_class(
+            response=json.dumps(
+                {
+                    "status": GeneratorStatus.ERROR,
+                    "message": "Die Statistiken konnten nicht geladen werden.",
+                }
+            ),
+            status=502,
+            mimetype="application/json",
+        )
+
+    return app.response_class(
+        response=response.text,
+        status=response.status_code,
+        mimetype="application/json",
+    )
 
 
 @app.route("/retrieve/<uuid>")

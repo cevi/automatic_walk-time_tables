@@ -180,10 +180,29 @@ def create_walk_table(
             + pt.name
         )
 
-        sheet["A" + str(8 + i)] = (
-            pt.name + " (" + str(int(lv95.lat)) + ", " + str(int(lv95.lon)) + ")"
-        )
+        if pt.name:
+            sheet["A" + str(8 + i)] = pt.name
+        else:
+            sheet["A" + str(8 + i)] = (
+                "(" + str(int(lv95.lat)) + ", " + str(int(lv95.lon)) + ")"
+            )
+
         sheet["C" + str(8 + i)] = int(lv95.h)
+
+        if hasattr(pt, "break_duration") and pt.break_duration:
+            duration = 0
+            try:
+                if ":" in str(pt.break_duration):
+                    parts = str(pt.break_duration).split(":")
+                    duration = int(parts[0]) * 60 + int(parts[1])
+                else:
+                    duration = float(pt.break_duration)
+            except Exception:
+                duration = 0
+
+            if duration > 0:
+                sheet["M" + str(8 + i)] = duration / 1440.0
+                sheet["M" + str(8 + i)].number_format = "h:mm"
         if i > 0:
             sheet["E" + str(8 + i)] = (
                 round(

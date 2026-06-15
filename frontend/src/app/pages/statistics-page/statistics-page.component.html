@@ -1,0 +1,63 @@
+<div class="page-container">
+  <div class="statistics-header">
+    <div>
+      <p class="eyebrow">Auswertung</p>
+      <h1>Routenstatistik der letzten {{ defaultDays }} Tage</h1>
+      <p class="subtitle">
+        Überblick über generierte Routen und die total geplante Distanz im
+        ausgewählten Zeitraum.
+      </p>
+    </div>
+
+    <button mat-stroked-button color="primary" (click)="refresh()">
+      Aktualisieren
+    </button>
+  </div>
+
+  @if (isLoading) {
+    <div class="state-card loading-state">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>Statistiken werden geladen...</p>
+    </div>
+  } @else if (errorMessage) {
+    <div class="state-card error-state">
+      <mat-icon>error_outline</mat-icon>
+      <p>{{ errorMessage }}</p>
+    </div>
+  } @else if (statistics) {
+    <div class="summary-grid">
+      <section class="summary-card emphasis-card">
+        <p class="label">Geplante Gesamtdistanz</p>
+        <p class="value">{{ totalLengthKm }} km</p>
+        <p class="hint">
+          Summe aller erfolgreich geplanten Routen von
+          {{ statistics.rangeStart }} bis {{ statistics.rangeEnd }}.
+        </p>
+      </section>
+
+      <section class="summary-card compact-card">
+        <p class="label">Generierte Routen</p>
+        <p class="value">{{ statistics.totalRoutes }}</p>
+      </section>
+
+      <section class="summary-card compact-card">
+        <p class="label">Aktive Tage</p>
+        <p class="value">{{ activeDays }}</p>
+      </section>
+    </div>
+
+    <section class="chart-card">
+      <div class="chart-header">
+        <div>
+          <h2>Generierte Routen pro Tag</h2>
+          <p>
+            Balken zeigen die Anzahl generierter Routen, die Linie die geplante
+            Distanz pro Tag in Kilometern.
+          </p>
+        </div>
+      </div>
+
+      <div echarts [options]="plotOptions" class="statistics-chart"></div>
+    </section>
+  }
+</div>

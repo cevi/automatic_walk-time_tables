@@ -14,25 +14,11 @@ rm -rf /data/*.pbf
 # split shp files into multiple files
 
 # See https://github.com/roelderickx/ogr2osm
-# use ogr2osm to convert the *.shp to *.osm
+# use ogr2osm to convert the *.shp to natively built *.osm.pbf with required Valhalla attributes
 for f in $(find /data/*.shp -type f); do
-    out_f=${f%.shp}.osm
-    ogr2osm -t /converter.py -o $out_f $f
-done
-
-timestamp=$(date +%Y-%m-%dT%H:%M:%S)
-
-# replace "<node" with '<node user=""'
-sed -i 's/<node/<node version="1" timestamp="2022-08-13T03:36:00Z"/g' /data/*.osm
-sed -i 's/<way/<way version="1" timestamp="2022-08-13T03:36:00Z"/g' /data/*.osm
-
-sed -i 's/id="-/id="/g' /data/*.osm
-sed -i 's/ref="-/ref="/g' /data/*.osm
-
-# use osmosis to convert the *.osm to *.osm.pbf
-for f in $(find /data/*.osm -type f); do
-    out_f=${f%.osm}.osm.pbf
-    osmosis --read-xml $f --write-pbf $out_f
+    out_f=${f%.shp}.osm.pbf
+    echo "Processing $f directly to $out_f..."
+    ogr2osm -t /converter.py --positive-id --add-version --add-timestamp --pbf -o $out_f $f
 done
 
 exec "$@"
