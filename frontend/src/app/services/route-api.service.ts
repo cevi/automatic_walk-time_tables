@@ -76,7 +76,12 @@ export class RouteApiService {
             costing: 'pedestrian',
             shape_match: 'edge_walk',
             filters: {
-              attributes: ['edge.surface', 'edge.names', 'edge.begin_shape_index', 'edge.end_shape_index'],
+              attributes: [
+                'edge.surface',
+                'edge.names',
+                'edge.begin_shape_index',
+                'edge.end_shape_index',
+              ],
               action: 'include',
             },
           }),
@@ -290,7 +295,12 @@ export class RouteApiService {
           costing: 'pedestrian',
           shape_match: 'map_snap',
           filters: {
-            attributes: ['edge.surface', 'edge.names', 'edge.begin_shape_index', 'edge.end_shape_index'],
+            attributes: [
+              'edge.surface',
+              'edge.names',
+              'edge.begin_shape_index',
+              'edge.end_shape_index',
+            ],
             action: 'include',
           },
         }),

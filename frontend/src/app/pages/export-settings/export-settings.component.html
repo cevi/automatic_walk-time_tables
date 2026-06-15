@@ -12,7 +12,6 @@
 
   @if (error_message == "") {
     <form [formGroup]="options" class="settings-form-container">
-
       <!-- Marschzeittabelle + Elevation Profile in one card -->
       <div class="marschzeit-card">
         <app-walk-time-table
@@ -43,9 +42,20 @@
         </div>
       }
 
-      <div class="action-buttons-container" style="justify-content: flex-start; margin-bottom: 32px;">
-        <button mat-button type="button" (click)="showAdvancedSettings = !showAdvancedSettings" class="btn-advanced" disableRipple>
-          <mat-icon>{{ showAdvancedSettings ? 'expand_less' : 'expand_more' }}</mat-icon>
+      <div
+        class="action-buttons-container"
+        style="justify-content: flex-start; margin-bottom: 32px"
+      >
+        <button
+          mat-button
+          type="button"
+          (click)="showAdvancedSettings = !showAdvancedSettings"
+          class="btn-advanced"
+          disableRipple
+        >
+          <mat-icon>{{
+            showAdvancedSettings ? "expand_less" : "expand_more"
+          }}</mat-icon>
           Erweiterte Einstellungen
         </button>
       </div>
@@ -114,7 +124,6 @@
           Herunterladen
         </button>
       </div>
-
     </form>
   }
 </div>

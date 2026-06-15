@@ -31,6 +31,8 @@ export class MapAnimatorService implements OnDestroy {
       this._recalculate_route_stats(wp);
     });
 
+    (window as any).mapAnimator = this;
+
     this.router.events
       .pipe(
         filter((e) => e instanceof NavigationEnd),
@@ -860,27 +862,32 @@ export class MapAnimatorService implements OnDestroy {
     let highest = null;
     let maxH = -Infinity;
     for (let i = 1; i < pois.length - 1; i++) {
-        const p = pois[i];
-        if (p.h > maxH && p.h > Math.max(start.h, end.h) + 100) {
-            maxH = p.h;
-            highest = p;
-        }
+      const p = pois[i];
+      if (p.h > maxH && p.h > Math.max(start.h, end.h) + 100) {
+        maxH = p.h;
+        highest = p;
+      }
     }
 
-    const startName = start.name && start.name !== 'Lade...' ? start.name : 'Start';
+    const startName =
+      start.name && start.name !== 'Lade...' ? start.name : 'Start';
     const endName = end.name && end.name !== 'Lade...' ? end.name : 'Ziel';
 
     let routeName = '';
-    
+
     // Simple Loop Detection (if start and end are close enough, ~100m)
-    const isLoop = Math.sqrt(Math.pow(start.x - end.x, 2) + Math.pow(start.y - end.y, 2)) < 100;
+    const isLoop =
+      Math.sqrt(Math.pow(start.x - end.x, 2) + Math.pow(start.y - end.y, 2)) <
+      100;
 
     if (isLoop) {
-       routeName = highest && highest.name && highest.name !== 'Lade...'
+      routeName =
+        highest && highest.name && highest.name !== 'Lade...'
           ? `Rundweg ${startName} über ${highest.name}`
           : `Rundweg ${startName}`;
     } else {
-       routeName = highest && highest.name && highest.name !== 'Lade...'
+      routeName =
+        highest && highest.name && highest.name !== 'Lade...'
           ? `${startName} - ${highest.name} - ${endName}`
           : `${startName} - ${endName}`;
     }

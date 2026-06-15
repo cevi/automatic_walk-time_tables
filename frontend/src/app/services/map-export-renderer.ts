@@ -176,7 +176,7 @@ export class MapExportRenderer {
               fill: new Fill({ color: '#2196F3' }),
               stroke: new Stroke({ color: '#fff', width: 2 }),
             }),
-          })
+          }),
         ];
 
         if ((coord as any).name) {
@@ -189,10 +189,10 @@ export class MapExportRenderer {
                 font: 'bold 16px Open Sans',
                 offsetY: -15,
               }),
-            })
+            }),
           );
         }
-        
+
         feature.setStyle(styles);
         this.pointer_layer_source.addFeature(feature);
       }

@@ -134,8 +134,6 @@ export class ExportSettingsComponent {
     }, 50);
   }
 
-
-
   public new_route_uploaded(route_file: File) {
     this.loading = true;
 

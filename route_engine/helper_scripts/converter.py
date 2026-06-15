@@ -19,7 +19,14 @@ class SwissTLMConverter(ogr2osm.TranslationBase):
 
         if "OBJEKTART" in attrs:
             obj = attrs["OBJEKTART"]
-            if obj in ["1m Weg", "2m Weg", "1m Wegfragment", "2m Wegfragment", "Markierte Spur", "Klettersteig"]:
+            if obj in [
+                "1m Weg",
+                "2m Weg",
+                "1m Wegfragment",
+                "2m Wegfragment",
+                "Markierte Spur",
+                "Klettersteig",
+            ]:
                 tags["highway"] = "path"
             elif obj == "Zufahrt" or "Strasse" in obj and obj != "Autostrasse":
                 tags["highway"] = "unclassified"
@@ -35,8 +42,7 @@ class SwissTLMConverter(ogr2osm.TranslationBase):
             elif belag == "Hart":
                 tags["surface"] = "paved"
             elif belag == "k_W":
-                pass # let Valhalla default based on highway tag
-
+                pass  # let Valhalla default based on highway tag
 
         if "KUNSTBAUTE" in attrs:
             var = attrs["KUNSTBAUTE"]
@@ -48,7 +54,11 @@ class SwissTLMConverter(ogr2osm.TranslationBase):
                 tags["highway"] = "steps"
 
         # Explicitly tag Wanderwege
-        if "WANDERWEGE" in attrs and attrs["WANDERWEGE"] and attrs["WANDERWEGE"] != "Keine":
+        if (
+            "WANDERWEGE" in attrs
+            and attrs["WANDERWEGE"]
+            and attrs["WANDERWEGE"] != "Keine"
+        ):
             tags["route"] = "hiking"
             tags["hiking"] = "yes"
 

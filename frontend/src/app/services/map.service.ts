@@ -267,22 +267,32 @@ export class MapService extends SwisstopoMap implements OnDestroy {
       const transitStyleCache: Record<string, Style> = {};
 
       const getHaltestellenStyle = (feature: any): Style => {
-        const m = String(feature.get('verkehrsmittel_de') || feature.get('transport_means_de') || '');
+        const m = String(
+          feature.get('verkehrsmittel_de') ||
+            feature.get('transport_means_de') ||
+            '',
+        );
         let letter = 'H';
         if (m.includes('Zug') || m.includes('Train')) letter = 'Z';
         else if (m.includes('Bus')) letter = 'B';
         else if (m.includes('Tram')) letter = 'T';
         else if (m.includes('Schiff') || m.includes('Fähre')) letter = 'S';
-        else if (m.includes('seilbahn') || m.includes('Gondel') || m.includes('Sessellift') || m.includes('Standseilbahn')) letter = 'G';
+        else if (
+          m.includes('seilbahn') ||
+          m.includes('Gondel') ||
+          m.includes('Sessellift') ||
+          m.includes('Standseilbahn')
+        )
+          letter = 'G';
         else if (m.includes('Zahnradbahn') || m.includes('bahn')) letter = 'Z';
-        
+
         const svgPaths: Record<string, string> = {
-          'Z': 'M12 2c-4 0-8 .5-8 4v9.5C4 17.43 5.57 19 7.5 19L6 20.5v.5h12v-.5L16.5 19c1.93 0 3.5-1.57 3.5-3.5V6c0-3.5-4-4-8-4zM17 11H7V6h10v5h-6z',
-          'B': 'M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm14-5H6V6h12v5z',
-          'T': 'M19 16c0 .88-.39 1.67-1 2.22V20c0 .55-.45 1-1 1h-1c-.55 0-1-.45-1-1v-1H9v1c0 .55-.45 1-1 1H7c-.55 0-1-.45-1-1v-1.78c-.61-.55-1-1.34-1-2.22V6c0-3.5 3.58-4 8-4s8 .5 8 4v10zM18 11H6V6h12v5zM13 1h-2v1h2V1z',
-          'S': 'M20 21c-1.39 0-2.78-.47-4-1.32-2.43 1.71-5.56 1.71-8 0C6.78 20.53 5.39 21 4 21H2v2h2c1.38 0 2.74-.35 4-.99 2.52 1.29 5.48 1.29 8 0 1.26.64 2.62.99 4 .99h2v-2h-2zM3.95 19H4c1.6 0 3.11-.55 4.36-1.45L12 14l3.64 3.55c1.25.9 2.76 1.45 4.36 1.45h.05l1.89-6.68C22.09 11.47 21.47 10 20 10h-2V4h-3V2h-5v2H7v6H5c-1.47 0-2.09 1.47-1.94 2.32L3.95 19zM15 10H9V6h6v4z',
-          'G': 'M19 14.7c.6 0 1-.4 1-1v-8c0-.6-.4-1-1-1h-6v-2h1c.6 0 1-.4 1-1s-.4-1-1-1h-4c-.6 0-1 .4-1 1s.4 1 1 1h1v2h-6c-.6 0-1 .4-1 1v8c0 .6.4 1 1 1h.3l-.3.7c-.2.5 0 1.1.5 1.3s1.1 0 1.3-.5l1.6-3.5h10.6l1.6 3.5c.2.5.8.7 1.3.5.5-.2.7-.8.5-1.3l-.3-.7h.3zm-13-1.7h-2v-3h2v3zm11 0h-2v-3h2v3z',
-          'H': 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z'
+          Z: 'M12 2c-4 0-8 .5-8 4v9.5C4 17.43 5.57 19 7.5 19L6 20.5v.5h12v-.5L16.5 19c1.93 0 3.5-1.57 3.5-3.5V6c0-3.5-4-4-8-4zM17 11H7V6h10v5h-6z',
+          B: 'M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm14-5H6V6h12v5z',
+          T: 'M19 16c0 .88-.39 1.67-1 2.22V20c0 .55-.45 1-1 1h-1c-.55 0-1-.45-1-1v-1H9v1c0 .55-.45 1-1 1H7c-.55 0-1-.45-1-1v-1.78c-.61-.55-1-1.34-1-2.22V6c0-3.5 3.58-4 8-4s8 .5 8 4v10zM18 11H6V6h12v5zM13 1h-2v1h2V1z',
+          S: 'M20 21c-1.39 0-2.78-.47-4-1.32-2.43 1.71-5.56 1.71-8 0C6.78 20.53 5.39 21 4 21H2v2h2c1.38 0 2.74-.35 4-.99 2.52 1.29 5.48 1.29 8 0 1.26.64 2.62.99 4 .99h2v-2h-2zM3.95 19H4c1.6 0 3.11-.55 4.36-1.45L12 14l3.64 3.55c1.25.9 2.76 1.45 4.36 1.45h.05l1.89-6.68C22.09 11.47 21.47 10 20 10h-2V4h-3V2h-5v2H7v6H5c-1.47 0-2.09 1.47-1.94 2.32L3.95 19zM15 10H9V6h6v4z',
+          G: 'M19 14.7c.6 0 1-.4 1-1v-8c0-.6-.4-1-1-1h-6v-2h1c.6 0 1-.4 1-1s-.4-1-1-1h-4c-.6 0-1 .4-1 1s.4 1 1 1h1v2h-6c-.6 0-1 .4-1 1v8c0 .6.4 1 1 1h.3l-.3.7c-.2.5 0 1.1.5 1.3s1.1 0 1.3-.5l1.6-3.5h10.6l1.6 3.5c.2.5.8.7 1.3.5.5-.2.7-.8.5-1.3l-.3-.7h.3zm-13-1.7h-2v-3h2v3zm11 0h-2v-3h2v3z',
+          H: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z',
         };
 
         if (!transitStyleCache[letter]) {
@@ -291,12 +301,12 @@ export class MapService extends SwisstopoMap implements OnDestroy {
             <rect width="24" height="24" rx="3" fill="#2a5ba8" />
             <path d="${path}" fill="#ffffff" transform="scale(0.8) translate(3,3)" />
           </svg>`;
-          
+
           transitStyleCache[letter] = new Style({
             image: new Icon({
               src: `data:image/svg+xml;utf8,${encodeURIComponent(svgMarkup)}`,
               scale: 0.8,
-            })
+            }),
           });
         }
         return transitStyleCache[letter];
@@ -308,10 +318,10 @@ export class MapService extends SwisstopoMap implements OnDestroy {
         loader: function (extent, resolution, projection, success, failure) {
           const e = extent;
           const url = `https://api3.geo.admin.ch/rest/services/all/MapServer/identify?geometry=${e.join(',')}&geometryFormat=geojson&geometryType=esriGeometryEnvelope&imageDisplay=800,600,96&mapExtent=${e.join(',')}&sr=2056&tolerance=0&layers=all:ch.bav.haltestellen-oev`;
-          
+
           fetch(url)
-            .then(res => res.json())
-            .then(data => {
+            .then((res) => res.json())
+            .then((data) => {
               if (data && data.results) {
                 const format = new GeoJSON();
                 const features = [];
@@ -320,9 +330,12 @@ export class MapService extends SwisstopoMap implements OnDestroy {
                     const typ = String(r.properties?.betriebspunkttyp_de || '');
                     const lod = String(r.properties?.lod || '0');
                     const name = String(r.properties?.name || '');
-                    const isVzw = typ.includes('Verzweigung') || name.includes('(Vzw)');
+                    const isVzw =
+                      typ.includes('Verzweigung') || name.includes('(Vzw)');
                     const isGleisende = typ.includes('Gleisende');
-                    const isZugeordnet = typ.includes('Zugeordneter Betriebspunkt');
+                    const isZugeordnet = typ.includes(
+                      'Zugeordneter Betriebspunkt',
+                    );
                     const isBedienpunkt = typ === 'Bedienpunkt';
                     const isSpurwechsel = typ.includes('Spurwechsel');
                     const isSpurtrennung = typ.includes('Spurtrennung');
@@ -330,15 +343,32 @@ export class MapService extends SwisstopoMap implements OnDestroy {
                     const isDienststation = typ.includes('Dienststation');
                     const isAusweiche = typ.includes('Ausweiche');
                     const isAnschlusspunkt = typ.includes('Anschlusspunkt');
-                    const isMaster = (lod === '0' || lod === 'undefined') && !name.startsWith('ch:');
+                    const isMaster =
+                      (lod === '0' || lod === 'undefined') &&
+                      !name.startsWith('ch:');
 
-                    if (isMaster && !isVzw && !isGleisende && !isZugeordnet && !isBedienpunkt && !isSpurwechsel && !isSpurtrennung && !isWendeschleife && !isDienststation && !isAusweiche && !isAnschlusspunkt) {
+                    if (
+                      isMaster &&
+                      !isVzw &&
+                      !isGleisende &&
+                      !isZugeordnet &&
+                      !isBedienpunkt &&
+                      !isSpurwechsel &&
+                      !isSpurtrennung &&
+                      !isWendeschleife &&
+                      !isDienststation &&
+                      !isAusweiche &&
+                      !isAnschlusspunkt
+                    ) {
                       try {
-                        const feat = format.readFeature(r, { dataProjection: 'EPSG:2056', featureProjection: 'EPSG:2056' });
+                        const feat = format.readFeature(r, {
+                          dataProjection: 'EPSG:2056',
+                          featureProjection: 'EPSG:2056',
+                        });
                         if (Array.isArray(feat)) features.push(...feat);
                         else features.push(feat);
-                      } catch(err) {
-                        console.error("GeoJSON parser error", err);
+                      } catch (err) {
+                        console.error('GeoJSON parser error', err);
                       }
                     }
                   }
@@ -349,11 +379,11 @@ export class MapService extends SwisstopoMap implements OnDestroy {
                 if (success) success([]);
               }
             })
-            .catch(err => {
+            .catch((err) => {
               console.error(err);
               if (failure) failure();
             });
-        }
+        },
       });
 
       const haltestellenLayer = new VectorLayer({
@@ -391,25 +421,28 @@ export class MapService extends SwisstopoMap implements OnDestroy {
         loader: function (extent, resolution, projection, success, failure) {
           const e = extent;
           const url = `https://api3.geo.admin.ch/rest/services/all/MapServer/identify?geometry=${e.join(',')}&geometryFormat=geojson&geometryType=esriGeometryEnvelope&imageDisplay=800,600,96&mapExtent=${e.join(',')}&sr=2056&tolerance=0&layers=all:ch.pronatura.naturschutzgebiete`;
-          
+
           fetch(url)
-            .then(res => res.json())
-            .then(data => {
+            .then((res) => res.json())
+            .then((data) => {
               if (data && data.results) {
                 const format = new GeoJSON();
                 const features = [];
                 for (const r of data.results) {
                   if (r.geometry) {
-                     try {
-                        const feat = format.readFeature(r, { dataProjection: 'EPSG:2056', featureProjection: 'EPSG:2056' });
-                        if (Array.isArray(feat)) {
-                          features.push(...feat);
-                        } else {
-                          features.push(feat);
-                        }
-                     } catch(err) {
-                        console.error("GeoJSON parser error:", err);
-                     }
+                    try {
+                      const feat = format.readFeature(r, {
+                        dataProjection: 'EPSG:2056',
+                        featureProjection: 'EPSG:2056',
+                      });
+                      if (Array.isArray(feat)) {
+                        features.push(...feat);
+                      } else {
+                        features.push(feat);
+                      }
+                    } catch (err) {
+                      console.error('GeoJSON parser error:', err);
+                    }
                   }
                 }
                 naturschutzSource.addFeatures(features as Feature<any>[]);
@@ -418,11 +451,11 @@ export class MapService extends SwisstopoMap implements OnDestroy {
                 if (success) success([]);
               }
             })
-            .catch(err => {
+            .catch((err) => {
               console.error(err);
               if (failure) failure();
             });
-        }
+        },
       });
 
       const naturschutzLayer = new VectorLayer({
@@ -430,10 +463,10 @@ export class MapService extends SwisstopoMap implements OnDestroy {
         className: 'ol-layer-naturschutzgebiete',
         style: new Style({
           stroke: new Stroke({ color: 'rgba(168, 100, 168, 0.9)', width: 2 }),
-          fill: new Fill({ color: 'rgba(168, 100, 168, 0.25)' }) 
+          fill: new Fill({ color: 'rgba(168, 100, 168, 0.25)' }),
         }),
         opacity: opacities['schutzgebiete'] ?? 1.0,
-        properties: { name: 'schutzgebiete_naturschutzgebiete' }
+        properties: { name: 'schutzgebiete_naturschutzgebiete' },
       });
       layers.push(naturschutzLayer);
     }
@@ -514,13 +547,21 @@ export class MapService extends SwisstopoMap implements OnDestroy {
 
     this.map.on('singleclick', (evt) => {
       if (!this.map || !popupOverlay || !popupContent) return;
-      const feature = this.map.forEachFeatureAtPixel(evt.pixel, (feat, layer) => {
-        const lyrName = layer?.get('name');
-        if (typeof lyrName === 'string' && (lyrName.startsWith('schutzgebiete_') || lyrName.includes('highlight') || lyrName === 'haltestellen')) {
-          return undefined; // Handled exclusively by Swisstopo identify API
-        }
-        return feat;
-      });
+      const feature = this.map.forEachFeatureAtPixel(
+        evt.pixel,
+        (feat, layer) => {
+          const lyrName = layer?.get('name');
+          if (
+            typeof lyrName === 'string' &&
+            (lyrName.startsWith('schutzgebiete_') ||
+              lyrName.includes('highlight') ||
+              lyrName === 'haltestellen')
+          ) {
+            return undefined; // Handled exclusively by Swisstopo identify API
+          }
+          return feat;
+        },
+      );
 
       if (feature) {
         const props = feature.getProperties();

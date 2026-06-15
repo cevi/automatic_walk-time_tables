@@ -30,7 +30,12 @@
         class="search-option"
       >
         <div class="option-content">
-          <div class="result-label" [innerHTML]="highlightLabel(result.attrs.label, searchControl.value)"></div>
+          <div
+            class="result-label"
+            [innerHTML]="
+              highlightLabel(result.attrs.label, searchControl.value)
+            "
+          ></div>
         </div>
       </mat-option>
     </mat-autocomplete>

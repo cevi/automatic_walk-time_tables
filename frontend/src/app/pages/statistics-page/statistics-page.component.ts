@@ -37,9 +37,10 @@ export class StatisticsPageComponent implements OnInit {
     this.errorMessage = '';
 
     try {
-      const statistics = await this.routeApiService.getRouteGenerationStatistics(
-        this.defaultDays,
-      );
+      const statistics =
+        await this.routeApiService.getRouteGenerationStatistics(
+          this.defaultDays,
+        );
       this.statistics = statistics;
       this.activeDays = statistics.dailyStats.filter(
         (entry) => entry.routesCount > 0,

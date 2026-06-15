@@ -143,7 +143,7 @@ class MapCreator:
                     resolved_layers.append(f"{layer}-pk{pk_val}.noscale")
             else:
                 resolved_layers.append(layer)
-        
+
         map_layers = resolved_layers
 
         map_centers = self.create_map_centers(map_scaling)
@@ -465,8 +465,16 @@ class MapCreator:
         return point_layer
 
     def create_map_layer(self, layer, default_matrices):
-        if "pixelkarte" in layer or "landeskarte" in layer or layer == "ch.swisstopo.swissimage-product":
-            image_type = "jpeg" if "pixelkarte" in layer or layer == "ch.swisstopo.swissimage-product" else "png"
+        if (
+            "pixelkarte" in layer
+            or "landeskarte" in layer
+            or layer == "ch.swisstopo.swissimage-product"
+        ):
+            image_type = (
+                "jpeg"
+                if "pixelkarte" in layer or layer == "ch.swisstopo.swissimage-product"
+                else "png"
+            )
         else:
             image_type = "png"
 

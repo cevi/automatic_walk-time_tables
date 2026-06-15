@@ -44,6 +44,7 @@ export class MapBackgroundComponent implements OnInit, AfterViewInit {
       if (layers.includes('shelter')) this.showShelter = true;
     }
 
+    (window as any).mapService = this.mapService;
     this.mapService.link_animator(this.mapAnimator);
 
     this.mapAnimator.path$.subscribe((path) => {

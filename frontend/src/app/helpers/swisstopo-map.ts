@@ -137,22 +137,22 @@ export class SwisstopoMap {
       label: 'Wildruhezonen',
       timestamps: ['current'],
     },
-    'schiessanzeigen': {
-      "attribution": "VBS",
-      "format": "png",
-      "serverLayerName": "ch.vbs.schiessanzeigen",
-      "attributionUrl": "https://www.vbs.admin.ch/",
-      "label": "Schiessanzeigen",
-      "timestamps": ["current"]
+    schiessanzeigen: {
+      attribution: 'VBS',
+      format: 'png',
+      serverLayerName: 'ch.vbs.schiessanzeigen',
+      attributionUrl: 'https://www.vbs.admin.ch/',
+      label: 'Schiessanzeigen',
+      timestamps: ['current'],
     },
-    'herdenschutzhunde': {
-      "attribution": "BAFU",
-      "format": "png",
-      "serverLayerName": "ch.bafu.alpweiden-herdenschutzhunde",
-      "attributionUrl": "https://www.bafu.admin.ch/",
-      "label": "Herdenschutzhunde",
-      "timestamps": ["current"]
-    }
+    herdenschutzhunde: {
+      attribution: 'BAFU',
+      format: 'png',
+      serverLayerName: 'ch.bafu.alpweiden-herdenschutzhunde',
+      attributionUrl: 'https://www.bafu.admin.ch/',
+      label: 'Herdenschutzhunde',
+      timestamps: ['current'],
+    },
   };
 
   protected get_projection(): Projection {

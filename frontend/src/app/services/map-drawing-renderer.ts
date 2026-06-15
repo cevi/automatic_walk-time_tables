@@ -51,21 +51,28 @@ export class MapDrawingRenderer {
   private is_hovering_interactive_feature: boolean = false;
   private hoverIdentifyTimeout: any;
   private is_hovering_tooltip: boolean = false;
-  private interactive_feature_cache: { x: number; y: number; html: string; data?: any }[] =
-    [];
+  private interactive_feature_cache: {
+    x: number;
+    y: number;
+    html: string;
+    data?: any;
+  }[] = [];
   private negative_identify_cache: { x: number; y: number; time: number }[] =
     [];
   private is_mouse_over_dom_tooltip: boolean = false;
   private dragged_anchor: LV95_Waypoint | null = null;
   private modifystart_coord: number[] | null = null;
-  
+
   // Optimization Properties
   private stationboardCache = new Map<string, { data: any; expiry: number }>();
   private inFlightIdentifyRequests = new Set<string>();
   private lastIdentifyCoord: number[] | null = null;
   private currentIdentifyAbortController: AbortController | null = null;
-  private currentStationboardAbortControllers = new Map<string, AbortController>();
-  
+  private currentStationboardAbortControllers = new Map<
+    string,
+    AbortController
+  >();
+
   public onRouteModified = new EventEmitter<{
     new_coords: number[][];
     dragged_anchor: LV95_Waypoint | null;
@@ -92,13 +99,13 @@ export class MapDrawingRenderer {
           image: new CircleStyle({
             radius: 14,
             stroke: new Stroke({ color: '#2a5ba8', width: 3 }),
-            fill: new Fill({ color: 'rgba(42, 91, 168, 0.25)' })
-          })
+            fill: new Fill({ color: 'rgba(42, 91, 168, 0.25)' }),
+          }),
         });
       }
       return new Style({
         stroke: new Stroke({ color: '#A864A8', width: 4 }),
-        fill: new Fill({ color: 'rgba(168, 100, 168, 0.25)' })
+        fill: new Fill({ color: 'rgba(168, 100, 168, 0.25)' }),
       });
     },
     properties: { name: 'highlight_layer' },
@@ -299,9 +306,13 @@ export class MapDrawingRenderer {
             if (l === this.path_layer) hit_path = true;
             if (
               l &&
-              ['fountains', 'notfall', 'feuerstellen', 'shelter', 'haltestellen'].includes(
-                l.get('name') as string,
-              )
+              [
+                'fountains',
+                'notfall',
+                'feuerstellen',
+                'shelter',
+                'haltestellen',
+              ].includes(l.get('name') as string)
             ) {
               hit_vector = true;
             }
@@ -327,7 +338,12 @@ export class MapDrawingRenderer {
         this.hovered_anchor = undefined;
       }
 
-      if (!foundAnchor && !hit_path && !this.is_hovering_tooltip && !this.is_mouse_over_dom_tooltip) {
+      if (
+        !foundAnchor &&
+        !hit_path &&
+        !this.is_hovering_tooltip &&
+        !this.is_mouse_over_dom_tooltip
+      ) {
         this.tooltipOverlay.setPosition(undefined);
         // Cancel any pending identify when we stop hovering something likely
         if (this.currentIdentifyAbortController) {
@@ -360,7 +376,10 @@ export class MapDrawingRenderer {
         const content = 'Ziehen um Punkt zu erstellen';
         if (this.tooltipElement.innerHTML !== content)
           this.tooltipElement.innerHTML = content;
-      } else if (this.map_animator.magnetic_paths && !this.is_mouse_over_dom_tooltip) {
+      } else if (
+        this.map_animator.magnetic_paths &&
+        !this.is_mouse_over_dom_tooltip
+      ) {
         const content = 'Klicken, um Punkt anzuhängen';
         if (this.tooltipElement.innerHTML !== content)
           this.tooltipElement.innerHTML = content;
@@ -429,7 +448,11 @@ export class MapDrawingRenderer {
             let knownMiss = false;
             if (!cachedHit) {
               const now = Date.now();
-              for (let i = this.negative_identify_cache.length - 1; i >= 0; i--) {
+              for (
+                let i = this.negative_identify_cache.length - 1;
+                i >= 0;
+                i--
+              ) {
                 const nc = this.negative_identify_cache[i];
                 if (now - nc.time > 30000) {
                   this.negative_identify_cache.splice(i, 1);
@@ -448,8 +471,6 @@ export class MapDrawingRenderer {
               this.is_hovering_interactive_feature = true;
               targetElement.style.cursor = 'pointer';
             }
-
-
           }
         }
 
@@ -572,9 +593,12 @@ export class MapDrawingRenderer {
         } else if (vectorName === 'feuerstellen') {
           title = 'Feuerstelle';
           subtitle = vectorProperties['name'] || 'Öffentlicher Grillplatz';
-          
+
           let origin = evt.coordinate;
-          if (vectorGeometry && typeof vectorGeometry.getCoordinates === 'function') {
+          if (
+            vectorGeometry &&
+            typeof vectorGeometry.getCoordinates === 'function'
+          ) {
             const coords = vectorGeometry.getCoordinates();
             if (coords && coords.length >= 2) {
               origin = coords;
@@ -598,10 +622,11 @@ export class MapDrawingRenderer {
         } else if (vectorName === 'shelter') {
           title = 'Unterstand';
           subtitle = vectorProperties['name'] || 'Schutzhütte';
-          
+
           let details: string[] = [];
-          let shelterType = vectorProperties['shelter_type'] || vectorProperties['tourism'];
-          
+          let shelterType =
+            vectorProperties['shelter_type'] || vectorProperties['tourism'];
+
           if (shelterType === 'alpine_hut') {
             title = 'Berghütte';
             subtitle = vectorProperties['name'] || 'SAC-Hütte / Berghütte';
@@ -610,12 +635,15 @@ export class MapDrawingRenderer {
           }
 
           if (details.length > 0) {
-              subtitle += `<br><div style="margin-top: 5px; font-size: 0.9em; line-height: 1.4;">` + details.join('<br>') + `</div>`;
+            subtitle +=
+              `<br><div style="margin-top: 5px; font-size: 0.9em; line-height: 1.4;">` +
+              details.join('<br>') +
+              `</div>`;
           }
         }
 
         const closeIcon = `<svg onclick="document.dispatchEvent(new CustomEvent('closeMapPopup'))" style="cursor: pointer; fill: #999;" width="24" height="24" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>`;
-        
+
         this.infoElement.innerHTML = `
           <div style="position: absolute; top: 12px; right: 12px; z-index: 100; background: rgba(255,255,255,0.8); border-radius: 50%; display: flex;">
             ${closeIcon}
@@ -668,7 +696,9 @@ export class MapDrawingRenderer {
 
         if (cachedHit) {
           if (cachedHit.data) {
-            this.infoElement.innerHTML = this.formatIdentifyResults(cachedHit.data);
+            this.infoElement.innerHTML = this.formatIdentifyResults(
+              cachedHit.data,
+            );
           } else {
             this.infoElement.innerHTML = cachedHit.html;
           }
@@ -677,8 +707,6 @@ export class MapDrawingRenderer {
           return;
         }
 
-
-
         const ext = this.map.getView().calculateExtent(this.map.getSize());
         const size = this.map.getSize() || [800, 600];
         const url = `https://api3.geo.admin.ch/rest/services/all/MapServer/identify?geometry=${evt.coordinate[0]},${evt.coordinate[1]}&geometryFormat=geojson&geometryType=esriGeometryPoint&imageDisplay=${size[0]},${size[1]},96&mapExtent=${ext.join(',')}&sr=2056&tolerance=20&layers=all:${activeIdentifyLayers.join(',')}`;
@@ -686,80 +714,102 @@ export class MapDrawingRenderer {
         fetch(url)
           .then((res) => res.json())
           .then((data) => {
-               // Filter: Only keep main stations (LoD 0) to avoid perron/platform clutter
-               if (data.results) {
-                 data.results = data.results.filter((r: any) => {
-                   if (r.layerBodId === 'ch.bav.haltestellen-oev') {
-                     const lod = String(r.properties?.lod || '0');
-                     const name = String(r.properties?.name || r.id || r.featureId || '');
-                     const typ = String(r.properties?.betriebspunkttyp_de || '');
-                     
-                     const isMaster = (lod === '0' || lod === 'undefined') && !name.startsWith('ch:');
-                     const isVzw = typ.includes('Verzweigung') || name.includes('(Vzw)');
-                     const isGleisende = typ.includes('Gleisende');
-                     const isZugeordnet = typ.includes('Zugeordneter Betriebspunkt');
-                     const isBedienpunkt = typ === 'Bedienpunkt';
-                     const isSpurwechsel = typ.includes('Spurwechsel');
-                     const isSpurtrennung = typ.includes('Spurtrennung');
-                     const isWendeschleife = typ.includes('Wendeschleife');
-                     const isDienststation = typ.includes('Dienststation');
-                     const isAusweiche = typ.includes('Ausweiche');
-                     const isAnschlusspunkt = typ.includes('Anschlusspunkt');
-                     
-                     return isMaster && !isVzw && !isGleisende && !isZugeordnet && !isBedienpunkt && !isSpurwechsel && !isSpurtrennung && !isWendeschleife && !isDienststation && !isAusweiche && !isAnschlusspunkt;
-                   }
-                   return true;
-                 });
-               }
+            // Filter: Only keep main stations (LoD 0) to avoid perron/platform clutter
+            if (data.results) {
+              data.results = data.results.filter((r: any) => {
+                if (r.layerBodId === 'ch.bav.haltestellen-oev') {
+                  const lod = String(r.properties?.lod || '0');
+                  const name = String(
+                    r.properties?.name || r.id || r.featureId || '',
+                  );
+                  const typ = String(r.properties?.betriebspunkttyp_de || '');
 
-               if (data.results && data.results.length > 0) {
-                 const pt = data.results[0].geometry.coordinates[0];
-                 const htmlResult = this.formatIdentifyResults(data);
+                  const isMaster =
+                    (lod === '0' || lod === 'undefined') &&
+                    !name.startsWith('ch:');
+                  const isVzw =
+                    typ.includes('Verzweigung') || name.includes('(Vzw)');
+                  const isGleisende = typ.includes('Gleisende');
+                  const isZugeordnet = typ.includes(
+                    'Zugeordneter Betriebspunkt',
+                  );
+                  const isBedienpunkt = typ === 'Bedienpunkt';
+                  const isSpurwechsel = typ.includes('Spurwechsel');
+                  const isSpurtrennung = typ.includes('Spurtrennung');
+                  const isWendeschleife = typ.includes('Wendeschleife');
+                  const isDienststation = typ.includes('Dienststation');
+                  const isAusweiche = typ.includes('Ausweiche');
+                  const isAnschlusspunkt = typ.includes('Anschlusspunkt');
 
-                 this.interactive_feature_cache.push({
-                   x: pt[0],
-                   y: pt[1],
-                   html: htmlResult,
-                   data: data,
-                 });
-                 
-                 // Draw dynamic highlight feature geometry
-                 this.highlight_layer_source.clear();
-                 const format = new GeoJSON();
-                 const features = [];
-                 for(let i=0; i<data.results.length; i++) {
-                   if(data.results[i].geometry) {
-                     try {
-                        const feat = format.readFeature(data.results[i], { dataProjection: 'EPSG:2056', featureProjection: 'EPSG:2056' });
-                        if (Array.isArray(feat)) {
-                          features.push(...(feat as Feature<any>[]));
-                        } else {
-                          features.push(feat as Feature<any>);
-                        }
-                     } catch(err) {
-                        console.error("Failed parsing highlight geom", err);
-                     }
-                   }
-                 }
-                 if(features.length > 0) {
-                    this.highlight_layer_source.addFeatures(features);
-                 }
+                  return (
+                    isMaster &&
+                    !isVzw &&
+                    !isGleisende &&
+                    !isZugeordnet &&
+                    !isBedienpunkt &&
+                    !isSpurwechsel &&
+                    !isSpurtrennung &&
+                    !isWendeschleife &&
+                    !isDienststation &&
+                    !isAusweiche &&
+                    !isAnschlusspunkt
+                  );
+                }
+                return true;
+              });
+            }
 
-                 this.infoElement.innerHTML = htmlResult;
-                 this.infoElement.style.display = 'block';
-                 this.infoOverlay.setPosition(evt.coordinate);
-               } else {
-                 // False alarm, hide overlay and append anchor fallback.
-                 this.infoElement.style.display = 'none';
-                 this.infoOverlay.setPosition(undefined);
-                 if (!this.map_animator.export_mode && !this.is_hovering_tooltip) {
-                   this.pointer_layer_source.clear();
-                   this.onWaypointAdded.emit({
-                     x: evt.coordinate[0],
-                     y: evt.coordinate[1],
-                   });
-                 }
-               }
+            if (data.results && data.results.length > 0) {
+              const pt = data.results[0].geometry.coordinates[0];
+              const htmlResult = this.formatIdentifyResults(data);
+
+              this.interactive_feature_cache.push({
+                x: pt[0],
+                y: pt[1],
+                html: htmlResult,
+                data: data,
+              });
+
+              // Draw dynamic highlight feature geometry
+              this.highlight_layer_source.clear();
+              const format = new GeoJSON();
+              const features = [];
+              for (let i = 0; i < data.results.length; i++) {
+                if (data.results[i].geometry) {
+                  try {
+                    const feat = format.readFeature(data.results[i], {
+                      dataProjection: 'EPSG:2056',
+                      featureProjection: 'EPSG:2056',
+                    });
+                    if (Array.isArray(feat)) {
+                      features.push(...(feat as Feature<any>[]));
+                    } else {
+                      features.push(feat as Feature<any>);
+                    }
+                  } catch (err) {
+                    console.error('Failed parsing highlight geom', err);
+                  }
+                }
+              }
+              if (features.length > 0) {
+                this.highlight_layer_source.addFeatures(features);
+              }
+
+              this.infoElement.innerHTML = htmlResult;
+              this.infoElement.style.display = 'block';
+              this.infoOverlay.setPosition(evt.coordinate);
+            } else {
+              // False alarm, hide overlay and append anchor fallback.
+              this.infoElement.style.display = 'none';
+              this.infoOverlay.setPosition(undefined);
+              if (!this.map_animator.export_mode && !this.is_hovering_tooltip) {
+                this.pointer_layer_source.clear();
+                this.onWaypointAdded.emit({
+                  x: evt.coordinate[0],
+                  y: evt.coordinate[1],
+                });
+              }
+            }
           })
           .catch((err) => {
             console.error('Identify fetch failed', err);
@@ -825,9 +875,9 @@ export class MapDrawingRenderer {
               fill: new Fill({ color: '#2196F3' }),
               stroke: new Stroke({ color: '#fff', width: 2 }),
             }),
-          })
+          }),
         ];
-        
+
         if (coord.name) {
           styles.push(
             new Style({
@@ -838,21 +888,25 @@ export class MapDrawingRenderer {
                 font: 'bold 16px Open Sans',
                 offsetY: -15,
               }),
-            })
+            }),
           );
         }
-        
+
         feature.setStyle(styles);
         this.external_pointer_layer_source.addFeature(feature);
       }
     });
   }
 
-  private async fetchStationboard(uic: string, name: string, containerId: string) {
+  private async fetchStationboard(
+    uic: string,
+    name: string,
+    containerId: string,
+  ) {
     const cacheKey = uic || name;
     const now = Date.now();
     const cached = this.stationboardCache.get(cacheKey);
-    
+
     // Check Cache (5-minute TTL)
     if (cached && cached.expiry > now) {
       this.renderStationboard(cached.data, containerId);
@@ -865,21 +919,27 @@ export class MapDrawingRenderer {
         this.currentStationboardAbortControllers.get(containerId)?.abort();
       }
       const abortController = new AbortController();
-      this.currentStationboardAbortControllers.set(containerId, abortController);
+      this.currentStationboardAbortControllers.set(
+        containerId,
+        abortController,
+      );
 
       // Preference: fetch by UIC ID if available, otherwise by name
-      const queryParam = uic ? `id=${uic}` : `station=${encodeURIComponent(name)}`;
+      const queryParam = uic
+        ? `id=${uic}`
+        : `station=${encodeURIComponent(name)}`;
       const url = `https://transport.opendata.ch/v1/stationboard?${queryParam}&limit=5`;
-      
+
       const response = await fetch(url, { signal: abortController.signal });
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      
+      if (!response.ok)
+        throw new Error(`HTTP error! status: ${response.status}`);
+
       const data = await response.json();
-      
+
       // Cache the result for 5 minutes
-      this.stationboardCache.set(cacheKey, { 
-        data, 
-        expiry: now + (5 * 60 * 1000) 
+      this.stationboardCache.set(cacheKey, {
+        data,
+        expiry: now + 5 * 60 * 1000,
       });
 
       this.renderStationboard(data, containerId);
@@ -888,7 +948,8 @@ export class MapDrawingRenderer {
       console.error('Error fetching stationboard:', err);
       const container = document.getElementById(containerId);
       if (container) {
-        container.innerHTML = '<div style="padding: 10px; color: #d32f2f; font-size: 0.9em; text-align: center;">Fehler beim Laden</div>';
+        container.innerHTML =
+          '<div style="padding: 10px; color: #d32f2f; font-size: 0.9em; text-align: center;">Fehler beim Laden</div>';
       }
     } finally {
       this.currentStationboardAbortControllers.delete(containerId);
@@ -900,16 +961,20 @@ export class MapDrawingRenderer {
     if (!container) return; // Element might have been removed (e.g. user stopped hovering)
 
     if (!data.stationboard || data.stationboard.length === 0) {
-      container.innerHTML = '<div style="padding: 10px; color: #666; font-size: 0.9em; text-align: center;">Keine Abfahrten gefunden</div>';
+      container.innerHTML =
+        '<div style="padding: 10px; color: #666; font-size: 0.9em; text-align: center;">Keine Abfahrten gefunden</div>';
       return;
     }
 
     let html = '';
     data.stationboard.forEach((dep: any) => {
       const departureTime = dep.stop.prognosis?.departure || dep.stop.departure;
-      const time = new Date(departureTime).toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
+      const time = new Date(departureTime).toLocaleTimeString('de-CH', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
       const category = (dep.category || '').toUpperCase().trim();
-      
+
       // Refined Line Badge Logic (Viadi/SBB Style)
       let line = '';
       if (['BUS', 'POST', 'BP', 'B', 'T', 'TR'].includes(category)) {
@@ -926,13 +991,15 @@ export class MapDrawingRenderer {
 
       // Cleanup: Avoid "null" string or too long technical numbers if we have a better fallback
       if (!line || line === 'null') line = dep.number || dep.name || '?';
-      if (line.length > 8 && dep.number && dep.number !== line) line = dep.number;
-      
+      if (line.length > 8 && dep.number && dep.number !== line)
+        line = dep.number;
+
       const destination = dep.to;
-      
+
       // Detailed Transit Icons (High-Clarity Filled Silhouettes)
-      const svgHeader = '<svg width="18" height="18" viewBox="0 0 24 24" fill="#000" fill-rule="evenodd" style="display: block;">';
-      
+      const svgHeader =
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="#000" fill-rule="evenodd" style="display: block;">';
+
       const busIcon = `${svgHeader}<path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm14-5H6V6h12v5z"/></svg>`;
       const trainIcon = `${svgHeader}<path d="M12 2c-4 0-8 .5-8 4v9.5C4 17.43 5.57 19 7.5 19L6 20.5v.5h12v-.5L16.5 19c1.93 0 3.5-1.57 3.5-3.5V6c0-3.5-4-4-8-4zM17 11H7V6h10v5h-6z"/></svg>`;
       const tramIcon = `${svgHeader}<path d="M19 16c0 .88-.39 1.67-1 2.22V20c0 .55-.45 1-1 1h-1c-.55 0-1-.45-1-1v-1H9v1c0 .55-.45 1-1 1H7c-.55 0-1-.45-1-1v-1.78c-.61-.55-1-1.34-1-2.22V6c0-3.5 3.58-4 8-4s8 .5 8 4v10zM18 11H6V6h12v5zM13 1h-2v1h2V1z"/></svg>`;
@@ -942,8 +1009,12 @@ export class MapDrawingRenderer {
       let finalIcon = trainIcon;
       if (['BUS', 'POST', 'BP', 'B'].includes(category)) finalIcon = busIcon;
       else if (['T', 'TR'].includes(category)) finalIcon = tramIcon;
-      else if (['SHIP', 'F', 'FA', 'BAT', 'GDE'].includes(category)) finalIcon = shipIcon;
-      else if (['G', 'GB', 'LB', 'PB', 'CC', 'FUN', 'C', 'SL'].includes(category)) finalIcon = gondolaIcon;
+      else if (['SHIP', 'F', 'FA', 'BAT', 'GDE'].includes(category))
+        finalIcon = shipIcon;
+      else if (
+        ['G', 'GB', 'LB', 'PB', 'CC', 'FUN', 'C', 'SL'].includes(category)
+      )
+        finalIcon = gondolaIcon;
 
       html += `
         <div style="display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid #f0f0f0; min-height: 44px;">
@@ -962,8 +1033,10 @@ export class MapDrawingRenderer {
         </div>
       `;
     });
-    
-    container.innerHTML = html + `
+
+    container.innerHTML =
+      html +
+      `
       <div style="font-size: 0.75em; color: #aaa; margin-top: 10px; text-align: center;">
         Quelle: transport.opendata.ch / opentransportdata.swiss
       </div>
@@ -986,14 +1059,16 @@ export class MapDrawingRenderer {
     for (const result of data.results) {
       const props = result.properties || {};
       const layerId = result.layerBodId;
-      
-      const stopName = props.name || props.uic_name || props.title || result.featureId;
+
+      const stopName =
+        props.name || props.uic_name || props.title || result.featureId;
       const dedupeKey = `${layerId}_${stopName}`;
       if (seenNames.has(dedupeKey)) continue;
       seenNames.add(dedupeKey);
 
       if (elementCount > 0) {
-        htmlResult += '<hr style="margin: 16px 0; border: 0; border-top: 1px solid #ccc;">';
+        htmlResult +=
+          '<hr style="margin: 16px 0; border: 0; border-top: 1px solid #ccc;">';
       }
       elementCount++;
 
@@ -1001,19 +1076,26 @@ export class MapDrawingRenderer {
       if (layerId === 'ch.bav.haltestellen-oev') {
         const uic = props.uic_code || props.nummer || props.ext_id || '';
         const nameEnc = encodeURIComponent(stopName);
-        
+
         // Stable ID to avoid losing reference during hover updates
         const containerId = `sb-${uic || stopName.replace(/[^a-z0-9]/gi, '')}`;
-        
+
         // SBB fahrplan.xhtml deep-links
         const anreiseUrl = `https://www.sbb.ch/de/kaufen/pages/fahrplan/fahrplan.xhtml?nach=${nameEnc}`;
         const rueckreiseUrl = `https://www.sbb.ch/de/kaufen/pages/fahrplan/fahrplan.xhtml?von=${nameEnc}`;
-        
+
         const now = new Date();
-        const dateStr = now.toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const dateStr = now.toLocaleDateString('de-CH', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        });
 
         // Trigger async fetch for departures with a slight delay to ensure DOM is ready
-        setTimeout(() => this.fetchStationboard(uic, stopName, containerId), 50);
+        setTimeout(
+          () => this.fetchStationboard(uic, stopName, containerId),
+          50,
+        );
 
         htmlResult += `
           <div style="min-width: 300px;">
@@ -1053,10 +1135,19 @@ export class MapDrawingRenderer {
       // --- GENERIC POPOVER FOR OTHER LAYERS ---
       let title = layerId || 'Metadaten';
       if (title === 'ch.vbs.schiessanzeigen') title = 'Schiessanzeigen';
-      else if (title === 'ch.bafu.alpweiden-herdenschutzhunde') title = 'Herdenschutzhunde';
-      else if (title.includes('schutzgebiete') || title.includes('wrz')) title = 'Schutzgebiet';
+      else if (title === 'ch.bafu.alpweiden-herdenschutzhunde')
+        title = 'Herdenschutzhunde';
+      else if (title.includes('schutzgebiete') || title.includes('wrz'))
+        title = 'Schutzgebiet';
 
-      let subtitle = props.wrz_name || props.jb_name || props.name || props.nom || props.titre || props.title || '';
+      let subtitle =
+        props.wrz_name ||
+        props.jb_name ||
+        props.name ||
+        props.nom ||
+        props.titre ||
+        props.title ||
+        '';
 
       htmlResult += `
         <div style="min-width: 250px; margin-bottom: 8px;">
@@ -1072,7 +1163,7 @@ export class MapDrawingRenderer {
         </div>
       `;
     }
-    
+
     htmlResult += `</div>`;
     return htmlResult;
   }
@@ -1083,13 +1174,32 @@ export class MapDrawingRenderer {
   private formatPopupProperties(props: any, layerBodId: string): string {
     let result = '';
     const excludeKeys = [
-      'id', 'featureId', 'layerBodId', 'layerName', 'symbolId', 'imageDisplay', 
-      'mapExtent', 'geometry', 'geometryType', 'sr', 'tolerance', 'label', 
-      'st_area_shape', 'st_length_shape', 'wrz_id', 'jb_id'
+      'id',
+      'featureId',
+      'layerBodId',
+      'layerName',
+      'symbolId',
+      'imageDisplay',
+      'mapExtent',
+      'geometry',
+      'geometryType',
+      'sr',
+      'tolerance',
+      'label',
+      'st_area_shape',
+      'st_length_shape',
+      'wrz_id',
+      'jb_id',
     ];
 
     for (const key of Object.keys(props)) {
-      if (excludeKeys.includes(key) || props[key] === null || props[key] === undefined || typeof props[key] === 'object' || props[key] === '') {
+      if (
+        excludeKeys.includes(key) ||
+        props[key] === null ||
+        props[key] === undefined ||
+        typeof props[key] === 'object' ||
+        props[key] === ''
+      ) {
         continue;
       }
 
@@ -1098,7 +1208,17 @@ export class MapDrawingRenderer {
 
       // Layer-specific filters
       if (layerBodId === 'ch.bav.haltestellen-oev') {
-        const ovExclude = ['uic_name', 'uic_code', 'bav_name', 'betriebspunkttyp', 'betriebspunkttyp_de', 'betriebspunkttyp_fr', 'lod', 'nummer_text', 'betrieblichebezeichnung'];
+        const ovExclude = [
+          'uic_name',
+          'uic_code',
+          'bav_name',
+          'betriebspunkttyp',
+          'betriebspunkttyp_de',
+          'betriebspunkttyp_fr',
+          'lod',
+          'nummer_text',
+          'betrieblichebezeichnung',
+        ];
         if (ovExclude.includes(key)) continue;
         if (key === 'tuabkuerzung') displayKey = 'Verkehrsunternehmen';
         if (key === 'transport_means_de') displayKey = 'Verkehrsmittel';
@@ -1114,12 +1234,13 @@ export class MapDrawingRenderer {
           kontname: 'Kontakt Name',
           konttel: 'Kontakt Telefon',
           kontemail: 'Kontakt E-Mail',
-          name: 'Objektname'
+          name: 'Objektname',
         };
         if (keyMap[key]) displayKey = keyMap[key];
 
         if (key === 'code_refverhalten') {
-          val = 'http://www.protectiondestroupeaux.ch/de/herdenschutzhunde/tourismus-und-herdenschutzhunde/sichere-begegnungen-mit-herdenschutzhunden/';
+          val =
+            'http://www.protectiondestroupeaux.ch/de/herdenschutzhunde/tourismus-und-herdenschutzhunde/sichere-begegnungen-mit-herdenschutzhunden/';
         } else if (key === 'code_hundepraesenz') {
           const pMap: Record<number, string> = {
             1000: 'Es ist ganzjährig mit der Anwesenheit von Herdenschutzhunden zu rechnen.',
@@ -1163,7 +1284,7 @@ export class MapDrawingRenderer {
             1052: 'In der Regel zwischen Anfang Juli und Ende September.',
             1053: 'In der Regel zwischen Anfang Juni und Ende Oktober.',
             1055: 'In der Regel zwischen Anfang Mai und Mitte November.',
-            1056: 'In der Regel zwischen Anfang Juli und Mitte Oktober.'
+            1056: 'In der Regel zwischen Anfang Juli und Mitte Oktober.',
           };
           val = pMap[val as number] || val;
         } else if (key === 'code_hinweis') {
@@ -1188,15 +1309,21 @@ export class MapDrawingRenderer {
             174: 'Um die Interaktionen zwischen den HSHs und den Touristen zu minimieren, wird der Wanderweg entlang des Glattgrats während der Beweidungsdauer (Anfang Juni bis Mitte Juli) vorübergehend umgeleitet.',
             220: 'Auf dem markierten Gebiet im Val Segnas ist nur im Oktober damit zu rechnen, Herdenschutzhunde anzutreffen.',
             226: 'Der Mountainbiketrail ist ausgezäunt, so dass Sie in der Regel nicht direkt auf die geschützte Herde treffen. Mit Begleithunden - unbedingt angeleint - bitte zügig an der geschützten Weide vorbeigehen.',
-            252: 'Der Bergwanderweg durch das Rappenloch ist von Anfang Juni bis Mitte Juni gesperrt.'
+            252: 'Der Bergwanderweg durch das Rappenloch ist von Anfang Juni bis Mitte Juni gesperrt.',
           };
           val = hMap[val as number] || val;
         }
       }
 
       // Language filter and clean key extraction
-      if (key.endsWith('_fr') || key.endsWith('_it') || key.endsWith('_en') || key.endsWith('_rm')) continue;
-      
+      if (
+        key.endsWith('_fr') ||
+        key.endsWith('_it') ||
+        key.endsWith('_en') ||
+        key.endsWith('_rm')
+      )
+        continue;
+
       let cleanKey = key;
       if (key.endsWith('_de')) {
         cleanKey = key.replace('_de', '');
@@ -1207,7 +1334,11 @@ export class MapDrawingRenderer {
 
       displayKey = cleanKey;
 
-      if (layerBodId === 'ch.bafu.wrz-jagdbanngebiete_select' || layerBodId === 'ch.bafu.wrz-wildruhezonen_portal' || layerBodId === 'ch.bafu.schutzgebiete-schweizerischer_nationalpark') {
+      if (
+        layerBodId === 'ch.bafu.wrz-jagdbanngebiete_select' ||
+        layerBodId === 'ch.bafu.wrz-wildruhezonen_portal' ||
+        layerBodId === 'ch.bafu.schutzgebiete-schweizerischer_nationalpark'
+      ) {
         const keyMap: Record<string, string> = {
           jb_name: 'Name',
           wrz_name: 'Name',
@@ -1216,7 +1347,7 @@ export class MapDrawingRenderer {
           kanton: 'Kanton',
           beschlussjahr: 'Beschlussjahr',
           grundlage: 'Grundlage',
-          name: 'Name' // Fallback for nationalpark
+          name: 'Name', // Fallback for nationalpark
         };
         if (keyMap[cleanKey]) displayKey = keyMap[cleanKey];
       }
@@ -1225,17 +1356,18 @@ export class MapDrawingRenderer {
         if (val.startsWith('http')) {
           val = `<a href="${val}" target="_blank" style="color:#1976D2; text-decoration: underline;">Detail-Infos</a>`;
         } else if (val.includes(';')) {
-          const listItems = val.split(';')
-                             .map(s => s.trim())
-                             .filter(s => s)
-                             .join(';</li><li style="margin-bottom: 4px;">');
+          const listItems = val
+            .split(';')
+            .map((s) => s.trim())
+            .filter((s) => s)
+            .join(';</li><li style="margin-bottom: 4px;">');
           val = `<ul style="margin: 4px 0 0 0; padding-left: 18px; line-height: 1.35;"><li style="margin-bottom: 4px;">${listItems}</li></ul>`;
         }
       }
 
       displayKey = displayKey.replace(/_/g, ' ');
       displayKey = displayKey.charAt(0).toUpperCase() + displayKey.slice(1);
-      
+
       // Inline block so the ul drops nicely below or stays inline if it's plain text
       result += `<div style="margin-bottom: 6px; line-height: 1.35;"><strong>${displayKey}:</strong> ${val}</div>`;
     }
@@ -1244,26 +1376,28 @@ export class MapDrawingRenderer {
     if (layerBodId !== 'ch.bav.haltestellen-oev' && layerBodId) {
       const view = this.map.getView();
       const center = view.getCenter();
-      
+
       let e = 2600000;
       let n = 1200000;
       if (center) {
         e = center[0];
         n = center[1];
       }
-      
+
       const currentRes = view.getResolution() || 250;
-      const geoAdminResolutions = [4000, 2000, 1000, 500, 250, 100, 50, 20, 10, 5, 2.5, 2, 1.5, 1, 0.5];
+      const geoAdminResolutions = [
+        4000, 2000, 1000, 500, 250, 100, 50, 20, 10, 5, 2.5, 2, 1.5, 1, 0.5,
+      ];
       let swisstopoZoom = 4;
       let minDiff = Infinity;
       for (let i = 0; i < geoAdminResolutions.length; i++) {
         const diff = Math.abs(geoAdminResolutions[i] - currentRes);
-        if (diff < minDiff) { 
-          minDiff = diff; 
-          swisstopoZoom = i; 
+        if (diff < minDiff) {
+          minDiff = diff;
+          swisstopoZoom = i;
         }
       }
-      
+
       const externalIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: text-bottom;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>`;
       const swisstopoUrl = `https://map.geo.admin.ch/?layers=${layerBodId}&lang=de&E=${e}&N=${n}&zoom=${swisstopoZoom}`;
 
@@ -1431,7 +1565,11 @@ export class MapDrawingRenderer {
     };
   }
 
-  private create_line_segment_style(coords: number[][], color: string, width: number): Style {
+  private create_line_segment_style(
+    coords: number[][],
+    color: string,
+    width: number,
+  ): Style {
     return new Style({
       geometry: new LineString(coords),
       stroke: new Stroke({ color, width }),
@@ -1534,19 +1672,26 @@ export class MapDrawingRenderer {
 
   private render_pointer() {
     this.pointer_layer_source.clear();
-    if (this.pointer != null && !this.map_animator?.export_mode && !this.hovered_anchor && !this.is_modifying) {
+    if (
+      this.pointer != null &&
+      !this.map_animator?.export_mode &&
+      !this.hovered_anchor &&
+      !this.is_modifying
+    ) {
       if (this.is_hovering_interactive_feature) return;
 
       const feature = new Feature({ geometry: new Point(this.pointer) });
-      feature.setStyle(new Style({
-        image: new CircleStyle({
-          radius: 8,
-          fill: new Fill({ color: 'transparent' }),
-          stroke: new Stroke({ color: '#efa038', width: 3 }),
+      feature.setStyle(
+        new Style({
+          image: new CircleStyle({
+            radius: 8,
+            fill: new Fill({ color: 'transparent' }),
+            stroke: new Stroke({ color: '#efa038', width: 3 }),
+          }),
         }),
-      }));
+      );
       this.pointer_layer_source.addFeature(feature);
-      
+
       if (this.tooltipElement.innerHTML !== '') {
         this.tooltipOverlay.setPosition(this.pointer);
       } else {

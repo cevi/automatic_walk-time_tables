@@ -103,6 +103,7 @@ def get_map_numbers():
         traceback.print_exc()
         return jsonify({"map_numbers": ""})
 
+
 @app.route("/parse_route", methods=["POST"])
 def parse_route():
     options = json.loads(request.form["options"])

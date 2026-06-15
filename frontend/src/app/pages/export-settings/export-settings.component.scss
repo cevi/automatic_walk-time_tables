@@ -1,7 +1,9 @@
 .marschzeit-card {
   background: #ffffff;
   border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04), 0 1px 4px rgba(0, 0, 0, 0.02);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.04),
+    0 1px 4px rgba(0, 0, 0, 0.02);
   border: 1px solid #e2e8f0;
   margin-bottom: 24px;
 }
@@ -40,7 +42,8 @@ h2 {
   display: block;
 }
 
-.error, .error_message {
+.error,
+.error_message {
   color: #d93025;
 }
 
@@ -58,7 +61,7 @@ h2 {
   padding: 4px 32px !important;
   font-weight: 600 !important;
   letter-spacing: 0.3px;
-  
+
   &:hover {
     transform: translateY(-1px);
   }
@@ -124,19 +127,21 @@ h2 {
   gap: 20px;
   background: #ffffff;
   border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04), 0 1px 4px rgba(0, 0, 0, 0.02);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.04),
+    0 1px 4px rgba(0, 0, 0, 0.02);
   border: 1px solid #e2e8f0;
   padding: 32px;
   align-items: flex-start;
   text-align: left;
-  
+
   p {
     color: #334155;
     font-weight: 600;
     margin-bottom: 12px;
     margin-top: 0;
   }
-  
+
   .mat-mdc-slide-toggle {
     margin-top: 6px;
     margin-bottom: 6px;
@@ -149,13 +154,13 @@ h2 {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  
+
   label {
     font-weight: 500;
     color: #334155;
     margin-bottom: 16px;
   }
-  
+
   mat-slider {
     width: 100%;
     margin: 0;

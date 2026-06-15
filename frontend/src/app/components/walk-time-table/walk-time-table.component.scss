@@ -122,10 +122,12 @@
       &.row-highlighted {
         background-color: #f0f9ff;
         transform: translateY(-1px);
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        box-shadow:
+          0 4px 6px -1px rgba(0, 0, 0, 0.05),
+          0 2px 4px -1px rgba(0, 0, 0, 0.03);
         position: relative;
         z-index: 10;
-        
+
         td {
           border-bottom-color: transparent;
         }
@@ -248,7 +250,7 @@
 
   &.delete-icon {
     &:not(.disabled-icon):hover {
-      color: #ef4444; 
+      color: #ef4444;
       transform: scale(1.15) rotate(5deg);
     }
   }

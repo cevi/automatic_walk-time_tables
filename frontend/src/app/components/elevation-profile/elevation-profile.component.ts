@@ -68,14 +68,24 @@ export class ElevationProfileComponent {
             formatter: (params: any) => {
               if (!params || params.length === 0) return '';
 
-              const surfaceNames = ['Naturbelag', 'Teilw. befestigt', 'Befestigt', 'Unbekannt'];
+              const surfaceNames = [
+                'Naturbelag',
+                'Teilw. befestigt',
+                'Befestigt',
+                'Unbekannt',
+              ];
               let areaData: any = null;
               let surfaceLabel = 'Unbekannt';
 
               if (Array.isArray(params)) {
                 for (const p of params) {
-                  if (p.seriesName === 'Elevation Area' && p.data) areaData = p.data;
-                  if (surfaceNames.includes(p.seriesName) && p.data && p.data[1] !== null) {
+                  if (p.seriesName === 'Elevation Area' && p.data)
+                    areaData = p.data;
+                  if (
+                    surfaceNames.includes(p.seriesName) &&
+                    p.data &&
+                    p.data[1] !== null
+                  ) {
                     surfaceLabel = p.seriesName;
                   }
                 }
@@ -128,10 +138,26 @@ export class ElevationProfileComponent {
             itemHeight: 14,
             textStyle: { fontSize: 11, color: '#444' },
             data: [
-              { name: 'Naturbelag', icon: 'rect', itemStyle: { color: '#9e6231' } },
-              { name: 'Teilw. befestigt', icon: 'rect', itemStyle: { color: '#B38B6D' } },
-              { name: 'Befestigt', icon: 'rect', itemStyle: { color: '#888888' } },
-              { name: 'Unbekannt', icon: 'rect', itemStyle: { color: '#e0e0e0' } },
+              {
+                name: 'Naturbelag',
+                icon: 'rect',
+                itemStyle: { color: '#9e6231' },
+              },
+              {
+                name: 'Teilw. befestigt',
+                icon: 'rect',
+                itemStyle: { color: '#B38B6D' },
+              },
+              {
+                name: 'Befestigt',
+                icon: 'rect',
+                itemStyle: { color: '#888888' },
+              },
+              {
+                name: 'Unbekannt',
+                icon: 'rect',
+                itemStyle: { color: '#e0e0e0' },
+              },
             ],
           },
           series: [
@@ -141,9 +167,41 @@ export class ElevationProfileComponent {
               data: path.map((p) => {
                 const s = p.surface || '';
                 let cat = 3;
-                if (['gravel', 'dirt', 'earth', 'path', 'grass', 'sand', 'wood', 'unpaved', 'impassable'].includes(s)) { cat = 0; }
-                else if (['compacted', 'fine_gravel', 'cobblestone', 'paving_stones', 'sett'].includes(s)) { cat = 1; }
-                else if (['paved_smooth', 'paved', 'paved_rough', 'asphalt', 'concrete'].includes(s)) { cat = 2; }
+                if (
+                  [
+                    'gravel',
+                    'dirt',
+                    'earth',
+                    'path',
+                    'grass',
+                    'sand',
+                    'wood',
+                    'unpaved',
+                    'impassable',
+                  ].includes(s)
+                ) {
+                  cat = 0;
+                } else if (
+                  [
+                    'compacted',
+                    'fine_gravel',
+                    'cobblestone',
+                    'paving_stones',
+                    'sett',
+                  ].includes(s)
+                ) {
+                  cat = 1;
+                } else if (
+                  [
+                    'paved_smooth',
+                    'paved',
+                    'paved_rough',
+                    'asphalt',
+                    'concrete',
+                  ].includes(s)
+                ) {
+                  cat = 2;
+                }
                 return [
                   Number(p.accumulated_distance || 0),
                   Number(p.h || 0),
@@ -168,10 +226,48 @@ export class ElevationProfileComponent {
             // This is the only reliable way to color line segments in ECharts
             // when the color dimension is not an axis dimension.
             ...(() => {
-              const surfaceConfig: { name: string; color: string; match: string[] }[] = [
-                { name: 'Naturbelag', color: '#9e6231', match: ['gravel', 'dirt', 'earth', 'path', 'grass', 'sand', 'wood', 'unpaved', 'impassable'] },
-                { name: 'Teilw. befestigt', color: '#B38B6D', match: ['compacted', 'fine_gravel', 'cobblestone', 'paving_stones', 'sett'] },
-                { name: 'Befestigt', color: '#888888', match: ['paved_smooth', 'paved', 'paved_rough', 'asphalt', 'concrete'] },
+              const surfaceConfig: {
+                name: string;
+                color: string;
+                match: string[];
+              }[] = [
+                {
+                  name: 'Naturbelag',
+                  color: '#9e6231',
+                  match: [
+                    'gravel',
+                    'dirt',
+                    'earth',
+                    'path',
+                    'grass',
+                    'sand',
+                    'wood',
+                    'unpaved',
+                    'impassable',
+                  ],
+                },
+                {
+                  name: 'Teilw. befestigt',
+                  color: '#B38B6D',
+                  match: [
+                    'compacted',
+                    'fine_gravel',
+                    'cobblestone',
+                    'paving_stones',
+                    'sett',
+                  ],
+                },
+                {
+                  name: 'Befestigt',
+                  color: '#888888',
+                  match: [
+                    'paved_smooth',
+                    'paved',
+                    'paved_rough',
+                    'asphalt',
+                    'concrete',
+                  ],
+                },
                 { name: 'Unbekannt', color: '#e0e0e0', match: [] },
               ];
 
@@ -192,7 +288,8 @@ export class ElevationProfileComponent {
                   // (boundary overlap prevents gaps)
                   const isMine = classified[i] === catIdx;
                   const prevIsMine = i > 0 && classified[i - 1] === catIdx;
-                  const nextIsMine = i < classified.length - 1 && classified[i + 1] === catIdx;
+                  const nextIsMine =
+                    i < classified.length - 1 && classified[i + 1] === catIdx;
                   if (isMine || prevIsMine || nextIsMine) {
                     return [
                       Number(p.accumulated_distance || 0),

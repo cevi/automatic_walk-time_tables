@@ -122,8 +122,6 @@ export class WalkTimeTableComponent implements OnInit, OnDestroy, OnChanges {
     }
   }
 
-
-
   isAutoNamed(row: TableRow): boolean {
     if (!row.waypoint) return false;
     if (row.waypoint.name === 'Lade...') return true;

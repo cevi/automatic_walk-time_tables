@@ -182,14 +182,16 @@
   background: #ffffff;
   padding: 12px 20px;
   border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2), 0 4px 10px rgba(0, 0, 0, 0.1);
+  box-shadow:
+    0 10px 25px rgba(0, 0, 0, 0.2),
+    0 4px 10px rgba(0, 0, 0, 0.1);
   display: flex;
   gap: 24px;
   align-items: center;
   z-index: 1000;
   pointer-events: auto;
   font-family: "Open Sans", sans-serif;
-  border: 1px solid rgba(0,0,0,0.05);
+  border: 1px solid rgba(0, 0, 0, 0.05);
 
   &.hidden {
     display: none !important;
