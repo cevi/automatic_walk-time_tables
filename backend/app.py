@@ -16,6 +16,7 @@ import polyline
 import requests
 from flask import Flask, request, send_file, redirect, jsonify
 from flask_cors import CORS
+from werkzeug.routing import BaseConverter
 
 from automatic_walk_time_tables.path_transformers.douglas_peucker_transformer import (
     DouglasPeuckerTransformer,
@@ -52,7 +53,16 @@ from automatic_walk_time_tables.generator_status import GeneratorStatus
 
 logger = logging.getLogger(__name__)
 
+
+class ExportUUIDConverter(BaseConverter):
+    """Only matches UUIDs as created in /create_map (uuid4().hex). Anything
+    else, e.g. `..`, gets a 404 before it can be used in a file path."""
+
+    regex = "[0-9a-f]{32}"
+
+
 app = Flask(__name__)
+app.url_map.converters["export_uuid"] = ExportUUIDConverter
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
 
@@ -401,7 +411,7 @@ def create_export(options, uuid):
             )
 
 
-@app.route("/status/<uuid>")
+@app.route("/status/<export_uuid:uuid>")
 def status(uuid):
     message = stateHandler.get_status(uuid)
     status_code = 200 if message["status"] != GeneratorStatus.ERROR else 400
@@ -429,7 +439,7 @@ def __delete_after_delay(base_path: str, uuid: str, delay=720):
     logger.info("Deleted folder %s" % base_path)
 
 
-@app.route("/download/<uuid>")
+@app.route("/download/<export_uuid:uuid>")
 def download(uuid):
     # Check if export is completed and still present in the 'output' folder
     base_path = pathlib.Path("./output/" + uuid + "/")
@@ -489,7 +499,7 @@ def download(uuid):
     )
 
 
-@app.route("/qr/<uuid>")
+@app.route("/qr/<export_uuid:uuid>")
 def generate_qr_image(uuid):
     qr_data = build_qr_code_image_string(uuid, raw=True)
     return send_file(io.BytesIO(qr_data), mimetype="image/jpg")
@@ -525,7 +535,7 @@ def retrieve_statistics():
     )
 
 
-@app.route("/retrieve/<uuid>")
+@app.route("/retrieve/<export_uuid:uuid>")
 def retrieve_route(uuid):
     data = fetch_data_for_uuid(uuid)
     if data is not None:
@@ -576,7 +586,7 @@ def retrieve_route(uuid):
         )
 
 
-@app.route("/gpx/<uuid>.gpx")
+@app.route("/gpx/<export_uuid:uuid>.gpx")
 def generate_gpx(uuid):
     data = fetch_data_for_uuid(uuid)
 
