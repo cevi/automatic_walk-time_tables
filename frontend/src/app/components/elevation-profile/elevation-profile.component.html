@@ -1,10 +1,39 @@
 @if (plot_options != {}) {
   <div class="elevation-map">
-    <h3>Höhenprofil:</h3>
-    <p>Mit einem Klick ins Höhenprofil kannst du zusätzliche Wegpunkte einfügen. Diese werden falls
-    möglich berücksichtigt. </p>
-    <div id="chart" (click)="mouseClick()" (mousemove)="mouseMove()" (mouseout)="mouseOut()" echarts
-    [options]="plot_options"></div>
-    <span> Anzahl Wegpunkte: {{number_of_way_points}} / max 21 | Anzahl Point-of-Interest: {{number_of_pois}}</span>
+    <p style="color: #78909c; font-size: 13px">
+      Mit einem Klick ins Höhenprofil oder auf der Karte kannst du zusätzliche
+      Wegpunkte einfügen. Ein erneuter Klick an derselben Stelle löscht den
+      Wegpunkt wieder.
+    </p>
+    <div
+      id="chart"
+      (chartInit)="onChartInit($event)"
+      echarts
+      [options]="plot_options"
+    ></div>
+
+    <div style="display: flex; gap: 12px; margin-top: 16px; margin-bottom: 8px">
+      <span
+        style="
+          background: rgba(26, 115, 232, 0.08);
+          color: #1a73e8;
+          padding: 6px 14px;
+          border-radius: 20px;
+          font-size: 13px;
+          font-weight: 500;
+        "
+      >
+        <mat-icon
+          inline="true"
+          style="
+            font-size: 16px;
+            margin-right: 4px;
+            vertical-align: text-bottom;
+          "
+          >place</mat-icon
+        >
+        Wegpunkte: <strong>{{ number_of_pois }}</strong> / 21
+      </span>
+    </div>
   </div>
 }

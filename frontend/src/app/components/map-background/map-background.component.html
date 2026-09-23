@@ -1,32 +1,822 @@
 <div class="main-content">
-
   @if (setHorizontal) {
     <ng-container
-    *ngTemplateOutlet="splitterContent; context: {direction: 'horizontal', width: 450, minWidth:450}"></ng-container>
+      *ngTemplateOutlet="
+        splitterContent;
+        context: { direction: 'horizontal', width: 450, minWidth: 450 }
+      "
+    ></ng-container>
   } @else {
     <as-split direction="vertical" [unit]="'pixel'">
       <ng-container
-      *ngTemplateOutlet="splitterContent; context: {direction: 'vertical', width: 35, minWidth: 35}"></ng-container>
+        *ngTemplateOutlet="
+          splitterContent;
+          context: { direction: 'vertical', width: 35, minWidth: 35 }
+        "
+      ></ng-container>
     </as-split>
   }
 
-
-
-  <ng-template #splitterContent let-direction="direction" let-width="width" let-minWidth="minWidth">
+  <ng-template
+    #splitterContent
+    let-direction="direction"
+    let-width="width"
+    let-minWidth="minWidth"
+  >
     <as-split [direction]="direction" [unit]="'pixel'">
-      <as-split-area id="map-area" [className]="'splitView-' + direction">
-
+      <as-split-area
+        id="map-area"
+        [className]="'splitView-' + direction"
+        style="position: relative"
+      >
         <div id="map-canvas" class="map"></div>
+        <app-map-search></app-map-search>
 
-        <img routerLink="/" id="logo" src="../../../assets/logo_with_claim.png"/>
-        <img routerLink="/" id="logo_small" src="../../../assets/logo.png"/>
+        <div id="feature-popup" class="ol-popup">
+          <a href="#" id="feature-popup-closer" class="ol-popup-closer"></a>
+          <div id="feature-popup-content"></div>
+        </div>
 
+        <img
+          routerLink="/"
+          id="logo"
+          src="../../../assets/logo_with_claim.png"
+        />
+        <img routerLink="/" id="logo_small" src="../../../assets/logo.png" />
+
+        <div
+          class="stats-overlay"
+          *ngIf="mapAnimator.route_stats$ | async as stats"
+          [class.hidden]="!mapAnimator.has_route"
+        >
+          <div class="stat-item" matTooltip="Distanz">
+            <mat-icon>straighten</mat-icon>
+            <span>{{ stats.dist | number: "1.1-1" }} km</span>
+          </div>
+          <div class="stat-item" matTooltip="Leistungskilometer">
+            <mat-icon>speed</mat-icon>
+            <span
+              >{{
+                stats.dist + stats.up / 100 + stats.down / 300 | number: "1.1-1"
+              }}
+              Lkm</span
+            >
+          </div>
+          <div class="stat-item" matTooltip="Aufstieg">
+            <mat-icon>trending_up</mat-icon>
+            <span>{{ stats.up | number: "1.0-0" }} m</span>
+          </div>
+          <div class="stat-item" matTooltip="Abstieg">
+            <mat-icon>trending_down</mat-icon>
+            <span>{{ stats.down | number: "1.0-0" }} m</span>
+          </div>
+          <div class="stat-item" matTooltip="Wanderzeit">
+            <mat-icon>schedule</mat-icon>
+            <span>{{ mapAnimator.formatDuration(stats.duration) }}</span>
+          </div>
+        </div>
+
+        <div class="bottom-left-controls">
+          <button
+            mat-icon-button
+            (click)="toggle_drawer_guide()"
+            matTooltip="So funktioniert es!"
+            color="primary"
+          >
+            <mat-icon>help_outline</mat-icon>
+          </button>
+          <div class="toolbar-divider"></div>
+          <button
+            mat-icon-button
+            (click)="toggle_drawer_statistics()"
+            matTooltip="Statistiken"
+            color="primary"
+          >
+            <mat-icon>monitoring</mat-icon>
+          </button>
+          <div class="toolbar-divider"></div>
+          <button
+            mat-icon-button
+            [matMenuTriggerFor]="mapMenu"
+            matTooltip="Hintergrundkarte"
+            color="primary"
+          >
+            <mat-icon>layers</mat-icon>
+          </button>
+          <mat-menu #mapMenu="matMenu" class="premium-map-menu">
+            <div class="menu-section-title">Hintergrundkarten</div>
+
+            <button
+              mat-menu-item
+              (click)="setMapLayer('pixelkarte')"
+              class="custom-menu-item"
+            >
+              <div class="menu-item-content">
+                <mat-icon class="type-icon basis-icon">map</mat-icon>
+                <mat-icon
+                  *ngIf="currentLayer === 'pixelkarte'"
+                  class="check-icon"
+                  >check_circle</mat-icon
+                >
+                <mat-icon
+                  *ngIf="currentLayer !== 'pixelkarte'"
+                  class="uncheck-icon"
+                  >radio_button_unchecked</mat-icon
+                >
+                <span class="item-label">Basiskarte Farbig</span>
+                <span
+                  class="material-icons settings-btn"
+                  [class.disabled]="currentLayer !== 'pixelkarte'"
+                  (click)="handleSettingsClick('pixelkarte', $event)"
+                  >settings</span
+                >
+              </div>
+            </button>
+            <div
+              *ngIf="expandedSettings === 'pixelkarte'"
+              class="layer-settings-panel"
+              (click)="$event.stopPropagation()"
+            >
+              <span class="slider-label"
+                >Sättigung:
+                {{ getSaturation("pixelkarte") * 100 | number: "1.0-0" }}%</span
+              >
+              <input
+                type="range"
+                class="opacity-slider"
+                min="0"
+                max="1"
+                step="0.05"
+                [value]="getSaturation('pixelkarte')"
+                (input)="setSaturation('pixelkarte', $any($event.target).value)"
+              />
+            </div>
+            <button
+              mat-menu-item
+              (click)="setMapLayer('pixelkarte-grau')"
+              class="custom-menu-item"
+            >
+              <div class="menu-item-content">
+                <mat-icon class="type-icon basis-icon">layers</mat-icon>
+                <mat-icon
+                  *ngIf="currentLayer === 'pixelkarte-grau'"
+                  class="check-icon"
+                  >check_circle</mat-icon
+                >
+                <mat-icon
+                  *ngIf="currentLayer !== 'pixelkarte-grau'"
+                  class="uncheck-icon"
+                  >radio_button_unchecked</mat-icon
+                >
+                <span class="item-label">Basiskarte S/W</span>
+              </div>
+            </button>
+
+            <button
+              mat-menu-item
+              (click)="setMapLayer('luftbild')"
+              class="custom-menu-item"
+            >
+              <div class="menu-item-content">
+                <mat-icon class="type-icon basis-icon">satellite</mat-icon>
+                <mat-icon *ngIf="currentLayer === 'luftbild'" class="check-icon"
+                  >check_circle</mat-icon
+                >
+                <mat-icon
+                  *ngIf="currentLayer !== 'luftbild'"
+                  class="uncheck-icon"
+                  >radio_button_unchecked</mat-icon
+                >
+                <span class="item-label">Luftbild</span>
+                <span
+                  class="material-icons settings-btn"
+                  [class.disabled]="currentLayer !== 'luftbild'"
+                  (click)="handleSettingsClick('luftbild', $event)"
+                  >settings</span
+                >
+              </div>
+            </button>
+            <div
+              *ngIf="expandedSettings === 'luftbild'"
+              class="layer-settings-panel"
+              (click)="$event.stopPropagation()"
+            >
+              <span class="slider-label"
+                >Sättigung:
+                {{ getSaturation("luftbild") * 100 | number: "1.0-0" }}%</span
+              >
+              <input
+                type="range"
+                class="opacity-slider"
+                min="0"
+                max="1"
+                step="0.05"
+                [value]="getSaturation('luftbild')"
+                (input)="setSaturation('luftbild', $any($event.target).value)"
+              />
+            </div>
+            <button
+              mat-menu-item
+              (click)="setMapLayer('keine')"
+              class="custom-menu-item"
+            >
+              <div class="menu-item-content">
+                <mat-icon class="type-icon basis-icon">layers_clear</mat-icon>
+                <mat-icon *ngIf="currentLayer === 'keine'" class="check-icon"
+                  >check_circle</mat-icon
+                >
+                <mat-icon *ngIf="currentLayer !== 'keine'" class="uncheck-icon"
+                  >radio_button_unchecked</mat-icon
+                >
+                <span class="item-label">Keine Hintergrundkarte</span>
+              </div>
+            </button>
+            <mat-divider></mat-divider>
+            <div class="menu-section-title">Swisstopo Zusätze</div>
+            <button
+              mat-menu-item
+              (click)="handleToggle($event, 'Haltestellen')"
+              class="custom-menu-item"
+            >
+              <div class="menu-item-content">
+                <mat-icon class="type-icon oev-icon">directions_bus</mat-icon>
+                <mat-icon *ngIf="showHaltestellen" class="check-icon"
+                  >check_box</mat-icon
+                >
+                <mat-icon *ngIf="!showHaltestellen" class="uncheck-icon"
+                  >check_box_outline_blank</mat-icon
+                >
+                <span class="item-label">ÖV-Haltestellen</span>
+                <span
+                  class="material-icons settings-btn"
+                  [class.disabled]="!showHaltestellen"
+                  (click)="handleSettingsClick('haltestellen', $event)"
+                  >settings</span
+                >
+              </div>
+            </button>
+            <div
+              *ngIf="expandedSettings === 'haltestellen'"
+              class="layer-settings-panel"
+              (click)="$event.stopPropagation()"
+            >
+              <span class="slider-label"
+                >Transparenz:
+                {{ getOpacity("haltestellen") * 100 | number: "1.0-0" }}%</span
+              >
+              <input
+                type="range"
+                class="opacity-slider"
+                min="0"
+                max="1"
+                step="0.05"
+                [value]="getOpacity('haltestellen')"
+                (input)="setOpacity('haltestellen', $any($event.target).value)"
+              />
+            </div>
+            <button
+              mat-menu-item
+              (click)="handleToggle($event, 'Hangneigung')"
+              class="custom-menu-item"
+            >
+              <div class="menu-item-content">
+                <mat-icon class="type-icon danger-icon">landscape</mat-icon>
+                <mat-icon *ngIf="showHangneigung" class="check-icon"
+                  >check_box</mat-icon
+                >
+                <mat-icon *ngIf="!showHangneigung" class="uncheck-icon"
+                  >check_box_outline_blank</mat-icon
+                >
+                <span class="item-label">Hangneigung über 30°</span>
+                <span
+                  class="material-icons settings-btn"
+                  [class.disabled]="!showHangneigung"
+                  (click)="handleSettingsClick('hangneigung', $event)"
+                  >settings</span
+                >
+              </div>
+            </button>
+            <div
+              *ngIf="expandedSettings === 'hangneigung'"
+              class="layer-settings-panel"
+              (click)="$event.stopPropagation()"
+            >
+              <span class="slider-label"
+                >Transparenz:
+                {{ getOpacity("hangneigung") * 100 | number: "1.0-0" }}%</span
+              >
+              <input
+                type="range"
+                class="opacity-slider"
+                min="0"
+                max="1"
+                step="0.05"
+                [value]="getOpacity('hangneigung')"
+                (input)="setOpacity('hangneigung', $any($event.target).value)"
+              />
+            </div>
+            <button
+              mat-menu-item
+              (click)="handleToggle($event, 'Wanderwege')"
+              class="custom-menu-item"
+            >
+              <div class="menu-item-content">
+                <mat-icon class="type-icon trail-icon"
+                  >directions_walk</mat-icon
+                >
+                <mat-icon *ngIf="showWanderwege" class="check-icon"
+                  >check_box</mat-icon
+                >
+                <mat-icon *ngIf="!showWanderwege" class="uncheck-icon"
+                  >check_box_outline_blank</mat-icon
+                >
+                <span class="item-label">Wanderwege</span>
+                <span
+                  class="material-icons settings-btn"
+                  [class.disabled]="!showWanderwege"
+                  (click)="handleSettingsClick('wanderwege', $event)"
+                  >settings</span
+                >
+              </div>
+            </button>
+            <div
+              *ngIf="expandedSettings === 'wanderwege'"
+              class="layer-settings-panel"
+              (click)="$event.stopPropagation()"
+            >
+              <span class="slider-label"
+                >Transparenz:
+                {{ getOpacity("wanderwege") * 100 | number: "1.0-0" }}%</span
+              >
+              <input
+                type="range"
+                class="opacity-slider"
+                min="0"
+                max="1"
+                step="0.05"
+                [value]="getOpacity('wanderwege')"
+                (input)="setOpacity('wanderwege', $any($event.target).value)"
+              />
+            </div>
+            <button
+              mat-menu-item
+              (click)="handleToggle($event, 'Sperrungen')"
+              class="custom-menu-item"
+            >
+              <div class="menu-item-content">
+                <mat-icon class="type-icon warn-icon">warning</mat-icon>
+                <mat-icon *ngIf="showSperrungen" class="check-icon"
+                  >check_box</mat-icon
+                >
+                <mat-icon *ngIf="!showSperrungen" class="uncheck-icon"
+                  >check_box_outline_blank</mat-icon
+                >
+                <span class="item-label">Sperrungen Wanderwege</span>
+                <span
+                  class="material-icons settings-btn"
+                  [class.disabled]="!showSperrungen"
+                  (click)="handleSettingsClick('sperrungen', $event)"
+                  >settings</span
+                >
+              </div>
+            </button>
+            <div
+              *ngIf="expandedSettings === 'sperrungen'"
+              class="layer-settings-panel"
+              (click)="$event.stopPropagation()"
+            >
+              <span class="slider-label"
+                >Transparenz:
+                {{ getOpacity("sperrungen") * 100 | number: "1.0-0" }}%</span
+              >
+              <input
+                type="range"
+                class="opacity-slider"
+                min="0"
+                max="1"
+                step="0.05"
+                [value]="getOpacity('sperrungen')"
+                (input)="setOpacity('sperrungen', $any($event.target).value)"
+              />
+            </div>
+            <button
+              mat-menu-item
+              (click)="handleToggle($event, 'Schutzgebiete')"
+              class="custom-menu-item"
+            >
+              <div class="menu-item-content">
+                <mat-icon class="type-icon eco-icon">eco</mat-icon>
+                <mat-icon *ngIf="showSchutzgebiete" class="check-icon"
+                  >check_box</mat-icon
+                >
+                <mat-icon *ngIf="!showSchutzgebiete" class="uncheck-icon"
+                  >check_box_outline_blank</mat-icon
+                >
+                <span class="item-label">Schutzgebiete</span>
+                <span
+                  class="material-icons settings-btn"
+                  [class.disabled]="!showSchutzgebiete"
+                  (click)="handleSettingsClick('schutzgebiete', $event)"
+                  >settings</span
+                >
+              </div>
+            </button>
+            <div
+              *ngIf="expandedSettings === 'schutzgebiete'"
+              class="layer-settings-panel"
+              (click)="$event.stopPropagation()"
+            >
+              <span class="slider-label"
+                >Transparenz:
+                {{ getOpacity("schutzgebiete") * 100 | number: "1.0-0" }}%</span
+              >
+              <input
+                type="range"
+                class="opacity-slider"
+                min="0"
+                max="1"
+                step="0.05"
+                [value]="getOpacity('schutzgebiete')"
+                (input)="setOpacity('schutzgebiete', $any($event.target).value)"
+              />
+            </div>
+            <button
+              mat-menu-item
+              (click)="handleToggle($event, 'Schiessanzeigen')"
+              class="custom-menu-item"
+            >
+              <div class="menu-item-content">
+                <mat-icon class="type-icon danger-icon">crisis_alert</mat-icon>
+                <mat-icon *ngIf="showSchiessanzeigen" class="check-icon"
+                  >check_box</mat-icon
+                >
+                <mat-icon *ngIf="!showSchiessanzeigen" class="uncheck-icon"
+                  >check_box_outline_blank</mat-icon
+                >
+                <span class="item-label">Schiessanzeigen (VBS)</span>
+                <span
+                  class="material-icons settings-btn"
+                  [class.disabled]="!showSchiessanzeigen"
+                  (click)="handleSettingsClick('schiessanzeigen', $event)"
+                  >settings</span
+                >
+              </div>
+            </button>
+            <div
+              *ngIf="expandedSettings === 'schiessanzeigen'"
+              class="layer-settings-panel"
+              (click)="$event.stopPropagation()"
+            >
+              <span class="slider-label"
+                >Transparenz:
+                {{
+                  getOpacity("schiessanzeigen") * 100 | number: "1.0-0"
+                }}%</span
+              >
+              <input
+                type="range"
+                class="opacity-slider"
+                min="0"
+                max="1"
+                step="0.05"
+                [value]="getOpacity('schiessanzeigen')"
+                (input)="
+                  setOpacity('schiessanzeigen', $any($event.target).value)
+                "
+              />
+            </div>
+            <button
+              mat-menu-item
+              (click)="handleToggle($event, 'Herdenschutzhunde')"
+              class="custom-menu-item"
+            >
+              <div class="menu-item-content">
+                <mat-icon class="type-icon pets-icon">pets</mat-icon>
+                <mat-icon *ngIf="showHerdenschutzhunde" class="check-icon"
+                  >check_box</mat-icon
+                >
+                <mat-icon *ngIf="!showHerdenschutzhunde" class="uncheck-icon"
+                  >check_box_outline_blank</mat-icon
+                >
+                <span class="item-label">Herdenschutzhunde</span>
+                <span
+                  class="material-icons settings-btn"
+                  [class.disabled]="!showHerdenschutzhunde"
+                  (click)="handleSettingsClick('herdenschutzhunde', $event)"
+                  >settings</span
+                >
+              </div>
+            </button>
+            <div
+              *ngIf="expandedSettings === 'herdenschutzhunde'"
+              class="layer-settings-panel"
+              (click)="$event.stopPropagation()"
+            >
+              <span class="slider-label"
+                >Transparenz:
+                {{
+                  getOpacity("herdenschutzhunde") * 100 | number: "1.0-0"
+                }}%</span
+              >
+              <input
+                type="range"
+                class="opacity-slider"
+                min="0"
+                max="1"
+                step="0.05"
+                [value]="getOpacity('herdenschutzhunde')"
+                (input)="
+                  setOpacity('herdenschutzhunde', $any($event.target).value)
+                "
+              />
+            </div>
+            <mat-divider></mat-divider>
+            <div class="menu-section-title">Infrastruktur (OSM)</div>
+            <button
+              mat-menu-item
+              (click)="handleToggle($event, 'Fountains')"
+              class="custom-menu-item"
+            >
+              <div class="menu-item-content">
+                <mat-icon class="type-icon water-icon">water_drop</mat-icon>
+                <mat-icon *ngIf="showFountains" class="check-icon"
+                  >check_box</mat-icon
+                >
+                <mat-icon *ngIf="!showFountains" class="uncheck-icon"
+                  >check_box_outline_blank</mat-icon
+                >
+                <span class="item-label">Brunnen</span>
+                <span
+                  class="material-icons settings-btn"
+                  [class.disabled]="!showFountains"
+                  (click)="handleSettingsClick('fountains', $event)"
+                  >settings</span
+                >
+              </div>
+            </button>
+            <div
+              *ngIf="expandedSettings === 'fountains'"
+              class="layer-settings-panel"
+              (click)="$event.stopPropagation()"
+            >
+              <span class="slider-label"
+                >Transparenz:
+                {{ getOpacity("fountains") * 100 | number: "1.0-0" }}%</span
+              >
+              <input
+                type="range"
+                class="opacity-slider"
+                min="0"
+                max="1"
+                step="0.05"
+                [value]="getOpacity('fountains')"
+                (input)="setOpacity('fountains', $any($event.target).value)"
+              />
+            </div>
+            <button
+              mat-menu-item
+              (click)="handleToggle($event, 'Notfall')"
+              class="custom-menu-item"
+            >
+              <div class="menu-item-content">
+                <mat-icon class="type-icon danger-icon"
+                  >medical_services</mat-icon
+                >
+                <mat-icon *ngIf="showNotfall" class="check-icon"
+                  >check_box</mat-icon
+                >
+                <mat-icon *ngIf="!showNotfall" class="uncheck-icon"
+                  >check_box_outline_blank</mat-icon
+                >
+                <span class="item-label">Notfall / Medizin </span>
+                <span
+                  class="material-icons settings-btn"
+                  [class.disabled]="!showNotfall"
+                  (click)="handleSettingsClick('notfall', $event)"
+                  >settings</span
+                >
+              </div>
+            </button>
+            <div
+              *ngIf="expandedSettings === 'notfall'"
+              class="layer-settings-panel"
+              (click)="$event.stopPropagation()"
+            >
+              <span class="slider-label"
+                >Transparenz:
+                {{ getOpacity("notfall") * 100 | number: "1.0-0" }}%</span
+              >
+              <input
+                type="range"
+                class="opacity-slider"
+                min="0"
+                max="1"
+                step="0.05"
+                [value]="getOpacity('notfall')"
+                (input)="setOpacity('notfall', $any($event.target).value)"
+              />
+            </div>
+            <button
+              mat-menu-item
+              (click)="handleToggle($event, 'Feuerstellen')"
+              class="custom-menu-item"
+            >
+              <div class="menu-item-content">
+                <mat-icon class="type-icon fire-icon">outdoor_grill</mat-icon>
+                <mat-icon *ngIf="showFeuerstellen" class="check-icon"
+                  >check_box</mat-icon
+                >
+                <mat-icon *ngIf="!showFeuerstellen" class="uncheck-icon"
+                  >check_box_outline_blank</mat-icon
+                >
+                <span class="item-label">Feuerstellen</span>
+                <span
+                  class="material-icons settings-btn"
+                  [class.disabled]="!showFeuerstellen"
+                  (click)="handleSettingsClick('feuerstellen', $event)"
+                  >settings</span
+                >
+              </div>
+            </button>
+            <div
+              *ngIf="expandedSettings === 'feuerstellen'"
+              class="layer-settings-panel"
+              (click)="$event.stopPropagation()"
+            >
+              <span class="slider-label"
+                >Transparenz:
+                {{ getOpacity("feuerstellen") * 100 | number: "1.0-0" }}%</span
+              >
+              <input
+                type="range"
+                class="opacity-slider"
+                min="0"
+                max="1"
+                step="0.05"
+                [value]="getOpacity('feuerstellen')"
+                (input)="setOpacity('feuerstellen', $any($event.target).value)"
+              />
+            </div>
+            <button
+              mat-menu-item
+              (click)="handleToggle($event, 'Shelter')"
+              class="custom-menu-item"
+            >
+              <div class="menu-item-content">
+                <mat-icon class="type-icon eco-icon">cabin</mat-icon>
+                <mat-icon *ngIf="showShelter" class="check-icon"
+                  >check_box</mat-icon
+                >
+                <mat-icon *ngIf="!showShelter" class="uncheck-icon"
+                  >check_box_outline_blank</mat-icon
+                >
+                <span class="item-label">Unterstände und Hütten</span>
+                <span
+                  class="material-icons settings-btn"
+                  [class.disabled]="!showShelter"
+                  (click)="handleSettingsClick('shelter', $event)"
+                  >settings</span
+                >
+              </div>
+            </button>
+            <div
+              *ngIf="expandedSettings === 'shelter'"
+              class="layer-settings-panel"
+              (click)="$event.stopPropagation()"
+            >
+              <span class="slider-label"
+                >Transparenz:
+                {{ getOpacity("shelter") * 100 | number: "1.0-0" }}%</span
+              >
+              <input
+                type="range"
+                class="opacity-slider"
+                min="0"
+                max="1"
+                step="0.05"
+                [value]="getOpacity('shelter')"
+                (input)="setOpacity('shelter', $any($event.target).value)"
+              />
+            </div>
+          </mat-menu>
+        </div>
+
+        <div class="drawing-toolbar">
+          <div class="mode-toggle">
+            <div
+              class="mode-icon"
+              [class.active]="(mapAnimator.app_mode$ | async) === 'view'"
+              (click)="setAppMode('view')"
+              matTooltip="Ansichts-Modus"
+            >
+              <mat-icon>visibility</mat-icon>
+            </div>
+            <div
+              class="mode-icon"
+              [class.active]="(mapAnimator.app_mode$ | async) === 'edit'"
+              (click)="setAppMode('edit')"
+              matTooltip="Zeichnen-Modus"
+            >
+              <mat-icon>edit</mat-icon>
+            </div>
+            <div
+              class="mode-icon"
+              [class.active]="(mapAnimator.app_mode$ | async) === 'table'"
+              (click)="setAppMode('table')"
+              matTooltip="Marschzeittabellen-Modus"
+            >
+              <mat-icon>table_chart</mat-icon>
+            </div>
+          </div>
+
+          <ng-container *ngIf="!(mapAnimator.export_mode$ | async)">
+            <div class="toolbar-divider"></div>
+            <button
+              mat-icon-button
+              class="icon-magnet"
+              [class.active]="mapAnimator.magnetic_paths"
+              (click)="mapAnimator.toggle_magnetic_paths()"
+              matTooltip="Magnetisches Zeichnen"
+            >
+              <mat-icon
+                [style.color]="mapAnimator.magnetic_paths ? '#e57373' : 'grey'"
+                >auto_fix_high</mat-icon
+              >
+            </button>
+            <div class="toolbar-divider"></div>
+            <button
+              mat-icon-button
+              (click)="mapAnimator.invert_route()"
+              matTooltip="Tour umkehren"
+              [disabled]="!has_valid_path"
+            >
+              <mat-icon [style.color]="!has_valid_path ? 'grey' : '#e57373'"
+                >sync_alt</mat-icon
+              >
+            </button>
+            <div class="toolbar-divider"></div>
+            <button
+              mat-icon-button
+              (click)="mapAnimator.undo()"
+              matTooltip="Rückgängig machen"
+              [disabled]="!mapAnimator.can_undo()"
+            >
+              <mat-icon
+                [style.color]="!mapAnimator.can_undo() ? 'grey' : '#e57373'"
+                >undo</mat-icon
+              >
+            </button>
+            <div class="toolbar-divider"></div>
+            <button
+              mat-icon-button
+              (click)="mapAnimator.redo()"
+              matTooltip="Wiederherstellen"
+              [disabled]="!mapAnimator.can_redo()"
+            >
+              <mat-icon
+                [style.color]="!mapAnimator.can_redo() ? 'grey' : '#e57373'"
+                >redo</mat-icon
+              >
+            </button>
+            <div class="toolbar-divider"></div>
+            <button
+              mat-icon-button
+              (click)="mapAnimator.clear()"
+              matTooltip="Route verwerfen"
+              color="warn"
+              [disabled]="!has_valid_path"
+            >
+              <mat-icon>delete_outline</mat-icon>
+            </button>
+            <div class="toolbar-divider"></div>
+            <input
+              type="file"
+              id="gpx_upload_input"
+              style="display: none"
+              (change)="onFileSelected($event)"
+              accept=".gpx,.kml"
+            />
+            <button
+              mat-icon-button
+              (click)="triggerUpload()"
+              matTooltip="GPX/KML Route importieren"
+              color="primary"
+            >
+              <mat-icon>upload_file</mat-icon>
+            </button>
+          </ng-container>
+        </div>
       </as-split-area>
 
-      <as-split-area id="control-area" [className]="'splitView-' + direction" [size]="width" [minSize]="minWidth">
+      <as-split-area
+        id="control-area"
+        [className]="'splitView-' + direction"
+        [size]="mapAnimator.drawer_open ? width : 0"
+        [minSize]="mapAnimator.drawer_open ? minWidth : 0"
+        [visible]="mapAnimator.drawer_open"
+      >
         <ng-content></ng-content>
       </as-split-area>
     </as-split>
   </ng-template>
-
 </div>

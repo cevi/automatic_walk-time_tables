@@ -1,0 +1,44 @@
+[
+  {
+    "id": "mat-input-0",
+    "type": "text",
+    "class": "mat-mdc-input-element mat-mdc-autocomplete-trigger mat-mdc-form-field-input-control mdc-text-field__input ng-untouched ng-pristine ng-valid cdk-text-field-autofill-monitored",
+    "style": null,
+    "hidden": false
+  },
+  {
+    "id": "",
+    "type": "text",
+    "class": "export-input ng-untouched ng-pristine ng-valid",
+    "style": null,
+    "hidden": false
+  },
+  {
+    "id": "",
+    "type": "datetime-local",
+    "class": "export-input ng-untouched ng-pristine ng-valid",
+    "style": null,
+    "hidden": false
+  },
+  {
+    "id": "",
+    "type": "number",
+    "class": "export-input text-center bold-input ng-untouched ng-pristine ng-valid",
+    "style": null,
+    "hidden": false
+  },
+  {
+    "id": "",
+    "type": "text",
+    "class": "export-input ng-untouched ng-pristine ng-valid",
+    "style": null,
+    "hidden": false
+  },
+  {
+    "id": "",
+    "type": "range",
+    "class": "mdc-slider__input ng-untouched ng-pristine ng-valid",
+    "style": "padding: 0px 16px; width: calc(100% + 10px); left: -21px;",
+    "hidden": false
+  }
+]

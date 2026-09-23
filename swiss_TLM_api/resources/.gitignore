@@ -6,5 +6,15 @@ swissTLM3D_LV95_data*/*.shx
 swissTLM3D_LV95_data*/*.CPG
 swissTLM3D_LV95_data*/*.xml
 
+swissNAMES3D_data*/*.cpg
+swissNAMES3D_data*/*.dbf
+swissNAMES3D_data*/*.prj
+swissNAMES3D_data*/*.shp
+swissNAMES3D_data*/*.shx
+swissNAMES3D_data*/*.CPG
+swissNAMES3D_data*/*.xml
+
+SMV25_CHLV95LN02.gdb
+
 street_index.*
 swissname_data_index.*

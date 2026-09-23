@@ -6,6 +6,11 @@ from swiss_TML_api.name_finding.name_index import NameIndex
 logger = logging.getLogger(__name__)
 
 
+import threading
+
+lock = threading.Lock()
+
+
 class NameFinder(NameIndex):
     def __init__(self, force_rebuild=False, reduced=False):
         """
@@ -38,9 +43,10 @@ class NameFinder(NameIndex):
         logger.info("Search name for {} / {}.".format(lat, lon))
         start = time.time()
 
-        list_of_points = list(
-            self.index.nearest((lat, lon, lat, lon), num_results=n, objects="raw")
-        )
+        with lock:
+            list_of_points = list(
+                self.index.nearest((lat, lon, lat, lon), num_results=n, objects="raw")
+            )
 
         end = time.time()
         logger.info("Time for searching name: {}s".format(end - start))

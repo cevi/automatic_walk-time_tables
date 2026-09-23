@@ -5,11 +5,15 @@ import logging
 from http.client import IncompleteRead
 
 
-def build_qr_code_image_string(uuid, raw: bool = False):
+def build_qr_url(uuid):
     backend_domain = os.environ["BACKEND_DOMAIN"]
     clear_url = f"{backend_domain}/gpx/{uuid}.gpx"
     b64_url = base64.b64encode(clear_url.encode("ascii")).decode("ascii")
-    final_url = "https://swisstopo.app/u/" + b64_url
+    return "https://swisstopo.app/u/" + b64_url
+
+
+def build_qr_code_image_string(uuid, raw: bool = False):
+    final_url = build_qr_url(uuid)
     try:
         r = requests.post(
             "https://backend.qr.cevi.tools/png",

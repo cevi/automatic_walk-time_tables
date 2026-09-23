@@ -1,58 +1,40 @@
+.marschzeit-card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.04),
+    0 1px 4px rgba(0, 0, 0, 0.02);
+  border: 1px solid #e2e8f0;
+  margin-bottom: 24px;
+}
+
+h2 {
+  margin-top: 40px;
+}
+
 #export-button {
-
   margin-top: 25px;
-
+  border-radius: 24px;
+  padding: 0 24px;
 }
 
 .mat-select {
-  background-color: rgba(0, 0, 0, 0.04);
-  padding: 15px 5px;
-
+  background-color: transparent;
 }
 
 .mat-form-field {
   width: 100%;
 }
 
-.slider {
-  margin: 25px 0 0;
-  display: grid;
-
-}
-
 .help-button {
   margin: 0 20px 0 0;
-}
-
-@media (min-width: 600px) {
-  .slider {
-    grid-template-columns: 220px auto;
-    margin-top: 10px;
-  }
-}
-
-.mat-stepper-vertical {
-  background-color: transparent;
-}
-
-.slider label {
-
-  line-height: 45px;
-
-}
-
-.content-block {
-  margin-bottom: 20px;
+  display: block;
+  width: 200px;
+  margin: 0 auto;
 }
 
 .full-width {
   width: 100%;
-}
-
-.help-button {
-  display: block;
-  width: 200px;
-  margin: 0 auto;
 }
 
 .upload-area {
@@ -60,10 +42,154 @@
   display: block;
 }
 
-.error {
-  color: red;
+.error,
+.error_message {
+  color: #d93025;
 }
 
-.mat-stroked-button {
-  margin: 0 10px 0 0;
+.action-buttons-container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 16px;
+  padding-top: 16px;
+}
+
+.btn-primary-pill {
+  border-radius: 999px !important;
+  padding: 4px 32px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.3px;
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+}
+
+.btn-advanced {
+  border-radius: 999px !important;
+  color: #5f6368 !important;
+  font-weight: 500 !important;
+  padding: 0 16px 0 8px !important;
+  background-color: #f1f3f4 !important;
+  transition: all 0.2s ease !important;
+
+  &:hover {
+    background-color: #e8eaed !important;
+    color: #202124 !important;
+  }
+}
+
+.export-dialog h2 {
+  font-family: "Open Sans", "Inter", "Roboto", sans-serif;
+  font-weight: 600;
+  color: #202124;
+  margin-bottom: 24px;
+  letter-spacing: -0.2px;
+}
+
+.settings-form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.section-title {
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 24px;
+  letter-spacing: -0.2px;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+
+  @media (min-width: 768px) {
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: stretch;
+  }
+}
+
+.settings-card {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.04),
+    0 1px 4px rgba(0, 0, 0, 0.02);
+  border: 1px solid #e2e8f0;
+  padding: 32px;
+  align-items: flex-start;
+  text-align: left;
+
+  p {
+    color: #334155;
+    font-weight: 600;
+    margin-bottom: 12px;
+    margin-top: 0;
+  }
+
+  .mat-mdc-slide-toggle {
+    margin-top: 6px;
+    margin-bottom: 6px;
+  }
+}
+
+.slider-container {
+  width: 100%;
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+
+  label {
+    font-weight: 500;
+    color: #334155;
+    margin-bottom: 16px;
+  }
+
+  mat-slider {
+    width: 100%;
+    margin: 0;
+    --mdc-slider-handle-color: #3f51b5;
+    --mdc-slider-active-track-color: #3f51b5;
+    --mdc-slider-focus-handle-color: #3f51b5;
+    --mdc-slider-hover-handle-color: #3f51b5;
+    --mdc-slider-label-container-color: #3f51b5;
+  }
+}
+
+// Override slide-toggle to use indigo instead of default pink
+::ng-deep .mat-mdc-slide-toggle {
+  --mdc-switch-selected-track-color: #3f51b5 !important;
+  --mdc-switch-selected-handle-color: #fff !important;
+  --mdc-switch-selected-hover-track-color: #3949ab !important;
+  --mdc-switch-selected-focus-track-color: #3949ab !important;
+  --mdc-switch-selected-pressed-track-color: #3949ab !important;
+}
+
+.export-action-section {
+  display: flex;
+  justify-content: flex-end;
+  padding: 24px 0 64px 0;
+  margin-top: 16px;
+
+  #export-button {
+    width: auto !important;
+    min-width: 200px;
+    margin: 0;
+  }
 }

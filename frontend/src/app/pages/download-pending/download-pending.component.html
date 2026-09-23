@@ -1,21 +1,67 @@
+<div class="page-container">
+  @if (statusManager.status != "error") {
+    <div class="success-header">
+      <h2>Export läuft, bitte warten...</h2>
+      <p>Die Marschzeittabelle wird erstellt, dies kann einen Moment dauern.</p>
+    </div>
+    <div class="progress-section">
+      <mat-progress-bar mode="query"></mat-progress-bar>
+    </div>
+  } @else {
+    <div class="success-header">
+      <h2 style="color: #d93025">Export fehlgeschlagen</h2>
+      <p>Leider konnte die Marschzeittabelle nicht erstellt werden.</p>
+    </div>
+    <div class="progress-section">
+      <mat-progress-bar
+        mode="buffer"
+        value="80"
+        color="warn"
+      ></mat-progress-bar>
+    </div>
 
-<h2>Export läuft, wir bitten um Geduld.</h2>
+    <div class="error-banner">
+      <mat-icon class="error-icon">error_outline</mat-icon>
+      <div class="error-content">
+        <h3>Fehler aufgetreten</h3>
+        <p>{{ statusManager.status_message }}</p>
+      </div>
+    </div>
+  }
 
-@if (statusManager.status != 'error') {
-  <mat-progress-bar mode="query"></mat-progress-bar>
-} @else {
-  <mat-progress-bar  mode="buffer" value="80" color="warn"></mat-progress-bar>
-}
+  <div class="log-container">
+    <h3 class="log-title">Export Logs</h3>
+    @for (old_state of statusManager.history; track old_state) {
+      <div class="log-line">
+        <span class="timestamp">{{ old_state?.last_change }} | </span>
+        <span class="message">{{ old_state?.message }}</span>
+      </div>
+    }
+    <div
+      class="log-line"
+      [ngClass]="{
+        error: statusManager.status == 'error',
+        running:
+          statusManager.status != 'error' && statusManager.status != 'success',
+      }"
+    >
+      <span class="timestamp"
+        >{{ statusManager.last_change || "Jetzt" }} |
+      </span>
+      <span class="message">{{ statusManager.status_message }}</span>
+    </div>
+  </div>
 
-<p> Marschzeittabelle wird erstellt, wir bitten um Geduld.</p>
-@for (old_state of statusManager.history; track old_state) {
-  <p class="old_state">
-    &nbsp;- <b>{{old_state?.last_change}}:</b> {{old_state?.message}}
-  </p>
-}
-<p id="status_message" [ngClass]="{'error_message': statusManager.status == 'error'}"><b>Status: </b>{{statusManager.status_message}} <i> ({{statusManager.status}})</i></p>
-
-
-@if (statusManager.status == 'error') {
-  <button mat-stroked-button color="warn" routerLink="/">Neuer Versuch starten</button>
-}
+  @if (statusManager.status == "error") {
+    <div class="footer-actions">
+      <button
+        mat-stroked-button
+        color="warn"
+        class="restart-btn"
+        routerLink="/"
+      >
+        Neuer Versuch starten
+      </button>
+    </div>
+  }
+</div>

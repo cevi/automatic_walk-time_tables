@@ -16,7 +16,7 @@ import automatic_walk_time_tables.utils.geometry_utils
 from automatic_walk_time_tables.generator_status import GeneratorStatus
 from automatic_walk_time_tables.utils import path
 from automatic_walk_time_tables.utils.point import Point_LV95
-from automatic_walk_time_tables.utils.qr import build_qr_code_image_string
+from automatic_walk_time_tables.utils.qr import build_qr_code_image_string, build_qr_url
 from server_logging.status_handler import ExportStateLogger
 from automatic_walk_time_tables.utils.error import UserException
 
@@ -118,6 +118,34 @@ class MapCreator:
         if map_scaling is None:
             map_scaling = self.auto_select_map_scaling()
 
+        # Determine appropriate pk tile based on map scaling
+        if map_scaling <= 10000:
+            pk_val = 10
+        elif map_scaling <= 25000:
+            pk_val = 25
+        elif map_scaling <= 50000:
+            pk_val = 50
+        elif map_scaling <= 100000:
+            pk_val = 100
+        elif map_scaling <= 200000:
+            pk_val = 200
+        elif map_scaling <= 500000:
+            pk_val = 500
+        else:
+            pk_val = 1000
+
+        resolved_layers = []
+        for layer in map_layers:
+            if layer == "ch.swisstopo.pixelkarte-farbe":
+                if pk_val == 10:
+                    resolved_layers.append("ch.swisstopo.landeskarte-farbe-10")
+                else:
+                    resolved_layers.append(f"{layer}-pk{pk_val}.noscale")
+            else:
+                resolved_layers.append(layer)
+
+        map_layers = resolved_layers
+
         map_centers = self.create_map_centers(map_scaling)
 
         if len(map_centers) > 10:
@@ -133,14 +161,14 @@ class MapCreator:
             base_url = "{}://{}:{}".format(
                 print_api_protocol, print_api_base_url, print_api_port
             )
-            url = "{}/print/default/report.pdf".format(base_url)
+            url = "{}/print/swisstopo/report.pdf".format(base_url)
 
             self.logger.debug("Posting to mapfish: " + url)
 
             response_obj = None
 
             try:
-                response_obj = requests.post(url, data=json.dumps(query_json))
+                response_obj = requests.post(url, json=query_json)
             except requests.exceptions.ConnectionError:
                 self.logger.error(
                     "Could not connect to mapfish print server. Is the server running?"
@@ -287,15 +315,15 @@ class MapCreator:
                     "symbolizers": [
                         {
                             "type": "line",
-                            "strokeColor": "#E88615",
-                            "strokeOpacity": 0.5,
+                            "strokeColor": "#ffffff",
+                            "strokeOpacity": 0.75,
                             "strokeWidth": 2.5,
                         },
                         {
                             "type": "line",
-                            "strokeColor": "#E88615",
-                            "strokeOpacity": 0.75,
-                            "strokeWidth": 0.5,
+                            "strokeColor": "#efa038",
+                            "strokeOpacity": 0.5,
+                            "strokeWidth": 1.25,
                         },
                     ]
                 },
@@ -311,7 +339,6 @@ class MapCreator:
                 map_layers,
             )
         )
-
         point_layers = []
         for i, point in enumerate(way_points.way_points):
             lv95 = point.point.to_LV95()
@@ -322,6 +349,7 @@ class MapCreator:
             point_layer = self.create_point_json(
                 lv95,
                 point,
+                color="#d32f2f",
                 label=self.name_points_in_export or self.number_points_in_export,
             )
             point_layers.append(point_layer)
@@ -329,9 +357,12 @@ class MapCreator:
         for i, point in enumerate(pois.way_points):
             lv95 = point.point.to_LV95()
 
-            # TODO: currently, we convert to LV95, is there a way to stick to LV03 also for mapfish?
-
-            point_layer = self.create_point_json(lv95, point, "#00BFFF", pointRadius=7)
+            point_layer = self.create_point_json(
+                lv95,
+                point,
+                color="#d32f2f",
+                label=self.name_points_in_export or self.number_points_in_export,
+            )
             point_layers.append(point_layer)
 
         qr_code_string = build_qr_code_image_string(self.uuid)
@@ -348,7 +379,7 @@ class MapCreator:
             "map": {
                 "center": center,
                 "scale": map_scaling,
-                "dpi": 250,
+                "dpi": 508,
                 "pdfA": True,
                 "projection": "EPSG:2056",
                 "rotation": 0,
@@ -359,6 +390,7 @@ class MapCreator:
         # Only include qr_code when we actually received a valid QR image
         if qr_code_string:
             attributes["qr_code"] = qr_code_string
+            attributes["qr_url"] = build_qr_url(self.uuid)
 
         query_json = {
             "layout": "A4 landscape",
@@ -369,7 +401,7 @@ class MapCreator:
         return query_json
 
     def create_point_json(
-        self, lv95, point, color="#FF0000", pointRadius=5, label=False
+        self, lv95, point, color="#FF0000", pointRadius=3, label=False
     ):
         point_layer = {
             "geoJson": {
@@ -394,12 +426,12 @@ class MapCreator:
                         {
                             "type": "point",
                             "fillColor": color,
-                            "fillOpacity": 0,
-                            "rotation": "30",
+                            "fillOpacity": 1,
+                            "rotation": "0",
                             "graphicName": "circle",
-                            "graphicOpacity": 0.4,
+                            "graphicOpacity": 1,
                             "pointRadius": pointRadius,
-                            "strokeColor": color,
+                            "strokeColor": "#ffffff",
                             "strokeOpacity": 1,
                             "strokeWidth": 2,
                             "strokeLinecap": "round",
@@ -407,13 +439,13 @@ class MapCreator:
                         },
                         {
                             "type": "text",
-                            "fontColor": "#e30613",
+                            "fontColor": color,
                             "fontFamily": "sans-serif",
                             "fontSize": "8px",
                             "fontStyle": "normal",
                             "haloColor": "#ffffff",
-                            "haloOpacity": "0.5",
-                            "haloRadius": ".5",
+                            "haloOpacity": "1",
+                            "haloRadius": "3",
                             "label": point.name if label else "",
                             "fillColor": color,
                             "fillOpacity": 0,
@@ -421,6 +453,8 @@ class MapCreator:
                             "labelRotation": "0",
                             "labelXOffset": "0",
                             "labelYOffset": "-12",
+                            "conflictResolution": True,
+                            "goodnessOfFit": 0.5,
                         },
                     ]
                 },
@@ -431,15 +465,17 @@ class MapCreator:
         return point_layer
 
     def create_map_layer(self, layer, default_matrices):
-        image_type = "jpeg"
-
-        if layer not in (
-            "ch.swisstopo.pixelkarte-farbe",
-            "ch.swisstopo.pixelkarte-grau",
-            "ch.swisstopo.pixelkarte-farbe-pk25",
-            "ch.swisstopo.pixelkarte-grau-pk25",
-            "ch.swisstopo.swissimage-product",
+        if (
+            "pixelkarte" in layer
+            or "landeskarte" in layer
+            or layer == "ch.swisstopo.swissimage-product"
         ):
+            image_type = (
+                "jpeg"
+                if "pixelkarte" in layer or layer == "ch.swisstopo.swissimage-product"
+                else "png"
+            )
+        else:
             image_type = "png"
 
         return {
