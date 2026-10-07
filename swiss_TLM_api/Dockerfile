@@ -1,12 +1,12 @@
-FROM python:3.11.2-slim
+FROM python:3.11.17-slim-bookworm
 
 ENV PIP_ROOT_USER_ACTION=ignore
 
 WORKDIR /app
 
-# Needed for RTree pip package
+# Needed for RTree and Fiona pip packages
 RUN apt update
-RUN apt -y install libspatialindex-dev curl
+RUN apt -y install libspatialindex-dev libexpat1 curl
 
 # Install requirements
 COPY ./requirements.txt /app
