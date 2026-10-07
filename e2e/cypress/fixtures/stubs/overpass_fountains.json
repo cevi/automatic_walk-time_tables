@@ -1,0 +1,18 @@
+{
+  "elements": [
+    {
+      "type": "node",
+      "id": 1,
+      "lat": 47.3082,
+      "lon": 8.8581,
+      "tags": { "amenity": "drinking_water" }
+    },
+    {
+      "type": "way",
+      "id": 2,
+      "center": { "lat": 47.3075, "lon": 8.8602 },
+      "tags": { "amenity": "fountain" }
+    },
+    { "type": "relation", "id": 3, "tags": { "amenity": "fountain" } }
+  ]
+}
