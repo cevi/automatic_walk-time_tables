@@ -1,0 +1,20 @@
+{
+  "results": [
+    {
+      "id": 2001,
+      "weight": 1,
+      "attrs": {
+        "detail": "wald zh bahnhof",
+        "featureId": "8503205",
+        "label": "<b>Wald (ZH), Bahnhof</b>",
+        "lat": 47.2755,
+        "lon": 8.9135,
+        "x": 1236720.0,
+        "y": 2712450.0,
+        "origin": "haltestellen",
+        "zoomlevel": 10,
+        "geom_st_box2d": "BOX(2712450 1236720,2712450 1236720)"
+      }
+    }
+  ]
+}

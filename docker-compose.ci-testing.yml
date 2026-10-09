@@ -9,6 +9,9 @@ services:
     depends_on:
       awt-frontend:
         condition: service_healthy
+      # the routing graph gets downloaded on startup, drawing a route fails until then
+      awt-valhalla:
+        condition: service_healthy
 
     entrypoint: cypress run --browser chrome
 
@@ -41,6 +44,8 @@ services:
 
   awt-mapfish-print-server:
 
+    environment:
+      CATALINA_OPTS: "-Dfile.encoding=UTF-8"
     env_file:
       - .env.ci-testing
     
@@ -107,6 +112,11 @@ services:
       - force_rebuild=False  # forces a rebuild of the routing tiles with "True"
     env_file:
       - .env.ci-testing
+    healthcheck:
+      test: "curl -f http://localhost:8002/status"
+      interval: 5s
+      timeout: 5s
+      retries: 240
 
   awt-store-api:
     build:

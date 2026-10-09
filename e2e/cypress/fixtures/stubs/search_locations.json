@@ -1,0 +1,36 @@
+{
+  "results": [
+    {
+      "id": 1001,
+      "weight": 1,
+      "attrs": {
+        "detail": "wald zh 8636 wald zh",
+        "featureId": "",
+        "label": "<i>Flurname</i> <b>Wald</b>hof (ZH)",
+        "lat": 47.2801,
+        "lon": 8.9203,
+        "x": 1237500.0,
+        "y": 2712300.0,
+        "origin": "gazetteer",
+        "zoomlevel": 10,
+        "geom_st_box2d": "BOX(2712300 1237500,2712300 1237500)"
+      }
+    },
+    {
+      "id": 1002,
+      "weight": 1,
+      "attrs": {
+        "detail": "wald zh",
+        "featureId": "117",
+        "label": "<b>Wald (ZH)</b>",
+        "lat": 47.2759,
+        "lon": 8.9141,
+        "x": 1236770.0,
+        "y": 2712500.0,
+        "origin": "gg25",
+        "zoomlevel": 4294967295,
+        "geom_st_box2d": "BOX(2708000 1233000,2717000 1240500)"
+      }
+    }
+  ]
+}

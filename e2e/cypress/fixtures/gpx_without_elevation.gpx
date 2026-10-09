@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="demo" xmlns="http://www.topografix.com/GPX/1/1">
+<metadata><name>Ohne Hoehe</name></metadata>
+<trk><name>Ohne Hoehe</name><trkseg>
+  <trkpt lat="47.349600" lon="8.492000"></trkpt>
+  <trkpt lat="47.350500" lon="8.492600"></trkpt>
+  <trkpt lat="47.351400" lon="8.493200"></trkpt>
+  <trkpt lat="47.352300" lon="8.493800"></trkpt>
+  <trkpt lat="47.353200" lon="8.494400"></trkpt>
+  <trkpt lat="47.354100" lon="8.495000"></trkpt>
+  <trkpt lat="47.355000" lon="8.495600"></trkpt>
+  <trkpt lat="47.355900" lon="8.496200"></trkpt>
+  <trkpt lat="47.356800" lon="8.496800"></trkpt>
+  <trkpt lat="47.357700" lon="8.497400"></trkpt>
+  <trkpt lat="47.358600" lon="8.498000"></trkpt>
+  <trkpt lat="47.359500" lon="8.498600"></trkpt>
+  <trkpt lat="47.360400" lon="8.499200"></trkpt>
+  <trkpt lat="47.361300" lon="8.499800"></trkpt>
+  <trkpt lat="47.362200" lon="8.500400"></trkpt>
+  <trkpt lat="47.363100" lon="8.501000"></trkpt>
+  <trkpt lat="47.364000" lon="8.501600"></trkpt>
+  <trkpt lat="47.364900" lon="8.502200"></trkpt>
+  <trkpt lat="47.365800" lon="8.502800"></trkpt>
+  <trkpt lat="47.366700" lon="8.503400"></trkpt>
+</trkseg></trk>
+</gpx>

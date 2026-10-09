@@ -78,11 +78,7 @@ class AutomatedWalkTableGenerator:
     def __create_files(self):
         gpx_route_name = self.__path.route_name
 
-        name = (
-            self.__output_directory + "Route"
-            if gpx_route_name == ""
-            else self.__output_directory + gpx_route_name
-        )
+        name = self.__output_directory + self.__path.get_filename()
 
         if "is-retrieve" in self.options.keys():
             pass
@@ -105,8 +101,8 @@ class AutomatedWalkTableGenerator:
                     self.__path,
                 )
 
-            naming_fetcher = NamingTransformer()
-            self.__way_points = naming_fetcher.transform(self.__way_points)
+                naming_fetcher = NamingTransformer()
+                self.__way_points = naming_fetcher.transform(self.__way_points)
 
         equidistant_transformer = EquidistantTransformer(equidistant_distance=1)
         equidistant_way_points: path.Path = equidistant_transformer.transform(
@@ -180,7 +176,12 @@ class AutomatedWalkTableGenerator:
             self.__way_points,
             pois=self.__pois,
             file_name=name,
-            map_scaling=self.options["settings"]["map_scaling"],
+            # None lets the MapCreator pick a scale that fits the route
+            map_scaling=(
+                None
+                if self.options["settings"].get("auto_scale")
+                else self.options["settings"]["map_scaling"]
+            ),
             map_layers=list(
                 map(
                     lambda layer: layer.strip(),

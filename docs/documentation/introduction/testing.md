@@ -30,3 +30,11 @@ to open the Cypress GUI. From there, you can run the tests or develop new ones.
 Some test cases are copied form [ckolin/marschzeittabelle](https://github.com/ckolin/marschzeittabelle) where they got
 released under MIT license.
 :::
+
+## Backend Unit Tests
+
+The file parsers of the backend are covered by unit tests. Run them from the `backend` folder with
+
+```bash
+python -m unittest discover -s tests -t .
+```

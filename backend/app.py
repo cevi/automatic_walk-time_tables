@@ -14,8 +14,9 @@ from threading import Thread
 
 import polyline
 import requests
-from flask import Flask, request, send_file, redirect
+from flask import Flask, request, send_file, redirect, jsonify
 from flask_cors import CORS
+from werkzeug.routing import BaseConverter
 
 from automatic_walk_time_tables.path_transformers.douglas_peucker_transformer import (
     DouglasPeuckerTransformer,
@@ -52,8 +53,65 @@ from automatic_walk_time_tables.generator_status import GeneratorStatus
 
 logger = logging.getLogger(__name__)
 
+
+class ExportUUIDConverter(BaseConverter):
+    """Only matches UUIDs as created in /create_map (uuid4().hex). Anything
+    else, e.g. `..`, gets a 404 before it can be used in a file path."""
+
+    regex = "[0-9a-f]{32}"
+
+
 app = Flask(__name__)
+app.url_map.converters["export_uuid"] = ExportUUIDConverter
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
+
+
+@app.route("/get_name", methods=["POST"])
+def get_name():
+    try:
+        data = request.json
+        lat = data.get("lat")
+        lon = data.get("lon")
+
+        url = "http://awt-swiss-tml-api:1848/swiss_name"
+        payload = json.dumps([[lat, lon]])
+        headers = {"Content-Type": "application/json"}
+
+        req = requests.request("GET", url, headers=headers, data=payload)
+        resp = req.json()
+
+        name = ""
+        if len(resp) > 0 and resp[0]["offset"] <= 100:
+            name = resp[0]["swiss_name"]
+
+        return jsonify({"name": name})
+    except Exception as e:
+        import traceback
+
+        traceback.print_exc()
+        return jsonify({"name": ""})
+
+
+@app.route("/map_numbers", methods=["POST"])
+def get_map_numbers():
+    try:
+        data = request.json
+        if not data or not isinstance(data, list):
+            return jsonify({"error": "Expected a list of coords"}), 400
+
+        url = "http://awt-swiss-tml-api:1848/map_numbers"
+        payload = json.dumps(data)
+        headers = {"Content-Type": "application/json"}
+
+        # we send a GET with body to the swiss-tml-api
+        req = requests.request("GET", url, headers=headers, data=payload)
+        resp = req.text
+        return jsonify({"map_numbers": resp})
+
+    except Exception:
+        logger.error("Error retrieving map_numbers")
+        traceback.print_exc()
+        return jsonify({"map_numbers": ""})
 
 
 @app.route("/parse_route", methods=["POST"])
@@ -277,6 +335,15 @@ def create_export(options, uuid):
             path = extract_path(options, "route", "route_elevation")
             way_points = extract_path(options, "way_points", "way_points_elevation")
 
+            if "way_points_details" in options:
+                import json
+
+                details = json.loads(options["way_points_details"])
+                for i, wp in enumerate(way_points.way_points):
+                    if i < len(details):
+                        wp.name = details[i].get("name", "")
+                        wp.break_duration = details[i].get("break_duration", "")
+
             # calc POIs for the path
             pois_transformer = POIsTransformer(
                 pois_list_as_str=options["pois"] if "pois" in options else "",
@@ -344,7 +411,7 @@ def create_export(options, uuid):
             )
 
 
-@app.route("/status/<uuid>")
+@app.route("/status/<export_uuid:uuid>")
 def status(uuid):
     message = stateHandler.get_status(uuid)
     status_code = 200 if message["status"] != GeneratorStatus.ERROR else 400
@@ -372,7 +439,7 @@ def __delete_after_delay(base_path: str, uuid: str, delay=720):
     logger.info("Deleted folder %s" % base_path)
 
 
-@app.route("/download/<uuid>")
+@app.route("/download/<export_uuid:uuid>")
 def download(uuid):
     # Check if export is completed and still present in the 'output' folder
     base_path = pathlib.Path("./output/" + uuid + "/")
@@ -432,13 +499,43 @@ def download(uuid):
     )
 
 
-@app.route("/qr/<uuid>")
+@app.route("/qr/<export_uuid:uuid>")
 def generate_qr_image(uuid):
     qr_data = build_qr_code_image_string(uuid, raw=True)
     return send_file(io.BytesIO(qr_data), mimetype="image/jpg")
 
 
-@app.route("/retrieve/<uuid>")
+@app.route("/statistics")
+def retrieve_statistics():
+    days = request.args.get("days", default=30, type=int)
+
+    try:
+        response = requests.get(
+            os.environ["STORE_API_URL"] + "/statistics",
+            params={"days": days},
+            timeout=10,
+        )
+    except requests.RequestException as exc:
+        logger.error("Error retrieving statistics: %s", exc)
+        return app.response_class(
+            response=json.dumps(
+                {
+                    "status": GeneratorStatus.ERROR,
+                    "message": "Die Statistiken konnten nicht geladen werden.",
+                }
+            ),
+            status=502,
+            mimetype="application/json",
+        )
+
+    return app.response_class(
+        response=response.text,
+        status=response.status_code,
+        mimetype="application/json",
+    )
+
+
+@app.route("/retrieve/<export_uuid:uuid>")
 def retrieve_route(uuid):
     data = fetch_data_for_uuid(uuid)
     if data is not None:
@@ -489,7 +586,7 @@ def retrieve_route(uuid):
         )
 
 
-@app.route("/gpx/<uuid>.gpx")
+@app.route("/gpx/<export_uuid:uuid>.gpx")
 def generate_gpx(uuid):
     data = fetch_data_for_uuid(uuid)
 

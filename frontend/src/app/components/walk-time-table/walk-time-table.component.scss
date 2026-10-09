@@ -1,0 +1,290 @@
+.table-container {
+  width: 100%;
+  background: #ffffff;
+}
+
+.marschzeit-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-family: "Open Sans", "Inter", "Roboto", sans-serif;
+  font-size: 14px;
+  white-space: nowrap;
+
+  thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: #f8fafc;
+    box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
+
+    tr {
+      &.header-row-1,
+      &.header-row-2,
+      &.header-row-3,
+      &.header-row-4 {
+        th {
+          padding: 8px 16px;
+          border-bottom: 1px solid #e2e8f0;
+          border-right: 1px solid #e2e8f0;
+          text-transform: none;
+          background-color: #f8fafc;
+          font-size: 14px;
+          font-weight: 500;
+          color: #1e293b;
+
+          &:last-child {
+            border-right: none;
+          }
+
+          &.label-cell {
+            text-align: left;
+            font-weight: 600;
+            background-color: #f1f5f9;
+            padding-left: 24px;
+            color: #334155;
+          }
+
+          &.input-cell {
+            background-color: #ffffff;
+            padding: 0;
+            border-right: 1px solid #e2e8f0;
+
+            &.map-number-cell {
+              padding: 12px 16px;
+              text-align: left;
+              color: #475569;
+              font-family: inherit;
+              box-sizing: border-box;
+            }
+
+            input.export-input {
+              width: 100%;
+              height: 100%;
+              border: none;
+              background: transparent;
+              padding: 12px 16px;
+              box-sizing: border-box;
+              font-family: inherit;
+              font-size: 14px;
+              color: #0f172a;
+              color-scheme: light;
+
+              &.bold-input {
+                font-weight: bold;
+              }
+
+              &:focus {
+                outline: none;
+                background: #f8fafc;
+                box-shadow: inset 0 0 0 2px #3b82f6;
+              }
+            }
+          }
+        }
+      }
+
+      &.column-names {
+        th {
+          padding: 20px 16px;
+          text-align: center;
+          font-weight: 600;
+          font-size: 13px;
+          letter-spacing: 0.5px;
+          color: #475569;
+          background-color: #f8fafc;
+          border-bottom: 3px solid #3b82f6; /* Vivid blue accent under header */
+          text-transform: uppercase;
+
+          &:first-child {
+            text-align: left;
+            padding-left: 20px;
+          }
+
+          &:last-child {
+            padding-right: 20px;
+          }
+        }
+      }
+    }
+  }
+
+  tbody {
+    tr {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      background-color: #ffffff;
+
+      &:nth-child(even) {
+        background-color: #f8fafc;
+      }
+
+      &:hover,
+      &.row-highlighted {
+        background-color: #f0f9ff;
+        transform: translateY(-1px);
+        box-shadow:
+          0 4px 6px -1px rgba(0, 0, 0, 0.05),
+          0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        position: relative;
+        z-index: 10;
+
+        td {
+          border-bottom-color: transparent;
+        }
+      }
+
+      td {
+        padding: 16px 12px;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+        color: #334155;
+
+        &:first-child {
+          padding-left: 20px;
+        }
+
+        &:last-child {
+          padding-right: 20px;
+        }
+
+        &.col-name {
+          width: 360px;
+        }
+
+        &.col-break {
+          width: 110px;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+          width: 100%;
+          border: 1px solid transparent;
+          background: transparent;
+          color: #0f172a;
+          font-family: inherit;
+          font-size: 14px;
+          padding: 10px 16px;
+          border-radius: 6px;
+          transition: all 0.2s ease;
+          box-sizing: border-box;
+
+          &:hover:not(:disabled) {
+            background: rgba(0, 0, 0, 0.03);
+          }
+
+          &:focus {
+            outline: none;
+            border: 1px solid #3b82f6;
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+          }
+
+          &:disabled {
+            color: #94a3b8;
+            cursor: not-allowed;
+          }
+        }
+
+        input[type="number"] {
+          text-align: center;
+
+          &::placeholder {
+            color: #94a3b8;
+            font-size: 13px;
+          }
+        }
+      }
+
+      &:last-child td {
+        border-bottom: none;
+      }
+    }
+  }
+}
+
+.text-right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.sum-col {
+  color: #475569;
+  font-weight: 600;
+}
+
+/* Pill badge for arrival time */
+.highlight-col {
+  text-align: center;
+
+  .time-badge {
+    display: inline-block;
+    background-color: hsl(217, 91%, 95%);
+    color: hsl(217, 91%, 40%);
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.3px;
+    font-variant-numeric: tabular-nums;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+  }
+}
+
+.action-icon {
+  cursor: pointer;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  color: #cbd5e1;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-left: 8px;
+
+  &:not(.disabled-icon):hover {
+    color: #eab308;
+    transform: scale(1.15) rotate(-5deg);
+  }
+
+  &.delete-icon {
+    &:not(.disabled-icon):hover {
+      color: #ef4444;
+      transform: scale(1.15) rotate(5deg);
+    }
+  }
+
+  &.disabled-icon {
+    opacity: 0.3;
+    pointer-events: none;
+    cursor: default;
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 64px 20px !important;
+
+  h3 {
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #0f172a;
+    font-size: 18px;
+  }
+
+  p {
+    margin-top: 0;
+    color: #475569;
+    margin-bottom: 24px;
+    font-size: 14px;
+  }
+
+  button {
+    border-radius: 999px;
+    padding: 8px 24px;
+    letter-spacing: 0.3px;
+    font-weight: 600;
+    // Basic fallback or mat-flat-button standard shadow
+  }
+}

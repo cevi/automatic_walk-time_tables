@@ -2,6 +2,26 @@
 
 A complete, technical changelog is available at [GitHub](https://github.com/cevi/automatic_walk-time_tables/releases).
 
+## Version 7 - New Route Editor & Map Layers
+- Reworked route editor: floating tool menu, snapping, moving and deleting points, undo history (7.0.0)
+- Waypoints are named automatically and can be renamed and given breaks before the export (7.0.0)
+- Redesigned walk-time table (Marschzeittabelle) and preview table (7.0.0)
+- Additional map layers: public transport stops, fountains, SAC huts, fire pits (Brätlistellen), protected areas and a black and white base map (7.0.0)
+- Info popups for public transport stops and fountains, right click shows the coordinates (7.0.0)
+- Place search (7.0.0)
+- Improved waypoint naming: buildings, schools, sports facilities, dams, spot heights and path intersections are now part of the name index (7.0.0)
+- Routing engine considers ground level (bridges and tunnels) (7.0.0)
+- Map export uses the native tile resolution of 508 dpi (7.0.0)
+- QR code in the PDF is clickable (7.0.0)
+- Statistics page (7.0.0)
+- Routes are limited to 21 waypoints (7.0.0)
+- Imported routes: fetch elevation for KML files with elevation set to zero, support all KML line geometries and GPX files without elevation (7.0.0)
+- Automatic map scale selection works again (7.0.0)
+- Special characters in waypoint names are exported correctly (7.0.0)
+- Security fixes: route ids and file names are validated (7.0.0)
+- Bug fixes
+- Dependency updates
+
 ## Version 6 - Route storing & QR Codes
 - Exports are now stored in a database. This allows for further exports and:
 - QR Code generation for import into swisstopo app

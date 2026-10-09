@@ -1,15 +1,16 @@
 .upload-area {
-
   position: relative;
   display: grid;
   justify-content: center;
   height: 150px;
   padding: 10px 0;
-  border: 1px dotted rgba(0,0,0,.12);
+  border: 1px dotted rgba(0, 0, 0, 0.12);
 
-  .action-description, .small-font, .icon {
+  .action-description,
+  .small-font,
+  .icon {
     display: block;
-    color: rgba(0,0,0,.65);
+    color: rgba(0, 0, 0, 0.65);
     text-align: center;
     width: 100%;
   }
@@ -37,6 +38,4 @@
   .select-file {
     width: 220px;
   }
-
 }
-

@@ -1,8 +1,122 @@
-.error_message {
-  color: red
+.page-container {
+  max-width: 600px;
+  margin: 40px auto;
+  font-family: "Open Sans", "Inter", "Roboto", sans-serif;
+  text-align: center;
+  color: #3c4043;
 }
 
-.old_state {
-  color: gray;
-  margin: 5px 0;
+.success-header {
+  margin-bottom: 24px;
+
+  h2 {
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  p {
+    color: #5f6368;
+    font-size: 15px;
+    margin: 0;
+  }
+}
+
+.progress-section {
+  margin-bottom: 24px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.error-banner {
+  background-color: #fce8e6;
+  border: 1px solid #fad2cf;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 24px;
+  margin-bottom: 24px;
+  text-align: left;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  color: #b3261e;
+  font-family: "Open Sans", "Inter", sans-serif;
+
+  .error-icon {
+    font-size: 24px;
+    height: 24px;
+    width: 24px;
+    flex-shrink: 0;
+  }
+
+  .error-content {
+    h3 {
+      margin: 0 0 4px 0;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    p {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+  }
+}
+
+.log-container {
+  background: #f8f9fa;
+  border-radius: 12px;
+  border: 1px solid #e8eaed;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
+  padding: 16px 20px;
+  text-align: left;
+  margin-bottom: 32px;
+  max-height: 300px;
+  overflow-y: auto;
+  font-family: "JetBrains Mono", "Roboto Mono", monospace;
+  font-size: 13px;
+
+  .log-title {
+    font-family: "Open Sans", "Inter", sans-serif;
+    font-weight: 600;
+    color: #202124;
+    margin-top: 0;
+    margin-bottom: 12px;
+    font-size: 14px;
+  }
+
+  .log-line {
+    color: #5f6368;
+    margin: 6px 0;
+    line-height: 1.4;
+
+    .timestamp {
+      color: #9aa0a6;
+      font-weight: 500;
+      margin-right: 8px;
+    }
+
+    &.error {
+      color: #d93025;
+      .timestamp {
+        color: #d93025;
+      }
+    }
+
+    &.running {
+      color: #1a73e8;
+      font-weight: 500;
+    }
+  }
+}
+
+.footer-actions {
+  .restart-btn {
+    border-radius: 24px;
+    padding: 0 32px;
+  }
 }

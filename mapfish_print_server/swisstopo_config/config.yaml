@@ -1,23 +1,22 @@
 templates:
-
   #===========================================================================
-  A4 landscape: !template
-    #===========================================================================
+  A4 landscape:
+    !template #===========================================================================
 
     reportTemplate: report.jrxml
     attributes:
-
-      scale: !string { }
+      scale: !string {}
 
       qr_code: !string {}
+      qr_url: !string {}
 
       map: !map
-        maxDpi: 250
+        maxDpi: 508
         width: 813
         height: 566
 
       northArrow: !northArrow
-        size: 50
+        size: 45
         default:
           graphic: "north_arrow.png"
 
@@ -25,11 +24,13 @@ templates:
         default:
           layers:
             - type: grid
-              origin: [ 2700000, 1200000 ]
-              spacing: [ 1000, 1000 ]
+              origin: [2700000, 1200000]
+              spacing: [1000, 1000]
               renderAsSvg: true
               gridColor: "#FFFFFF"
               rotateLabels: False
+              haloColor: "#FFFFFF"
+              haloRadius: 3
               labelColor: black
               valueFormat: "###,###"
               formatGroupingSeparator: " "
@@ -66,8 +67,7 @@ templates:
           overlayLayers: staticLayers
           map: map
       - !reportBuilder # compile all reports in current directory
-        directory: '.'
-      - !createMap { }
-      - !createScalebar { }
-      - !createNorthArrow { }
-
+        directory: "."
+      - !createMap {}
+      - !createScalebar {}
+      - !createNorthArrow {}
