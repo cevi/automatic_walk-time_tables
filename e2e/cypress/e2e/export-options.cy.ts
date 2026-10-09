@@ -1,4 +1,9 @@
-import { backend_url, export_route, upload_route } from "./utils";
+import {
+  backend_url,
+  export_route,
+  open_table_mode,
+  upload_route,
+} from "./utils";
 
 const DOWNLOAD_ZIP = "cypress/downloads/Download.zip";
 
@@ -30,7 +35,9 @@ describe("Export options", () => {
 
     cy.visit("/");
     upload_route("test_small.gpx");
-    cy.get(".mode-toggle").contains("table_chart").click();
+    // a route name is suggested once the way points are named, it would be
+    // inserted into a route name field that is cleared at that moment
+    open_table_mode();
     cy.get("#control-area").should("be.visible");
     cy.get("#export-button").should("be.enabled");
   });

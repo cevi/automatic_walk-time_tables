@@ -53,14 +53,16 @@ function expect_layers(expected: string[]) {
   });
 }
 
+function find_layer(win: any, name: string) {
+  return win.mapService
+    .get_map()
+    .getLayers()
+    .getArray()
+    .find((layer: any) => layer.get("name") === name);
+}
+
 function get_layer(name: string) {
-  return cy.window().then((win: any) =>
-    win.mapService
-      .get_map()
-      .getLayers()
-      .getArray()
-      .find((layer: any) => layer.get("name") === name),
-  );
+  return cy.window().then((win: any) => find_layer(win, name));
 }
 
 describe("Background maps", () => {
@@ -276,9 +278,11 @@ describe("Map overlays", () => {
       expect(request.query["data"]).to.contain("drinking_water");
     });
 
-    // elements without coordinates are skipped
-    get_layer("fountains").should((layer: any) => {
-      expect(layer.getSource().getFeatures()).to.have.length(2);
+    // elements without coordinates are skipped; the features are added once
+    // the response is parsed, thus the assertion must be retried
+    cy.window({ timeout: 10_000 }).should((win: any) => {
+      const features = find_layer(win, "fountains").getSource().getFeatures();
+      expect(features).to.have.length(2);
     });
   });
 
