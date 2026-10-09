@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="demo" xmlns="http://www.topografix.com/GPX/1/1">
+<metadata><name>Seeufer flach</name></metadata>
+<trk><name>Seeufer flach</name><trkseg>
+  <trkpt lat="47.360000" lon="8.540000"><ele>406.0</ele></trkpt>
+  <trkpt lat="47.359200" lon="8.540500"><ele>406.0</ele></trkpt>
+  <trkpt lat="47.358400" lon="8.541000"><ele>406.0</ele></trkpt>
+  <trkpt lat="47.357600" lon="8.541500"><ele>406.0</ele></trkpt>
+  <trkpt lat="47.356800" lon="8.542000"><ele>406.0</ele></trkpt>
+  <trkpt lat="47.356000" lon="8.542500"><ele>406.0</ele></trkpt>
+  <trkpt lat="47.355200" lon="8.543000"><ele>406.0</ele></trkpt>
+  <trkpt lat="47.354400" lon="8.543500"><ele>406.0</ele></trkpt>
+  <trkpt lat="47.353600" lon="8.544000"><ele>406.0</ele></trkpt>
+  <trkpt lat="47.352800" lon="8.544500"><ele>406.0</ele></trkpt>
+  <trkpt lat="47.352000" lon="8.545000"><ele>406.0</ele></trkpt>
+  <trkpt lat="47.351200" lon="8.545500"><ele>406.0</ele></trkpt>
+  <trkpt lat="47.350400" lon="8.546000"><ele>406.0</ele></trkpt>
+  <trkpt lat="47.349600" lon="8.546500"><ele>406.0</ele></trkpt>
+  <trkpt lat="47.348800" lon="8.547000"><ele>406.0</ele></trkpt>
+  <trkpt lat="47.348000" lon="8.547500"><ele>406.0</ele></trkpt>
+  <trkpt lat="47.347200" lon="8.548000"><ele>406.0</ele></trkpt>
+  <trkpt lat="47.346400" lon="8.548500"><ele>406.0</ele></trkpt>
+  <trkpt lat="47.345600" lon="8.549000"><ele>406.0</ele></trkpt>
+  <trkpt lat="47.344800" lon="8.549500"><ele>406.0</ele></trkpt>
+</trkseg></trk>
+</gpx>

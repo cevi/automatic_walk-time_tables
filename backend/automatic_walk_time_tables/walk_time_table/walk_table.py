@@ -33,6 +33,11 @@ def plot_elevation_profile(
     p.start()
     p.join()
 
+    if p.exitcode != 0:
+        logger.error(
+            "Plotting the elevation profile failed with exit code %s", p.exitcode
+        )
+
 
 def _plot_elevation_profile(file_name, legend_position, path_, pois, way_points):
     # clear the plot, plot heights of exported data from SchweizMobil
@@ -41,7 +46,8 @@ def _plot_elevation_profile(file_name, legend_position, path_, pois, way_points)
     heights = [p.point.h for p in path_.way_points]
     plt.plot([d / 1_000.0 for d in distances], heights, label="Wanderweg", zorder=1)
     # resize plot area
-    additional_space = log(max(heights) - min(heights)) * 25
+    # the +1 keeps the logarithm defined for flat routes (all heights are equal)
+    additional_space = log(max(heights) - min(heights) + 1) * 25
     plt.ylim(ymax=max(heights) + additional_space, ymin=min(heights) - additional_space)
     # add way_points to plot
     plt.plot(
