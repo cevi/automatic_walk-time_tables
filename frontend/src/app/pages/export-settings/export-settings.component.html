@@ -74,8 +74,18 @@
               >Punkte nummerieren</mat-slide-toggle
             >
             <div class="slider-container">
-              <label>Kartenmassstab: 1:{{ slider.value }}</label>
-              <mat-slider min="5000" max="100000" step="5000">
+              <label
+                >Kartenmassstab:
+                {{
+                  options.value.auto_scale ? "automatisch" : "1:" + slider.value
+                }}</label
+              >
+              <mat-slider
+                min="5000"
+                max="100000"
+                step="5000"
+                [disabled]="options.value.auto_scale"
+              >
                 <input matSliderThumb #slider formControlName="map_scaling" />
               </mat-slider>
             </div>
