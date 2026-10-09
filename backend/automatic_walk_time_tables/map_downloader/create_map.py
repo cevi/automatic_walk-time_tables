@@ -79,7 +79,7 @@ class MapCreator:
         for map_scale in common_map_scales:
             if (
                 self.A4_HEIGHT_FACTOR * map_scale >= upper_right.lon - lower_left.lon
-                and self.A4_WIDTH_FACTOR * map_scale >= lower_left.lon - upper_right.lat
+                and self.A4_WIDTH_FACTOR * map_scale >= upper_right.lat - lower_left.lat
             ):
                 break
 

@@ -176,7 +176,12 @@ class AutomatedWalkTableGenerator:
             self.__way_points,
             pois=self.__pois,
             file_name=name,
-            map_scaling=self.options["settings"]["map_scaling"],
+            # None lets the MapCreator pick a scale that fits the route
+            map_scaling=(
+                None
+                if self.options["settings"].get("auto_scale")
+                else self.options["settings"]["map_scaling"]
+            ),
             map_layers=list(
                 map(
                     lambda layer: layer.strip(),
