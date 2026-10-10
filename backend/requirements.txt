@@ -3,7 +3,7 @@ gunicorn==25.1.0
 flask-cors==6.0.2
 gpxpy==1.6.2
 numpy==2.4.3
-geopy==2.4.1
+geopy==2.5.0
 openpyxl==3.1.5
 grequests==0.7.0
 pyclustering==0.10.1.2
