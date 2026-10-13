@@ -44,8 +44,6 @@ services:
 
   awt-mapfish-print-server:
 
-    environment:
-      CATALINA_OPTS: "-Dfile.encoding=UTF-8"
     env_file:
       - .env.ci-testing
     
