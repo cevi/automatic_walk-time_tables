@@ -66,6 +66,14 @@ app.url_map.converters["export_uuid"] = ExportUUIDConverter
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
 
+@app.route("/health")
+def health():
+    # Used by the docker HEALTHCHECK: answers as soon as a worker serves requests.
+    return app.response_class(
+        response=json.dumps({"status": "ok"}), status=200, mimetype="application/json"
+    )
+
+
 @app.route("/get_name", methods=["POST"])
 def get_name():
     try:

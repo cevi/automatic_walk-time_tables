@@ -1,5 +1,10 @@
 # API Documentation
 
+## /health [GET]
+
+Returns `{"status": "ok"}` as soon as the backend serves requests. Used by the docker `HEALTHCHECK` of the backend
+container.
+
 ## /parse_route [POST]
 
 Parses a GeoFile and returns a JSON containing the route.
