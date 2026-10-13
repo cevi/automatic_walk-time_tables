@@ -25,3 +25,7 @@ jobs:
         env:
           MPLBACKEND: Agg
         run: python -m unittest discover -s tests -t .
+
+      - name: Run unit tests of the swiss_TLM_api
+        working-directory: swiss_TLM_api
+        run: python -m unittest discover -s tests -t .
