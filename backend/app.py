@@ -86,7 +86,7 @@ def get_name():
         payload = json.dumps([[lat, lon]])
         headers = {"Content-Type": "application/json"}
 
-        req = requests.request("GET", url, headers=headers, data=payload)
+        req = requests.request("GET", url, headers=headers, data=payload, timeout=5)
         resp = req.json()
 
         name = ""
@@ -111,7 +111,7 @@ def get_map_numbers():
         headers = {"Content-Type": "application/json"}
 
         # we send a GET with body to the swiss-tml-api
-        req = requests.request("GET", url, headers=headers, data=payload)
+        req = requests.request("GET", url, headers=headers, data=payload, timeout=5)
         resp = req.text
         return jsonify({"map_numbers": resp})
 
