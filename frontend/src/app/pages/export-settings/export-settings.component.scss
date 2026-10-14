@@ -111,14 +111,10 @@ h2 {
 
 .settings-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  // two columns if the drawer is wide enough, independent of the window size
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
   gap: 32px;
-
-  @media (min-width: 768px) {
-    grid-template-columns: 1fr 1fr;
-    gap: 40px;
-    align-items: stretch;
-  }
+  align-items: stretch;
 }
 
 .settings-card {
@@ -131,7 +127,7 @@ h2 {
     0 4px 16px rgba(0, 0, 0, 0.04),
     0 1px 4px rgba(0, 0, 0, 0.02);
   border: 1px solid #e2e8f0;
-  padding: 32px;
+  padding: clamp(16px, 5%, 32px);
   align-items: flex-start;
   text-align: left;
 
@@ -162,8 +158,9 @@ h2 {
   }
 
   mat-slider {
-    width: 100%;
-    margin: 0;
+    // the margin leaves room for the thumb at both ends
+    width: auto;
+    margin: 0 8px;
     --mdc-slider-handle-color: #3f51b5;
     --mdc-slider-active-track-color: #3f51b5;
     --mdc-slider-focus-handle-color: #3f51b5;
