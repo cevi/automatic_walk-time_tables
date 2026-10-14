@@ -14,6 +14,7 @@ setup_recursive_logger(logging.INFO)
 logger = logging.getLogger(__name__)
 
 from swiss_TML_api.name_finding.name_finder import NameFinder
+from swiss_TML_api.name_finding.name_ranking import classify, is_lake, rank
 from swiss_TML_api.name_finding.swiss_name import SwissName
 from swiss_TML_api.map_numbers.map_numbers_fetcher import MapNumberIndex
 
@@ -73,8 +74,7 @@ def get_name():
             swiss_names = name_index.get_names(lat, lon, 200)
 
             best_n = None
-            best_priority = -1
-            best_dist = 999999
+            best_rank = None
 
             candidates_log = []
             for n in swiss_names:
@@ -89,91 +89,14 @@ def get_name():
 
                 dist = round(req_pkt.distance(Point((n.x, n.y))))
 
-                name_lower = n.name.lower() if n.name else ""
-                obj_lower = n.object_type.lower() if n.object_type else ""
-
                 # Dynamically prettify Fliessgewaesser names without modifying the static index
-                if "fliessgewaesser (keine brücke)" in name_lower:
+                if n.name and "fliessgewaesser (keine brücke)" in n.name.lower():
                     n.name = n.name.replace(
                         "Fliessgewaesser (Keine Brücke)", "Gewässerquerung"
                     )
-                    name_lower = n.name.lower()
 
-                prio = 0
-                max_d = 50
-
-                if (
-                    "sac" in name_lower
-                    or "hütte" in name_lower
-                    or "abgelegener gasthof" in name_lower
-                    or "abgelegener gasthof" in obj_lower
-                ):
-                    prio, max_d = 100, 200
-                elif "pass" in name_lower or "pass" in obj_lower:
-                    prio, max_d = 90, 200
-                elif (
-                    "see" in obj_lower
-                    or "lac " in name_lower
-                    or "lai " in name_lower
-                    or "see " in name_lower
-                    or name_lower.endswith("see")
-                    or name_lower.endswith("lac")
-                    or name_lower.endswith("lai")
-                ):
-                    prio, max_d = 85, 250
-                elif (
-                    "hauptgipfel" in obj_lower
-                    or "gipfel" in obj_lower
-                    or "gipfelkreuz" in obj_lower
-                ):
-                    prio, max_d = 80, 150
-                elif (
-                    "staudamm" in obj_lower
-                    or "wehr" in obj_lower
-                    or "staumauer" in obj_lower
-                ):
-                    prio, max_d = 70, 100
-                elif "haltestelle" in obj_lower or "station" in obj_lower:
-                    prio, max_d = 70, 50
-                elif "kotierter punkt" in obj_lower or name_lower.startswith("punkt "):
-                    prio, max_d = 60, 10
-                elif "flurname" in obj_lower or "lokaler name" in obj_lower:
-                    prio, max_d = 50, 120
-                elif (
-                    "gebäude" in obj_lower
-                    or "turm" in obj_lower
-                    or "kapelle" in obj_lower
-                    or "ruine" in obj_lower
-                    or "historische baute" in obj_lower
-                ):
-                    prio, max_d = 45, 10
-                elif "nationalpark" in obj_lower:
-                    prio, max_d = 30, 50
-                elif (
-                    "kraftwerkareal" in obj_lower
-                    or "abwasserreinigungsareal" in obj_lower
-                    or "areal" in obj_lower
-                ):
-                    prio, max_d = 30, 30
-                elif (
-                    "kreuzung hochspannungsleitung" in obj_lower
-                    or "fliessgewaesser" in obj_lower
-                    or "seilbahn" in obj_lower
-                ):
-                    prio, max_d = 20, 20
-                elif (
-                    "sportplatz" in obj_lower
-                    or "rodelbahn" in obj_lower
-                    or "skisprungschanze" in obj_lower
-                ):
-                    prio, max_d = 15, 20
-                elif (
-                    "kreuzung" in obj_lower
-                    or "weggabelung" in obj_lower
-                    or "kreisel" in obj_lower
-                    or "wegende" in obj_lower
-                ):
-                    prio, max_d = 10, 25
+                category = classify(n.name, n.object_type)
+                prio, max_d = category.priority, category.max_distance
 
                 candidates_log.append(
                     {
@@ -187,11 +110,9 @@ def get_name():
                 )
 
                 if dist <= max_d:
-                    if prio > best_priority or (
-                        prio == best_priority and dist < best_dist
-                    ):
-                        best_priority = prio
-                        best_dist = dist
+                    candidate_rank = rank(category, dist)
+                    if best_rank is None or candidate_rank > best_rank:
+                        best_rank = candidate_rank
                         best_n = n
 
             candidates_log.sort(key=lambda x: (not x["valid"], -x["prio"], x["dist"]))
@@ -219,20 +140,8 @@ def get_name():
             else:
                 swiss_name = best_n
 
-            name_lower = swiss_name.name.lower() if swiss_name.name else ""
-            obj_lower = swiss_name.object_type.lower() if swiss_name.object_type else ""
-
-            is_lake = (
-                "see" in obj_lower
-                or "lac " in name_lower
-                or "lai " in name_lower
-                or "see " in name_lower
-                or name_lower.endswith("see")
-                or name_lower.endswith("lac")
-                or name_lower.endswith("lai")
-            )
             if (
-                is_lake
+                is_lake(swiss_name.name, swiss_name.object_type)
                 and f"({int(swiss_name.h)})" not in swiss_name.name
                 and swiss_name.h > 0
             ):
