@@ -201,6 +201,7 @@ def create_walk_time_table():
             start = time.time()
 
             path = extract_path(options)
+            elevation_was_fetched = "elevation_data" not in options
 
             end = time.time()
             logger.info("Decoding polyline took {} seconds.".format(end - start))
@@ -242,6 +243,14 @@ def create_walk_time_table():
                 "pois": pois.to_polyline(),
                 "pois_elevation": pois.to_elevation_polyline(),
             }
+
+            # Return the fetched elevation profile so the frontend can reuse it
+            # for follow-up requests on the same route instead of triggering
+            # another (rate-limited) call to geo.admin.ch.
+            if elevation_was_fetched:
+                result_json["route"] = path.to_polyline()
+                result_json["elevation_data"] = path.to_elevation_polyline()
+
             return app.response_class(
                 response=json.dumps(result_json),
                 status=200,
