@@ -66,3 +66,16 @@
     text-overflow: ellipsis;
   }
 }
+
+// Compact layout for small map areas, see map-background.component.scss:
+// the search bar moves below the logo, next to the zoom buttons
+@container map-area (max-width: 900px) {
+  .search-container {
+    top: 40px;
+    left: 48px;
+    right: 8px;
+    width: auto;
+    max-width: none;
+    transform: none;
+  }
+}

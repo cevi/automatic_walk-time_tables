@@ -12,6 +12,8 @@ import { Router } from '@angular/router';
 })
 export class MapBackgroundComponent implements OnInit, AfterViewInit {
   public setHorizontal: boolean = true;
+  // size of the drawer (control area) in pixels, along the split direction
+  public drawerSize: number = 450;
   public has_valid_path: boolean = false;
 
   constructor(
@@ -51,14 +53,24 @@ export class MapBackgroundComponent implements OnInit, AfterViewInit {
       this.has_valid_path = path.length > 0;
     });
 
-    // sets horizontal to true if the window is wider than it is tall
-    this.setHorizontal = window.innerWidth > window.innerHeight;
+    this.updateLayout();
 
     // set action listener for window resize
     window.addEventListener('resize', () => {
-      this.setHorizontal = window.innerWidth > window.innerHeight;
-      this.redrawMap();
+      const wasHorizontal = this.setHorizontal;
+      this.updateLayout();
+      // switching the split direction re-creates the map canvas
+      if (wasHorizontal !== this.setHorizontal) this.redrawMap();
     });
+  }
+
+  private updateLayout() {
+    // place the drawer to the right if the window is wider than it is tall,
+    // otherwise below the map (e.g. phones in portrait mode)
+    this.setHorizontal = window.innerWidth > window.innerHeight;
+    this.drawerSize = this.setHorizontal
+      ? Math.min(450, Math.round(window.innerWidth / 2))
+      : Math.round(window.innerHeight * 0.55);
   }
 
   public currentLayer: string = 'pixelkarte';
