@@ -3,14 +3,15 @@ export interface Coordinates {
   y: number;
 }
 
-export interface LV95_Coordinates extends Coordinates {
-}
+export interface LV95_Coordinates extends Coordinates {}
 
 export interface LV95_Waypoint extends Coordinates {
-
   h: number;
   accumulated_distance: number;
   name?: string;
+  auto_name?: string;
   is_waypoint: boolean;
-
+  break_duration?: string;
+  surface?: string;
+  road_name?: string;
 }

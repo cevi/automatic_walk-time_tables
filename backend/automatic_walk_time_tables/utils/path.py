@@ -132,9 +132,10 @@ class Path:
         Returns a filename safe variant of the route name.
         The route name may contain special characters (/, ", '. ?, (, ), etc.),
         whereas the filename does replace those with a dash.
+        Falls back to "Route" if no usable characters remain.
         """
 
-        return re.sub(r"[\W_]+", "-", self.route_name).strip().lower()
+        return re.sub(r"[\W_]+", "-", self.route_name).strip("-") or "Route"
 
     def __str__(self) -> str:
         return "Path: " + self.route_name + ", points: " + str(self.__way_points)

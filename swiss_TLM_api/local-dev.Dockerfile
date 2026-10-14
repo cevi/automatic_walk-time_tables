@@ -1,5 +1,5 @@
 # Build stage
-FROM python:3.11.0-slim as build
+FROM python:3.11.17-slim-bookworm as build
 
 # Environment variable to prevent pip from showing root warnings
 ENV PIP_ROOT_USER_ACTION=ignore
@@ -19,7 +19,7 @@ COPY ./requirements.txt /app
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Runtime stage
-FROM python:3.11.0-slim as run
+FROM python:3.11.17-slim-bookworm as run
 
 # Set environment variable to avoid pip warnings
 ENV PIP_ROOT_USER_ACTION=ignore
