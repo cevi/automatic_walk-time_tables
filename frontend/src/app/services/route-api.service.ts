@@ -32,6 +32,16 @@ export interface RouteGenerationStatistics {
 export class RouteApiService {
   private static readonly VALHALLA_URL = environment.VALHALLA_URL;
   private static readonly BASE_URL = environment.API_URL;
+  private static readonly ELEVATION_CACHE_SIZE = 20;
+
+  // Elevation profiles the backend fetched from geo.admin.ch, keyed by the
+  // encoded route they were fetched for. Lets us skip the (rate-limited)
+  // elevation lookup when the same geometry is requested again, e.g. after
+  // undo/redo or when toggling the automatic waypoint selection.
+  private readonly elevationCache = new Map<
+    string,
+    { route: string; elevation_data: string }
+  >();
 
   public async fetchValhallaRoute(
     locations: LV95_Coordinates[],
@@ -153,12 +163,14 @@ export class RouteApiService {
   ): Promise<any> {
     if (path.length === 0) return null;
 
+    const route = encode(
+      path.map((p) => [p.x, p.y]),
+      0,
+    );
+
     let data: any = {
       encoding: 'polyline',
-      route: encode(
-        path.map((p) => [p.x, p.y]),
-        0,
-      ),
+      route: route,
       auto_waypoints: auto_waypoints,
       pois_distance: pois
         .sort((a, b) => a.accumulated_distance - b.accumulated_distance)
@@ -171,6 +183,12 @@ export class RouteApiService {
         path.map((p) => [p.accumulated_distance * 1_000, p.h]),
         0,
       );
+    } else {
+      const cached = this.elevationCache.get(route);
+      if (cached) {
+        data['route'] = cached.route;
+        data['elevation_data'] = cached.elevation_data;
+      }
     }
 
     const formData = new FormData();
@@ -184,7 +202,20 @@ export class RouteApiService {
         body: formData,
       },
     );
-    return response.json();
+    const result = await response.json();
+    if (result?.route && result?.elevation_data) {
+      this.cacheElevation(route, result.route, result.elevation_data);
+    }
+    return result;
+  }
+
+  private cacheElevation(key: string, route: string, elevation_data: string) {
+    this.elevationCache.delete(key);
+    this.elevationCache.set(key, { route, elevation_data });
+    if (this.elevationCache.size > RouteApiService.ELEVATION_CACHE_SIZE) {
+      const oldest = this.elevationCache.keys().next().value;
+      if (oldest !== undefined) this.elevationCache.delete(oldest);
+    }
   }
 
   public async retrieveDataStatus(uuid: string): Promise<number> {
