@@ -8,6 +8,7 @@ import pathlib
 import shutil
 import threading
 import time
+import traceback
 import uuid as uuid_factory
 import zipfile
 from threading import Thread
@@ -93,9 +94,7 @@ def get_name():
             name = resp[0]["swiss_name"]
 
         return jsonify({"name": name})
-    except Exception as e:
-        import traceback
-
+    except Exception:
         traceback.print_exc()
         return jsonify({"name": ""})
 
