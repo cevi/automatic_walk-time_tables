@@ -29,7 +29,10 @@ from automatic_walk_time_tables.path_transformers.heigth_fetcher_transfomer impo
     HeightFetcherTransformer,
 )
 from automatic_walk_time_tables.path_transformers.pois_transfomer import POIsTransformer
-from automatic_walk_time_tables.utils.error import UserException
+from automatic_walk_time_tables.utils.error import (
+    ElevationServiceUnavailable,
+    UserException,
+)
 from automatic_walk_time_tables.utils.gpx_creator import (
     create_gpx_file,
     fetch_data_for_uuid,
@@ -160,6 +163,8 @@ def parse_route():
         return app.response_class(
             response=json.dumps(result_json), status=200, mimetype="application/json"
         )
+    except ElevationServiceUnavailable:
+        return elevation_unavailable_response()
     except UserException as e:
         logger.error(e)
         return app.response_class(
@@ -267,6 +272,8 @@ def create_walk_time_table():
                 status=400,
                 mimetype="application/json",
             )
+    except ElevationServiceUnavailable:
+        return elevation_unavailable_response()
     except UserException as e:
         logger.error(e)
         response = json.dumps({"status": GeneratorStatus.ERROR, "message": str(e)})
@@ -282,6 +289,21 @@ def create_walk_time_table():
         return app.response_class(
             response=response, status=500, mimetype="application/json"
         )
+
+
+def elevation_unavailable_response():
+    # 503 tells the client the failure is temporary and worth retrying
+    return app.response_class(
+        response=json.dumps(
+            {
+                "status": GeneratorStatus.ERROR,
+                "message": ElevationServiceUnavailable.MESSAGE,
+            }
+        ),
+        status=503,
+        mimetype="application/json",
+        headers={"Retry-After": "5"},
+    )
 
 
 def extract_path(options, coords_field="route", elevation_field="elevation_data"):

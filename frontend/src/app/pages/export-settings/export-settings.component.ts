@@ -24,7 +24,6 @@ export class ExportSettingsComponent {
   public route_uploaded: boolean = false;
   public loading = false;
   public error_message: string = '';
-  protected readonly location = location;
   public has_valid_path: boolean = false;
   public showAdvancedSettings: boolean = false;
   private _suppress_auto_waypoint_trigger: boolean = false;
@@ -35,7 +34,7 @@ export class ExportSettingsComponent {
     private router: Router,
     private mapService: MapService,
   ) {
-    this.mapAnimator.set_error_handler((err) => {
+    this.mapAnimator.error$.subscribe((err) => {
       this.error_message = err;
     });
 
@@ -163,7 +162,13 @@ export class ExportSettingsComponent {
     this.mapAnimator
       .download_map(settings)
       .then((uuid) => this.router.navigate(['pending', uuid]))
-      .catch((err) => (this.error_message = err));
+      .catch((err) => (this.error_message = err?.message ?? String(err)));
+  }
+
+  public retry_after_error() {
+    if (this.mapAnimator.retry_failed_action()) return;
+    // the error came from the export itself, the user can simply click export again
+    this.error_message = '';
   }
 
   private isJsonString(str: string): boolean {
