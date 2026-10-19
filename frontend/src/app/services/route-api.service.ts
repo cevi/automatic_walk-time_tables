@@ -34,6 +34,13 @@ export class RouteApiService {
   private static readonly BASE_URL = environment.API_URL;
   private static readonly ELEVATION_CACHE_SIZE = 20;
 
+  // The backend already retries geo.admin.ch itself, so we only retry once
+  // on top of that to avoid amplifying a rate limit.
+  private static readonly MAX_ATTEMPTS = 2;
+  private static readonly RETRY_STATUS = [502, 503, 504];
+  private static readonly DEFAULT_RETRY_DELAY_MS = 3_000;
+  private static readonly MAX_RETRY_DELAY_MS = 10_000;
+
   // Elevation profiles the backend fetched from geo.admin.ch, keyed by the
   // encoded route they were fetched for. Lets us skip the (rate-limited)
   // elevation lookup when the same geometry is requested again, e.g. after
@@ -148,12 +155,7 @@ export class RouteApiService {
     );
     formData.append('file_content', fileContent);
 
-    const response = await fetch(RouteApiService.BASE_URL + 'parse_route', {
-      method: 'POST',
-      headers: { Accept: 'application/json' },
-      body: formData,
-    });
-    return response.json();
+    return this.postToBackend('parse_route', formData);
   }
 
   public async createWalkTimeTable(
@@ -194,19 +196,68 @@ export class RouteApiService {
     const formData = new FormData();
     formData.append('options', JSON.stringify(data));
 
-    const response = await fetch(
-      RouteApiService.BASE_URL + 'create-walk-time-table',
-      {
-        method: 'POST',
-        headers: { Accept: 'application/json' },
-        body: formData,
-      },
-    );
-    const result = await response.json();
+    const result = await this.postToBackend('create-walk-time-table', formData);
     if (result?.route && result?.elevation_data) {
       this.cacheElevation(route, result.route, result.elevation_data);
     }
     return result;
+  }
+
+  /**
+   * POSTs to the backend and returns the parsed JSON body. Retries once on
+   * temporary failures (gateway errors, unavailable elevation service, network
+   * errors) and throws an Error carrying the backend's message otherwise.
+   */
+  private async postToBackend(endpoint: string, body: FormData): Promise<any> {
+    for (let attempt = 1; ; attempt++) {
+      const is_last_attempt = attempt >= RouteApiService.MAX_ATTEMPTS;
+
+      let response: Response;
+      try {
+        response = await fetch(RouteApiService.BASE_URL + endpoint, {
+          method: 'POST',
+          headers: { Accept: 'application/json' },
+          body,
+        });
+      } catch (err) {
+        if (is_last_attempt) {
+          throw new Error(
+            'Der Server ist nicht erreichbar. Bitte prüfe deine Internetverbindung.',
+          );
+        }
+        await this.sleep(RouteApiService.DEFAULT_RETRY_DELAY_MS);
+        continue;
+      }
+
+      if (response.ok) return response.json();
+
+      if (
+        !is_last_attempt &&
+        RouteApiService.RETRY_STATUS.includes(response.status)
+      ) {
+        await this.sleep(this.retryDelay(response));
+        continue;
+      }
+
+      const result = await response.json().catch(() => null);
+      throw new Error(
+        result?.message ||
+          `Ein Fehler ist aufgetreten (Server-Antwort ${response.status}).`,
+      );
+    }
+  }
+
+  private retryDelay(response: Response): number {
+    const retry_after = Number(response.headers.get('Retry-After'));
+    const delay =
+      retry_after > 0
+        ? retry_after * 1_000
+        : RouteApiService.DEFAULT_RETRY_DELAY_MS;
+    return Math.min(delay, RouteApiService.MAX_RETRY_DELAY_MS);
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   private cacheElevation(key: string, route: string, elevation_data: string) {

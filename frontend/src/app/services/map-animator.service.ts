@@ -15,8 +15,9 @@ import { MatSnackBar } from '@angular/material/snack-bar';
   providedIn: 'root',
 })
 export class MapAnimatorService implements OnDestroy {
-  private _error_handler: (err: string) => void = (err: string) =>
-    console.error(err);
+  // Last error of a backend call, '' if the last call succeeded.
+  public error$ = new BehaviorSubject<string>('');
+  private _retry_failed_action: (() => void) | null = null;
   public auto_waypoints_baked$ = new Subject<void>();
   private destroy$ = new Subject<void>();
 
@@ -179,8 +180,28 @@ export class MapAnimatorService implements OnDestroy {
     }
     this.state.movePointer(coords);
   }
-  public set_error_handler(handler: (err: string) => void) {
-    this._error_handler = handler;
+  /**
+   * Re-runs the backend call that failed last. Returns false if there is
+   * nothing to retry, e.g. because the error didn't come from this service.
+   */
+  public retry_failed_action(): boolean {
+    const retry = this._retry_failed_action;
+    if (!retry) return false;
+    this.clear_error();
+    retry();
+    return true;
+  }
+
+  private report_error(err: unknown, retry: () => void) {
+    console.error(err);
+    this._retry_failed_action = retry;
+    const message = err instanceof Error ? err.message : String(err ?? '');
+    this.error$.next(message || 'Ein unbekannter Fehler ist aufgetreten.');
+  }
+
+  private clear_error() {
+    this._retry_failed_action = null;
+    if (this.error$.getValue() !== '') this.error$.next('');
   }
 
   private update_app_mode_from_drawer() {
@@ -206,12 +227,13 @@ export class MapAnimatorService implements OnDestroy {
     );
     this.replace_route(path)
       .then(() => {
+        this.clear_error();
         if (should_auto_generate) {
           this.auto_waypoints = false;
           this.auto_waypoints_baked$.next();
         }
       })
-      .catch(this._error_handler);
+      .catch((err) => this.report_error(err, () => this.start_export_mode()));
   }
 
   public is_anchor(point: LV95_Coordinates | LV95_Waypoint): boolean {
@@ -733,8 +755,11 @@ export class MapAnimatorService implements OnDestroy {
       .then((resp) => {
         if (!resp) return;
         this.applyWalkTimeTableResponse(resp);
+        this.clear_error();
       })
-      .catch(this._error_handler);
+      .catch((err) =>
+        this.report_error(err, () => this.regenerateWalkTimeTable()),
+      );
   }
 
   private applyWalkTimeTableResponse(resp: any) {
