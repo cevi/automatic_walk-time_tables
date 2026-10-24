@@ -19,6 +19,7 @@ A complete, technical changelog is available at [GitHub](https://github.com/cevi
 - Automatic map scale selection works again (7.0.0)
 - Special characters in waypoint names are exported correctly (7.0.0)
 - Security fixes: route ids and file names are validated (7.0.0)
+- Security updates: Node.js 24 for the frontend and docs builds (October 2026 Node.js security release), updated base images and dependencies (7.0.1)
 - Bug fixes
 - Dependency updates
 

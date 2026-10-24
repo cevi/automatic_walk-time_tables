@@ -134,7 +134,7 @@ export class MapDrawingRenderer {
     });
 
     // Clear pointer when mouse leaves the map viewport
-    this.map.getViewport().addEventListener('pointerleave', () => {
+    this.map.getViewport()?.addEventListener('pointerleave', () => {
       this.map_animator.move_pointer(null);
     });
   }
@@ -289,6 +289,7 @@ export class MapDrawingRenderer {
       }
 
       const targetElement = this.map.getTargetElement();
+      if (!targetElement) return;
       if (!this.is_mouse_over_dom_tooltip) {
         this.is_hovering_interactive_feature = false;
         targetElement.style.cursor = '';

@@ -625,7 +625,7 @@ export class MapService extends SwisstopoMap implements OnDestroy {
       }
     });
 
-    this.map.getViewport().addEventListener('contextmenu', (evt) => {
+    this.map.getViewport()?.addEventListener('contextmenu', (evt) => {
       evt.preventDefault();
       if (!this.map || !popupOverlay || !popupContent) return;
 
