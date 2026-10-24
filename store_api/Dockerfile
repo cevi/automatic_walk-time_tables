@@ -1,4 +1,4 @@
-FROM python:3.11.2-slim
+FROM python:3.11.17-slim-bookworm
 
 ENV PIP_ROOT_USER_ACTION=ignore
 
