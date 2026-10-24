@@ -8,14 +8,16 @@ import pathlib
 import shutil
 import threading
 import time
+import traceback
 import uuid as uuid_factory
 import zipfile
 from threading import Thread
 
 import polyline
 import requests
-from flask import Flask, request, send_file, redirect
+from flask import Flask, request, send_file, redirect, jsonify
 from flask_cors import CORS
+from werkzeug.routing import BaseConverter
 
 from automatic_walk_time_tables.path_transformers.douglas_peucker_transformer import (
     DouglasPeuckerTransformer,
@@ -27,7 +29,10 @@ from automatic_walk_time_tables.path_transformers.heigth_fetcher_transfomer impo
     HeightFetcherTransformer,
 )
 from automatic_walk_time_tables.path_transformers.pois_transfomer import POIsTransformer
-from automatic_walk_time_tables.utils.error import UserException
+from automatic_walk_time_tables.utils.error import (
+    ElevationServiceUnavailable,
+    UserException,
+)
 from automatic_walk_time_tables.utils.gpx_creator import (
     create_gpx_file,
     fetch_data_for_uuid,
@@ -52,8 +57,71 @@ from automatic_walk_time_tables.generator_status import GeneratorStatus
 
 logger = logging.getLogger(__name__)
 
+
+class ExportUUIDConverter(BaseConverter):
+    """Only matches UUIDs as created in /create_map (uuid4().hex). Anything
+    else, e.g. `..`, gets a 404 before it can be used in a file path."""
+
+    regex = "[0-9a-f]{32}"
+
+
 app = Flask(__name__)
+app.url_map.converters["export_uuid"] = ExportUUIDConverter
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
+
+
+@app.route("/health")
+def health():
+    # Used by the docker HEALTHCHECK: answers as soon as a worker serves requests.
+    return app.response_class(
+        response=json.dumps({"status": "ok"}), status=200, mimetype="application/json"
+    )
+
+
+@app.route("/get_name", methods=["POST"])
+def get_name():
+    try:
+        data = request.json
+        lat = data.get("lat")
+        lon = data.get("lon")
+
+        url = "http://awt-swiss-tml-api:1848/swiss_name"
+        payload = json.dumps([[lat, lon]])
+        headers = {"Content-Type": "application/json"}
+
+        req = requests.request("GET", url, headers=headers, data=payload, timeout=5)
+        resp = req.json()
+
+        name = ""
+        if len(resp) > 0 and resp[0]["offset"] <= 100:
+            name = resp[0]["swiss_name"]
+
+        return jsonify({"name": name})
+    except Exception:
+        traceback.print_exc()
+        return jsonify({"name": ""})
+
+
+@app.route("/map_numbers", methods=["POST"])
+def get_map_numbers():
+    try:
+        data = request.json
+        if not data or not isinstance(data, list):
+            return jsonify({"error": "Expected a list of coords"}), 400
+
+        url = "http://awt-swiss-tml-api:1848/map_numbers"
+        payload = json.dumps(data)
+        headers = {"Content-Type": "application/json"}
+
+        # we send a GET with body to the swiss-tml-api
+        req = requests.request("GET", url, headers=headers, data=payload, timeout=5)
+        resp = req.text
+        return jsonify({"map_numbers": resp})
+
+    except Exception:
+        logger.error("Error retrieving map_numbers")
+        traceback.print_exc()
+        return jsonify({"map_numbers": ""})
 
 
 @app.route("/parse_route", methods=["POST"])
@@ -95,6 +163,8 @@ def parse_route():
         return app.response_class(
             response=json.dumps(result_json), status=200, mimetype="application/json"
         )
+    except ElevationServiceUnavailable:
+        return elevation_unavailable_response()
     except UserException as e:
         logger.error(e)
         return app.response_class(
@@ -135,6 +205,7 @@ def create_walk_time_table():
             start = time.time()
 
             path = extract_path(options)
+            elevation_was_fetched = "elevation_data" not in options
 
             end = time.time()
             logger.info("Decoding polyline took {} seconds.".format(end - start))
@@ -176,6 +247,14 @@ def create_walk_time_table():
                 "pois": pois.to_polyline(),
                 "pois_elevation": pois.to_elevation_polyline(),
             }
+
+            # Return the fetched elevation profile so the frontend can reuse it
+            # for follow-up requests on the same route instead of triggering
+            # another (rate-limited) call to geo.admin.ch.
+            if elevation_was_fetched:
+                result_json["route"] = path.to_polyline()
+                result_json["elevation_data"] = path.to_elevation_polyline()
+
             return app.response_class(
                 response=json.dumps(result_json),
                 status=200,
@@ -193,6 +272,8 @@ def create_walk_time_table():
                 status=400,
                 mimetype="application/json",
             )
+    except ElevationServiceUnavailable:
+        return elevation_unavailable_response()
     except UserException as e:
         logger.error(e)
         response = json.dumps({"status": GeneratorStatus.ERROR, "message": str(e)})
@@ -208,6 +289,21 @@ def create_walk_time_table():
         return app.response_class(
             response=response, status=500, mimetype="application/json"
         )
+
+
+def elevation_unavailable_response():
+    # 503 tells the client the failure is temporary and worth retrying
+    return app.response_class(
+        response=json.dumps(
+            {
+                "status": GeneratorStatus.ERROR,
+                "message": ElevationServiceUnavailable.MESSAGE,
+            }
+        ),
+        status=503,
+        mimetype="application/json",
+        headers={"Retry-After": "5"},
+    )
 
 
 def extract_path(options, coords_field="route", elevation_field="elevation_data"):
@@ -277,6 +373,15 @@ def create_export(options, uuid):
             path = extract_path(options, "route", "route_elevation")
             way_points = extract_path(options, "way_points", "way_points_elevation")
 
+            if "way_points_details" in options:
+                import json
+
+                details = json.loads(options["way_points_details"])
+                for i, wp in enumerate(way_points.way_points):
+                    if i < len(details):
+                        wp.name = details[i].get("name", "")
+                        wp.break_duration = details[i].get("break_duration", "")
+
             # calc POIs for the path
             pois_transformer = POIsTransformer(
                 pois_list_as_str=options["pois"] if "pois" in options else "",
@@ -344,7 +449,7 @@ def create_export(options, uuid):
             )
 
 
-@app.route("/status/<uuid>")
+@app.route("/status/<export_uuid:uuid>")
 def status(uuid):
     message = stateHandler.get_status(uuid)
     status_code = 200 if message["status"] != GeneratorStatus.ERROR else 400
@@ -372,7 +477,7 @@ def __delete_after_delay(base_path: str, uuid: str, delay=720):
     logger.info("Deleted folder %s" % base_path)
 
 
-@app.route("/download/<uuid>")
+@app.route("/download/<export_uuid:uuid>")
 def download(uuid):
     # Check if export is completed and still present in the 'output' folder
     base_path = pathlib.Path("./output/" + uuid + "/")
@@ -432,13 +537,43 @@ def download(uuid):
     )
 
 
-@app.route("/qr/<uuid>")
+@app.route("/qr/<export_uuid:uuid>")
 def generate_qr_image(uuid):
     qr_data = build_qr_code_image_string(uuid, raw=True)
     return send_file(io.BytesIO(qr_data), mimetype="image/jpg")
 
 
-@app.route("/retrieve/<uuid>")
+@app.route("/statistics")
+def retrieve_statistics():
+    days = request.args.get("days", default=30, type=int)
+
+    try:
+        response = requests.get(
+            os.environ["STORE_API_URL"] + "/statistics",
+            params={"days": days},
+            timeout=10,
+        )
+    except requests.RequestException as exc:
+        logger.error("Error retrieving statistics: %s", exc)
+        return app.response_class(
+            response=json.dumps(
+                {
+                    "status": GeneratorStatus.ERROR,
+                    "message": "Die Statistiken konnten nicht geladen werden.",
+                }
+            ),
+            status=502,
+            mimetype="application/json",
+        )
+
+    return app.response_class(
+        response=response.text,
+        status=response.status_code,
+        mimetype="application/json",
+    )
+
+
+@app.route("/retrieve/<export_uuid:uuid>")
 def retrieve_route(uuid):
     data = fetch_data_for_uuid(uuid)
     if data is not None:
@@ -489,7 +624,7 @@ def retrieve_route(uuid):
         )
 
 
-@app.route("/gpx/<uuid>.gpx")
+@app.route("/gpx/<export_uuid:uuid>.gpx")
 def generate_gpx(uuid):
     data = fetch_data_for_uuid(uuid)
 

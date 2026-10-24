@@ -30,7 +30,9 @@ class NamingTransformer(PathTransformer):
             headers = {"Content-Type": "application/json"}
 
             try:
-                req = requests.request("GET", url, headers=headers, data=payload)
+                req = requests.request(
+                    "GET", url, headers=headers, data=payload, timeout=5
+                )
                 resp = req.json()
 
                 # Use coordinate if next name is more than 100 meters away
@@ -39,7 +41,7 @@ class NamingTransformer(PathTransformer):
                 elif self.use_default_name:
                     pt.name = f"{round(lv95.lat)}, {round(lv95.lon)}"
 
-            except requests.exceptions.ConnectionError:
+            except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
                 logger.error(
                     "Connection error while fetching names from awt-swiss-tml-api"
                 )

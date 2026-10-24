@@ -13,7 +13,7 @@ jobs:
     steps:
       # Checkout the source code
       - name: 🛎️  Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@main
@@ -32,3 +32,11 @@ jobs:
 
       - name: 🚀 Run cypress (e2e tests)
         run: docker compose -f docker-compose.yml -f docker-compose.ci-testing.yml up --exit-code-from awt-cypress
+
+      - name: 📸 Upload screenshots of failed tests
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: cypress-screenshots
+          path: e2e/cypress/screenshots
+          if-no-files-found: ignore
