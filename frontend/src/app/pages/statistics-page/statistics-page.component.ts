@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import {
   RouteApiService,
   RouteGenerationStatistics,
@@ -8,6 +8,7 @@ import {
   selector: 'app-statistics-page',
   templateUrl: './statistics-page.component.html',
   styleUrls: ['./statistics-page.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false,
 })
 export class StatisticsPageComponent implements OnInit {

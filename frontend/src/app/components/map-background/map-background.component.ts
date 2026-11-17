@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, OnInit } from '@angular/core';
+import { AfterViewInit, Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { MapAnimatorService } from '../../services/map-animator.service';
 import { MapService } from '../../services/map.service';
 import { Router } from '@angular/router';
@@ -8,6 +8,7 @@ import { Router } from '@angular/router';
   templateUrl: './map-background.component.html',
   styleUrls: ['./map-background.component.scss'],
   providers: [{ provide: Window, useValue: window }],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false,
 })
 export class MapBackgroundComponent implements OnInit, AfterViewInit {
