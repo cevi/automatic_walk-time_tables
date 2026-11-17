@@ -818,20 +818,29 @@ export class MapAnimatorService implements OnDestroy {
     }
 
     const pois: LV95_Waypoint[] = [];
+    // de-duplicate by path point, not by coordinates: start and end of a loop are at the same place
+    const used = new Set<LV95_Waypoint>();
     for (const wp of waypoints) {
       const p = this.path_point_at(wp);
-      if (!p || pois.some((q) => GeometryUtils.pointsMatch(q, p))) continue;
+      if (!p || used.has(p)) continue;
+      used.add(p);
 
-      // keep what the user entered (or cleared) for a way point that stays where it was
-      const old_wp = this.state.pois.find((w) =>
-        GeometryUtils.pointsMatch(w, p),
-      );
+      // keep what the user entered (or cleared) for a way point that stays where it was;
+      // at the same place (start and end of a loop), the one at the closest distance along the route
+      const d = this.distance_of(p, wp);
+      const old_wp = this.state.pois
+        .filter((w) => GeometryUtils.pointsMatch(w, p))
+        .sort(
+          (a, b) =>
+            Math.abs((a.accumulated_distance ?? d) - d) -
+            Math.abs((b.accumulated_distance ?? d) - d),
+        )[0];
       const keep_name = !!old_wp && !!(old_wp.name || old_wp.auto_name);
       pois.push({
         x: p.x,
         y: p.y,
         h: p.h,
-        accumulated_distance: this.distance_of(p, wp),
+        accumulated_distance: d,
         is_waypoint: old_wp ? old_wp.is_waypoint : true,
         name: keep_name ? old_wp!.name || '' : wp.name || '',
         auto_name: keep_name ? old_wp!.auto_name || '' : wp.name || '',
