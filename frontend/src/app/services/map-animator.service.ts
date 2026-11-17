@@ -229,13 +229,8 @@ export class MapAnimatorService implements OnDestroy {
 
   public async add_way_point(point: LV95_Coordinates) {
     if (this.export_mode) return;
-
-    if (this.state.pois.length >= 21) {
-      this.snackBar.open('Maximal 21 Wegpunkte erlaubt', 'Schliessen', {
-        duration: 3000,
-      });
-      return;
-    }
+    // No limit here: these are points of the route, not of the walk-time table. The table is limited to
+    // 21 way points by the automatic selection, the backend and add_point_of_interest.
 
     const current_path = this.state.path;
     const current_anchors = this.state.anchor_points;
@@ -414,13 +409,6 @@ export class MapAnimatorService implements OnDestroy {
 
     const { new_coords, dragged_anchor, mousedown_coord } = event;
     const isInsert = !dragged_anchor;
-
-    if (isInsert && this.state.pois.length >= 21) {
-      this.snackBar.open('Maximal 21 Wegpunkte erlaubt', 'Schliessen', {
-        duration: 3000,
-      });
-      return;
-    }
 
     const current_path = this.state.path;
     const current_anchors = this.state.anchor_points;

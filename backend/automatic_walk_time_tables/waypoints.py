@@ -130,6 +130,20 @@ def place_waypoints(
         ):
             indices.append(len(pts) - 1)
 
+        # e.g. a route with 21 way points was extended: drop the interior way point that is closest to a
+        # neighbour, so the table keeps its limit and the new end
+        indices.sort(key=lambda i: pts[i].accumulated_distance)
+        while len(indices) > MAX_WAYPOINTS:
+
+            def gap(j):
+                d = pts[indices[j]].accumulated_distance
+                return min(
+                    d - pts[indices[j - 1]].accumulated_distance,
+                    pts[indices[j + 1]].accumulated_distance - d,
+                )
+
+            indices.pop(min(range(1, len(indices) - 1), key=gap))
+
     placed = []
     for i in indices:
         # a copy, so a route point requested twice is returned twice

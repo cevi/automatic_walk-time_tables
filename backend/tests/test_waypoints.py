@@ -295,6 +295,17 @@ class WaypointApiTest(unittest.TestCase):
         wps = self.client.post("/waypoints/manual", json=body).get_json()["waypoints"]
         self.assertEqual([w["accumulated_distance"] for w in wps], [20, 1500, 3000])
 
+    def test_extending_a_route_with_21_way_points_keeps_the_limit(
+        self, _features, _names
+    ):
+        # 21 way points on the first 2 km, the route now goes on to 3 km: the new end must be in, 21 at most
+        body = encoded(straight_path(3000))
+        body["waypoints"] = [{"accumulated_distance": d} for d in range(0, 2001, 100)]
+        body["include_start_end"] = True
+        wps = self.client.post("/waypoints/manual", json=body).get_json()["waypoints"]
+        self.assertEqual(len(wps), 21)
+        self.assertEqual(wps[-1]["accumulated_distance"], 3000)
+
     def test_manual_keeps_the_position_without_radius(self, _features, _names):
         body = encoded(straight_path(3000))
         body["waypoints"] = [{"accumulated_distance": 1080}]
