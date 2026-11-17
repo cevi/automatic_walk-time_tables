@@ -841,15 +841,17 @@ export class MapAnimatorService implements OnDestroy {
             Math.abs((a.accumulated_distance ?? d) - d) -
             Math.abs((b.accumulated_distance ?? d) - d),
         )[0];
-      const keep_name = !!old_wp && !!(old_wp.name || old_wp.auto_name);
+      // only a name the user changed (or cleared) is kept; an automatic name is replaced by the current one
+      const user_named =
+        !!old_wp && (old_wp.name || '') !== (old_wp.auto_name || '');
       pois.push({
         x: p.x,
         y: p.y,
         h: p.h,
         accumulated_distance: d,
         is_waypoint: old_wp ? old_wp.is_waypoint : true,
-        name: keep_name ? old_wp!.name || '' : wp.name || '',
-        auto_name: keep_name ? old_wp!.auto_name || '' : wp.name || '',
+        name: user_named ? old_wp!.name || '' : wp.name || '',
+        auto_name: wp.name || '',
         break_duration: old_wp?.break_duration || '',
       });
     }
