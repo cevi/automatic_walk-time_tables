@@ -37,8 +37,6 @@ MIN_GAP = 200
 """Way points closer than 200 m (with little height difference) are not worth a row in the table."""
 LANDMARK_CORRIDOR = 60
 """Objects of the index within this distance of the route are considered (see landmarks.MAX_OFFSET_VISIBLE)."""
-SNAP_PENALTY_PER_M = 0.2
-"""When snapping a manual way point, a landmark loses this much score per meter it is away."""
 
 
 def _mark_landmarks(path: Path) -> int:
@@ -97,13 +95,12 @@ START_END_DISTANCE = 50
 def place_waypoints(
     path: Path,
     requests_: List[dict],
-    snap_radius: float = 0,
     include_start_end: bool = False,
 ) -> List[WayPoint]:
     """
     Manual mode: puts each requested way point ({"accumulated_distance": m} or {"x": e, "y": n} in LV95) onto the
-    nearest point of the route. With snap_radius > 0, a way point is moved to the best landmark within that many
-    meters along the route. Returns the named way points in the order of the requests.
+    nearest point of the route, i.e. where the user put it, and names it. Returns the named way points in the order
+    of the requests.
 
     include_start_end: also return the start and the end of the route (first and last), unless a requested way
     point is already there, e.g. after the route was changed. Without requested way points, this returns the
@@ -112,7 +109,7 @@ def place_waypoints(
 
     if path.number_of_waypoints == 0:
         return []
-    # also without snapping: a way point at a landmark is named after it, as in the automatic mode
+    # a way point at a landmark is named after it, as in the automatic mode
     _mark_landmarks(path)
 
     pts = path.way_points
@@ -135,21 +132,6 @@ def place_waypoints(
 
     placed = []
     for i in indices:
-        if snap_radius > 0:
-            d = pts[i].accumulated_distance
-            candidates = [
-                p
-                for p in pts
-                if p.landmark is not None
-                and abs(p.accumulated_distance - d) <= snap_radius
-            ]
-            if candidates:
-                best = max(
-                    candidates,
-                    key=lambda p: p.landmark.score
-                    - SNAP_PENALTY_PER_M * abs(p.accumulated_distance - d),
-                )
-                i = pts.index(best)
         # a copy, so a route point requested twice is returned twice
         wp = WayPoint(pts[i].accumulated_distance, pts[i].point)
         wp.landmark = pts[i].landmark

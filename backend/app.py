@@ -114,13 +114,11 @@ def auto_waypoints():
 @app.route("/waypoints/manual", methods=["POST"])
 def manual_waypoints():
     """
-    Manual mode: puts way points chosen by the user onto the route and names them.
+    Manual mode: puts way points chosen by the user onto the route, exactly where the user put them, and names them.
 
     Body (JSON):
         route, elevation: as for /waypoints/auto
         waypoints:        [{"accumulated_distance": m} or {"x": e, "y": n}, ...] (LV95)
-        snap_radius:      optional, move each way point to the best landmark within this many meters along the
-                          route (e.g. the junction next to where the user clicked); 0 (default) keeps the position
         include_start_end: optional, also return the start and end of the route if no way point is there yet
     Response: {"status": "success", "waypoints": [way point, ...]} in the order of the request
     """
@@ -138,7 +136,6 @@ def manual_waypoints():
         placed = waypoints.place_waypoints(
             path,
             body["waypoints"],
-            snap_radius=float(body.get("snap_radius") or 0),
             include_start_end=bool(body.get("include_start_end")),
         )
         return _json_response(

@@ -6,12 +6,6 @@ import { Router, NavigationEnd } from '@angular/router';
 import { MapStateService } from './map-state.service';
 import { RouteHistoryService } from './route-history.service';
 import { ApiWaypoint, RouteApiService } from './route-api.service';
-
-/**
- * A way point added by the user is moved to a landmark (junction, bridge, spot height, ...) within this many meters
- * along the route, e.g. to the crossing next to where the user clicked.
- */
-const MANUAL_SNAP_RADIUS = 50;
 import { GeometryUtils } from '../utils/geometry.utils';
 import { decode } from '@googlemaps/polyline-codec';
 import { environment } from '../../environments/environment';
@@ -608,16 +602,14 @@ export class MapAnimatorService implements OnDestroy {
     this.state.updatePOIs(new_pois);
     this._recalculate_route_stats(new_pois);
 
-    // Let the backend place the point (on a landmark nearby, if there is one) and name it
-    let placed: ApiWaypoint | undefined;
+    // The way point stays exactly where the user clicked; the backend only names it
+    // (as in the automatic mode, e.g. after the station or hut at that point)
+    let name = '';
     try {
-      [placed] = await this.api.manualWaypoints(
-        this.state.path,
-        [pkt],
-        MANUAL_SNAP_RADIUS,
-      );
+      const [named] = await this.api.manualWaypoints(this.state.path, [pkt]);
+      name = named?.name || '';
     } catch {
-      placed = undefined;
+      name = '';
     }
 
     const pois = this.state.pois;
@@ -625,34 +617,9 @@ export class MapAnimatorService implements OnDestroy {
       (p) => Math.abs(p.x - pkt.x) < 0.1 && Math.abs(p.y - pkt.y) < 0.1,
     );
     if (!target) return; // removed while loading
-
-    const path_point = placed ? this.path_point_at(placed) : undefined;
-    const occupied =
-      path_point &&
-      pois.some(
-        (p) =>
-          p !== target &&
-          GeometryUtils.pointsMatch(p, path_point as LV95_Waypoint),
-      );
-    if (placed && path_point && !occupied) {
-      target.x = path_point.x;
-      target.y = path_point.y;
-      target.h = path_point.h;
-      target.accumulated_distance = this.distance_of(path_point, placed);
-      target.name = placed.name || '';
-    } else if (placed) {
-      // the landmark already is a way point: keep the clicked position
-      target.name = (await this.get_name_from_coords(pkt.x, pkt.y)) || '';
-    } else {
-      target.name = '';
-    }
-    target.auto_name = target.name;
-
-    const sorted = [...pois].sort(
-      (a, b) => (a.accumulated_distance || 0) - (b.accumulated_distance || 0),
-    );
-    this.state.updatePOIs(sorted);
-    this._recalculate_route_stats(sorted);
+    target.name = name;
+    target.auto_name = name;
+    this.state.updatePOIs([...pois]);
   }
 
   /**
@@ -804,7 +771,7 @@ export class MapAnimatorService implements OnDestroy {
     const positions = [...pois].sort(
       (a, b) => (a.accumulated_distance || 0) - (b.accumulated_distance || 0),
     );
-    return this.api.manualWaypoints(path, positions, 0, true);
+    return this.api.manualWaypoints(path, positions, true);
   }
 
   private applyWaypoints(waypoints: ApiWaypoint[]) {

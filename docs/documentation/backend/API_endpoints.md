@@ -145,22 +145,20 @@ Response:
 
 ### /waypoints/manual [POST]
 
-Manual mode: puts way points chosen by the user onto the route and names them.
+Manual mode: puts way points chosen by the user onto the route, exactly where the user put them, and names them.
+A way point at a landmark is named after it, as in the automatic mode.
 
 ```json
 {
   "route": "...",
   "elevation": "...",
   "waypoints": [{"accumulated_distance": 2486}, {"x": 2645830, "y": 1137370}],
-  "snap_radius": 50,
   "include_start_end": false
 }
 ```
 
 - `waypoints`: positions given as accumulated distance [m] or LV95 coordinates; each is placed on the nearest point
   of the route
-- `snap_radius` (optional, default 0): moves each way point to the best landmark within this many meters along the
-  route, e.g. to the crossing next to where the user clicked
 - `include_start_end` (optional, default false): also returns the start and end of the route if no way point is
   there, e.g. after the route was changed. Without way points, it returns the start, the highest and lowest point and
   the end.

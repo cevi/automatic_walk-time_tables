@@ -207,14 +207,11 @@ export class RouteApiService {
    *
    * @param positions the way points, by accumulated distance [km] or, if that is not known yet (while drawing),
    *   by coordinates
-   * @param snapRadius move each way point to a landmark (junction, bridge, spot height, ...) within this many
-   *   meters along the route; 0 keeps the position
    * @param includeStartEnd also return the start and end of the route if no way point is there
    */
   public async manualWaypoints(
     path: LV95_Waypoint[],
     positions: (LV95_Coordinates & { accumulated_distance?: number })[],
-    snapRadius = 0,
     includeStartEnd = false,
   ): Promise<ApiWaypoint[]> {
     if (path.length === 0) return [];
@@ -225,7 +222,6 @@ export class RouteApiService {
           ? { accumulated_distance: (p.accumulated_distance as number) * 1_000 }
           : { x: p.x, y: p.y },
       ),
-      snap_radius: snapRadius,
       include_start_end: includeStartEnd,
     });
     return result.waypoints;

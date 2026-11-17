@@ -251,13 +251,22 @@ class WaypointApiTest(unittest.TestCase):
         self.assertIsNotNone(landmark["landmark"])
         self.assertEqual(wps[0]["x"], E)
 
-    def test_manual_snaps_to_a_landmark_within_the_radius(self, _features, _names):
+    def test_manual_keeps_the_clicked_position_next_to_a_landmark(
+        self, _features, _names
+    ):
+        # the landmark at 1000 m does not attract a way point clicked 80 m away
         body = encoded(straight_path(3000))
         body["waypoints"] = [{"accumulated_distance": 1080}, {"x": E + 2500, "y": N}]
-        body["snap_radius"] = 100
         wps = self.client.post("/waypoints/manual", json=body).get_json()["waypoints"]
-        self.assertEqual([w["accumulated_distance"] for w in wps], [1000, 2500])
+        self.assertEqual([w["accumulated_distance"] for w in wps], [1080, 2500])
+        self.assertEqual(wps[0]["name"], "Name 1080")
+
+    def test_manual_way_point_at_a_landmark_is_named_after_it(self, _features, _names):
+        body = encoded(straight_path(3000))
+        body["waypoints"] = [{"accumulated_distance": 1000}]
+        wps = self.client.post("/waypoints/manual", json=body).get_json()["waypoints"]
         self.assertEqual(wps[0]["name"], "Name 1000")
+        self.assertIsNotNone(wps[0]["landmark"])
 
     def test_manual_adds_start_and_end_on_request(self, _features, _names):
         body = encoded(straight_path(3000))
