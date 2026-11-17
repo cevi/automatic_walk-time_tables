@@ -48,6 +48,7 @@ class DouglasPeuckerTransformer(PathTransformer):
         number_of_waypoints=21,
         landmark_bonus: float = 0.0,
         max_gap: float | None = None,
+        min_gap: float | None = None,
     ):
         """
         landmark_bonus: way points with a landmark (way_point.landmark, see landmarks.mark_landmarks) count as
@@ -55,12 +56,16 @@ class DouglasPeuckerTransformer(PathTransformer):
             deviation where there is nothing to see. 0 disables the bias.
         max_gap: after the selection, stretches longer than this [in meters] get an additional way point, preferably
             a landmark near the middle. None disables it.
+        min_gap: after the selection, of two way points closer than this [in meters] and with less than
+            min_gap_height meters height difference, the less important one is dropped (start, end, highest and
+            lowest point are kept; otherwise the higher landmark score wins). None disables it.
         """
         super().__init__()
 
         self.number_of_waypoints = number_of_waypoints
         self.landmark_bonus = landmark_bonus
         self.max_gap = max_gap
+        self.min_gap = min_gap
         self.__logger = logging.getLogger(__name__)
 
         if pois is None:
@@ -79,9 +84,76 @@ class DouglasPeuckerTransformer(PathTransformer):
         way_points = self.replace_with_close_by_pois(way_points, path)
         way_points = self.add_pois(way_points)
 
+        if self.min_gap:
+            way_points = self.thin_out(way_points)
         if self.max_gap:
             way_points = self.fill_gaps(way_points, path)
 
+        return way_points
+
+    min_gap_height = 30
+    """Way points closer than min_gap are both kept if their heights differ by at least this [in meters]."""
+
+    def _importance(self, pt: WayPoint, first: WayPoint, last: WayPoint) -> float:
+        if pt is first or pt is last:
+            return math.inf
+        if any(
+            abs(poi.accumulated_distance - pt.accumulated_distance) < 1
+            for poi in self.pois.way_points
+        ):
+            return 1000.0  # highest / lowest point or a point fixed by the user
+        landmark = getattr(pt, "landmark", None)
+        return landmark.score if landmark is not None else 0.0
+
+    extreme_landmark_height = 10
+    """A landmark replaces a close highest / lowest point if their heights differ by at most this [in meters]."""
+
+    def _landmark_at_extreme(self, a: WayPoint, b: WayPoint, first: WayPoint):
+        """
+        Of a highest / lowest point and a landmark next to it at almost the same height, returns the landmark:
+        it represents the profile as well and can be recognised. None if that is not the case.
+        """
+        if first in (a, b) or abs(a.point.h - b.point.h) > self.extreme_landmark_height:
+            return None
+        for extreme, other in ((a, b), (b, a)):
+            if (
+                self._importance(extreme, first, None) == 1000.0
+                and getattr(other, "landmark", None) is not None
+                and self._importance(other, first, None) < 1000.0
+            ):
+                return other
+        return None
+
+    def thin_out(self, way_points: Path) -> Path:
+        """Drops the less important of two way points that are closer than min_gap (see __init__)."""
+
+        pts = list(way_points.way_points)
+        if len(pts) < 3:
+            return way_points
+        first, last = pts[0], pts[-1]
+
+        kept = [first]
+        for pt in pts[1:]:
+            prev = kept[-1]
+            close = (
+                pt.accumulated_distance - prev.accumulated_distance < self.min_gap
+                and abs(pt.point.h - prev.point.h) < self.min_gap_height
+            )
+            if not close or (pt is last and prev is first):
+                kept.append(pt)
+            elif pt is last:
+                kept[-1] = pt  # the end is always kept
+            elif self._landmark_at_extreme(prev, pt, first) is not None:
+                kept[-1] = self._landmark_at_extreme(prev, pt, first)
+            elif self._importance(pt, first, last) > self._importance(
+                prev, first, last
+            ):
+                kept[-1] = pt
+            # else: drop pt
+
+        for pt in pts:
+            if pt not in kept:
+                way_points.remove(pt)
         return way_points
 
     def bonus(self, pt: WayPoint) -> float:

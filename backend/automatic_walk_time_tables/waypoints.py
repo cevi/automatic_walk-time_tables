@@ -33,6 +33,8 @@ LANDMARK_BONUS = 20
 """See DouglasPeuckerTransformer: a landmark counts as deviating up to 20 m more from the secant."""
 MAX_GAP = 1500
 """A walk-time table should have a way point at least every 1.5 km."""
+MIN_GAP = 200
+"""Way points closer than 200 m (with little height difference) are not worth a row in the table."""
 LANDMARK_CORRIDOR = 25
 SNAP_PENALTY_PER_M = 0.2
 """When snapping a manual way point, a landmark loses this much score per meter it is away."""
@@ -68,6 +70,7 @@ def select_waypoints(path: Path, fixed_distances: Optional[List[float]] = None) 
         number_of_waypoints=MAX_WAYPOINTS,
         landmark_bonus=LANDMARK_BONUS,
         max_gap=MAX_GAP,
+        min_gap=MIN_GAP,
     ).transform(path)
     return NamingTransformer().transform(selected)
 
@@ -108,8 +111,8 @@ def place_waypoints(
 
     if path.number_of_waypoints == 0:
         return []
-    if snap_radius > 0:
-        _mark_landmarks(path)
+    # also without snapping: a way point at a landmark is named after it, as in the automatic mode
+    _mark_landmarks(path)
 
     pts = path.way_points
     indices = [_nearest_index(path, req) for req in requests_]

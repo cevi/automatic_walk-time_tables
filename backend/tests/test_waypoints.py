@@ -114,6 +114,27 @@ class LandmarkSelectionTest(unittest.TestCase):
             [0, 1300, 3000],
         )
 
+    def test_close_way_points_keep_the_more_important_one(self):
+        path = straight_path(1000)
+        mark_landmarks(path, [feature("Bruecke", 300), feature("Weggabelung", 400)])
+        selection = Path()
+        for d in (0, 300, 400, 900, 1000):
+            selection.append(path.way_points[d // 10])
+        thinned = DouglasPeuckerTransformer(min_gap=200).thin_out(selection)
+        # 400 is dropped for the bridge (higher score), 900 for the end
+        self.assertEqual(
+            [round(wp.accumulated_distance) for wp in thinned.way_points],
+            [0, 300, 1000],
+        )
+
+    def test_close_way_points_with_a_height_difference_are_kept(self):
+        path = straight_path(1000, height=lambda d: 500 + d / 2)
+        selection = Path()
+        for d in (0, 100, 1000):
+            selection.append(path.way_points[d // 10])
+        thinned = DouglasPeuckerTransformer(min_gap=200).thin_out(selection)
+        self.assertEqual(thinned.number_of_waypoints, 3)
+
     def test_gap_without_landmark_is_filled_in_the_middle(self):
         path = straight_path(3000)
         selection = Path()
@@ -214,10 +235,24 @@ class WaypointApiTest(unittest.TestCase):
         r = self.client.post("/names", json={"points": [[E + 5, N]]})
         self.assertEqual(r.get_json()["names"][0]["name"], "Name 5")
 
+    def test_manual_without_distance_uses_the_coordinates(self, _features, _names):
+        # while drawing, the frontend knows no distances yet
+        body = encoded(straight_path(3000))
+        body["waypoints"] = [{"accumulated_distance": None, "x": E + 700, "y": N}]
+        wps = self.client.post("/waypoints/manual", json=body).get_json()["waypoints"]
+        self.assertEqual(wps[0]["accumulated_distance"], 700)
+
     def test_missing_route_is_a_bad_request(self, _features, _names):
         self.assertEqual(self.client.post("/waypoints/auto", json={}).status_code, 400)
         self.assertEqual(
             self.client.post("/waypoints/manual", json={"route": "x"}).status_code, 400
+        )
+
+    def test_way_point_without_position_is_a_bad_request(self, _features, _names):
+        body = encoded(straight_path(3000))
+        body["waypoints"] = [{"accumulated_distance": None}]
+        self.assertEqual(
+            self.client.post("/waypoints/manual", json=body).status_code, 400
         )
 
 

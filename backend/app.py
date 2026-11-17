@@ -127,6 +127,12 @@ def manual_waypoints():
     body = request.get_json(silent=True)
     if not body or "route" not in body or not isinstance(body.get("waypoints"), list):
         return _error("Die Route oder die Wegpunkte fehlen.", 400)
+    for wp in body["waypoints"]:
+        if not isinstance(wp, dict) or (
+            wp.get("accumulated_distance") is None
+            and (wp.get("x") is None or wp.get("y") is None)
+        ):
+            return _error("Jeder Wegpunkt braucht eine Distanz oder Koordinaten.", 400)
     try:
         path = extract_path(body, "route", "elevation")
         placed = waypoints.place_waypoints(
