@@ -17,6 +17,9 @@ from automatic_walk_time_tables.utils.path import Path
 
 WEIGHTS = {
     # recognisable in the terrain (and usually printed on the map)
+    "Gasthof abgelegen": 100,  # remote inns and mountain huts, e.g. "Bättmer-Hitta"
+    "Schutzhuette": 100,
+    "Aussichtsturm": 85,
     "Hauptgipfel": 100,
     "Gipfel": 100,
     "Pass": 100,
@@ -60,6 +63,21 @@ STRONG = 60
 
 MAX_OFFSET = 20
 """A feature must be at most this far from the route [in meters]."""
+VISIBLE_FROM_AFAR = {
+    "Gasthof abgelegen",
+    "Schutzhuette",
+    "Aussichtsturm",
+    "Hauptgipfel",
+    "Gipfel",
+    "Gipfelkreuz",
+    "Pass",
+    "Strassenpass",
+    "Kirche",
+    "Kapelle",
+    "Turm",
+}
+MAX_OFFSET_VISIBLE = 60
+"""Huts, summits, passes, chapels and towers can be seen from further away: at most this far from the route."""
 CLUSTER_DISTANCE = 10
 """Features closer than this along the route [in meters] form one landmark."""
 TURN_ANGLE = 45
@@ -115,11 +133,16 @@ def mark_landmarks(path: Path, features: List[dict], max_offset=MAX_OFFSET) -> i
     hits = []  # (index, weight, feature)
     for f in features:
         weight = WEIGHTS.get(f.get("object_type"))
-        if weight is None or f.get("offset", 0) > max_offset:
+        limit = (
+            max(max_offset, MAX_OFFSET_VISIBLE)
+            if f.get("object_type") in VISIBLE_FROM_AFAR
+            else max_offset
+        )
+        if weight is None or f.get("offset", 0) > limit:
             continue
         d2 = (xy[:, 0] - f["e"]) ** 2 + (xy[:, 1] - f["n"]) ** 2
         i = int(np.argmin(d2))
-        if math.sqrt(d2[i]) <= max_offset + 10:  # route points are up to 10 m apart
+        if math.sqrt(d2[i]) <= limit + 10:  # route points are up to 10 m apart
             hits.append((i, weight, f))
     hits.sort(key=lambda h: dist[h[0]])
 

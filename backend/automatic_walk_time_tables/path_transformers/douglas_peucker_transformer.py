@@ -86,10 +86,78 @@ class DouglasPeuckerTransformer(PathTransformer):
 
         if self.min_gap:
             way_points = self.thin_out(way_points)
+            if self.landmark_bonus:
+                way_points = self.move_to_landmarks(way_points, path)
         if self.max_gap:
             way_points = self.fill_gaps(way_points, path)
 
         return way_points
+
+    move_penalty = 0.05
+    """Score a landmark loses per meter it is away from the selected way point (see move_to_landmarks)."""
+    move_margin = 10
+    """A landmark must score this much more than the selected way point to replace it."""
+    move_profile_slack = 10
+    """Moving may increase the deviation of the profile between the neighbours by at most this [in meters]."""
+
+    @staticmethod
+    def _profile_error(dist, heights, d0, h0, d1, h1, d2, h2) -> float:
+        """Max vertical distance of the route profile from the secants (d0, h0)-(d1, h1)-(d2, h2)."""
+        err = 0.0
+        for (a, ha), (b, hb) in (((d0, h0), (d1, h1)), ((d1, h1), (d2, h2))):
+            mask = (dist > a) & (dist < b)
+            if b > a and mask.any():
+                line = ha + (hb - ha) * (dist[mask] - a) / (b - a)
+                err = max(err, float(np.max(np.abs(heights[mask] - line))))
+        return err
+
+    def move_to_landmarks(self, way_points: Path, path: Path) -> Path:
+        """
+        Replaces a selected way point by a clearly better landmark between its neighbours, e.g. a fork by the
+        mountain inn 400 m further on, if the elevation profile is represented as well (see the move_* settings).
+        Start, end, highest and lowest point and points fixed by the user stay.
+        """
+
+        pts = list(way_points.way_points)
+        if len(pts) < 3:
+            return way_points
+        dist = np.array([p.accumulated_distance for p in path.way_points])
+        heights = np.array([p.point.h for p in path.way_points])
+        landmarks = [p for p in path.way_points if p.landmark is not None]
+        first, last = pts[0], pts[-1]
+        gap = self.min_gap or 0
+
+        for i in range(1, len(pts) - 1):
+            cur, prev, nxt = pts[i], pts[i - 1], pts[i + 1]
+            if self._importance(cur, first, last) >= 1000:
+                continue
+            d0, h0 = prev.accumulated_distance, prev.point.h
+            d2, h2 = nxt.accumulated_distance, nxt.point.h
+            base_err = self._profile_error(
+                dist, heights, d0, h0, cur.accumulated_distance, cur.point.h, d2, h2
+            )
+            cur_score = cur.landmark.score if cur.landmark is not None else 0.0
+
+            best, best_score = None, cur_score + self.move_margin
+            for lm in landmarks:
+                d = lm.accumulated_distance
+                if not (d0 + gap <= d <= d2 - gap) or lm is cur:
+                    continue
+                score = lm.landmark.score - self.move_penalty * abs(
+                    d - cur.accumulated_distance
+                )
+                if score <= best_score:
+                    continue
+                err = self._profile_error(dist, heights, d0, h0, d, lm.point.h, d2, h2)
+                if err <= base_err + self.move_profile_slack:
+                    best, best_score = lm, score
+            if best is not None:
+                pts[i] = best
+
+        moved = Path()
+        for p in pts:
+            moved.append(p)
+        return moved
 
     min_gap_height = 30
     """Way points closer than min_gap are both kept if their heights differ by at least this [in meters]."""

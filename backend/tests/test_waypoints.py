@@ -127,6 +127,37 @@ class LandmarkSelectionTest(unittest.TestCase):
             [0, 300, 1000],
         )
 
+    def test_fork_is_replaced_by_a_hut_further_on_a_steady_climb(self):
+        path = straight_path(2000, height=lambda d: 500 + d / 10)
+        mark_landmarks(
+            path, [feature("Weggabelung", 600), feature("Gasthof abgelegen", 1000)]
+        )
+        selection = Path()
+        for d in (0, 600, 2000):
+            selection.append(path.way_points[d // 10])
+        moved = DouglasPeuckerTransformer(min_gap=200).move_to_landmarks(
+            selection, path
+        )
+        self.assertEqual(
+            [round(wp.accumulated_distance) for wp in moved.way_points], [0, 1000, 2000]
+        )
+
+    def test_point_on_a_summit_is_not_moved_to_a_hut_below(self):
+        # the selected point is the top of a bump; the hut 400 m further is 40 m lower
+        path = straight_path(
+            2000, height=lambda d: 500 + max(0, 100 - abs(d - 600) / 4)
+        )
+        mark_landmarks(path, [feature("Gasthof abgelegen", 1000)])
+        selection = Path()
+        for d in (0, 600, 2000):
+            selection.append(path.way_points[d // 10])
+        moved = DouglasPeuckerTransformer(min_gap=200).move_to_landmarks(
+            selection, path
+        )
+        self.assertEqual(
+            [round(wp.accumulated_distance) for wp in moved.way_points], [0, 600, 2000]
+        )
+
     def test_close_way_points_with_a_height_difference_are_kept(self):
         path = straight_path(1000, height=lambda d: 500 + d / 2)
         selection = Path()

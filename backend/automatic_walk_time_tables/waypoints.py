@@ -35,7 +35,8 @@ MAX_GAP = 1500
 """A walk-time table should have a way point at least every 1.5 km."""
 MIN_GAP = 200
 """Way points closer than 200 m (with little height difference) are not worth a row in the table."""
-LANDMARK_CORRIDOR = 25
+LANDMARK_CORRIDOR = 60
+"""Objects of the index within this distance of the route are considered (see landmarks.MAX_OFFSET_VISIBLE)."""
 SNAP_PENALTY_PER_M = 0.2
 """When snapping a manual way point, a landmark loses this much score per meter it is away."""
 
