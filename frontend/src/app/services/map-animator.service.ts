@@ -606,7 +606,12 @@ export class MapAnimatorService implements OnDestroy {
     // (as in the automatic mode, e.g. after the station or hut at that point)
     let name = '';
     try {
-      const [named] = await this.api.manualWaypoints(this.state.path, [pkt]);
+      const position = this.path_has_distances()
+        ? pkt
+        : { x: pkt.x, y: pkt.y, accumulated_distance: undefined };
+      const [named] = await this.api.manualWaypoints(this.state.path, [
+        position,
+      ]);
       name = named?.name || '';
     } catch {
       name = '';
@@ -623,24 +628,37 @@ export class MapAnimatorService implements OnDestroy {
   }
 
   /**
-   * The point of the current path at a way point returned by the backend. The backend receives the route rounded
-   * to meters, so its coordinates are matched by the distance along the route.
+   * Whether the points of the current path carry distances along the route. While a route is drawn, its points
+   * come from Valhalla with a distance of 0 (or none); the distances exist once the route was parsed.
    */
-  /** Accumulated distance [km] of a path point, or the backend's value while the path has none (drawing). */
+  private path_has_distances(): boolean {
+    const path = this.state.path;
+    if (path.length < 2) return false;
+    for (let i = 0; i < path.length; i++) {
+      const d = path[i].accumulated_distance;
+      if (!Number.isFinite(d)) return false;
+      if (i > 0 && d < path[i - 1].accumulated_distance) return false;
+    }
+    return path[path.length - 1].accumulated_distance > 0;
+  }
+
+  /** Accumulated distance [km] of a way point: the path's while it has distances, otherwise the backend's. */
   private distance_of(path_point: LV95_Waypoint, wp: ApiWaypoint): number {
-    return Number.isFinite(path_point.accumulated_distance)
+    return this.path_has_distances()
       ? path_point.accumulated_distance
       : wp.accumulated_distance / 1000;
   }
 
+  /**
+   * The point of the current path at a way point returned by the backend. The backend receives the route rounded
+   * to meters, so the way point is matched by its distance along the route, or by its coordinates while the path
+   * has no distances (drawing).
+   */
   private path_point_at(wp: ApiWaypoint): LV95_Waypoint | undefined {
     const path = this.state.path;
     if (path.length === 0) return undefined;
 
-    // While drawing, the path has no distances yet: match by coordinates
-    const has_distances = path.every((p) =>
-      Number.isFinite(p.accumulated_distance),
-    );
+    const has_distances = this.path_has_distances();
     const d = wp.accumulated_distance / 1000;
     const offset = (p: LV95_Waypoint) =>
       has_distances
@@ -768,9 +786,15 @@ export class MapAnimatorService implements OnDestroy {
     if (this.state.auto_waypoints) {
       return this.api.autoWaypoints(path);
     }
-    const positions = [...pois].sort(
-      (a, b) => (a.accumulated_distance || 0) - (b.accumulated_distance || 0),
-    );
+    // While drawing, distances change whenever a point is inserted: send the way points by coordinates then
+    const by_distance = this.path_has_distances();
+    const positions = [...pois]
+      .sort(
+        (a, b) => (a.accumulated_distance || 0) - (b.accumulated_distance || 0),
+      )
+      .map((p) =>
+        by_distance ? p : { x: p.x, y: p.y, accumulated_distance: undefined },
+      );
     return this.api.manualWaypoints(path, positions, true);
   }
 
