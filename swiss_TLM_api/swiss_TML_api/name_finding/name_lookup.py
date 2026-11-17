@@ -16,15 +16,22 @@ IGNORED_TYPES = (
 )
 """Objects that are never used as a name (dry gullies and pressure pipelines)."""
 
-PRETTY_NAMES = {
-    "Bruecke": "Brücke",
-    "Bruecke (Wanderweg)": "Brücke",
-    "Bruecke (Bergwanderweg)": "Brücke",
-    "Bruecke mit Treppe": "Brücke mit Treppe",
-    "Unterfuehrung": "Unterführung",
-    "Unterfuehrung mit Treppe": "Unterführung mit Treppe",
-}
-"""Names of the index that are just the object type, without umlauts."""
+PRETTY_PREFIXES = {"Bruecke": "Brücke", "Unterfuehrung": "Unterführung"}
+"""Names of structures in the index start with the object type, written without umlauts."""
+
+TRAIL_CATEGORIES = (" (Wanderweg)", " (Bergwanderweg)", " (Alpinwanderweg)")
+"""Older indexes name bridges after the hiking trail category ("Bruecke (Wanderweg)"), which is no name."""
+
+
+def pretty_name(name: str) -> str:
+    """ "Bruecke (Linth)" -> "Brücke (Linth)", "Bruecke (Wanderweg)" -> "Brücke"."""
+    for suffix in TRAIL_CATEGORIES:
+        if name.endswith(suffix):
+            name = name[: -len(suffix)]
+    for raw, pretty in PRETTY_PREFIXES.items():
+        if name.startswith(raw):
+            name = pretty + name[len(raw) :]
+    return name
 
 
 def _is_field_name(obj) -> bool:
@@ -83,7 +90,7 @@ def find_name(candidates: list, e: float, n: float) -> dict:
         named = [c for c in candidates if c.name and str(c.name).strip()]
         best_n = named[0] if named else candidates[0]
 
-    name = PRETTY_NAMES.get(best_n.name, best_n.name)
+    name = pretty_name(best_n.name)
     others = [c for c in candidates if c is not best_n]
 
     if (

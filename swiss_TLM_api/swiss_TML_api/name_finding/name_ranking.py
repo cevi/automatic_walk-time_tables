@@ -48,6 +48,8 @@ JUNCTION = Category(10, 25)
 # Bridges, footbridges, fords, underpasses: visible on the ground, but the index has no name for them ("Bruecke"),
 # so a junction at the same point (which carries street or field names) is the better name.
 CROSSING = Category(9, 20)
+NAMED_CROSSING = Category(30, 20)
+"""A bridge named after the river it crosses ("Bruecke (Linth)") is a better name than a junction at the point."""
 FOREST_EDGE = Category(8, 15)
 PATH_END = Category(5, 25)
 
@@ -145,6 +147,8 @@ def classify(name: str | None, object_type: str | None) -> Category:
 
     if category is INN and _HUT.search(name_lower):
         return HUT
+    if category is CROSSING and "(" in name_lower and "wanderweg)" not in name_lower:
+        return NAMED_CROSSING
 
     if category in KEYWORD_NAME_TYPES:
         if _HUT.search(name_lower) or object_type.lower() == "abgelegener gasthof":
