@@ -17,22 +17,24 @@ from automatic_walk_time_tables.utils.path import Path
 
 WEIGHTS = {
     # recognisable in the terrain (and usually printed on the map)
-    "Gasthof abgelegen": 100,  # remote inns and mountain huts, e.g. "Bättmer-Hitta"
-    "Schutzhuette": 100,
-    "Aussichtsturm": 85,
     "Hauptgipfel": 100,
     "Gipfel": 100,
     "Pass": 100,
     "Strassenpass": 100,
+    # stations: in a village or resort the station is the place everybody knows (e.g. the cable car station
+    # Fiescheralp), so it ranks above the hotels and inns around it
+    "Uebrige Bahnen": 100,  # cable car and funicular stations
+    "Haltestelle Bahn": 100,
+    "Haltestelle Schiff": 100,
+    "Gasthof abgelegen": 95,  # remote inns and mountain huts, e.g. "Bättmer-Hitta"
+    "Schutzhuette": 95,
     "Gipfelkreuz": 95,
     "Haupthuegel": 95,
     "Huegel": 90,
-    "Haltestelle Bahn": 90,
-    "Haltestelle Schiff": 90,
+    "Aussichtsturm": 85,
     "Haltestelle Bus": 85,
     "Staudamm": 85,
     "Staumauer": 85,
-    "Uebrige Bahnen": 80,
     "Kirche": 80,
     "Kapelle": 75,
     "Turm": 70,
@@ -64,6 +66,9 @@ STRONG = 60
 MAX_OFFSET = 20
 """A feature must be at most this far from the route [in meters]."""
 VISIBLE_FROM_AFAR = {
+    "Uebrige Bahnen",
+    "Haltestelle Bahn",
+    "Haltestelle Schiff",
     "Gasthof abgelegen",
     "Schutzhuette",
     "Aussichtsturm",
@@ -77,7 +82,24 @@ VISIBLE_FROM_AFAR = {
     "Turm",
 }
 MAX_OFFSET_VISIBLE = 60
-"""Huts, summits, passes, chapels and towers can be seen from further away: at most this far from the route."""
+"""Stations, huts, summits, passes, chapels and towers can be seen from further away: at most this far."""
+OWN_NAME_TYPES = {
+    "Uebrige Bahnen",
+    "Haltestelle Bahn",
+    "Haltestelle Schiff",
+    "Haltestelle Bus",
+    "Gasthof abgelegen",
+    "Schutzhuette",
+    "Hauptgipfel",
+    "Gipfel",
+    "Pass",
+    "Strassenpass",
+    "Ort",
+}
+"""
+Landmarks with a name of their own: a way point at such a landmark is named after it, not after what the naming
+service ranks highest around it (e.g. the station "Fiescheralp", not the hotel 60 m away).
+"""
 CLUSTER_DISTANCE = 10
 """Features closer than this along the route [in meters] form one landmark."""
 TURN_ANGLE = 45
@@ -92,6 +114,9 @@ class Landmark:
     feature: tuple  # LV95 (e, n) of the feature that is named
     types: List[str] = field(default_factory=list)
     reasons: List[str] = field(default_factory=list)
+    name: str | None = (
+        None  # the landmark's own name, if it has one (see OWN_NAME_TYPES)
+    )
 
     def to_json(self):
         return {"score": self.score, "types": self.types, "reasons": self.reasons}
@@ -165,8 +190,13 @@ def mark_landmarks(path: Path, features: List[dict], max_offset=MAX_OFFSET) -> i
         if strong & JUNCTIONS and _turn_angle(xy, dist, i) >= TURN_ANGLE:
             score += TURN_BONUS
             reasons.append("route turns")
+        own_name = best.get("name") if best["object_type"] in OWN_NAME_TYPES else None
         path.way_points[i].landmark = Landmark(
-            score=score, feature=(best["e"], best["n"]), types=types, reasons=reasons
+            score=score,
+            feature=(best["e"], best["n"]),
+            types=types,
+            reasons=reasons,
+            name=own_name or None,
         )
 
     return len(groups)

@@ -57,6 +57,19 @@ class MarkLandmarksTest(unittest.TestCase):
         self.assertEqual(lm[400].score, WEIGHTS["Kotierter Punkt"] + COMBO_BONUS)
         self.assertEqual(lm[400].types, ["Kotierter Punkt", "Weggabelung"])
 
+    def test_station_outranks_a_hotel_and_keeps_its_own_name(self):
+        path = straight_path(1000)
+        mark_landmarks(
+            path,
+            [
+                feature("Gasthof abgelegen", 400, 38, 38, name="Hotel Eggishorn"),
+                feature("Uebrige Bahnen", 560, 14, 14, name="Fiescheralp"),
+            ],
+        )
+        lm = landmarks(path)
+        self.assertGreater(lm[560].score, lm[400].score)
+        self.assertEqual(lm[560].name, "Fiescheralp")
+
     def test_field_names_and_far_objects_are_no_landmarks(self):
         path = straight_path(1000)
         mark_landmarks(

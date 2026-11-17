@@ -49,6 +49,12 @@ class NamingTransformer(PathTransformer):
         for wp, (e, n), r in zip(way_points, coords, names):
             wp.name = r["name"]
             wp.name_type = r["object_type"]
+            landmark = getattr(wp, "landmark", None)
+            if landmark is not None and landmark.name:
+                # a station, hut, summit, ... is named after itself, even if the naming service ranks
+                # something else nearby higher (e.g. a hotel next to the cable car station)
+                wp.name = landmark.name
+                wp.name_type = landmark.types[0] if landmark.types else ""
             if not wp.name and self.use_default_name:
                 wp.name = f"{round(e)}, {round(n)}"
 
