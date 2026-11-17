@@ -8,6 +8,10 @@ class WayPoint:
         self.accumulated_distance = accumulated_distance
         self.point = point
         self.__name = name
+        # set by path_transformers.landmarks.mark_landmarks if a landmark lies at this point (not serialized)
+        self.landmark = None
+        # object type of the named object, set by the NamingTransformer (not serialized)
+        self.name_type = ""
 
     def __str__(self) -> str:
         return (

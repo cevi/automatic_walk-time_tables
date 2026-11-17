@@ -28,6 +28,8 @@ from automatic_walk_time_tables.path_transformers.heigth_fetcher_transfomer impo
     HeightFetcherTransformer,
 )
 from automatic_walk_time_tables.path_transformers.pois_transfomer import POIsTransformer
+from automatic_walk_time_tables import waypoints
+from automatic_walk_time_tables.utils import swiss_tlm_api
 from automatic_walk_time_tables.utils.error import UserException
 from automatic_walk_time_tables.utils.gpx_creator import (
     create_gpx_file,
@@ -66,29 +68,121 @@ app.url_map.converters["export_uuid"] = ExportUUIDConverter
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
 
+def _json_response(data: dict, status: int = 200):
+    return app.response_class(
+        response=json.dumps(data), status=status, mimetype="application/json"
+    )
+
+
+def _error(message: str, status: int):
+    return _json_response({"status": GeneratorStatus.ERROR, "message": message}, status)
+
+
+@app.route("/waypoints/auto", methods=["POST"])
+def auto_waypoints():
+    """
+    Automatic mode: selects and names the way points of a walk-time table.
+
+    Body (JSON):
+        route:           polyline (precision 0) of the LV95 route coordinates
+        elevation:       optional polyline (precision 0) of [accumulated distance in m, height] per route point
+        fixed_distances: optional accumulated distances [m] of way points that must be kept
+    Response: {"status": "success", "waypoints": [way point, ...]}, see waypoints.waypoint_to_json
+    """
+    body = request.get_json(silent=True)
+    if not body or "route" not in body:
+        return _error("Die Route fehlt.", 400)
+    try:
+        path = extract_path(body, "route", "elevation")
+        selected = waypoints.select_waypoints(path, body.get("fixed_distances"))
+        return _json_response(
+            {
+                "status": GeneratorStatus.SUCCESS,
+                "waypoints": [
+                    waypoints.waypoint_to_json(wp) for wp in selected.way_points
+                ],
+            }
+        )
+    except UserException as e:
+        logger.error(e)
+        return _error(str(e), 500)
+    except Exception as e:
+        logger.exception(e)
+        return _error("Die Wegpunkte konnten nicht berechnet werden.", 500)
+
+
+@app.route("/waypoints/manual", methods=["POST"])
+def manual_waypoints():
+    """
+    Manual mode: puts way points chosen by the user onto the route and names them.
+
+    Body (JSON):
+        route, elevation: as for /waypoints/auto
+        waypoints:        [{"accumulated_distance": m} or {"x": e, "y": n}, ...] (LV95)
+        snap_radius:      optional, move each way point to the best landmark within this many meters along the
+                          route (e.g. the junction next to where the user clicked); 0 (default) keeps the position
+        include_start_end: optional, also return the start and end of the route if no way point is there yet
+    Response: {"status": "success", "waypoints": [way point, ...]} in the order of the request
+    """
+    body = request.get_json(silent=True)
+    if not body or "route" not in body or not isinstance(body.get("waypoints"), list):
+        return _error("Die Route oder die Wegpunkte fehlen.", 400)
+    try:
+        path = extract_path(body, "route", "elevation")
+        placed = waypoints.place_waypoints(
+            path,
+            body["waypoints"],
+            snap_radius=float(body.get("snap_radius") or 0),
+            include_start_end=bool(body.get("include_start_end")),
+        )
+        return _json_response(
+            {
+                "status": GeneratorStatus.SUCCESS,
+                "waypoints": [waypoints.waypoint_to_json(wp) for wp in placed],
+            }
+        )
+    except UserException as e:
+        logger.error(e)
+        return _error(str(e), 500)
+    except Exception as e:
+        logger.exception(e)
+        return _error("Die Wegpunkte konnten nicht gesetzt werden.", 500)
+
+
+@app.route("/names", methods=["POST"])
+def names():
+    """
+    Names for LV95 coordinates.
+
+    Body (JSON): {"points": [[e, n], ...]}
+    Response: {"status": "success", "names": [{"name", "object_type", "offset"}, ...]} in the order of the points;
+        name is "" if no object is close enough.
+    """
+    body = request.get_json(silent=True) or {}
+    points = body.get("points")
+    if not isinstance(points, list):
+        return _error("Die Koordinaten fehlen.", 400)
+    try:
+        return _json_response(
+            {
+                "status": GeneratorStatus.SUCCESS,
+                "names": swiss_tlm_api.fetch_names(points),
+            }
+        )
+    except requests.exceptions.RequestException as e:
+        logger.error("Error while fetching names: %s", e)
+        return _error("Die Namen konnten nicht geladen werden.", 502)
+
+
 @app.route("/get_name", methods=["POST"])
 def get_name():
+    """Deprecated, use POST /names. Kept for frontends loaded before the API change."""
     try:
         data = request.json
-        lat = data.get("lat")
-        lon = data.get("lon")
-
-        url = "http://awt-swiss-tml-api:1848/swiss_name"
-        payload = json.dumps([[lat, lon]])
-        headers = {"Content-Type": "application/json"}
-
-        req = requests.request("GET", url, headers=headers, data=payload)
-        resp = req.json()
-
-        name = ""
-        if len(resp) > 0 and resp[0]["offset"] <= 100:
-            name = resp[0]["swiss_name"]
-
-        return jsonify({"name": name})
-    except Exception as e:
-        import traceback
-
-        traceback.print_exc()
+        result = swiss_tlm_api.fetch_names([[data.get("lat"), data.get("lon")]])
+        return jsonify({"name": result[0]["name"] if result else ""})
+    except Exception:
+        logger.exception("Error while fetching a name")
         return jsonify({"name": ""})
 
 
@@ -109,8 +203,7 @@ def get_map_numbers():
         return jsonify({"map_numbers": resp})
 
     except Exception:
-        logger.error("Error retrieving map_numbers")
-        traceback.print_exc()
+        logger.exception("Error retrieving map_numbers")
         return jsonify({"map_numbers": ""})
 
 
@@ -174,6 +267,7 @@ def parse_route():
 
 @app.route("/create-walk-time-table", methods=["POST"])
 def create_walk_time_table():
+    """Deprecated, use POST /waypoints/auto or /waypoints/manual. Kept for frontends loaded before the API change."""
     try:
         if request.is_json:
             options = request.get_json()

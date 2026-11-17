@@ -39,10 +39,28 @@ class DouglasPeuckerTransformer(PathTransformer):
     closeness_threshold = 0.03
     maximum_poi_error = 50
 
-    def __init__(self, pois: Path = None, number_of_waypoints=21):
+    gap_fill_margin = 0.25
+    """A point that fills a gap lies at least this fraction of the gap away from both ends."""
+
+    def __init__(
+        self,
+        pois: Path = None,
+        number_of_waypoints=21,
+        landmark_bonus: float = 0.0,
+        max_gap: float | None = None,
+    ):
+        """
+        landmark_bonus: way points with a landmark (way_point.landmark, see landmarks.mark_landmarks) count as
+            deviating up to this many meters more from the secant, so they are kept longer than a point of equal
+            deviation where there is nothing to see. 0 disables the bias.
+        max_gap: after the selection, stretches longer than this [in meters] get an additional way point, preferably
+            a landmark near the middle. None disables it.
+        """
         super().__init__()
 
         self.number_of_waypoints = number_of_waypoints
+        self.landmark_bonus = landmark_bonus
+        self.max_gap = max_gap
         self.__logger = logging.getLogger(__name__)
 
         if pois is None:
@@ -60,6 +78,52 @@ class DouglasPeuckerTransformer(PathTransformer):
 
         way_points = self.replace_with_close_by_pois(way_points, path)
         way_points = self.add_pois(way_points)
+
+        if self.max_gap:
+            way_points = self.fill_gaps(way_points, path)
+
+        return way_points
+
+    def bonus(self, pt: WayPoint) -> float:
+        landmark = getattr(pt, "landmark", None)
+        if landmark is None or not self.landmark_bonus:
+            return 0.0
+        return self.landmark_bonus * landmark.score / 100
+
+    def fill_gaps(self, way_points: Path, path: Path) -> Path:
+        """
+        While two consecutive way points are more than max_gap apart, add the best landmark near the middle of the
+        gap (landmark score minus 0.05 per meter from the middle), or the point in the middle if there is none.
+        """
+
+        while way_points.number_of_waypoints < self.number_of_waypoints:
+            pts = way_points.way_points
+            gap, i = max(
+                (b.accumulated_distance - a.accumulated_distance, i)
+                for i, (a, b) in enumerate(zip(pts, pts[1:]))
+            )
+            if gap <= self.max_gap:
+                break
+
+            start, end = pts[i].accumulated_distance, pts[i + 1].accumulated_distance
+            mid, margin = (start + end) / 2, self.gap_fill_margin * gap
+            inside = [
+                p
+                for p in path.way_points
+                if start + margin <= p.accumulated_distance <= end - margin
+            ]
+            if not inside:
+                break
+            landmarks = [p for p in inside if p.landmark is not None]
+            if landmarks:
+                best = max(
+                    landmarks,
+                    key=lambda p: p.landmark.score
+                    - 0.05 * abs(p.accumulated_distance - mid),
+                )
+            else:
+                best = min(inside, key=lambda p: abs(p.accumulated_distance - mid))
+            way_points.insert(best, i + 1)
 
         return way_points
 
@@ -279,12 +343,12 @@ class DouglasPeuckerTransformer(PathTransformer):
                 m, b = calc_secant_line(pt_a, pt_c)
                 secant_elev = calc_secant_elevation(m, b, pt_b)
 
-                if abs(secant_elev - pt_b.point.h) < drv_limit:
+                if abs(secant_elev - pt_b.point.h) + self.bonus(pt_b) < drv_limit:
                     # Check if B must be replaced by a previously dropped point D
                     pt_d = None
                     for pt in self.points_between(pt_a, pt_c, pts_dropped.way_points):
                         secant_elev = calc_secant_elevation(m, b, pt)
-                        if abs(secant_elev - pt.point.h) >= drv_limit:
+                        if abs(secant_elev - pt.point.h) + self.bonus(pt) >= drv_limit:
                             pt_d = pt
                             break
 
