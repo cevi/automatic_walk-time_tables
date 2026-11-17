@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import buildInfo from '../../../build';
 import { environment } from '../../../environments/environment';
 
@@ -6,6 +6,7 @@ import { environment } from '../../../environments/environment';
   selector: 'app-footer',
   templateUrl: './app-footer.component.html',
   styleUrls: ['./app-footer.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false,
 })
 export class AppFooterComponent implements OnInit {

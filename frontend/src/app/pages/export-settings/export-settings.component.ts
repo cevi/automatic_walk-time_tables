@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import {
   FormControl,
   UntypedFormBuilder,
@@ -13,6 +13,7 @@ import { MapService } from '../../services/map.service';
   selector: 'app-export-settings',
   templateUrl: './export-settings.component.html',
   styleUrls: ['./export-settings.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false,
 })
 export class ExportSettingsComponent {
