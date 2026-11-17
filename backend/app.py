@@ -28,6 +28,9 @@ from automatic_walk_time_tables.path_transformers.heigth_fetcher_transfomer impo
     HeightFetcherTransformer,
 )
 from automatic_walk_time_tables.path_transformers.pois_transfomer import POIsTransformer
+from automatic_walk_time_tables.path_transformers.structure_heights import (
+    StructureHeightTransformer,
+)
 from automatic_walk_time_tables import waypoints
 from automatic_walk_time_tables.utils import swiss_tlm_api
 from automatic_walk_time_tables.utils.error import UserException
@@ -231,6 +234,10 @@ def parse_route():
 
         equidistant_transformer = EquidistantTransformer(equidistant_distance=10)
         path = equidistant_transformer.transform(path)
+
+        # the elevation model gives the terrain below bridges and above tunnels
+        if path.has_elevation_for_all_points():
+            path = StructureHeightTransformer().transform(path)
 
         route = (
             path.to_polyline()
