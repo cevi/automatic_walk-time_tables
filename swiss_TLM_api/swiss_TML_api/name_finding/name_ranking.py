@@ -56,6 +56,10 @@ DERIVED_NAME_TYPES = {
 }
 
 OBJECT_TYPES = {
+    # named buildings of swissNAMES3D (index_builder/named_buildings.py), the type is the use of the building
+    "Gasthof abgelegen": HUT,
+    "Schutzhuette": HUT,
+    "Aussichtsturm": BUILDING,
     "Pass": PASS,
     "Strassenpass": PASS,
     "Hauptgipfel": SUMMIT,

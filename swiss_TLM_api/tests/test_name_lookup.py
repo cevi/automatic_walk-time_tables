@@ -71,6 +71,16 @@ class FindNameTest(unittest.TestCase):
             "Punkt 1296 (Grüebliwald)",
         )
 
+    def test_remote_inn_is_a_hut_and_beats_the_field_name_at_the_point(self):
+        self.assertEqual(
+            name_at(
+                obj("Bättmer-Hitta", "Gasthof abgelegen", 12),
+                obj("Mossji", "Flurname swisstopo", 11),
+                obj("Weggabelung bei Mossji", "Weggabelung", 60),
+            ),
+            "Bättmer-Hitta",
+        )
+
     def test_offset_is_the_distance_to_the_named_object(self):
         result = find_name([obj("Gemmipass", "Pass", 30, 40)], E, N)
         self.assertEqual(result["offset"], 50)

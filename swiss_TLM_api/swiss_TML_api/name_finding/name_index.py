@@ -25,6 +25,7 @@ from swiss_TML_api.name_finding.index_builder.schule import Schule
 from swiss_TML_api.name_finding.index_builder.nutzungsareal import Nutzungsareal
 from swiss_TML_api.name_finding.index_builder.intersections import Intersections
 from swiss_TML_api.name_finding.index_builder.hoehenpunkt import Hoehenpunkt
+from swiss_TML_api.name_finding.index_builder.named_buildings import NamedBuildings
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -235,6 +236,7 @@ class NameIndex:
             Nutzungsareal,
             Intersections,
             Hoehenpunkt,
+            NamedBuildings,
         )
         for index_part in index_parts:
             start = time.time()
