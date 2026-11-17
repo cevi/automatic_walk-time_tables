@@ -178,7 +178,9 @@ class DouglasPeuckerTransformer(PathTransformer):
         return moved
 
     min_gap_height = 30
-    """Way points closer than min_gap are both kept if their heights differ by at least this [in meters]."""
+    """Way points closer than min_gap are both kept if their heights differ by at least this [in meters] ..."""
+    min_gap_steep = 50
+    """... unless they are closer than this [in meters]."""
 
     def _importance(self, pt: WayPoint, first: WayPoint, last: WayPoint) -> float:
         if pt is first or pt is last:
@@ -221,9 +223,11 @@ class DouglasPeuckerTransformer(PathTransformer):
         kept = [first]
         for pt in pts[1:]:
             prev = kept[-1]
-            close = (
-                pt.accumulated_distance - prev.accumulated_distance < self.min_gap
-                and abs(pt.point.h - prev.point.h) < self.min_gap_height
+            gap = pt.accumulated_distance - prev.accumulated_distance
+            close = gap < self.min_gap and (
+                abs(pt.point.h - prev.point.h) < self.min_gap_height
+                # a height difference over a few meters is noise of the elevation data, not a climb
+                or gap < self.min_gap_steep
             )
             if not close or (pt is last and prev is first):
                 kept.append(pt)
