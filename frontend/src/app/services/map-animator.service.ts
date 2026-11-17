@@ -613,7 +613,7 @@ export class MapAnimatorService implements OnDestroy {
     try {
       [placed] = await this.api.manualWaypoints(
         this.state.path,
-        [pkt.accumulated_distance],
+        [pkt],
         MANUAL_SNAP_RADIUS,
       );
     } catch {
@@ -638,7 +638,7 @@ export class MapAnimatorService implements OnDestroy {
       target.x = path_point.x;
       target.y = path_point.y;
       target.h = path_point.h;
-      target.accumulated_distance = path_point.accumulated_distance;
+      target.accumulated_distance = this.distance_of(path_point, placed);
       target.name = placed.name || '';
     } else if (placed) {
       // the landmark already is a way point: keep the clicked position
@@ -659,18 +659,30 @@ export class MapAnimatorService implements OnDestroy {
    * The point of the current path at a way point returned by the backend. The backend receives the route rounded
    * to meters, so its coordinates are matched by the distance along the route.
    */
+  /** Accumulated distance [km] of a path point, or the backend's value while the path has none (drawing). */
+  private distance_of(path_point: LV95_Waypoint, wp: ApiWaypoint): number {
+    return Number.isFinite(path_point.accumulated_distance)
+      ? path_point.accumulated_distance
+      : wp.accumulated_distance / 1000;
+  }
+
   private path_point_at(wp: ApiWaypoint): LV95_Waypoint | undefined {
     const path = this.state.path;
     if (path.length === 0) return undefined;
+
+    // While drawing, the path has no distances yet: match by coordinates
+    const has_distances = path.every((p) =>
+      Number.isFinite(p.accumulated_distance),
+    );
     const d = wp.accumulated_distance / 1000;
+    const offset = (p: LV95_Waypoint) =>
+      has_distances
+        ? Math.abs(p.accumulated_distance - d)
+        : Math.hypot(p.x - wp.x, p.y - wp.y);
+
     let best = path[0];
     for (const p of path) {
-      if (
-        Math.abs(p.accumulated_distance - d) <
-        Math.abs(best.accumulated_distance - d)
-      ) {
-        best = p;
-      }
+      if (offset(p) < offset(best)) best = p;
     }
     return best;
   }
@@ -789,9 +801,9 @@ export class MapAnimatorService implements OnDestroy {
     if (this.state.auto_waypoints) {
       return this.api.autoWaypoints(path);
     }
-    const positions = [...pois]
-      .sort((a, b) => a.accumulated_distance - b.accumulated_distance)
-      .map((p) => p.accumulated_distance);
+    const positions = [...pois].sort(
+      (a, b) => (a.accumulated_distance || 0) - (b.accumulated_distance || 0),
+    );
     return this.api.manualWaypoints(path, positions, 0, true);
   }
 
@@ -819,7 +831,7 @@ export class MapAnimatorService implements OnDestroy {
         x: p.x,
         y: p.y,
         h: p.h,
-        accumulated_distance: p.accumulated_distance,
+        accumulated_distance: this.distance_of(p, wp),
         is_waypoint: old_wp ? old_wp.is_waypoint : true,
         name: keep_name ? old_wp!.name || '' : wp.name || '',
         auto_name: keep_name ? old_wp!.auto_name || '' : wp.name || '',
