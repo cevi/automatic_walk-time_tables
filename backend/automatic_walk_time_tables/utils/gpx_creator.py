@@ -120,6 +120,15 @@ def minify_xml(xml_content):
     return minified_xml
 
 
+def _elevation(way_point):
+    """
+    Height above sea level, as GPX files (and the swisstopo app) expect it. The WGS84 conversion would give the
+    height above the ellipsoid, about 50 m more in Switzerland, and the import does not convert it back.
+    """
+    h = way_point.point.h
+    return h if h is not None and h > 0 else None
+
+
 def add_track_points(_path: path.Path, gpx_f: GPX):
     gpx_track = gpxpy.gpx.GPXTrack()
     gpx_segment = gpxpy.gpx.GPXTrackSegment()
@@ -128,7 +137,7 @@ def add_track_points(_path: path.Path, gpx_f: GPX):
         p84 = point.point.to_WGS84()
         lat = p84.lat
         lon = p84.lon
-        elevation = p84.h
+        elevation = _elevation(point)
 
         # each track points must have the swisstopo:routepoint_id extension with a
         # unique id for each point
@@ -148,7 +157,7 @@ def add_waypoints(_path: path.Path, _way_points: path.Path, gpx_f: GPX):
         p84 = point.point.to_WGS84()
         lat = p84.lat
         lon = p84.lon
-        elevation = p84.h
+        elevation = _elevation(point)
         name = point.name
 
         if name == "":
