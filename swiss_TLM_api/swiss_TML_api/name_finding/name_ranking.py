@@ -26,6 +26,12 @@ HUT = Category(100, 200)
 PASS = Category(90, 200)
 LAKE = Category(85, 250)
 SUMMIT = Category(80, 150)
+INN = Category(75, 40)
+"""
+Named remote inns, mountain hotels and shelters of swissNAMES3D ("Gasthof abgelegen", "Schutzhuette"): there are
+thousands, from SAC huts to grottos, so they name a point only if they are right there; huts recognised by their
+name ("...hütte", "SAC") are HUT.
+"""
 DAM = Category(70, 100)
 STOP = Category(70, 50)
 SPOT_HEIGHT = Category(60, 10)
@@ -57,8 +63,8 @@ DERIVED_NAME_TYPES = {
 
 OBJECT_TYPES = {
     # named buildings of swissNAMES3D (index_builder/named_buildings.py), the type is the use of the building
-    "Gasthof abgelegen": HUT,
-    "Schutzhuette": HUT,
+    "Gasthof abgelegen": INN,
+    "Schutzhuette": INN,
     "Aussichtsturm": BUILDING,
     "Pass": PASS,
     "Strassenpass": PASS,
@@ -136,6 +142,9 @@ def classify(name: str | None, object_type: str | None) -> Category:
     category = OBJECT_TYPES.get(object_type)
     if category is None:
         category = AREAL if object_type.endswith("areal") else DEFAULT
+
+    if category is INN and _HUT.search(name_lower):
+        return HUT
 
     if category in KEYWORD_NAME_TYPES:
         if _HUT.search(name_lower) or object_type.lower() == "abgelegener gasthof":

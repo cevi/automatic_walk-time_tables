@@ -81,6 +81,31 @@ class FindNameTest(unittest.TestCase):
             "Bättmer-Hitta",
         )
 
+    def test_inn_nearby_does_not_rename_a_junction_or_a_station(self):
+        self.assertEqual(
+            name_at(
+                obj("Gemmi Lodge", "Gasthof abgelegen", 30),
+                obj("Weggabelung bei Platten", "Weggabelung"),
+            ),
+            "Weggabelung bei Platten",
+        )
+        self.assertEqual(
+            name_at(
+                obj("Alpenlodge Kühboden", "Gasthof abgelegen", 35),
+                obj("Fiescheralp", "Uebrige Bahnen", 5),
+            ),
+            "Fiescheralp",
+        )
+
+    def test_inn_named_as_a_hut_is_a_hut(self):
+        self.assertEqual(
+            name_at(
+                obj("Lämmerenhütte", "Gasthof abgelegen", 150),
+                obj("Weggabelung bei X", "Weggabelung"),
+            ),
+            "Lämmerenhütte",
+        )
+
     def test_offset_is_the_distance_to_the_named_object(self):
         result = find_name([obj("Gemmipass", "Pass", 30, 40)], E, N)
         self.assertEqual(result["offset"], 50)
