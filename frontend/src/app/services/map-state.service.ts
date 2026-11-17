@@ -117,6 +117,8 @@ export class MapStateService {
   }
 
   public clearAll(): void {
+    // a new route starts with the automatic way point selection, whatever the user did with the previous one
+    this.auto_waypoints = true;
     this.auto_waypoints_untouched = false;
     this._path$.next([]);
     this._anchor_points$.next([]);

@@ -768,6 +768,9 @@ export class MapAnimatorService implements OnDestroy {
     if (this.state.anchor_points.length < 2) {
       this.state.route_stats$.next(null);
       this.state.updatePOIs([]);
+      // no route left: the next route starts with the automatic selection again
+      this.state.auto_waypoints = true;
+      this.state.auto_waypoints_untouched = false;
       return;
     }
 
