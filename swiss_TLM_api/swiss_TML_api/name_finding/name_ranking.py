@@ -26,6 +26,11 @@ HUT = Category(100, 200)
 PASS = Category(90, 200)
 LAKE = Category(85, 250)
 SUMMIT = Category(80, 150)
+NAMED_HUT = Category(85, 60)
+"""
+A named building that is a hut ("Blattihütte", "Refuge de la Christine"): a landmark, but only close by, as there are
+hundreds of small huts (huts known by their field or place name, e.g. SAC huts, are HUT with 200 m).
+"""
 INN = Category(75, 40)
 """
 Named remote inns, mountain hotels and shelters of swissNAMES3D ("Gasthof abgelegen", "Schutzhuette"): there are
@@ -67,6 +72,7 @@ OBJECT_TYPES = {
     # named buildings of swissNAMES3D (index_builder/named_buildings.py), the type is the use of the building
     "Gasthof abgelegen": INN,
     "Schutzhuette": INN,
+    "Gebaeude": INN,  # named building without a recorded use, e.g. "Blattihütte"
     "Aussichtsturm": BUILDING,
     "Pass": PASS,
     "Strassenpass": PASS,
@@ -117,6 +123,22 @@ OBJECT_TYPES = {
 KEYWORD_NAME_TYPES = (FIELD_NAME, PLACE, HILL, DISTRICT, DEFAULT)
 
 _HUT = re.compile(r"hütte|\bsac\b|\bcas\b|abgelegener gasthof")
+_NAMED_HUT = re.compile(
+    r"hütte|hitta|\bcabane\b|\brefuge\b|\bcapanna\b|\brifugio\b|\bchamanna\b|\bbiwak|\bbivacco\b|\bsac\b|\bcas\b"
+)
+"""A named building that is a mountain hut, in any of the languages."""
+GENERIC_HUT_NAMES = {
+    "hütte",
+    "waldhütte",
+    "forsthütte",
+    "jagdhütte",
+    "schutzhütte",
+    "skihütte",
+    "pfadihütte",
+    "alphütte",
+    "clubhütte",
+}
+"""Names that are just a kind of hut: there are many of each, so they are no landmark."""
 _LAKE = re.compile(r"\b(lac|lai|lago|lej) |see$|\bsee |\blac$|\blai$")
 
 
@@ -145,8 +167,15 @@ def classify(name: str | None, object_type: str | None) -> Category:
     if category is None:
         category = AREAL if object_type.endswith("areal") else DEFAULT
 
-    if category is INN and _HUT.search(name_lower):
-        return HUT
+    if (
+        category is INN
+        and _NAMED_HUT.search(name_lower)
+        and name_lower not in GENERIC_HUT_NAMES
+    ):
+        # a staffed hut (remote inn, e.g. an SAC hut) is a landmark from afar, other huts only close by
+        return (
+            HUT if object_type in ("Gasthof abgelegen", "Schutzhuette") else NAMED_HUT
+        )
     if category is CROSSING and "(" in name_lower and "wanderweg)" not in name_lower:
         return NAMED_CROSSING
 

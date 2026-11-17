@@ -14,6 +14,12 @@ class BridgeNameTest(unittest.TestCase):
         self.assertEqual(pretty_name("Bruecke mit Treppe"), "Brücke mit Treppe")
         self.assertEqual(pretty_name("Unterfuehrung"), "Unterführung")
         self.assertEqual(pretty_name("Weggabelung bei X"), "Weggabelung bei X")
+        self.assertEqual(
+            pretty_name("Bruecke (Escherkanal | Linth)"), "Brücke (Escherkanal/Linth)"
+        )
+        self.assertEqual(
+            pretty_name("Bruecke (Rhein | Le Rhin | Rein | Reno)"), "Brücke (Rhein)"
+        )
 
     def test_bridge_named_after_a_river_ranks_above_a_junction(self):
         self.assertIs(classify("Bruecke (Linth)", "Bruecke"), NAMED_CROSSING)

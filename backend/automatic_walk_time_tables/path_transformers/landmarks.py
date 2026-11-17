@@ -28,6 +28,7 @@ WEIGHTS = {
     "Haltestelle Schiff": 100,
     "Gasthof abgelegen": 95,  # remote inns and mountain huts, e.g. "Bättmer-Hitta"
     "Schutzhuette": 95,
+    "Gebaeude": 90,  # other named buildings: huts ("Blattihütte"), chalets, mountain restaurants, ...
     "Gipfelkreuz": 95,
     "Haupthuegel": 95,
     "Huegel": 90,
@@ -66,6 +67,7 @@ STRONG = 60
 MAX_OFFSET = 20
 """A feature must be at most this far from the route [in meters]."""
 VISIBLE_FROM_AFAR = {
+    "Gebaeude",
     "Uebrige Bahnen",
     "Haltestelle Bahn",
     "Haltestelle Schiff",
@@ -84,6 +86,7 @@ VISIBLE_FROM_AFAR = {
 MAX_OFFSET_VISIBLE = 60
 """Stations, huts, summits, passes, chapels and towers can be seen from further away: at most this far."""
 OWN_NAME_TYPES = {
+    "Gebaeude",
     "Uebrige Bahnen",
     "Haltestelle Bahn",
     "Haltestelle Schiff",

@@ -106,6 +106,40 @@ class FindNameTest(unittest.TestCase):
             "Lämmerenhütte",
         )
 
+    def test_named_hut_beats_the_spot_height_next_to_it(self):
+        self.assertEqual(
+            name_at(
+                obj("Punkt 2026", "Kotierter Punkt"),
+                obj("Blattihütte", "Gebaeude", 25),
+            ),
+            "Blattihütte",
+        )
+        self.assertEqual(
+            name_at(
+                obj("Weggabelung bei X", "Weggabelung"),
+                obj("Refuge de la Christine", "Gebaeude", 50),
+            ),
+            "Refuge de la Christine",
+        )
+
+    def test_small_hut_far_away_does_not_rename_a_junction(self):
+        self.assertEqual(
+            name_at(
+                obj("Weggabelung bei Chrutoose", "Weggabelung"),
+                obj("Chrotthütte", "Gebaeude", 157),
+            ),
+            "Weggabelung bei Chrutoose",
+        )
+
+    def test_generic_forest_hut_does_not_take_over_the_name(self):
+        self.assertEqual(
+            name_at(
+                obj("Weggabelung bei X", "Weggabelung"),
+                obj("Waldhütte", "Gebaeude", 60),
+            ),
+            "Weggabelung bei X",
+        )
+
     def test_offset_is_the_distance_to_the_named_object(self):
         result = find_name([obj("Gemmipass", "Pass", 30, 40)], E, N)
         self.assertEqual(result["offset"], 50)

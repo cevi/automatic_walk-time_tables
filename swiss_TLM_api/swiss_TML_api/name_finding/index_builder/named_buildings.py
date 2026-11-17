@@ -9,10 +9,17 @@ logger = logging.getLogger(__name__)
 
 SWISSNAMES3D_PKT = "./resources/swissNAMES3D_data/swissNAMES3D_PKT.shp"
 
-BUILDING_USES = {"Gasthof abgelegen", "Schutzhuette", "Aussichtsturm"}
+BUILDING_USES = {
+    "Gasthof abgelegen": "Gasthof abgelegen",
+    "Schutzhuette": "Schutzhuette",
+    "Aussichtsturm": "Aussichtsturm",
+    "k_W": "Gebaeude",
+}
 """
-Named buildings of swissNAMES3D that are landmarks for hikers: remote inns and mountain huts
-(e.g. "Bättmer-Hitta"), shelters and observation towers. The object type in the index is the use.
+Named buildings of swissNAMES3D that are landmarks for hikers, by their use (GEBAEUDENUTZUNG) and the object type
+they get in the index: remote inns and mountain hotels (e.g. "Bättmer-Hitta"), shelters, observation towers, and
+named buildings without a recorded use ("k_W": about half of them are huts like "Blattihütte", the others chalets,
+mountain restaurants, ...).
 """
 
 
@@ -24,6 +31,10 @@ class NamedBuildings(IndexBuilder):
     says "Gasthof abgelegen", so these buildings were missing from the index.
     """
 
+    def __init__(self, index, reduced=False, uses=None):
+        super().__init__(index, reduced)
+        self.uses = uses or BUILDING_USES
+
     def load(self):
         count = 0
         try:
@@ -34,7 +45,7 @@ class NamedBuildings(IndexBuilder):
                     name = props.get("NAME")
                     if (
                         props.get("OBJEKTART") != "Gebaeude"
-                        or use not in BUILDING_USES
+                        or use not in self.uses
                         or not name
                     ):
                         continue
@@ -43,7 +54,7 @@ class NamedBuildings(IndexBuilder):
                     h = coords[2] if len(coords) > 2 else 0
                     swiss_name = SwissName(
                         name=str(name),
-                        object_type=use,
+                        object_type=self.uses[use],
                         x=int(coords[0]),
                         y=int(coords[1]),
                         h=int(h),

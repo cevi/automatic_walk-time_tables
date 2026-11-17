@@ -31,6 +31,13 @@ def pretty_name(name: str) -> str:
     for raw, pretty in PRETTY_PREFIXES.items():
         if name.startswith(raw):
             name = pretty + name[len(raw) :]
+    # rivers with several names: "Brücke (Escherkanal | Linth)" -> "Brücke (Escherkanal/Linth)", but only the
+    # first of a list of translations: "Brücke (Rhein | Le Rhin | Rein | Reno)" -> "Brücke (Rhein)"
+    if name.endswith(")") and " (" in name and " | " in name:
+        head, inner = name[:-1].split(" (", 1)
+        parts = [p.strip() for p in inner.split(" | ")]
+        inner = "/".join(parts) if len(parts) <= 2 else parts[0]
+        name = f"{head} ({inner})"
     return name
 
 
