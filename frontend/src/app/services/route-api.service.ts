@@ -17,6 +17,17 @@ export interface DailyRouteStatistic {
   totalLengthM: number;
 }
 
+/** A way point as returned by the /waypoints endpoints (LV95, distances in meters). */
+export interface ApiWaypoint {
+  x: number;
+  y: number;
+  h: number;
+  accumulated_distance: number;
+  name: string;
+  name_type: string;
+  landmark: { score: number; types: string[]; reasons: string[] } | null;
+}
+
 export interface RouteGenerationStatistics {
   days: number;
   rangeStart: string;
@@ -146,45 +157,82 @@ export class RouteApiService {
     return response.json();
   }
 
-  public async createWalkTimeTable(
-    path: LV95_Waypoint[],
-    pois: LV95_Waypoint[],
-    auto_waypoints: boolean,
-  ): Promise<any> {
-    if (path.length === 0) return null;
-
-    let data: any = {
-      encoding: 'polyline',
+  /** The route as sent to the /waypoints endpoints (LV95 polyline, plus elevation if known). */
+  private static encodeRoute(path: LV95_Waypoint[]): any {
+    const data: any = {
       route: encode(
         path.map((p) => [p.x, p.y]),
         0,
       ),
-      auto_waypoints: auto_waypoints,
-      pois_distance: pois
-        .sort((a, b) => a.accumulated_distance - b.accumulated_distance)
-        .map((p) => `${p.accumulated_distance * 1_000}`)
-        .join(','),
     };
-
     if (!path.some((p) => p.h === 0)) {
-      data['elevation_data'] = encode(
+      data.elevation = encode(
         path.map((p) => [p.accumulated_distance * 1_000, p.h]),
         0,
       );
     }
+    return data;
+  }
 
-    const formData = new FormData();
-    formData.append('options', JSON.stringify(data));
-
-    const response = await fetch(
-      RouteApiService.BASE_URL + 'create-walk-time-table',
-      {
-        method: 'POST',
-        headers: { Accept: 'application/json' },
-        body: formData,
+  private static async postJson(endpoint: string, body: any): Promise<any> {
+    const response = await fetch(RouteApiService.BASE_URL + endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
       },
+      body: JSON.stringify(body),
+    });
+    const result = await response.json();
+    if (!response.ok || result?.status === 'error') {
+      throw new Error(result?.message || 'Ein Fehler ist aufgetreten.');
+    }
+    return result;
+  }
+
+  /**
+   * Automatic mode: the backend selects and names the way points of the route.
+   */
+  public async autoWaypoints(path: LV95_Waypoint[]): Promise<ApiWaypoint[]> {
+    if (path.length === 0) return [];
+    const result = await RouteApiService.postJson(
+      'waypoints/auto',
+      RouteApiService.encodeRoute(path),
     );
-    return response.json();
+    return result.waypoints;
+  }
+
+  /**
+   * Manual mode: places way points chosen by the user on the route and names them.
+   *
+   * @param positions accumulated distances [km] of the way points
+   * @param snapRadius move each way point to a landmark (junction, bridge, spot height, ...) within this many
+   *   meters along the route; 0 keeps the position
+   * @param includeStartEnd also return the start and end of the route if no way point is there
+   */
+  public async manualWaypoints(
+    path: LV95_Waypoint[],
+    positions: number[],
+    snapRadius = 0,
+    includeStartEnd = false,
+  ): Promise<ApiWaypoint[]> {
+    if (path.length === 0) return [];
+    const result = await RouteApiService.postJson('waypoints/manual', {
+      ...RouteApiService.encodeRoute(path),
+      waypoints: positions.map((d) => ({ accumulated_distance: d * 1_000 })),
+      snap_radius: snapRadius,
+      include_start_end: includeStartEnd,
+    });
+    return result.waypoints;
+  }
+
+  /** Names for LV95 coordinates, '' where nothing is close enough. */
+  public async names(points: LV95_Coordinates[]): Promise<string[]> {
+    if (points.length === 0) return [];
+    const result = await RouteApiService.postJson('names', {
+      points: points.map((p) => [p.x, p.y]),
+    });
+    return result.names.map((n: any) => n.name || '');
   }
 
   public async retrieveDataStatus(uuid: string): Promise<number> {
