@@ -52,3 +52,10 @@ class NameFinder(NameIndex):
         logger.info("Time for searching name: {}s".format(end - start))
 
         return list_of_points
+
+    def get_names_in_bbox(self, e_min: float, n_min: float, e_max: float, n_max: float):
+        """All objects of the index within the LV95 bounding box."""
+        with lock:
+            return list(
+                self.index.intersection((e_min, n_min, e_max, n_max), objects="raw")
+            )

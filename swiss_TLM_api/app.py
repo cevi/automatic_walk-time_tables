@@ -2,11 +2,9 @@ from __future__ import annotations
 
 import logging
 import os
-from threading import Thread
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from shapely.geometry import Point
 
 from swiss_TML_api.logging.log_helper import setup_recursive_logger
 
@@ -14,8 +12,11 @@ setup_recursive_logger(logging.INFO)
 logger = logging.getLogger(__name__)
 
 from swiss_TML_api.name_finding.name_finder import NameFinder
-from swiss_TML_api.name_finding.name_ranking import classify, is_lake, rank
-from swiss_TML_api.name_finding.swiss_name import SwissName
+from swiss_TML_api.name_finding.name_lookup import find_name
+from swiss_TML_api.name_finding.route_features import (
+    DEFAULT_CORRIDOR,
+    features_along_route,
+)
 from swiss_TML_api.map_numbers.map_numbers_fetcher import MapNumberIndex
 
 # check if FAULTHANDLER env var is set
@@ -29,6 +30,9 @@ cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
 name_index: NameFinder | None = None
 map_number_index: MapNumberIndex | None = None
+
+NAME_CANDIDATES = 200
+"""Number of nearest objects of the index considered when naming a coordinate."""
 
 
 # The NameFinder is a shared object, thus the index get only loaded once
@@ -60,159 +64,57 @@ def ready():
     return jsonify({"status": "ready"})
 
 
+def _names(coords: list) -> list:
+    response = []
+    for e, n in coords:
+        result = find_name(name_index.get_names(e, n, NAME_CANDIDATES), e, n)
+        logger.info(
+            "Choose %s (%s) for %s/%s at distance %sm",
+            result["swiss_name"],
+            result["object_type"],
+            e,
+            n,
+            result["offset"],
+        )
+        response.append(result)
+    return response
+
+
+@app.route("/names", methods=["POST"])
+def post_names():
+    """
+    Names a batch of LV95 coordinates.
+
+    Body: {"points": [[e, n], ...]}
+    Response: {"names": [{"swiss_name", "object_type", "offset", "lv95_coord"}, ...]} in the order of the points.
+    """
+    points = (request.get_json(silent=True) or {}).get("points")
+    if not isinstance(points, list):
+        return jsonify({"error": "Expected {'points': [[e, n], ...]}"}), 400
+    return jsonify({"names": _names(points)})
+
+
 @app.route("/swiss_name", methods=["GET"])
 def get_name():
-    global name_index
-    global map_number_index
-    try:
-        lv95_coords = request.json
-        response = []
-
-        for lat, lon in lv95_coords:
-            req_pkt = Point((lat, lon))
-
-            swiss_names = name_index.get_names(lat, lon, 200)
-
-            best_n = None
-            best_rank = None
-
-            candidates_log = []
-            for n in swiss_names:
-                # Filter out Trockenrinne (Dry Gully) and pressure pipelines completely
-                if n.object_type in (
-                    "Trockenrinne",
-                    "Druckleitung einfach",
-                    "Druckleitung mehrfach",
-                    "Druckstollen",
-                ):
-                    continue
-
-                dist = round(req_pkt.distance(Point((n.x, n.y))))
-
-                # Dynamically prettify Fliessgewaesser names without modifying the static index
-                if n.name and "fliessgewaesser (keine brücke)" in n.name.lower():
-                    n.name = n.name.replace(
-                        "Fliessgewaesser (Keine Brücke)", "Gewässerquerung"
-                    )
-
-                category = classify(n.name, n.object_type)
-                prio, max_d = category.priority, category.max_distance
-
-                candidates_log.append(
-                    {
-                        "name": n.name,
-                        "type": n.object_type,
-                        "dist": dist,
-                        "prio": prio,
-                        "max_d": max_d,
-                        "valid": dist <= max_d,
-                    }
-                )
-
-                if dist <= max_d:
-                    candidate_rank = rank(category, dist)
-                    if best_rank is None or candidate_rank > best_rank:
-                        best_rank = candidate_rank
-                        best_n = n
-
-            candidates_log.sort(key=lambda x: (not x["valid"], -x["prio"], x["dist"]))
-            logger.info("--- Top Candidates near %s/%s ---", lat, lon)
-            for c in candidates_log[:7]:
-                logger.info(
-                    "  [%s] %s (%s) - dist: %sm, prio: %s, max_d: %s",
-                    "VALID" if c["valid"] else " EXCL",
-                    c["name"],
-                    c["type"],
-                    c["dist"],
-                    c["prio"],
-                    c["max_d"],
-                )
-
-            # Fallback if no object was within its max_d radius
-            if not best_n:
-                valid_fallbacks = [
-                    n for n in swiss_names if n.name and str(n.name).strip() != ""
-                ]
-                if valid_fallbacks:
-                    swiss_name = valid_fallbacks[0]
-                else:
-                    swiss_name = swiss_names[0]
-            else:
-                swiss_name = best_n
-
-            if (
-                is_lake(swiss_name.name, swiss_name.object_type)
-                and f"({int(swiss_name.h)})" not in swiss_name.name
-                and swiss_name.h > 0
-            ):
-                swiss_name.name = f"{swiss_name.name} ({int(swiss_name.h)})"
-
-            # append Peak name to Gipfelkreuz
-            if swiss_name.object_type == "Gipfelkreuz":
-                best_peak = None
-                best_peak_dist = 99999
-                for n in swiss_names:
-                    if n.object_type in ("Hauptgipfel", "Gipfel"):
-                        tlm_pkt = Point((n.x, n.y))
-                        d = round(req_pkt.distance(tlm_pkt))
-                        if d < best_peak_dist and d <= 250:
-                            best_peak = n
-                            best_peak_dist = d
-                if best_peak:
-                    swiss_name.name = f"Gipfelkreuz {best_peak.name}"
-
-            # append nearby Flurname to Kotierter Punkt
-            if (
-                swiss_name.object_type == "Kotierter Punkt"
-                or swiss_name.name.startswith("Punkt ")
-            ):
-                best_flurname = None
-                best_flur_dist = 99999
-                for n in swiss_names:
-                    obj_lower = n.object_type.lower() if n.object_type else ""
-                    if "flurname" in obj_lower or "lokalname" in obj_lower:
-                        tlm_pkt = Point((n.x, n.y))
-                        d = round(req_pkt.distance(tlm_pkt))
-                        if d < best_flur_dist and d <= 250:
-                            best_flurname = n
-                            best_flur_dist = d
-                if best_flurname:
-                    swiss_name.name = f"{swiss_name.name} ({best_flurname.name})"
-
-            # If object_type is of type 'Weggabelung' and there exists a Hauptgipfel nearby, we take the Hauptgipfel
-            if swiss_name.object_type == "Weggabelung":
-                for n in swiss_names:
-                    tlm_pkt = Point((n.x, n.y))
-                    if (
-                        n.object_type == "Hauptgipfel"
-                        and round(req_pkt.distance(tlm_pkt)) <= 250
-                    ):
-                        swiss_name.name = "Weggabelung bei " + n.name
-                        break
-
-            response.append(
-                {
-                    "lv95_coord": (swiss_name.x, swiss_name.y),
-                    "offset": round(
-                        req_pkt.distance(Point((swiss_name.x, swiss_name.y)))
-                    ),
-                    "swiss_name": swiss_name.name,
-                    "object_type": swiss_name.object_type,
-                }
-            )
-
-            logger.info(
-                f"Choose {swiss_name.name} for {swiss_name.x}/{swiss_name.y} at distance {req_pkt.distance(Point((swiss_name.x, swiss_name.y)))}"
-            )
-
-        return jsonify(response)
-    except Exception as e:
-        logger.error("Exception:")
-        logger.error(e)
-        raise e
+    """Deprecated: GET with a JSON body [[e, n], ...]. Use POST /names."""
+    return jsonify(_names(request.json))
 
 
-# TODO: add an endpoint for POI calculation
+@app.route("/features_along_route", methods=["POST"])
+def post_features_along_route():
+    """
+    All objects of the name index close to a route, used to find landmarks for the waypoint selection.
+
+    Body: {"route": [[e, n], ...], "corridor": 25}
+    Response: {"features": [{"name", "object_type", "e", "n", "h", "offset"}, ...]}
+    """
+    body = request.get_json(silent=True) or {}
+    route = body.get("route")
+    if not isinstance(route, list):
+        return jsonify({"error": "Expected {'route': [[e, n], ...]}"}), 400
+    corridor = float(body.get("corridor", DEFAULT_CORRIDOR))
+    features = features_along_route(route, name_index.get_names_in_bbox, corridor)
+    return jsonify({"features": features})
 
 
 @app.route("/map_numbers", methods=["GET"])
@@ -229,8 +131,3 @@ def create_app():
     _load_indexes()
 
     return app
-    # app.run(
-    #    debug=(os.environ.get("DEBUG", "False").lower() in ("true", "1", "t")),
-    #    host="0.0.0.0",
-    #    port=int(os.environ.get("PORT", 1848)),
-    # )

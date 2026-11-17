@@ -39,6 +39,9 @@ AREAL = Category(30, 30)
 LINE_CROSSING = Category(20, 20)
 SPORT = Category(15, 20)
 JUNCTION = Category(10, 25)
+# Bridges, footbridges, fords, underpasses: visible on the ground, but the index has no name for them ("Bruecke"),
+# so a junction at the same point (which carries street or field names) is the better name.
+CROSSING = Category(9, 20)
 FOREST_EDGE = Category(8, 15)
 PATH_END = Category(5, 25)
 
@@ -83,6 +86,14 @@ OBJECT_TYPES = {
     "Quartier": DISTRICT,
     "Quartierteil": DISTRICT,
     "Nationalparksgrenze": NATIONAL_PARK,
+    "Bruecke": CROSSING,
+    "Bruecke mit Treppe": CROSSING,
+    "Steg": CROSSING,
+    "Furt": CROSSING,
+    "Unterfuehrung": CROSSING,
+    "Unterfuehrung mit Treppe": CROSSING,
+    "Tunnel": CROSSING,
+    "Galerie": CROSSING,
     "Fliessgewaesser": LINE_CROSSING,
     "Bisse Suone": LINE_CROSSING,
     "Sportplatz": SPORT,
