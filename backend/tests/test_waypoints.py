@@ -155,6 +155,23 @@ class LandmarkSelectionTest(unittest.TestCase):
             [round(wp.accumulated_distance) for wp in moved.way_points], [0, 1000, 2000]
         )
 
+    def test_highest_point_moves_to_the_pass_next_to_it(self):
+        # the elevation model has its maximum 80 m after the pass, 20 m higher
+        path = straight_path(
+            2000, height=lambda d: 500 + max(0, 100 - abs(d - 600) / 4)
+        )
+        mark_landmarks(path, [feature("Pass", 520, name="Rotärd")])
+        pois = POIsTransformer().transform(path)
+        selection = Path()
+        for d in (0, 600, 2000):
+            selection.append(path.way_points[d // 10])
+        moved = DouglasPeuckerTransformer(pois=pois, min_gap=200).move_to_landmarks(
+            selection, path
+        )
+        self.assertEqual(
+            [round(wp.accumulated_distance) for wp in moved.way_points], [0, 520, 2000]
+        )
+
     def test_point_on_a_summit_is_not_moved_to_a_hut_below(self):
         # the selected point is the top of a bump; the hut 400 m further is 40 m lower
         path = straight_path(

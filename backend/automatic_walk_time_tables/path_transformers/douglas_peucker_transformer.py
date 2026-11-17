@@ -99,6 +99,11 @@ class DouglasPeuckerTransformer(PathTransformer):
     """A landmark must score this much more than the selected way point to replace it."""
     move_profile_slack = 10
     """Moving may increase the deviation of the profile between the neighbours by at most this [in meters]."""
+    extreme_move_distance = 250
+    """The highest / lowest point of the route may move at most this far [in meters] to a landmark ..."""
+    extreme_move_height = 25
+    """... that is at most this much [in meters] lower / higher, e.g. from the top of the elevation model to the
+    pass or summit next to it, which is the high point a hiker recognises."""
 
     @staticmethod
     def _profile_error(dist, heights, d0, h0, d1, h1, d2, h2) -> float:
@@ -115,7 +120,8 @@ class DouglasPeuckerTransformer(PathTransformer):
         """
         Replaces a selected way point by a clearly better landmark between its neighbours, e.g. a fork by the
         mountain inn 400 m further on, if the elevation profile is represented as well (see the move_* settings).
-        Start, end, highest and lowest point and points fixed by the user stay.
+        The highest and lowest point of the route only move to a landmark close by at almost the same height
+        (see extreme_move_*). Start, end and points fixed by the user stay.
         """
 
         pts = list(way_points.way_points)
@@ -123,14 +129,16 @@ class DouglasPeuckerTransformer(PathTransformer):
             return way_points
         dist = np.array([p.accumulated_distance for p in path.way_points])
         heights = np.array([p.point.h for p in path.way_points])
+        h_max, h_min = float(np.max(heights)), float(np.min(heights))
         landmarks = [p for p in path.way_points if p.landmark is not None]
         first, last = pts[0], pts[-1]
         gap = self.min_gap or 0
 
         for i in range(1, len(pts) - 1):
             cur, prev, nxt = pts[i], pts[i - 1], pts[i + 1]
-            if self._importance(cur, first, last) >= 1000:
-                continue
+            extreme = cur.point.h in (h_max, h_min)
+            if self._importance(cur, first, last) >= 1000 and not extreme:
+                continue  # a point fixed by the user
             d0, h0 = prev.accumulated_distance, prev.point.h
             d2, h2 = nxt.accumulated_distance, nxt.point.h
             base_err = self._profile_error(
@@ -143,10 +151,20 @@ class DouglasPeuckerTransformer(PathTransformer):
                 d = lm.accumulated_distance
                 if not (d0 + gap <= d <= d2 - gap) or lm is cur:
                     continue
+                if extreme and (
+                    abs(d - cur.accumulated_distance) > self.extreme_move_distance
+                    or abs(lm.point.h - cur.point.h) > self.extreme_move_height
+                ):
+                    continue
                 score = lm.landmark.score - self.move_penalty * abs(
                     d - cur.accumulated_distance
                 )
                 if score <= best_score:
+                    continue
+                if extreme:
+                    # the height limit bounds what is lost (at most extreme_move_height of ascent); the profile
+                    # deviation is no measure here, as the top of the elevation model is cut off by design
+                    best, best_score = lm, score
                     continue
                 err = self._profile_error(dist, heights, d0, h0, d, lm.point.h, d2, h2)
                 if err <= base_err + self.move_profile_slack:
