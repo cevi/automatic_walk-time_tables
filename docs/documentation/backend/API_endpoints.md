@@ -121,7 +121,8 @@ Automatic mode: selects up to 21 way points for the route.
 The selection represents the elevation profile (start, end, highest and lowest point, changes of gradient) and prefers
 landmarks: places that can be recognised when walking past them or that are printed on the 1:25'000 map, e.g.
 junctions, bridges, stops, summits and spot heights. A landmark counts as deviating up to 20 m more from the profile
-than a point where there is nothing to see. No stretch of the route is longer than 1.5 km without a way point.
+than a point where there is nothing to see. No stretch of the route is longer than 1.5 km without a way point, and
+of two way points closer than 200 m (with less than 30 m height difference) only the more important one is kept.
 
 ```json
 {
