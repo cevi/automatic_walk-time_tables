@@ -3,6 +3,8 @@ from __future__ import annotations
 import math
 from typing import Callable
 
+from swiss_TML_api.name_finding.name_ranking import classify
+
 DEFAULT_CORRIDOR = 25
 MAX_CORRIDOR = 100
 SEGMENTS_PER_QUERY = 20
@@ -23,8 +25,8 @@ def features_along_route(
     All objects of the name index within `corridor` meters of the route (a list of LV95 [e, n] coordinates).
 
     query_bbox(e_min, n_min, e_max, n_max) returns the index objects within a bounding box.
-    Each object is returned once, as {"name", "object_type", "e", "n", "h", "offset"};
-    offset is its distance to the route in meters.
+    Each object is returned once, as {"name", "object_type", "e", "n", "h", "offset", "priority"};
+    offset is its distance to the route in meters, priority the one the naming ranks it with (name_ranking).
     """
 
     corridor = min(max(float(corridor), 0.0), MAX_CORRIDOR)
@@ -76,6 +78,8 @@ def features_along_route(
             "n": obj.y,
             "h": obj.h,
             "offset": round(offset, 1),
+            # see name_ranking: lets the waypoint selection tell a hut from a bare "Refuge"
+            "priority": classify(obj.name, obj.object_type).priority,
         }
         for offset, obj in found.values()
     ]

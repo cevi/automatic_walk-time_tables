@@ -70,6 +70,15 @@ class MarkLandmarksTest(unittest.TestCase):
         self.assertGreater(lm[560].score, lm[400].score)
         self.assertEqual(lm[560].name, "Fiescheralp")
 
+    def test_generic_building_is_no_landmark(self):
+        path = straight_path(1000)
+        refuge = feature("Gebaeude", 400, name="Refuge")
+        refuge["priority"] = 45
+        hut = feature("Gebaeude", 700, name="Blattihütte")
+        hut["priority"] = 85
+        mark_landmarks(path, [refuge, hut])
+        self.assertEqual(list(landmarks(path)), [700])
+
     def test_field_names_and_far_objects_are_no_landmarks(self):
         path = straight_path(1000)
         mark_landmarks(

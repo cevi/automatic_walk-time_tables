@@ -122,23 +122,48 @@ OBJECT_TYPES = {
 # Keywords are only looked up in names of objects that carry a name of their own.
 KEYWORD_NAME_TYPES = (FIELD_NAME, PLACE, HILL, DISTRICT, DEFAULT)
 
-_HUT = re.compile(r"hütte|\bsac\b|\bcas\b|abgelegener gasthof")
+_CLUB_HUT = re.compile(r"\b(SAC|CAS|CAI|DAV)\b")
+"""A field or place name of a club hut ("Fründenhütte SAC"); matched on the original name, as only the capitals mark
+the club. A plain "hütte" in a field name is mostly a farm, an alp or a former works ("Ziegelhütte", "Hüttenboden")."""
 _NAMED_HUT = re.compile(
-    r"hütte|hitta|\bcabane\b|\brefuge\b|\bcapanna\b|\brifugio\b|\bchamanna\b|\bbiwak|\bbivacco\b|\bsac\b|\bcas\b"
+    r"(?<!c)hütt(e|en|a|li)\b|hitta|(?<![cs])hitt[eu]\b|biwak|\bbivouac\b|\bbivacco\b|\bcabane\b|\brefuge\b"
+    r"|\bcapanna\b|\brifugio\b|\bcham[ao]nna\b|\bchamona\b|\bcamona\b|\bchamannin\b|\bunterkunft\b|\bsac\b|\bcas\b"
 )
-"""A named building that is a mountain hut, in any of the languages."""
+"""
+A named building that is a mountain hut, in any of the languages. The hut word must end a word ("Blattihütte",
+"Niwi Hitta", "Fusshornbiwak"), so "Restaurant Hüttenberg" or "Sennhüttenstübli" are no huts.
+"""
+_NOT_A_HUT = re.compile(r"(ziegel|glas|chol|kohl)hütten?\b")
+"""Former brick, glass and charcoal works."""
 GENERIC_HUT_NAMES = {
-    "hütte",
     "waldhütte",
     "forsthütte",
     "jagdhütte",
     "schutzhütte",
     "skihütte",
-    "pfadihütte",
-    "alphütte",
-    "clubhütte",
+    "hütten",
+    "hüttli",
+    "hütta",
+    "hitta",
+    "refuge",
+    "le refuge",
+    "refuge forestier",
+    "cabane",
+    "la cabane",
+    "cabane forestière",
+    "capanna",
+    "rifugio",
+    "baita",
+    "biwak",
+    "bivacco",
+    "bivouac",
+    "chamanna",
+    "chamonna",
 }
-"""Names that are just a kind of hut: there are many of each, so they are no landmark."""
+"""
+Names that are just a kind of hut, e.g. the 65 buildings called "Refuge" (mostly forest shelters in the Jura): there
+are many of each, so they name a point only right next to it (BUILDING) and are no landmark.
+"""
 _LAKE = re.compile(r"\b(lac|lai|lago|lej) |see$|\bsee |\blac$|\blai$")
 
 
@@ -167,20 +192,21 @@ def classify(name: str | None, object_type: str | None) -> Category:
     if category is None:
         category = AREAL if object_type.endswith("areal") else DEFAULT
 
-    if (
-        category is INN
-        and _NAMED_HUT.search(name_lower)
-        and name_lower not in GENERIC_HUT_NAMES
-    ):
-        # a staffed hut (remote inn, e.g. an SAC hut) is a landmark from afar, other huts only close by
-        return (
-            HUT if object_type in ("Gasthof abgelegen", "Schutzhuette") else NAMED_HUT
-        )
+    if category is INN and _NAMED_HUT.search(name_lower):
+        if name_lower in GENERIC_HUT_NAMES:
+            return BUILDING
+        if not _NOT_A_HUT.search(name_lower):
+            # a staffed hut (remote inn, e.g. an SAC hut) is a landmark from afar, other huts only close by
+            return (
+                HUT
+                if object_type in ("Gasthof abgelegen", "Schutzhuette")
+                else NAMED_HUT
+            )
     if category is CROSSING and "(" in name_lower and "wanderweg)" not in name_lower:
         return NAMED_CROSSING
 
     if category in KEYWORD_NAME_TYPES:
-        if _HUT.search(name_lower) or object_type.lower() == "abgelegener gasthof":
+        if _CLUB_HUT.search(name or ""):
             return HUT
         if _LAKE.search(name_lower):
             return LAKE

@@ -131,6 +131,51 @@ class FindNameTest(unittest.TestCase):
             "Weggabelung bei Chrutoose",
         )
 
+    def test_bare_refuge_is_no_landmark(self):
+        self.assertEqual(
+            name_at(
+                obj("Weggabelung bei X", "Weggabelung"),
+                obj("Refuge", "Gebaeude", 30),
+            ),
+            "Weggabelung bei X",
+        )
+
+    def test_field_name_with_hut_word_is_no_hut(self):
+        for field_name in ("Ziegelhütte", "Hüttenboden", "Champ du Sac"):
+            self.assertEqual(
+                name_at(
+                    obj("Kreuzung A, B", "Kreuzung"),
+                    obj(field_name, "Flurname swisstopo", 180),
+                ),
+                "Kreuzung A, B",
+                field_name,
+            )
+
+    def test_club_hut_field_name_is_a_hut(self):
+        self.assertEqual(
+            name_at(
+                obj("Weggabelung bei X", "Weggabelung"),
+                obj("Fründenhütte SAC", "Flurname swisstopo", 150),
+            ),
+            "Fründenhütte SAC",
+        )
+
+    def test_hut_word_must_end_the_word(self):
+        self.assertEqual(
+            name_at(
+                obj("Weggabelung bei X", "Weggabelung"),
+                obj("Restaurant Hüttenberg", "Gasthof abgelegen", 150),
+            ),
+            "Weggabelung bei X",
+        )
+        self.assertEqual(
+            name_at(
+                obj("Weggabelung bei X", "Weggabelung"),
+                obj("Niwi Hitta", "Gebaeude", 50),
+            ),
+            "Niwi Hitta",
+        )
+
     def test_generic_forest_hut_does_not_take_over_the_name(self):
         self.assertEqual(
             name_at(

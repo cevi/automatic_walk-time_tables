@@ -103,6 +103,13 @@ OWN_NAME_TYPES = {
 Landmarks with a name of their own: a way point at such a landmark is named after it, not after what the naming
 service ranks highest around it (e.g. the station "Fiescheralp", not the hotel 60 m away).
 """
+NAMED_BUILDINGS = {"Gasthof abgelegen", "Schutzhuette", "Gebaeude"}
+MIN_BUILDING_PRIORITY = 75
+"""
+A named building is a landmark only if the naming service ranks it at least as an inn ("priority" of the feature,
+see swiss_TLM_api name_ranking). Buildings named just "Refuge", "Cabane" or "Waldhütte" rank lower: there are dozens
+of each, mostly forest shelters, and the name says nothing about where you are.
+"""
 CLUSTER_DISTANCE = 10
 """Features closer than this along the route [in meters] form one landmark."""
 TURN_ANGLE = 45
@@ -168,6 +175,12 @@ def mark_landmarks(path: Path, features: List[dict], max_offset=MAX_OFFSET) -> i
             else max_offset
         )
         if weight is None or f.get("offset", 0) > limit:
+            continue
+        if (
+            f.get("object_type") in NAMED_BUILDINGS
+            and f.get("priority") is not None
+            and f["priority"] < MIN_BUILDING_PRIORITY
+        ):
             continue
         d2 = (xy[:, 0] - f["e"]) ** 2 + (xy[:, 1] - f["n"]) ** 2
         i = int(np.argmin(d2))
