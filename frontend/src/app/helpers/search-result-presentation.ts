@@ -89,7 +89,9 @@ export function presentSearchResult(
 
   // The API marks the category with a leading <i>…</i>, e.g. "<i>Bus</i> <b>Wald ZH, Bahnhof</b>"
   const categoryMatch = label.match(/^\s*<i>(.*?)<\/i>\s*/i);
-  const category = categoryMatch ? textOf(categoryMatch[1]) : '';
+  // some stops carry a technical placeholder like "<i><i>haltestellen_</i></i>"
+  const rawCategory = categoryMatch ? textOf(categoryMatch[1]) : '';
+  const category = rawCategory.endsWith('_') ? '' : rawCategory;
   const title = textOf(
     categoryMatch ? label.slice(categoryMatch[0].length) : label,
   );

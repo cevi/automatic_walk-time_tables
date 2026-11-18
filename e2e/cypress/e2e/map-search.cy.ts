@@ -210,6 +210,60 @@ describe("Map search", () => {
     cy.get(SEARCH_INPUT).should("not.be.focused");
   });
 
+  it("should rank peaks and named places above addresses", () => {
+    const result = (id: number, origin: string, label: string) => ({
+      id,
+      weight: 100,
+      attrs: {
+        detail: "",
+        featureId: "",
+        label,
+        lat: 47.28,
+        lon: 8.94,
+        x: 1239000,
+        y: 2711000,
+        origin,
+        zoomlevel: 10,
+        geom_st_box2d: "BOX(2711000 1239000,2711000 1239000)",
+      },
+    });
+    cy.intercept("GET", SEARCH_API, (req) => {
+      req.reply({
+        results:
+          req.query["origins"] === "haltestellen"
+            ? []
+            : [
+                result(1, "address", "Bachtel 1 <b>5632 Buttwil</b>"),
+                result(
+                  2,
+                  "gazetteer",
+                  "<i>Flurname swisstopo</i> <b>Bachtel</b> (BE) - Lyssach",
+                ),
+                result(
+                  3,
+                  "gazetteer",
+                  "<i>Ort</i> <b>Bachtel</b> (AG) - Buttwil",
+                ),
+                result(
+                  4,
+                  "gazetteer",
+                  "<i>Gipfel</i> <b>Bachtel</b> (ZH) - Hinwil",
+                ),
+              ],
+      });
+    }).as("ranked_search");
+    cy.get(SEARCH_INPUT).type("Bachtel", { delay: 0 });
+
+    cy.get("mat-option .result-details").should((types) => {
+      expect([...types].map((t) => t.textContent?.trim())).to.deep.equal([
+        "Gipfel",
+        "Ort",
+        "Flurname",
+        "Adresse",
+      ]);
+    });
+  });
+
   describe("coordinates", () => {
     const cases = [
       ["LV95", "2'600'000 1'200'000", "2'600'000, 1'200'000", 2600000, 1200000],
