@@ -1,5 +1,14 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  HostListener,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+} from '@angular/core';
 import { FormControl } from '@angular/forms';
+import { MatAutocompleteTrigger } from '@angular/material/autocomplete';
 import {
   catchError,
   map,
@@ -62,10 +71,14 @@ const COORDINATE_RESOLUTION = 2.5;
   changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false,
 })
-export class MapSearchComponent implements OnInit {
+export class MapSearchComponent implements OnInit, OnDestroy {
   searchControl = new FormControl('');
   state$: Observable<SearchState> = of(toState([]));
   isLoading = false;
+  @ViewChild('searchInput', { static: true })
+  searchInput!: ElementRef<HTMLInputElement>;
+  @ViewChild(MatAutocompleteTrigger, { static: true })
+  autocompleteTrigger!: MatAutocompleteTrigger;
   private searchMarkerLayer: VectorLayer<any> | null = null;
 
   constructor(
@@ -74,6 +87,11 @@ export class MapSearchComponent implements OnInit {
   ) {}
 
   ngOnInit() {
+    this.searchInput.nativeElement.addEventListener(
+      'keydown',
+      this.onEscapeCapture,
+      { capture: true },
+    );
     this.state$ = this.searchControl.valueChanges.pipe(
       debounceTime(300),
       distinctUntilChanged(),
@@ -112,6 +130,44 @@ export class MapSearchComponent implements OnInit {
       }),
     );
   }
+
+  ngOnDestroy() {
+    this.searchInput.nativeElement.removeEventListener(
+      'keydown',
+      this.onEscapeCapture,
+      { capture: true },
+    );
+  }
+
+  /** label of the shortcut badge, e.g. "⌘K" on macOS */
+  readonly shortcutLabel = /Mac|iPhone|iPad/.test(navigator.userAgent)
+    ? '⌘K'
+    : 'Ctrl K';
+
+  /** Ctrl+K / ⌘K focuses the search, the common shortcut of web search fields */
+  @HostListener('document:keydown', ['$event'])
+  onDocumentKeydown(event: KeyboardEvent) {
+    const modifier = event.ctrlKey || event.metaKey;
+    if (!modifier || event.altKey || event.shiftKey) return;
+    if (event.key.toLowerCase() !== 'k') return;
+    event.preventDefault();
+    this.searchInput.nativeElement.focus();
+    this.searchInput.nativeElement.select();
+  }
+
+  /**
+   * Esc closes the result list first (done by the autocomplete), then clears
+   * the search, then leaves the field. Runs in the capture phase, before the
+   * autocomplete closes its panel, to know whether the list was open.
+   */
+  onEscapeCapture = (event: KeyboardEvent) => {
+    if (event.key !== 'Escape' || this.autocompleteTrigger.panelOpen) return;
+    if (this.searchControl.value) {
+      this.searchControl.setValue('');
+    } else {
+      this.searchInput.nativeElement.blur();
+    }
+  };
 
   private coordinateResult(
     query: string,

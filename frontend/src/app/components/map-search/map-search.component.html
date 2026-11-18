@@ -9,12 +9,21 @@
       aria-label="Suche läuft"
     ></mat-spinner>
     <input
+      #searchInput
       type="text"
       matInput
-      placeholder="Orte, Adressen, Flurnamen, Koordinaten..."
+      aria-label="Suche"
+      placeholder="Orte, Adressen, Koordinaten..."
       [formControl]="searchControl"
       [matAutocomplete]="auto"
     />
+    <kbd
+      *ngIf="!searchControl.value"
+      matSuffix
+      class="shortcut-hint"
+      [title]="'Mit ' + shortcutLabel + ' zur Suche springen'"
+      >{{ shortcutLabel }}</kbd
+    >
     <button
       *ngIf="searchControl.value"
       matSuffix

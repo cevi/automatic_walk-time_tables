@@ -40,6 +40,33 @@
   }
 }
 
+.shortcut-hint {
+  display: inline-block;
+  margin-right: 14px;
+  min-width: 20px;
+  padding: 1px 6px;
+  border: 1px solid #ccc;
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  color: #777;
+  background: #fafafa;
+}
+
+// the hint is pointless while typing or on touch devices
+.search-container:focus-within .shortcut-hint {
+  visibility: hidden;
+}
+
+@media (hover: none) {
+  .shortcut-hint {
+    display: none;
+  }
+}
+
 .search-spinner {
   // same footprint as the search icon it replaces
   margin: 0 12px 0 14px;

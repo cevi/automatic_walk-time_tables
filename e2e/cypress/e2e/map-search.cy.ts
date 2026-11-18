@@ -192,6 +192,24 @@ describe("Map search", () => {
     );
   });
 
+  it("should focus the search with Ctrl+K and step back with Esc", () => {
+    cy.get(".shortcut-hint").should("contain", "K");
+    cy.get("body").type("{ctrl}k");
+    cy.focused().should("match", SEARCH_INPUT);
+
+    cy.focused().type("Wald", { delay: 0 });
+    cy.contains("mat-option", "Wald (ZH), Bahnhof").should("be.visible");
+
+    // 1st Esc closes the list, 2nd clears the search, 3rd leaves the field
+    cy.focused().type("{esc}");
+    cy.get("mat-option").should("not.exist");
+    cy.get(SEARCH_INPUT).should("have.value", "Wald");
+    cy.focused().type("{esc}");
+    cy.get(SEARCH_INPUT).should("have.value", "");
+    cy.focused().type("{esc}");
+    cy.get(SEARCH_INPUT).should("not.be.focused");
+  });
+
   describe("coordinates", () => {
     const cases = [
       ["LV95", "2'600'000 1'200'000", "2'600'000, 1'200'000", 2600000, 1200000],
