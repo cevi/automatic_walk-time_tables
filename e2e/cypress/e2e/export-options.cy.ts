@@ -88,7 +88,9 @@ describe("Export options", () => {
     cy.get('mat-select[formControlName="legend_position"]').should("not.exist");
 
     cy.contains("button", "Erweiterte Einstellungen").click();
+    // the settings open above the button, which may be scrolled to the top of the drawer
     cy.get('mat-select[formControlName="legend_position"]')
+      .scrollIntoView()
       .should("be.visible")
       .and("contain", "Unten Rechts");
 
