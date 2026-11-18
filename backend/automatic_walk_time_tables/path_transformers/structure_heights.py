@@ -22,7 +22,13 @@ from automatic_walk_time_tables.utils.path import Path
 
 logger = logging.getLogger(__name__)
 
-BRIDGES = {"Bruecke", "Bruecke mit Treppe", "Steg"}
+BRIDGES = {
+    "Bruecke",
+    "Bruecke mit Treppe",
+    "Bruecke mit Galerie",
+    "Gedeckte Bruecke",
+    "Steg",
+}
 """The structure is above the terrain."""
 TUNNELS = {"Tunnel", "Galerie", "Unterfuehrung", "Unterfuehrung mit Treppe"}
 """The structure is below the terrain."""

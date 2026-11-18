@@ -9,7 +9,14 @@ from swiss_TML_api.name_finding.swiss_name import SwissName
 
 logger = logging.getLogger(__name__)
 
-CROSSES_WATER = ("Bruecke", "Bruecke mit Treppe", "Steg", "Furt")
+CROSSES_WATER = (
+    "Bruecke",
+    "Bruecke mit Treppe",
+    "Bruecke mit Galerie",
+    "Gedeckte Bruecke",
+    "Steg",
+    "Furt",
+)
 """Structures (KUNSTBAUTE of TLM_STRASSE) that cross a river; they are named after it, e.g. "Bruecke (Linth)"."""
 
 MIN_CROSSING_DISTANCE = 5

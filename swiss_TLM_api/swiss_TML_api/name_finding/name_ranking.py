@@ -55,7 +55,11 @@ JUNCTION = Category(10, 25)
 CROSSING = Category(9, 20)
 NAMED_CROSSING = Category(30, 20)
 """A bridge named after the river it crosses ("Bruecke (Linth)") is a better name than a junction at the point."""
+NATURAL_FEATURE = Category(45, 30)
+"""Waterfalls, springs, caves and boulders: recognisable on the ground, named mostly after their kind."""
 FOREST_EDGE = Category(8, 15)
+STAIRS = Category(7, 15)
+"""Stairs on a path ("Treppe", 72'000 of them): visible, but no name of their own."""
 PATH_END = Category(5, 25)
 
 # The names of these objects are derived from adjacent street names or field names, e.g. "Weggabelung Route du Lac"
@@ -106,6 +110,8 @@ OBJECT_TYPES = {
     "Nationalparksgrenze": NATIONAL_PARK,
     "Bruecke": CROSSING,
     "Bruecke mit Treppe": CROSSING,
+    "Bruecke mit Galerie": CROSSING,
+    "Gedeckte Bruecke": CROSSING,
     "Steg": CROSSING,
     "Furt": CROSSING,
     "Unterfuehrung": CROSSING,
@@ -114,6 +120,19 @@ OBJECT_TYPES = {
     "Galerie": CROSSING,
     "Fliessgewaesser": LINE_CROSSING,
     "Bisse Suone": LINE_CROSSING,
+    # single objects of swissNAMES3D (TLM_EINZELOBJEKT, MORPH_KLEINFORM_PKT): visible on the ground, but mostly
+    # named after their kind ("Wasserfall", "Brunnen"), so they name a point only close by
+    "Wasserfall": NATURAL_FEATURE,
+    "Quelle": NATURAL_FEATURE,
+    "Grotte, Hoehle": NATURAL_FEATURE,
+    "Felsblock": NATURAL_FEATURE,
+    "Erratischer Block": NATURAL_FEATURE,
+    "Brunnen": BUILDING,
+    "Bildstock": BUILDING,
+    "Denkmal": BUILDING,
+    "Landesgrenzstein": BUILDING,
+    "Triangulationspyramide": BUILDING,
+    "Treppe": STAIRS,
     "Sportplatz": SPORT,
     "Rodelbahn": SPORT,
     "Skisprungschanze": SPORT,

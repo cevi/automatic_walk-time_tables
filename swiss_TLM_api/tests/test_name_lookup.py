@@ -131,6 +131,31 @@ class FindNameTest(unittest.TestCase):
             "Weggabelung bei Chrutoose",
         )
 
+    def test_official_name_of_an_object_with_several_names(self):
+        joined = "Matterhorn | Mont Cervin | Monte Cervino"
+        candidates = [
+            obj("Mont Cervin", "Alpiner Gipfel"),
+            obj("Monte Cervino", "Alpiner Gipfel"),
+            obj(joined, "Alpiner Gipfel"),
+            obj("Matterhorn", "Alpiner Gipfel"),
+        ]
+        self.assertEqual(name_at(*candidates), "Matterhorn")
+        self.assertEqual(
+            name_at(
+                obj(
+                    "Passo del San Gottardo | Gotthardpass | Col du St-Gothard",
+                    "Pass",
+                )
+            ),
+            "Passo del San Gottardo",
+        )
+
+    def test_covered_bridge_is_a_bridge(self):
+        self.assertEqual(
+            name_at(obj("Gedeckte Bruecke (Emme)", "Gedeckte Bruecke")),
+            "Gedeckte Brücke (Emme)",
+        )
+
     def test_bare_refuge_is_no_landmark(self):
         self.assertEqual(
             name_at(

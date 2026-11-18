@@ -36,12 +36,15 @@ WEIGHTS = {
     "Haltestelle Bus": 85,
     "Staudamm": 85,
     "Staumauer": 85,
-    "Kirche": 80,
+    "Wasserfall": 70,  # natural waterfalls of more than 15 m (swissNAMES3D)
+    "Grotte, Hoehle": 60,
     "Kapelle": 75,
     "Turm": 70,
     "Triangulationspyramide": 65,
     "Bildstock": 60,
     "Bruecke": 80,
+    "Gedeckte Bruecke": 85,  # covered wooden bridges are rare and well known
+    "Bruecke mit Galerie": 80,
     "Bruecke mit Treppe": 75,
     "Steg": 80,
     "Furt": 80,

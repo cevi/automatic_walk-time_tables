@@ -16,7 +16,11 @@ IGNORED_TYPES = (
 )
 """Objects that are never used as a name (dry gullies and pressure pipelines)."""
 
-PRETTY_PREFIXES = {"Bruecke": "Brücke", "Unterfuehrung": "Unterführung"}
+PRETTY_PREFIXES = {
+    "Bruecke": "Brücke",
+    "Gedeckte Bruecke": "Gedeckte Brücke",
+    "Unterfuehrung": "Unterführung",
+}
 """Names of structures in the index start with the object type, written without umlauts."""
 
 TRAIL_CATEGORIES = (" (Wanderweg)", " (Bergwanderweg)", " (Alpinwanderweg)")
@@ -31,6 +35,11 @@ def pretty_name(name: str) -> str:
     for raw, pretty in PRETTY_PREFIXES.items():
         if name.startswith(raw):
             name = pretty + name[len(raw) :]
+    # an object with names in several languages: the index joins them, the official name first
+    # ("Passo del San Gottardo | Gotthardpass | Col du St-Gothard"); a bridge lists its river's names in brackets
+    head, bracket, rest = name.partition(" (")
+    if " | " in head:
+        name = head.split(" | ")[0] + bracket + rest
     # rivers with several names: "Brücke (Escherkanal | Linth)" -> "Brücke (Escherkanal/Linth)", but only the
     # first of a list of translations: "Brücke (Rhein | Le Rhin | Rein | Reno)" -> "Brücke (Rhein)"
     if name.endswith(")") and " (" in name and " | " in name:
@@ -39,6 +48,21 @@ def pretty_name(name: str) -> str:
         inner = "/".join(parts) if len(parts) <= 2 else parts[0]
         name = f"{head} ({inner})"
     return name
+
+
+def _translations(candidates: list) -> set:
+    """
+    The other names of objects with names in several languages. swissNAMES3D has a row per name (official, usual
+    and foreign, e.g. "Matterhorn", "Mont Cervin", "Monte Cervino"), and the index also has the joined name with the
+    official one first ("Matterhorn | Mont Cervin | Monte Cervino"). Returns (type, x, y, name) of the other names.
+    """
+    result = set()
+    for c in candidates:
+        head = (c.name or "").partition(" (")[0]
+        if " | " in head:
+            for other in head.split(" | ")[1:]:
+                result.add((c.object_type, round(c.x), round(c.y), other))
+    return result
 
 
 def _is_field_name(obj) -> bool:
@@ -78,10 +102,13 @@ def find_name(candidates: list, e: float, n: float) -> dict:
     requested coordinate and the named object.
     """
 
+    translations = _translations(candidates)
     best_n, best_rank = None, None
     for c in candidates:
         if c.object_type in IGNORED_TYPES:
             continue
+        if (c.object_type, round(c.x), round(c.y), c.name) in translations:
+            continue  # "Mont Cervin" next to "Matterhorn | Mont Cervin | Monte Cervino": not the official name
         if c.name and "fliessgewaesser (keine brücke)" in c.name.lower():
             c.name = c.name.replace("Fliessgewaesser (Keine Brücke)", "Gewässerquerung")
 

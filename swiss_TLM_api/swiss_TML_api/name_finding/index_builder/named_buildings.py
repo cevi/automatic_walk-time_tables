@@ -41,12 +41,18 @@ class NamedBuildings(IndexBuilder):
             with fiona.open(SWISSNAMES3D_PKT) as src:
                 for obj in src:
                     props = obj["properties"]
-                    use = props.get("GEBAEUDENU")
+                    # the product information spells the coded values with underscores ("Gasthof_abgelegen"),
+                    # the 2024/25 exports with a space
+                    use = props.get("GEBAEUDENU") or ""
+                    if use != "k_W":
+                        use = use.replace("_", " ")
                     name = props.get("NAME")
                     if (
                         props.get("OBJEKTART") != "Gebaeude"
                         or use not in self.uses
                         or not name
+                        # only the official name, not the usual or foreign ones ("Tenigerbad" for "Bogn Tenigia")
+                        or props.get("STATUS", "offiziell") != "offiziell"
                     ):
                         continue
 
