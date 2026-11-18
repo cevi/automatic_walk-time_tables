@@ -30,6 +30,45 @@ def GetSpacedElements(array, numElems=4):
     return list(np.array(array)[indices])
 
 
+BASE_DPI = 508
+"""Native resolution of the swisstopo raster maps (1.25 m per pixel at 1:25'000)."""
+
+MAX_DPI = 635
+"""Highest DPI we ask mapfish for. Must match `maxDpi` in mapfish_print_server/swisstopo_config/config.yaml."""
+
+OGC_PIXEL_SIZE_M = 0.00028
+"""WMTS defines `scaleDenominator` for a pixel size of 0.28 mm."""
+
+
+def select_print_dpi(map_scaling: float, matrices: List[dict]) -> float:
+    """
+    Returns the DPI at which one printed pixel matches one tile pixel of a WMTS zoom level.
+
+    If no zoom level matches the map scale at BASE_DPI, mapfish takes the closest
+    level and resamples the tiles, which blurs lines and text. Example: at 1:25'000
+    and 508 dpi a pixel covers 1.25 m, but swisstopo only serves 1.5 m and 1.0 m
+    levels. Printing at 635 dpi makes a pixel cover exactly 1.0 m, so the tiles are
+    placed without resampling.
+
+    We take the lowest DPI between BASE_DPI and MAX_DPI that matches a zoom level,
+    and fall back to BASE_DPI if none does.
+    """
+
+    resolutions = {
+        round(matrix["scaleDenominator"] * OGC_PIXEL_SIZE_M, 6) for matrix in matrices
+    }
+    matching_dpis = [
+        map_scaling * 0.0254 / resolution
+        for resolution in resolutions
+        if BASE_DPI - 1e-6 <= map_scaling * 0.0254 / resolution <= MAX_DPI + 1e-6
+    ]
+
+    if not matching_dpis:
+        return float(BASE_DPI)
+
+    return min(round(min(matching_dpis), 3), MAX_DPI)
+
+
 class MapCreator:
     A4_HEIGHT_FACTOR = 4.5 / 25.0
     """
@@ -386,7 +425,7 @@ class MapCreator:
             "map": {
                 "center": center,
                 "scale": map_scaling,
-                "dpi": 508,
+                "dpi": select_print_dpi(map_scaling, default_matrices),
                 "pdfA": True,
                 "projection": "EPSG:2056",
                 "rotation": 0,
