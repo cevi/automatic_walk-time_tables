@@ -139,10 +139,9 @@ class NameIndex:
         if not os.path.exists("./resources/swissNAMES3D_data/"):
             os.makedirs("./resources/swissNAMES3D_data/")
 
-        if not any(
-            fname.endswith(".shp")
-            for fname in os.listdir("./resources/swissNAMES3D_data/")
-        ):
+        # check for the swissNAMES3D files themselves: scripts/fetch_hoehenpunkte.py writes SMV25_HOEHENKOTEN.shp
+        # into the same folder, and any .shp was taken as "already downloaded"
+        if not os.path.isfile("./resources/swissNAMES3D_data/swissNAMES3D_PKT.shp"):
             logger.info(
                 "swissNAMES3D SHP files not found. Downloading them from Swisstopo"
             )
