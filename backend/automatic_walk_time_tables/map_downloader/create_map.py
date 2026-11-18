@@ -343,14 +343,18 @@ class MapCreator:
         for i, point in enumerate(way_points.way_points):
             lv95 = point.point.to_LV95()
 
+            # Must match the numbers in the walk-time table (create_walk_table).
+            # Don't overwrite point.name, the GPX export still needs the name.
+            label = ""
             if self.number_points_in_export:
-                point.name = str(i + 1)
+                label = str(i + 1)
+            elif self.name_points_in_export:
+                label = point.name
 
             point_layer = self.create_point_json(
                 lv95,
-                point,
                 color="#d32f2f",
-                label=self.name_points_in_export or self.number_points_in_export,
+                label=label,
             )
             point_layers.append(point_layer)
 
@@ -359,9 +363,12 @@ class MapCreator:
 
             point_layer = self.create_point_json(
                 lv95,
-                point,
                 color="#d32f2f",
-                label=self.name_points_in_export or self.number_points_in_export,
+                label=(
+                    point.name
+                    if self.name_points_in_export or self.number_points_in_export
+                    else ""
+                ),
             )
             point_layers.append(point_layer)
 
@@ -400,9 +407,7 @@ class MapCreator:
 
         return query_json
 
-    def create_point_json(
-        self, lv95, point, color="#FF0000", pointRadius=3, label=False
-    ):
+    def create_point_json(self, lv95, color="#FF0000", pointRadius=3, label=""):
         point_layer = {
             "geoJson": {
                 "type": "FeatureCollection",
@@ -446,7 +451,7 @@ class MapCreator:
                             "haloColor": "#ffffff",
                             "haloOpacity": "1",
                             "haloRadius": "3",
-                            "label": point.name if label else "",
+                            "label": label or "",
                             "fillColor": color,
                             "fillOpacity": 0,
                             "labelAlign": "cm",

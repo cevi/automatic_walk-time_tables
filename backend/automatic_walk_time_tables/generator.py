@@ -156,6 +156,9 @@ class AutomatedWalkTableGenerator:
             file_name=name,
             creator_name=self.options["settings"]["creator_name"],
             map_numbers=map_numbers,
+            number_points=self.options["settings"].get(
+                "number_points_in_export", False
+            ),
         )
 
         self.__logger.log(
