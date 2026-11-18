@@ -69,6 +69,57 @@ def select_print_dpi(map_scaling: float, matrices: List[dict]) -> float:
     return min(round(min(matching_dpis), 3), MAX_DPI)
 
 
+def _route_line(color: str, width: float, opacity: float) -> dict:
+    return {
+        "type": "line",
+        "strokeColor": color,
+        "strokeOpacity": opacity,
+        "strokeWidth": width,
+        "strokeLinecap": "round",
+        "strokeLinejoin": "round",
+    }
+
+
+ROUTE_STYLES = {
+    # the look of the export before the style could be chosen
+    "classic": {
+        "base_map_opacity": 0.85,
+        "symbolizers": [
+            {
+                "type": "line",
+                "strokeColor": "#ffffff",
+                "strokeOpacity": 0.75,
+                "strokeWidth": 2.5,
+            },
+            {
+                "type": "line",
+                "strokeColor": "#efa038",
+                "strokeOpacity": 0.5,
+                "strokeWidth": 1.25,
+            },
+        ],
+    },
+    "magenta": {
+        "base_map_opacity": 1.0,
+        "symbolizers": [
+            _route_line("#ffffff", 3.5, 0.9),
+            _route_line("#d4007f", 2.0, 0.9),
+        ],
+    },
+    "highlighter": {
+        "base_map_opacity": 1.0,
+        "symbolizers": [_route_line("#8e24aa", 6.0, 0.4)],
+    },
+}
+"""
+Route line styles the user can choose for the export, together with the opacity of the
+map layers underneath. The classic style fades the map so the light orange route stands
+out; the other styles have enough contrast to keep the map at full strength.
+"""
+
+DEFAULT_ROUTE_STYLE = "classic"
+
+
 class MapCreator:
     A4_HEIGHT_FACTOR = 4.5 / 25.0
     """
@@ -95,6 +146,11 @@ class MapCreator:
             args["number_points_in_export"]
             if "number_points_in_export" in args
             else False
+        )
+
+        # unknown values (e.g. from an older or newer frontend) fall back to the default
+        self.route_style = ROUTE_STYLES.get(
+            args.get("route_style"), ROUTE_STYLES[DEFAULT_ROUTE_STYLE]
         )
 
     def auto_select_map_scaling(self) -> int:
@@ -351,20 +407,7 @@ class MapCreator:
             "style": {
                 "version": 2,
                 "[_ngeo_style = '1,2']": {
-                    "symbolizers": [
-                        {
-                            "type": "line",
-                            "strokeColor": "#ffffff",
-                            "strokeOpacity": 0.75,
-                            "strokeWidth": 2.5,
-                        },
-                        {
-                            "type": "line",
-                            "strokeColor": "#efa038",
-                            "strokeOpacity": 0.5,
-                            "strokeWidth": 1.25,
-                        },
-                    ]
+                    "symbolizers": self.route_style["symbolizers"]
                 },
             },
             "type": "geojson",
@@ -531,7 +574,7 @@ class MapCreator:
             "imageFormat": "image/" + image_type,
             "layer": layer,
             "matrixSet": "2056",
-            "opacity": 0.85,
+            "opacity": self.route_style["base_map_opacity"],
             "requestEncoding": "REST",
             "matrices": default_matrices,
             "style": "default",

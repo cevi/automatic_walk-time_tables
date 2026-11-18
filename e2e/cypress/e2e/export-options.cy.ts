@@ -88,7 +88,9 @@ describe("Export options", () => {
     cy.get('mat-select[formControlName="legend_position"]').should("not.exist");
 
     cy.contains("button", "Erweiterte Einstellungen").click();
+    // the settings open above the button, which may be scrolled to the top of the drawer
     cy.get('mat-select[formControlName="legend_position"]')
+      .scrollIntoView()
       .should("be.visible")
       .and("contain", "Unten Rechts");
 
@@ -108,6 +110,7 @@ describe("Export options", () => {
         auto_scale: false,
         name_points_in_export: true,
         number_points_in_export: false,
+        route_style: "classic",
       });
       expect(response?.body.status).to.eq("running");
       expect(response?.body.uuid).to.match(/^[0-9a-f]{32}$/);
@@ -129,6 +132,7 @@ describe("Export options", () => {
       .trigger("input")
       .trigger("change");
     cy.contains("label", "Kartenmassstab: 1:25000").should("exist");
+    cy.get('[data-route-style="magenta"]').click();
 
     cy.contains("button", "Erweiterte Einstellungen").click();
     select_option("legend_position", "Oben Links");
@@ -147,6 +151,7 @@ describe("Export options", () => {
         auto_scale: false,
         name_points_in_export: false,
         number_points_in_export: true,
+        route_style: "magenta",
       });
     });
 
@@ -182,6 +187,7 @@ describe("Export options", () => {
   it("should remember the settings of the last export", () => {
     cy.get('[formControlName="creator_name"]').clear().type("Cypress");
     select_option("map_layers", "Basiskarte S/W");
+    cy.get('[data-route-style="highlighter"]').click();
 
     export_route();
 
@@ -191,6 +197,10 @@ describe("Export options", () => {
     cy.get('mat-select[formControlName="map_layers"]').should(
       "contain",
       "Basiskarte S/W",
+    );
+    cy.get('input[name="route_style"]:checked').should(
+      "have.value",
+      "highlighter",
     );
   });
 
