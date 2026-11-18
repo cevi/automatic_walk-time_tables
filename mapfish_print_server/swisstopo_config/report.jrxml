@@ -44,12 +44,14 @@
             <property name="com.jaspersoft.studio.unit.height" value="px"/>
         </element>
         <element kind="rectangle" uuid="1bae2f08-683a-416a-be8b-a4ebfc7db793" x="10" y="440" width="100" height="100" forecolor="#FFFFFF">
+            <printWhenExpression><![CDATA[$P{qr_code} != null && !$P{qr_code}.isEmpty()]]></printWhenExpression>
             <property name="com.jaspersoft.studio.unit.x" value="px"/>
             <property name="com.jaspersoft.studio.unit.width" value="px"/>
             <property name="com.jaspersoft.studio.unit.height" value="px"/>
             <property name="com.jaspersoft.studio.unit.y" value="px"/>
         </element>
         <element kind="image" uuid="1bae2f08-683a-416a-be8b-a4ebfc7db792" x="10" y="440" width="100" height="100" evaluationTime="Report" linkType="Reference" linkTarget="Blank">
+            <printWhenExpression><![CDATA[$P{qr_code} != null && !$P{qr_code}.isEmpty()]]></printWhenExpression>
             <expression><![CDATA[$P{qr_code}]]></expression>
             <hyperlinkReferenceExpression><![CDATA[$P{qr_url}]]></hyperlinkReferenceExpression>
         </element>
