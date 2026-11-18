@@ -27,6 +27,8 @@ A complete, technical changelog is available at [GitHub](https://github.com/cevi
 - GPX export: heights above sea level instead of ellipsoidal heights (about 50 m too high) (7.1.0)
 - Sentinel-2 satellite images as an additional background map, with a choice of the image date (7.1.0)
 - Updated name index (swissTLM3D 2026-02, swissNAMES3D 2025) (7.1.0)
+- Sharper 1:25'000 map exports: printed at 635 dpi so the swisstopo tiles are not resampled (7.1.0)
+- Map export works when the QR code service is down; the PDF is created without the QR code (7.1.0)
 - Angular 22 and TypeScript 6 (7.1.0)
 - Bug fixes
 - Dependency updates
