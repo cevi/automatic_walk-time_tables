@@ -14,7 +14,7 @@ templates:
         default: ""
 
       map: !map
-        maxDpi: 508
+        maxDpi: 635
         width: 813
         height: 566
 
