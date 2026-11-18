@@ -65,16 +65,21 @@ def _translations(candidates: list) -> set:
     return result
 
 
-def _is_field_name(obj) -> bool:
-    t = (obj.object_type or "").lower()
-    return "flurname" in t or "lokalname" in t
+PLACE_TYPES = ("Ort", "Ortsteil")
+"""Hamlets and parts of villages ("Lettenhof"): printed on the map like field names."""
+
+
+def _is_local_name(obj) -> bool:
+    """A field name ("Oberer Lätten") or the name of a hamlet ("Lettenhof"): what the map prints next to a point."""
+    t = obj.object_type or ""
+    return "flurname" in t.lower() or "lokalname" in t.lower() or t in PLACE_TYPES
 
 
 STREET_FORK_FIELD_NAME_RADIUS = 100
 """
-A fork named after a single street ("Weggabelung Letziweg") is renamed after the nearest field name within this
-distance [in meters] ("Weggabelung bei Ob der Hueb"). Street names are not printed on the 1:25'000 map and repeat
-along the whole street, field names are and do not.
+A fork named after a single street ("Weggabelung Letziweg") is renamed after the nearest field or place name within
+this distance [in meters] ("Weggabelung bei Ob der Hueb", "Weggabelung bei Lettenhof"). Street names are not printed
+on the 1:25'000 map and repeat along the whole street, field and place names are and do not.
 """
 
 
@@ -140,7 +145,7 @@ def find_name(candidates: list, e: float, n: float) -> dict:
             name = f"Gipfelkreuz {peak.name}"
 
     if best_n.object_type == "Kotierter Punkt" or name.startswith("Punkt "):
-        field = _nearest(others, e, n, _is_field_name, 250)
+        field = _nearest(others, e, n, _is_local_name, 250)
         if field:
             name = f"{name} ({field.name})"
 
@@ -155,7 +160,7 @@ def find_name(candidates: list, e: float, n: float) -> dict:
                 others,
                 best_n.x,
                 best_n.y,
-                _is_field_name,
+                _is_local_name,
                 STREET_FORK_FIELD_NAME_RADIUS,
             )
             if field:

@@ -53,6 +53,17 @@ class FindNameTest(unittest.TestCase):
             "Weggabelung Letziweg",
         )
 
+    def test_fork_named_after_a_single_street_uses_a_nearer_hamlet(self):
+        # Stadel ZH: the fork lies at the hamlet Lettenhof (60 m), the field name Oberer Lätten is 84 m away
+        self.assertEqual(
+            name_at(
+                obj("Weggabelung Bachserstrasse", "Weggabelung"),
+                obj("Oberer Lätten", "Flurname swisstopo", 1, 84),
+                obj("Lettenhof", "Ort", 0, -60),
+            ),
+            "Weggabelung bei Lettenhof",
+        )
+
     def test_crossing_of_several_streets_is_kept(self):
         self.assertEqual(
             name_at(
