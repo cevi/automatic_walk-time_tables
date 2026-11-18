@@ -61,8 +61,18 @@
             [matMenuTriggerFor]="mapMenu"
             matTooltip="Hintergrundkarte"
             color="primary"
+            class="layers-button"
+            [class.sentinel-loading]="sentinelLoading"
           >
             <mat-icon>layers</mat-icon>
+            <span *ngIf="sentinelLoading" class="loading-ring"></span>
+            <span
+              *ngIf="sentinelLoading"
+              class="loading-label"
+              role="status"
+              aria-live="polite"
+              >Satellitenbild wird geladen …</span
+            >
           </button>
           <mat-menu #mapMenu="matMenu" class="premium-map-menu">
             <div class="menu-section-title">Hintergrundkarten</div>
