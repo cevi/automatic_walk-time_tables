@@ -46,7 +46,7 @@ export class RouteStylePickerComponent implements ControlValueAccessor {
     {
       value: 'highlighter',
       label: 'Textmarker',
-      hint: 'Breit und durchscheinend, der Weg darunter bleibt lesbar',
+      hint: 'Breit und durchscheinend, der Weg bleibt sichtbar',
       preview: 'assets/route-styles/highlighter.webp',
     },
   ];
