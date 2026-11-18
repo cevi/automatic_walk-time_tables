@@ -7,8 +7,11 @@ templates:
     attributes:
       scale: !string {}
 
-      qr_code: !string {}
-      qr_url: !string {}
+      # optional: the backend leaves both out when the QR code service fails
+      qr_code: !string
+        default: ""
+      qr_url: !string
+        default: ""
 
       map: !map
         maxDpi: 508
