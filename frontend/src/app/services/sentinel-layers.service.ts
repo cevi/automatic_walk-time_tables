@@ -43,9 +43,11 @@ export class SentinelLayersService {
         return res.json();
       })
       .then((catalog: SentinelCatalog) => this.catalog$.next(catalog))
-      .catch((err) =>
-        // the satellite images are optional, the rest of the map keeps working
-        console.warn('Sentinel-2 layers unavailable:', err),
-      );
+      .catch((err) => {
+        // the satellite images are optional, the rest of the map keeps working;
+        // an empty list ends the loading indicator of a shared link to a satellite layer
+        console.warn('Sentinel-2 layers unavailable:', err);
+        this.catalog$.next({ attribution: '', layers: [] });
+      });
   }
 }

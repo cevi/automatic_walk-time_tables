@@ -266,6 +266,25 @@ class FeaturesAlongRouteTest(unittest.TestCase):
         self.assertTrue(all(f["offset"] == 3.0 for f in features))
         self.assertLess(len(calls), 10)
 
+    def test_objects_with_names_in_several_languages_have_their_official_name(self):
+        # the landmarks of the waypoint selection are named after themselves: no translations, no joined names
+        objects = [
+            obj(
+                "Passo del San Gottardo | Gotthardpass | Pass dal Son Gottard",
+                "Pass",
+                100,
+            ),
+            obj("Gotthardpass", "Pass", 100),
+            obj("Pass dal Son Gottard", "Pass", 100),
+            obj("Passo del San Gottardo", "Pass", 100),
+        ]
+
+        def query_bbox(e0, n0, e1, n1):
+            return [o for o in objects if e0 <= o.x <= e1 and n0 <= o.y <= n1]
+
+        features = features_along_route([[E, N], [E + 300, N]], query_bbox)
+        self.assertEqual({f["name"] for f in features}, {"Passo del San Gottardo"})
+
 
 if __name__ == "__main__":
     unittest.main()

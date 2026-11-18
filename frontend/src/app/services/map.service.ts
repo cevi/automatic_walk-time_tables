@@ -291,19 +291,21 @@ export class MapService extends SwisstopoMap implements OnDestroy {
     let pending = 0;
     let timer: ReturnType<typeof setTimeout> | undefined;
 
+    // the previous background stays until the image is fully rendered
+    const busy = () =>
+      pending > 0 ||
+      source.getState() === 'loading' ||
+      this.sentinelCoverLabel !== null;
+
     const update = () => {
       if (generation !== this.sentinelLoadingGeneration) return;
-      // the previous background stays until the image is fully rendered
-      const busy =
-        pending > 0 ||
-        source.getState() === 'loading' ||
-        this.sentinelCoverLabel !== null;
       clearTimeout(timer);
-      if (!busy) {
+      if (!busy()) {
         this.sentinelLoading$.next(false);
       } else if (!this.sentinelLoading$.value) {
         timer = setTimeout(() => {
-          if (generation === this.sentinelLoadingGeneration)
+          // the cover may have been removed in the meantime (remove_cover_when_ready)
+          if (generation === this.sentinelLoadingGeneration && busy())
             this.sentinelLoading$.next(true);
         }, 300);
       }
@@ -376,8 +378,9 @@ export class MapService extends SwisstopoMap implements OnDestroy {
         sentinelSource = wmtsLayer.getSource() as DataTileSource;
         this.trackSentinelLoading(sentinelSource);
       } else {
-        // the list of images hasn't arrived yet
-        this.sentinelLoading$.next(true);
+        // the list of images hasn't arrived yet; an unknown scene (e.g. an
+        // old shared link) shows only the grey map
+        this.sentinelLoading$.next(this.sentinelLayers.catalog$.value === null);
       }
       if (this.sentinelCoverLabel) {
         cover = this.create_background_layer(

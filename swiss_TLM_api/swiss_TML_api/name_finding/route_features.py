@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 from typing import Callable
 
+from swiss_TML_api.name_finding.name_lookup import _translations, pretty_name
 from swiss_TML_api.name_finding.name_ranking import classify
 
 DEFAULT_CORRIDOR = 25
@@ -27,6 +28,8 @@ def features_along_route(
     query_bbox(e_min, n_min, e_max, n_max) returns the index objects within a bounding box.
     Each object is returned once, as {"name", "object_type", "e", "n", "h", "offset", "priority"};
     offset is its distance to the route in meters, priority the one the naming ranks it with (name_ranking).
+    Like the naming (name_lookup.find_name), the other names of an object with names in several languages are
+    dropped and the joined name is shortened to the official one ("Matterhorn", not "Mont Cervin").
     """
 
     corridor = min(max(float(corridor), 0.0), MAX_CORRIDOR)
@@ -70,9 +73,10 @@ def features_along_route(
             if key not in found or offset < found[key][0]:
                 found[key] = (offset, obj)
 
+    translations = _translations([obj for _, obj in found.values()])
     return [
         {
-            "name": obj.name,
+            "name": pretty_name(obj.name or ""),
             "object_type": obj.object_type,
             "e": obj.x,
             "n": obj.y,
@@ -82,4 +86,5 @@ def features_along_route(
             "priority": classify(obj.name, obj.object_type).priority,
         }
         for offset, obj in found.values()
+        if (obj.object_type, round(obj.x), round(obj.y), obj.name) not in translations
     ]
