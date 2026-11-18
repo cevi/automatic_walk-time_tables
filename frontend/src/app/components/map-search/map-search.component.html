@@ -1,13 +1,29 @@
 <div class="search-container">
   <mat-form-field appearance="outline" class="search-field">
-    <mat-icon matPrefix>search</mat-icon>
+    <mat-icon matPrefix *ngIf="!isLoading">search</mat-icon>
+    <mat-spinner
+      matPrefix
+      *ngIf="isLoading"
+      class="search-spinner"
+      diameter="20"
+      aria-label="Suche läuft"
+    ></mat-spinner>
     <input
+      #searchInput
       type="text"
       matInput
-      placeholder="Orte, Adressen, Flurnamen..."
+      aria-label="Suche"
+      placeholder="Orte, Adressen, Koordinaten..."
       [formControl]="searchControl"
       [matAutocomplete]="auto"
     />
+    <kbd
+      *ngIf="!searchControl.value"
+      matSuffix
+      class="shortcut-hint"
+      [title]="'Mit ' + shortcutLabel + ' zur Suche springen'"
+      >{{ shortcutLabel }}</kbd
+    >
     <button
       *ngIf="searchControl.value"
       matSuffix
@@ -24,20 +40,34 @@
       (optionActivated)="onOptionActivated($event)"
       class="premium-autocomplete"
     >
-      <mat-option
-        *ngFor="let result of results$ | async"
-        [value]="result"
-        class="search-option"
-      >
-        <div class="option-content">
-          <div
-            class="result-label"
-            [innerHTML]="
-              highlightLabel(result.attrs.label, searchControl.value)
-            "
-          ></div>
-        </div>
-      </mat-option>
+      <ng-container *ngIf="state$ | async as state">
+        <mat-option *ngIf="state.message" disabled class="search-message">
+          {{ state.message }}
+        </mat-option>
+        <mat-option
+          *ngFor="let row of state.rows"
+          [value]="row.result"
+          class="search-option"
+        >
+          <div class="option-row">
+            <mat-icon class="result-icon">{{ row.view.icon }}</mat-icon>
+            <div class="option-content">
+              <div class="result-label">
+                <ng-container
+                  *ngFor="
+                    let part of highlight(row.view.title, searchControl.value)
+                  "
+                  ><b *ngIf="part.match">{{ part.text }}</b
+                  ><ng-container *ngIf="!part.match">{{
+                    part.text
+                  }}</ng-container></ng-container
+                >
+              </div>
+              <div class="result-details">{{ row.view.type }}</div>
+            </div>
+          </div>
+        </mat-option>
+      </ng-container>
     </mat-autocomplete>
   </mat-form-field>
 </div>

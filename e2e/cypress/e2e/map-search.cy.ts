@@ -1,7 +1,7 @@
 import { MAP_URL } from "./utils";
 
 const SEARCH_API = "https://api3.geo.admin.ch/rest/services/ech/SearchServer*";
-const SEARCH_INPUT = 'input[placeholder="Orte, Adressen, Flurnamen..."]';
+const SEARCH_INPUT = "app-map-search input";
 
 /**
  * The search results of swisstopo are stubbed, as we only want to test our
@@ -38,7 +38,7 @@ describe("Map search", () => {
   });
 
   it("should query places, public transport stops and order the results by relevance", () => {
-    cy.get(SEARCH_INPUT).type("Wald");
+    cy.get(SEARCH_INPUT).type("Wald", { delay: 0 });
 
     cy.wait("@search").then(({ request }) => {
       expect(request.query["searchText"]).to.eq("Wald");
@@ -62,7 +62,15 @@ describe("Map search", () => {
       .should("have.text", "Wald (ZH), Bahnhof");
     cy.get("mat-option .result-label")
       .eq(2)
-      .should("have.text", "Flurname Waldhof (ZH)");
+      .should("have.text", "Waldhof (ZH)");
+
+    // the category of the API label is shown as the type of the result
+    cy.get("mat-option .result-details").eq(0).should("have.text", "Gemeinde");
+    cy.get("mat-option .result-details")
+      .eq(1)
+      .should("have.text", "Haltestelle · Zug");
+    cy.get("mat-option .result-details").eq(2).should("have.text", "Flurname");
+    cy.get("mat-option mat-icon").eq(1).should("have.text", "train");
 
     // only the search term gets highlighted
     cy.get("mat-option .result-label")
@@ -72,15 +80,25 @@ describe("Map search", () => {
       .and("have.text", "Wald");
   });
 
+  it("should highlight every word of the search on its own", () => {
+    cy.get(SEARCH_INPUT).type("Bahnhof Wald", { delay: 0 });
+    cy.wait("@search").its("request.query.lang").should("eq", "de");
+
+    cy.contains("mat-option", "Wald (ZH), Bahnhof")
+      .find(".result-label b")
+      .then((marks) => [...marks].map((b) => b.textContent))
+      .should("deep.equal", ["Wald", "Bahnhof"]);
+  });
+
   it("should not search for less than two characters", () => {
-    cy.get(SEARCH_INPUT).type("W");
+    cy.get(SEARCH_INPUT).type("W", { delay: 0 });
     cy.wait(1000);
     cy.get("@search.all").should("have.length", 0);
     cy.get("mat-option").should("not.exist");
   });
 
   it("should jump to a selected stop and mark it on the map", () => {
-    cy.get(SEARCH_INPUT).type("Wald");
+    cy.get(SEARCH_INPUT).type("Wald", { delay: 0 });
     cy.contains("mat-option", "Wald (ZH), Bahnhof").click();
 
     cy.get(SEARCH_INPUT).should("have.value", "Wald (ZH), Bahnhof");
@@ -99,8 +117,8 @@ describe("Map search", () => {
   });
 
   it("should fit the map to the extent of a selected municipality", () => {
-    cy.get(SEARCH_INPUT).type("Wald");
-    cy.contains("mat-option", /^\s*Wald \(ZH\)\s*$/).click();
+    cy.get(SEARCH_INPUT).type("Wald", { delay: 0 });
+    cy.contains("mat-option .result-label", /^\s*Wald \(ZH\)\s*$/).click();
 
     cy.get(SEARCH_INPUT).should("have.value", "Wald (ZH)");
 
@@ -121,7 +139,7 @@ describe("Map search", () => {
   });
 
   it("should remove the marker when the search is cleared", () => {
-    cy.get(SEARCH_INPUT).type("Wald");
+    cy.get(SEARCH_INPUT).type("Wald", { delay: 0 });
     cy.contains("mat-option", "Wald (ZH), Bahnhof").click();
     expect_search_markers(1);
 
@@ -132,11 +150,172 @@ describe("Map search", () => {
     expect_search_markers(0);
   });
 
-  it("should show no results if nothing was found", () => {
+  it("should tell when nothing was found", () => {
     cy.intercept("GET", SEARCH_API, { results: [] }).as("empty_search");
-    cy.get(SEARCH_INPUT).type("Nirgendwo");
+    cy.get(SEARCH_INPUT).type("Nirgendwo", { delay: 0 });
 
     cy.wait("@empty_search");
+    cy.get("mat-option").should("have.length", 1);
+    cy.get("mat-option.search-message")
+      .should("contain", "Keine Ergebnisse für «Nirgendwo»")
+      .and("have.attr", "aria-disabled", "true");
+  });
+
+  it("should show the places if the stops search fails and keep searching", () => {
+    cy.intercept("GET", SEARCH_API, (req) => {
+      if (req.query["origins"] === "haltestellen") {
+        req.reply({ statusCode: 500 });
+      } else {
+        req.reply({ fixture: "stubs/search_locations.json" });
+      }
+    }).as("half_broken_search");
+    cy.get(SEARCH_INPUT).type("Wald", { delay: 0 });
+
+    cy.get("mat-option .result-label").should("have.length", 2);
+    cy.get("mat-option").should("not.contain", "Bahnhof");
+
+    // the search still reacts after a failed request
+    cy.get(SEARCH_INPUT).type("h", { delay: 0 });
+    cy.get("@half_broken_search.all").should((calls: any) => {
+      const texts = calls.map((call: any) => call.request.query["searchText"]);
+      expect(texts).to.include("Waldh");
+    });
+  });
+
+  it("should tell when the search is not available", () => {
+    cy.intercept("GET", SEARCH_API, { statusCode: 500 }).as("broken_search");
+    cy.get(SEARCH_INPUT).type("Wald", { delay: 0 });
+
+    cy.get("mat-option.search-message").should(
+      "contain",
+      "Die Suche ist gerade nicht verfügbar",
+    );
+  });
+
+  it("should focus the search with Ctrl+K and step back with Esc", () => {
+    cy.get(".shortcut-hint").should("contain", "K");
+    cy.get("body").type("{ctrl}k");
+    cy.focused().should("match", SEARCH_INPUT);
+
+    cy.focused().type("Wald", { delay: 0 });
+    cy.contains("mat-option", "Wald (ZH), Bahnhof").should("be.visible");
+
+    // 1st Esc closes the list, 2nd clears the search, 3rd leaves the field
+    cy.focused().type("{esc}");
     cy.get("mat-option").should("not.exist");
+    cy.get(SEARCH_INPUT).should("have.value", "Wald");
+    cy.focused().type("{esc}");
+    cy.get(SEARCH_INPUT).should("have.value", "");
+    cy.focused().type("{esc}");
+    cy.get(SEARCH_INPUT).should("not.be.focused");
+  });
+
+  it("should rank peaks and named places above addresses", () => {
+    const result = (id: number, origin: string, label: string) => ({
+      id,
+      weight: 100,
+      attrs: {
+        detail: "",
+        featureId: "",
+        label,
+        lat: 47.28,
+        lon: 8.94,
+        x: 1239000,
+        y: 2711000,
+        origin,
+        zoomlevel: 10,
+        geom_st_box2d: "BOX(2711000 1239000,2711000 1239000)",
+      },
+    });
+    cy.intercept("GET", SEARCH_API, (req) => {
+      req.reply({
+        results:
+          req.query["origins"] === "haltestellen"
+            ? []
+            : [
+                result(1, "address", "Bachtel 1 <b>5632 Buttwil</b>"),
+                result(
+                  2,
+                  "gazetteer",
+                  "<i>Flurname swisstopo</i> <b>Bachtel</b> (BE) - Lyssach",
+                ),
+                result(
+                  3,
+                  "gazetteer",
+                  "<i>Ort</i> <b>Bachtel</b> (AG) - Buttwil",
+                ),
+                result(
+                  4,
+                  "gazetteer",
+                  "<i>Gipfel</i> <b>Bachtel</b> (ZH) - Hinwil",
+                ),
+              ],
+      });
+    }).as("ranked_search");
+    cy.get(SEARCH_INPUT).type("Bachtel", { delay: 0 });
+
+    cy.get("mat-option .result-details").should((types) => {
+      expect([...types].map((t) => t.textContent?.trim())).to.deep.equal([
+        "Gipfel",
+        "Ort",
+        "Flurname",
+        "Adresse",
+      ]);
+    });
+  });
+
+  describe("coordinates", () => {
+    const cases = [
+      ["LV95", "2'600'000 1'200'000", "2'600'000, 1'200'000", 2600000, 1200000],
+      [
+        "LV95 swapped",
+        "1200000/2600000",
+        "2'600'000, 1'200'000",
+        2600000,
+        1200000,
+      ],
+      ["LV03", "600000, 200000", "2'600'000, 1'200'000", 2600000, 1200000],
+      ["WGS 84", "46.95 7.44", "46.95000° N, 7.44000° E", 2600104, 1199880],
+      [
+        "WGS 84 DMS",
+        `46°57'3.6"N 7°26'24"E`,
+        "46.95100° N, 7.44000° E",
+        2600104,
+        1199991,
+      ],
+    ] as const;
+
+    for (const [name, query, label, east, north] of cases) {
+      it(`should jump to ${name} coordinates without querying the API`, () => {
+        cy.get(SEARCH_INPUT).type(query, { delay: 0 });
+
+        cy.get("mat-option").should("have.length", 1);
+        cy.get("mat-option .result-label").should("have.text", label);
+        cy.get("mat-option .result-details").should("contain", "Koordinate");
+        // a slow typist may trigger a name search for a prefix, but never for the coordinate
+        cy.get("@search.all").should((calls: any) => {
+          const texts = calls.map(
+            (call: any) => call.request.query["searchText"],
+          );
+          expect(texts).not.to.include(query);
+        });
+
+        cy.get("mat-option").click();
+        cy.window().should((win: any) => {
+          const view = win.mapService.get_map().getView();
+          expect(view.getCenter()[0]).to.be.closeTo(east, 2);
+          expect(view.getCenter()[1]).to.be.closeTo(north, 2);
+          expect(view.getResolution()).to.be.closeTo(2.5, 0.01);
+        });
+        expect_search_markers(1);
+      });
+    }
+
+    it("should search names for numbers outside of Switzerland", () => {
+      cy.get(SEARCH_INPUT).type("2023 2024", { delay: 0 });
+      cy.wait("@search")
+        .its("request.query.searchText")
+        .should("eq", "2023 2024");
+    });
   });
 });
