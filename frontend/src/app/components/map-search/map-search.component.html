@@ -4,7 +4,7 @@
     <input
       type="text"
       matInput
-      placeholder="Orte, Adressen, Flurnamen..."
+      placeholder="Orte, Adressen, Flurnamen, Koordinaten..."
       [formControl]="searchControl"
       [matAutocomplete]="auto"
     />
@@ -36,6 +36,12 @@
               highlightLabel(result.attrs.label, searchControl.value)
             "
           ></div>
+          <div
+            *ngIf="result.attrs.origin === 'coordinate'"
+            class="result-details"
+          >
+            {{ result.attrs.detail }}
+          </div>
         </div>
       </mat-option>
     </mat-autocomplete>

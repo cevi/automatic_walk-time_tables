@@ -1,7 +1,7 @@
 import { MAP_URL } from "./utils";
 
 const SEARCH_API = "https://api3.geo.admin.ch/rest/services/ech/SearchServer*";
-const SEARCH_INPUT = 'input[placeholder="Orte, Adressen, Flurnamen..."]';
+const SEARCH_INPUT = "app-map-search input";
 
 /**
  * The search results of swisstopo are stubbed, as we only want to test our
@@ -138,5 +138,60 @@ describe("Map search", () => {
 
     cy.wait("@empty_search");
     cy.get("mat-option").should("not.exist");
+  });
+
+  describe("coordinates", () => {
+    const cases = [
+      ["LV95", "2'600'000 1'200'000", "2'600'000, 1'200'000", 2600000, 1200000],
+      [
+        "LV95 swapped",
+        "1200000/2600000",
+        "2'600'000, 1'200'000",
+        2600000,
+        1200000,
+      ],
+      ["LV03", "600000, 200000", "2'600'000, 1'200'000", 2600000, 1200000],
+      ["WGS 84", "46.95 7.44", "46.95000° N, 7.44000° E", 2600104, 1199880],
+      [
+        "WGS 84 DMS",
+        `46°57'3.6"N 7°26'24"E`,
+        "46.95100° N, 7.44000° E",
+        2600104,
+        1199991,
+      ],
+    ] as const;
+
+    for (const [name, query, label, east, north] of cases) {
+      it(`should jump to ${name} coordinates without querying the API`, () => {
+        cy.get(SEARCH_INPUT).type(query);
+
+        cy.get("mat-option").should("have.length", 1);
+        cy.get("mat-option .result-label").should("have.text", label);
+        cy.get("mat-option .result-details").should("contain", "Koordinate");
+        // a slow typist may trigger a name search for a prefix, but never for the coordinate
+        cy.get("@search.all").should((calls: any) => {
+          const texts = calls.map(
+            (call: any) => call.request.query["searchText"],
+          );
+          expect(texts).not.to.include(query);
+        });
+
+        cy.get("mat-option").click();
+        cy.window().should((win: any) => {
+          const view = win.mapService.get_map().getView();
+          expect(view.getCenter()[0]).to.be.closeTo(east, 2);
+          expect(view.getCenter()[1]).to.be.closeTo(north, 2);
+          expect(view.getResolution()).to.be.closeTo(2.5, 0.01);
+        });
+        expect_search_markers(1);
+      });
+    }
+
+    it("should search names for numbers outside of Switzerland", () => {
+      cy.get(SEARCH_INPUT).type("2023 2024");
+      cy.wait("@search")
+        .its("request.query.searchText")
+        .should("eq", "2023 2024");
+    });
   });
 });

@@ -17,6 +17,14 @@ import Point from 'ol/geom/Point';
 import VectorSource from 'ol/source/Vector';
 import VectorLayer from 'ol/layer/Vector';
 import { Style, Icon } from 'ol/style';
+import {
+  formatLv95,
+  formatWgs84,
+  parseCoordinate,
+} from '../../helpers/coordinate-parser';
+
+/** Resolution (m/px) used when jumping to a typed coordinate, ~1:25'000 */
+const COORDINATE_RESOLUTION = 2.5;
 
 @Component({
   selector: 'app-map-search',
@@ -57,11 +65,51 @@ export class MapSearchComponent implements OnInit {
           }
           return of([]);
         }
+
+        // Coordinates are resolved locally, like on map.geo.admin.ch
+        const coordinate = parseCoordinate(value);
+        if (coordinate) {
+          this.isLoading = false;
+          return of([this.coordinateResult(value, coordinate)]);
+        }
+
         return this.searchService
           .searchLocations(value)
           .pipe(tap(() => (this.isLoading = false)));
       }),
     );
+  }
+
+  private coordinateResult(
+    query: string,
+    coordinate: NonNullable<ReturnType<typeof parseCoordinate>>,
+  ): SwisstopoSearchResult {
+    const lv95 = formatLv95(coordinate.lv95);
+    const wgs84 = formatWgs84(coordinate.wgs84);
+    const label = coordinate.system === 'WGS84' ? wgs84 : lv95;
+    const systemName = { LV95: 'LV95', LV03: 'LV03', WGS84: 'WGS 84' }[
+      coordinate.system
+    ];
+    const detail =
+      coordinate.system === 'WGS84'
+        ? `Koordinate (${systemName}) · LV95: ${lv95}`
+        : `Koordinate (${systemName}) · WGS 84: ${wgs84}`;
+    return {
+      id: -1,
+      weight: 0,
+      attrs: {
+        detail,
+        featureId: '',
+        label,
+        lat: coordinate.wgs84[1],
+        lon: coordinate.wgs84[0],
+        x: coordinate.lv95[1],
+        y: coordinate.lv95[0],
+        origin: 'coordinate',
+        zoomlevel: 0,
+        geom_st_box2d: '',
+      },
+    };
   }
 
   displayFn(result: SwisstopoSearchResult): string {
@@ -112,9 +160,15 @@ export class MapSearchComponent implements OnInit {
       const northing = result.attrs.x;
       markerCoord = [easting, northing];
 
+      const target =
+        result.attrs.origin === 'coordinate'
+          ? { resolution: COORDINATE_RESOLUTION }
+          : {
+              zoom: result.attrs.zoomlevel < 100 ? result.attrs.zoomlevel : 13,
+            };
       map.getView().animate({
         center: markerCoord,
-        zoom: result.attrs.zoomlevel < 100 ? result.attrs.zoomlevel : 13,
+        ...target,
         duration: animate ? 1000 : 0,
       });
     }
@@ -164,7 +218,7 @@ export class MapSearchComponent implements OnInit {
     tempDiv.innerHTML = label;
     let cleanText = tempDiv.textContent || label || '';
 
-    if (!query || query.length < 2) return cleanText;
+    if (!query || query.length < 2 || parseCoordinate(query)) return cleanText;
 
     // Highlight the actual search term input by the user
     // Escape special regex characters in the query
