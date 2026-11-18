@@ -1,0 +1,40 @@
+<div
+  class="route-style-picker"
+  role="radiogroup"
+  aria-label="Darstellung der Route"
+>
+  @for (option of options; track option.value) {
+    <label
+      class="style-option"
+      [class.selected]="value === option.value"
+      [class.disabled]="disabled"
+      [attr.data-route-style]="option.value"
+    >
+      <input
+        type="radio"
+        class="visually-hidden"
+        name="route_style"
+        [value]="option.value"
+        [checked]="value === option.value"
+        [disabled]="disabled"
+        (change)="select(option.value)"
+      />
+      <span class="preview">
+        <img
+          [src]="option.preview"
+          alt=""
+          width="360"
+          height="240"
+          loading="lazy"
+        />
+        @if (value === option.value) {
+          <mat-icon class="check" aria-hidden="true">check_circle</mat-icon>
+        }
+      </span>
+      <span class="text">
+        <span class="label">{{ option.label }}</span>
+        <span class="hint">{{ option.hint }}</span>
+      </span>
+    </label>
+  }
+</div>
