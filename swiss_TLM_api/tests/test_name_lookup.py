@@ -156,6 +156,21 @@ class FindNameTest(unittest.TestCase):
             "Gedeckte Brücke (Emme)",
         )
 
+    def test_junction_beats_an_object_named_after_its_kind(self):
+        for kind in ("Bildstock", "Brunnen", "Wasserfall"):
+            self.assertEqual(
+                name_at(obj(kind, kind, 2), obj("Kreuzung A, B", "Kreuzung", 5)),
+                "Kreuzung A, B",
+                kind,
+            )
+        self.assertEqual(
+            name_at(
+                obj("Staubbachfall", "Wasserfall", 10),
+                obj("Weggabelung bei X", "Weggabelung"),
+            ),
+            "Staubbachfall",
+        )
+
     def test_bare_refuge_is_no_landmark(self):
         self.assertEqual(
             name_at(

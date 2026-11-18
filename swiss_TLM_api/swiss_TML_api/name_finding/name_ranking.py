@@ -58,6 +58,9 @@ NAMED_CROSSING = Category(30, 20)
 NATURAL_FEATURE = Category(45, 30)
 """Waterfalls, springs, caves and boulders: recognisable on the ground, named mostly after their kind."""
 FOREST_EDGE = Category(8, 15)
+SMALL_OBJECT = Category(9, 10)
+"""Fountains, wayside shrines, monuments, border stones: right at the point only, and below a junction, whose street
+or field names say more than "Bildstock"."""
 STAIRS = Category(7, 15)
 """Stairs on a path ("Treppe", 72'000 of them): visible, but no name of their own."""
 PATH_END = Category(5, 25)
@@ -127,11 +130,11 @@ OBJECT_TYPES = {
     "Grotte, Hoehle": NATURAL_FEATURE,
     "Felsblock": NATURAL_FEATURE,
     "Erratischer Block": NATURAL_FEATURE,
-    "Brunnen": BUILDING,
-    "Bildstock": BUILDING,
-    "Denkmal": BUILDING,
-    "Landesgrenzstein": BUILDING,
-    "Triangulationspyramide": BUILDING,
+    "Brunnen": SMALL_OBJECT,
+    "Bildstock": SMALL_OBJECT,
+    "Denkmal": SMALL_OBJECT,
+    "Landesgrenzstein": SMALL_OBJECT,
+    "Triangulationspyramide": SMALL_OBJECT,
     "Treppe": STAIRS,
     "Sportplatz": SPORT,
     "Rodelbahn": SPORT,
@@ -221,6 +224,8 @@ def classify(name: str | None, object_type: str | None) -> Category:
                 if object_type in ("Gasthof abgelegen", "Schutzhuette")
                 else NAMED_HUT
             )
+    if category is NATURAL_FEATURE and name_lower == object_type.lower():
+        return SMALL_OBJECT  # "Wasserfall", "Quelle": named after their kind
     if category is CROSSING and "(" in name_lower and "wanderweg)" not in name_lower:
         return NAMED_CROSSING
 
