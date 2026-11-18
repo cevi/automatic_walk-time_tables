@@ -56,7 +56,7 @@ class NameIndex:
         # we redownload the index from Google Drive
         file_id = "1gESYkWDCrAJ06ADBwM-c2SrEpri6I5P0"
         INDEX_CACHE_VERSION = (
-            "v1-2026-04-01"  # Bump this string to force production to redownload
+            "v2-2026-11-18"  # Bump this string to force production to redownload
         )
 
         version_file = "./index_cache/.version"

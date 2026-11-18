@@ -42,13 +42,20 @@ Make sure you have an internet connection during the first container boot or exe
 
 Processing Swisstopo's massive datasets into a high-performance memory-mapped KD-Tree locally takes quite a while. To prevent this slow process on boot in Production environments, a robust pre-compiled `index_cache.tar.xz` snapshot is downloaded dynamically from Google Drive.
 
-- **Cache Invalidation:** The `name_index.py` manages programmatic cache invalidation natively via a localized `.version` file. To bypass manual index generation in production:
-  1. Once `index_cache.tar.xz` is generated, upload it to your engineering Google Drive partition.
-  2. Ensure the file has public viewer permissions, and extract its raw **File ID**.
-  3. Inside `swiss_TML_api/name_finding/name_index.py`, manually paste the new target string footprint into `INDEX_CACHE_FILE_ID` (or `INDEX_CACHE_URL`).
-  4. Finally, **bump the `INDEX_CACHE_VERSION` string** at the top of the file! 
-  
-  Production will inherently detect the sequential bump, wipe its stale cache directory, and cleanly deploy the newly referenced Index payload.
+- **Cache Invalidation:** `name_index.py` keeps the version of the downloaded index in `index_cache/.version` and
+  downloads the archive again when `INDEX_CACHE_VERSION` changes. To publish a new index:
+  1. Build it: run `python scripts/fetch_hoehenpunkte.py` (spot heights), then
+     `NameIndex(force_rebuild=True, reduced=False)` in the swiss_TLM_api image with `resources/` and `index_cache/`
+     mounted. The builders log errors and continue, so check the log for `ERROR` and for "Inserted ... named
+     buildings" (about 3,500).
+  2. Pack `swissname_data_index.dat`, `swissname_data_index.idx` and `.version` at the top level of
+     `index_cache.tar.xz` (no folder).
+  3. Upload it to Google Drive (shared drive, "Anyone with the link: Viewer"): either as a new version of the
+     existing file (the ID stays) or as a new file, then set `file_id` in `name_index.py`.
+  4. Bump `INDEX_CACHE_VERSION` in `name_index.py`; each server downloads the new index on its next start.
+
+  Do not start the service on a freshly built `index_cache/` without a matching `.version`: it treats the build as
+  outdated, deletes it and downloads the published index.
 
 ### 2. "Höhenpunkte"
 
