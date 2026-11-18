@@ -40,6 +40,22 @@
   }
 }
 
+.search-spinner {
+  // same footprint as the search icon it replaces
+  margin: 0 12px 0 14px;
+}
+
+.search-message {
+  font-size: 14px;
+  font-style: italic;
+
+  // disabled options are faded to 38% by default, too faint for a message
+  ::ng-deep .mdc-list-item__primary-text {
+    opacity: 1 !important;
+    color: #666;
+  }
+}
+
 .option-row {
   display: flex;
   align-items: center;

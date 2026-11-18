@@ -150,12 +150,46 @@ describe("Map search", () => {
     expect_search_markers(0);
   });
 
-  it("should show no results if nothing was found", () => {
+  it("should tell when nothing was found", () => {
     cy.intercept("GET", SEARCH_API, { results: [] }).as("empty_search");
     cy.get(SEARCH_INPUT).type("Nirgendwo", { delay: 0 });
 
     cy.wait("@empty_search");
-    cy.get("mat-option").should("not.exist");
+    cy.get("mat-option").should("have.length", 1);
+    cy.get("mat-option.search-message")
+      .should("contain", "Keine Ergebnisse für «Nirgendwo»")
+      .and("have.attr", "aria-disabled", "true");
+  });
+
+  it("should show the places if the stops search fails and keep searching", () => {
+    cy.intercept("GET", SEARCH_API, (req) => {
+      if (req.query["origins"] === "haltestellen") {
+        req.reply({ statusCode: 500 });
+      } else {
+        req.reply({ fixture: "stubs/search_locations.json" });
+      }
+    }).as("half_broken_search");
+    cy.get(SEARCH_INPUT).type("Wald", { delay: 0 });
+
+    cy.get("mat-option .result-label").should("have.length", 2);
+    cy.get("mat-option").should("not.contain", "Bahnhof");
+
+    // the search still reacts after a failed request
+    cy.get(SEARCH_INPUT).type("h", { delay: 0 });
+    cy.get("@half_broken_search.all").should((calls: any) => {
+      const texts = calls.map((call: any) => call.request.query["searchText"]);
+      expect(texts).to.include("Waldh");
+    });
+  });
+
+  it("should tell when the search is not available", () => {
+    cy.intercept("GET", SEARCH_API, { statusCode: 500 }).as("broken_search");
+    cy.get(SEARCH_INPUT).type("Wald", { delay: 0 });
+
+    cy.get("mat-option.search-message").should(
+      "contain",
+      "Die Suche ist gerade nicht verfügbar",
+    );
   });
 
   describe("coordinates", () => {

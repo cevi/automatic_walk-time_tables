@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import {
+  catchError,
   map,
   debounceTime,
   distinctUntilChanged,
@@ -34,6 +35,23 @@ export interface SearchResultRow {
   view: SearchResultPresentation;
 }
 
+export interface SearchState {
+  rows: SearchResultRow[];
+  /** shown instead of results, e.g. when nothing was found */
+  message: string | null;
+}
+
+const toState = (
+  results: SwisstopoSearchResult[],
+  message: string | null = null,
+): SearchState => ({
+  rows: results.map((result) => ({
+    result,
+    view: presentSearchResult(result),
+  })),
+  message,
+});
+
 /** Resolution (m/px) used when jumping to a typed coordinate, ~1:25'000 */
 const COORDINATE_RESOLUTION = 2.5;
 
@@ -46,7 +64,7 @@ const COORDINATE_RESOLUTION = 2.5;
 })
 export class MapSearchComponent implements OnInit {
   searchControl = new FormControl('');
-  results$: Observable<SearchResultRow[]> = of([]);
+  state$: Observable<SearchState> = of(toState([]));
   isLoading = false;
   private searchMarkerLayer: VectorLayer<any> | null = null;
 
@@ -56,44 +74,42 @@ export class MapSearchComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.results$ = this.searchControl.valueChanges.pipe(
+    this.state$ = this.searchControl.valueChanges.pipe(
       debounceTime(300),
       distinctUntilChanged(),
-      tap(() => (this.isLoading = true)),
       switchMap((value) => {
+        // a previous search may have been cancelled while loading
+        this.isLoading = false;
         if (typeof value === 'object' && value !== null) {
-          this.isLoading = false;
-          return of([]);
+          return of(toState([]));
         }
 
-        if (!value || typeof value !== 'string' || value.length < 2) {
-          this.isLoading = false;
-          if (this.searchMarkerLayer) {
-            const source = this.searchMarkerLayer.getSource();
-            if (source) {
-              source.clear();
-            }
-          }
-          return of([]);
+        if (!value || typeof value !== 'string' || value.trim().length < 2) {
+          this.searchMarkerLayer?.getSource()?.clear();
+          return of(toState([]));
         }
 
         // Coordinates are resolved locally, like on map.geo.admin.ch
         const coordinate = parseCoordinate(value);
         if (coordinate) {
-          this.isLoading = false;
-          return of([this.coordinateResult(value, coordinate)]);
+          return of(toState([this.coordinateResult(value, coordinate)]));
         }
 
-        return this.searchService
-          .searchLocations(value)
-          .pipe(tap(() => (this.isLoading = false)));
+        this.isLoading = true;
+        return this.searchService.searchLocations(value).pipe(
+          map((results) =>
+            toState(
+              results,
+              results.length ? null : `Keine Ergebnisse für «${value.trim()}»`,
+            ),
+          ),
+          // a failed search must not end the stream, the next one may work again
+          catchError(() =>
+            of(toState([], 'Die Suche ist gerade nicht verfügbar')),
+          ),
+          tap(() => (this.isLoading = false)),
+        );
       }),
-      map((results) =>
-        results.map((result) => ({
-          result,
-          view: presentSearchResult(result),
-        })),
-      ),
     );
   }
 

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map, forkJoin } from 'rxjs';
+import { Observable, catchError, forkJoin, map, of, throwError } from 'rxjs';
 
 export interface SwisstopoSearchResult {
   id: number;
@@ -65,9 +65,17 @@ export class SwisstopoSearchService {
       params: { ...defaultParams, origins: 'haltestellen' },
     });
 
-    return forkJoin([req1, req2]).pipe(
+    // One failing request should not hide the results of the other one
+    const failed = null;
+    const tolerant = (req: Observable<SwisstopoSearchResponse>) =>
+      req.pipe(catchError(() => of(failed)));
+
+    return forkJoin([tolerant(req1), tolerant(req2)]).pipe(
       map(([res1, res2]) => {
-        const combined = [...(res1.results || []), ...(res2.results || [])];
+        if (res1 === failed && res2 === failed) {
+          throw new Error('Swisstopo search is not available');
+        }
+        const combined = [...(res1?.results || []), ...(res2?.results || [])];
         return combined.sort((a, b) => {
           const bonusA =
             SwisstopoSearchService.originBonus[a.attrs.origin] ?? 0;
