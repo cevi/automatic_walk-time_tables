@@ -129,8 +129,9 @@ class NameIndex:
             logger.info("SHP files not found. Downloading them from Swisstopo")
 
             url = (
-                "https://data.geo.admin.ch/ch.swisstopo.swisstlm3d/swisstlm3d_2026-02-24/"
-                "swisstlm3d_2026-02-24_2056_5728.shp.zip"
+                # swisstopo renamed the release from 2026-02-24 to 2026-02; the old URL answers 404
+                "https://data.geo.admin.ch/ch.swisstopo.swisstlm3d/swisstlm3d_2026-02/"
+                "swisstlm3d_2026-02_2056_5728.shp.zip"
             )
             folder = "./resources/swissTLM3D_LV95_data_full/"
             self.__download_resources(url, folder)
@@ -161,6 +162,7 @@ class NameIndex:
 
         # download the zip file and save it in output
         req = requests.get(url, stream=True)
+        req.raise_for_status()  # otherwise a 404 page is saved and fails later as "not a zip file"
         with open(output, "wb") as f:
             for chunk in req.iter_content(chunk_size=1024):
                 if chunk:
@@ -193,6 +195,7 @@ class NameIndex:
     def __download_resources_simple(self, url: str, destination: str):
         output = os.path.join(destination, "swissNAMES3D_raw.zip")
         req = requests.get(url, stream=True)
+        req.raise_for_status()
         with open(output, "wb") as f:
             for chunk in req.iter_content(chunk_size=1024):
                 if chunk:
