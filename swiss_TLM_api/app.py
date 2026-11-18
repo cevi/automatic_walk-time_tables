@@ -80,6 +80,24 @@ def _names(coords: list) -> list:
     return response
 
 
+MAX_POINTS = 1000
+MAX_ROUTE_POINTS = 100_000
+"""A route of 1000 km, resampled every 10 m."""
+
+
+def _is_coordinate_list(points, max_length: int) -> bool:
+    return (
+        isinstance(points, list)
+        and len(points) <= max_length
+        and all(
+            isinstance(p, list)
+            and len(p) == 2
+            and all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in p)
+            for p in points
+        )
+    )
+
+
 @app.route("/names", methods=["POST"])
 def post_names():
     """
@@ -89,8 +107,15 @@ def post_names():
     Response: {"names": [{"swiss_name", "object_type", "offset", "lv95_coord"}, ...]} in the order of the points.
     """
     points = (request.get_json(silent=True) or {}).get("points")
-    if not isinstance(points, list):
-        return jsonify({"error": "Expected {'points': [[e, n], ...]}"}), 400
+    if not _is_coordinate_list(points, MAX_POINTS):
+        return (
+            jsonify(
+                {
+                    "error": f"Expected {{'points': [[e, n], ...]}} with at most {MAX_POINTS} points"
+                }
+            ),
+            400,
+        )
     return jsonify({"names": _names(points)})
 
 
@@ -110,9 +135,19 @@ def post_features_along_route():
     """
     body = request.get_json(silent=True) or {}
     route = body.get("route")
-    if not isinstance(route, list):
-        return jsonify({"error": "Expected {'route': [[e, n], ...]}"}), 400
-    corridor = float(body.get("corridor", DEFAULT_CORRIDOR))
+    if not _is_coordinate_list(route, MAX_ROUTE_POINTS):
+        return (
+            jsonify(
+                {
+                    "error": f"Expected {{'route': [[e, n], ...]}} with at most {MAX_ROUTE_POINTS} points"
+                }
+            ),
+            400,
+        )
+    try:
+        corridor = float(body.get("corridor", DEFAULT_CORRIDOR))
+    except (TypeError, ValueError):
+        return jsonify({"error": "corridor must be a number"}), 400
     features = features_along_route(route, name_index.get_names_in_bbox, corridor)
     return jsonify({"features": features})
 

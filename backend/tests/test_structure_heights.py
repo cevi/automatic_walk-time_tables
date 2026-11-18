@@ -38,6 +38,21 @@ class CorrectHeightsTest(unittest.TestCase):
         corrected = correct_heights(DIST, h, [(50, True, 1050)])
         self.assertTrue(np.allclose(corrected, h))
 
+    def test_path_winding_under_a_bridge_is_unchanged(self):
+        # a path goes down to the river under a bridge and back up in hairpins: it does not use the bridge
+        h = profile(lambda d: 1000 - (60 if 450 < d < 550 else 0))
+        hairpins = np.array(
+            [[0.0, 0.0]] + [[(i % 2) * 5, i * 2] for i in range(1, len(DIST))]
+        )
+        corrected = correct_heights(DIST, h, [(50, True, 1000)], hairpins)
+        self.assertTrue(np.allclose(corrected, h))
+
+    def test_straight_bridge_is_corrected_with_coordinates(self):
+        h = profile(lambda d: 1000 - (60 if 450 < d < 550 else 0))
+        straight = np.array([[d, 0.0] for d in DIST])
+        corrected = correct_heights(DIST, h, [(50, True, 1000)], straight)
+        self.assertTrue(np.allclose(corrected, 1000))
+
 
 if __name__ == "__main__":
     unittest.main()

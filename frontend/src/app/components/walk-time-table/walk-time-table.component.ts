@@ -139,6 +139,13 @@ export class WalkTimeTableComponent implements OnInit, OnDestroy, OnChanges {
     if (!row.waypoint) return;
     if (this.isAutoNamed(row)) return;
 
+    // the name the selection gave the way point (e.g. after the station or hut at the point)
+    if (row.waypoint.auto_name) {
+      row.waypoint.name = row.waypoint.auto_name;
+      this.onFieldChange();
+      return;
+    }
+
     const oldName = row.waypoint.name || '';
     row.waypoint.name = 'Lade...';
     try {

@@ -61,15 +61,27 @@ def select_waypoints(path: Path, fixed_distances: Optional[List[float]] = None) 
     n = _mark_landmarks(path)
     logger.info("%d landmarks along the route", n)
 
-    pois = POIsTransformer(
-        pois_distance_str=",".join(str(d) for d in fixed_distances or [])
-    ).transform(path)
+    # start, highest and lowest point and end, plus the fixed way points
+    pois = POIsTransformer().transform(path)
+    fixed = Path()
+    for i in sorted(
+        {
+            _nearest_index(path, {"accumulated_distance": d})
+            for d in fixed_distances or []
+        }
+    ):
+        fixed.append(path.way_points[i])
+    for wp in fixed.way_points:
+        if not any(p is wp for p in pois.way_points):
+            pois.insert(wp)
+
     selected = DouglasPeuckerTransformer(
         pois=pois,
         number_of_waypoints=MAX_WAYPOINTS,
         landmark_bonus=LANDMARK_BONUS,
         max_gap=MAX_GAP,
         min_gap=MIN_GAP,
+        fixed=fixed,
     ).transform(path)
     return NamingTransformer().transform(selected)
 

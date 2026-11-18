@@ -221,6 +221,78 @@ class LandmarkSelectionTest(unittest.TestCase):
         selected = self.select(path, number_of_waypoints=3, landmark_bonus=20)
         self.assertIn(3520, selected)
 
+    def test_fixed_point_is_not_replaced_by_a_landmark_next_to_it(self):
+        path = straight_path(1000)
+        mark_landmarks(path, [feature("Gasthof abgelegen", 420)])
+        fixed = Path()
+        fixed.append(path.way_points[30])
+        selection = Path()
+        for d in (0, 300, 420, 1000):
+            selection.append(path.way_points[d // 10])
+        dp = DouglasPeuckerTransformer(pois=fixed, fixed=fixed, min_gap=200)
+        dp.transform(Path([Point_LV95(E, N, 500), Point_LV95(E + 10, N, 600)]))
+        thinned = dp.thin_out(selection)
+        self.assertIn(
+            300, [round(wp.accumulated_distance) for wp in thinned.way_points]
+        )
+
+    def test_two_fixed_points_close_together_are_both_kept(self):
+        path = straight_path(1000)
+        fixed = Path()
+        for d in (300, 400):
+            fixed.append(path.way_points[d // 10])
+        selection = Path()
+        for d in (0, 300, 400, 1000):
+            selection.append(path.way_points[d // 10])
+        thinned = DouglasPeuckerTransformer(
+            pois=fixed, fixed=fixed, min_gap=200
+        ).thin_out(selection)
+        self.assertEqual(
+            [round(wp.accumulated_distance) for wp in thinned.way_points],
+            [0, 300, 400, 1000],
+        )
+
+    def test_fixed_point_before_the_end_is_kept(self):
+        path = straight_path(1000)
+        fixed = Path()
+        fixed.append(path.way_points[90])
+        selection = Path()
+        for d in (0, 500, 900, 1000):
+            selection.append(path.way_points[d // 10])
+        thinned = DouglasPeuckerTransformer(
+            pois=fixed, fixed=fixed, min_gap=200
+        ).thin_out(selection)
+        self.assertEqual(
+            [round(wp.accumulated_distance) for wp in thinned.way_points],
+            [0, 500, 900, 1000],
+        )
+
+    def test_gaps_are_filled_even_if_the_longest_cannot_be(self):
+        # a long straight stretch drawn with two points only, then a densely sampled stretch
+        points = [Point_LV95(E, N, 500), Point_LV95(E + 4000, N, 500)]
+        points += [Point_LV95(E + 4000 + d, N, 500) for d in range(10, 3001, 10)]
+        path = Path(points)
+        selection = Path()
+        selection.append(path.way_points[0])
+        selection.append(path.way_points[1])
+        selection.append(path.way_points[-1])
+        filled = DouglasPeuckerTransformer(max_gap=1500).fill_gaps(selection, path)
+        dists = [round(wp.accumulated_distance) for wp in filled.way_points]
+        self.assertEqual(dists[:2], [0, 4000])
+        self.assertLessEqual(max(b - a for a, b in zip(dists[1:], dists[2:])), 1500)
+
+    def test_own_name_carries_the_type_of_the_named_feature(self):
+        path = straight_path(1000)
+        mark_landmarks(
+            path,
+            [
+                feature("Pass", 500, name="Furkapass"),
+                feature("Gebaeude", 503, name="Hotel Belvedere"),
+            ],
+        )
+        lm = landmarks(path)[500]
+        self.assertEqual((lm.name, lm.name_type), ("Furkapass", "Pass"))
+
 
 def encoded(path):
     pts = [wp.point.to_LV95() for wp in path.way_points]
@@ -328,6 +400,29 @@ class WaypointApiTest(unittest.TestCase):
         self.assertEqual(
             self.client.post("/waypoints/manual", json={"route": "x"}).status_code, 400
         )
+
+    def test_auto_keeps_fixed_distances_and_the_highest_point(self, _features, _names):
+        path = straight_path(4000, height=lambda d: 500 + 100 * math.sin(d / 1300))
+        body = {**encoded(path), "fixed_distances": [3000, 1000]}
+        r = self.client.post("/waypoints/auto", json=body)
+        self.assertEqual(r.status_code, 200)
+        selected = r.get_json()["waypoints"]
+        dists = [round(wp["accumulated_distance"]) for wp in selected]
+        self.assertIn(1000, dists)
+        self.assertIn(3000, dists)
+        # the route starts at its lowest point; the highest point (600 m, rounded in the request) is kept
+        self.assertEqual(max(wp["h"] for wp in selected), 600)
+
+    def test_bad_fixed_distances_are_a_bad_request(self, _features, _names):
+        body = {**encoded(straight_path(1000)), "fixed_distances": ["a"]}
+        self.assertEqual(
+            self.client.post("/waypoints/auto", json=body).status_code, 400
+        )
+
+    def test_bad_name_points_are_a_bad_request(self, _features, _names):
+        for points in ([[1, 2, 3]], ["a"], [[2600000, 1200000]] * 501):
+            r = self.client.post("/names", json={"points": points})
+            self.assertEqual(r.status_code, 400, points[:1])
 
     def test_way_point_without_position_is_a_bad_request(self, _features, _names):
         body = encoded(straight_path(3000))

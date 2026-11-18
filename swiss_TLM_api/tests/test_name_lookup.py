@@ -164,6 +164,23 @@ class FeaturesAlongRouteTest(unittest.TestCase):
             [("Punkt 501", 20.0), ("Weggabelung bei A", 5.0)],
         )
 
+    def test_long_route_finds_features_in_every_chunk_of_segments(self):
+        # 100 segments of 10 m: several index queries, each feature found once with its distance to the route
+        objects = [obj(f"F{d}", "Weggabelung", d, 3) for d in (5, 195, 200, 205, 995)]
+        calls = []
+
+        def query_bbox(e0, n0, e1, n1):
+            calls.append((e0, e1))
+            return [o for o in objects if e0 <= o.x <= e1 and n0 <= o.y <= n1]
+
+        route = [[E + d, N] for d in range(0, 1001, 10)]
+        features = features_along_route(route, query_bbox, corridor=25)
+        self.assertEqual(
+            sorted(f["name"] for f in features), ["F195", "F200", "F205", "F5", "F995"]
+        )
+        self.assertTrue(all(f["offset"] == 3.0 for f in features))
+        self.assertLess(len(calls), 10)
+
 
 if __name__ == "__main__":
     unittest.main()

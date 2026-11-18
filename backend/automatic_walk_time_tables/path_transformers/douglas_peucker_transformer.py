@@ -49,6 +49,7 @@ class DouglasPeuckerTransformer(PathTransformer):
         landmark_bonus: float = 0.0,
         max_gap: float | None = None,
         min_gap: float | None = None,
+        fixed: Path | None = None,
     ):
         """
         landmark_bonus: way points with a landmark (way_point.landmark, see landmarks.mark_landmarks) count as
@@ -57,8 +58,10 @@ class DouglasPeuckerTransformer(PathTransformer):
         max_gap: after the selection, stretches longer than this [in meters] get an additional way point, preferably
             a landmark near the middle. None disables it.
         min_gap: after the selection, of two way points closer than this [in meters] and with less than
-            min_gap_height meters height difference, the less important one is dropped (start, end, highest and
-            lowest point are kept; otherwise the higher landmark score wins). None disables it.
+            min_gap_height meters height difference, the less important one is dropped (start, end and fixed points
+            are kept, the highest and lowest point unless they are next to the start or end; otherwise the higher
+            landmark score wins). None disables it.
+        fixed: way points chosen by the user (a subset of pois). They are never moved, replaced or dropped.
         """
         super().__init__()
 
@@ -72,8 +75,12 @@ class DouglasPeuckerTransformer(PathTransformer):
             pois = Path(points=[])
 
         self.pois = pois
+        self.fixed = fixed if fixed is not None else Path(points=[])
+        self._h_extremes: tuple = ()
 
     def transform(self, path: Path) -> Path:
+        heights = [p.point.h for p in path.way_points]
+        self._h_extremes = (max(heights), min(heights)) if heights else ()
         way_points = self.douglas_peucker(path.copy())
         self.__logger.debug(
             "%d way point selected for final walk time table",
@@ -136,9 +143,11 @@ class DouglasPeuckerTransformer(PathTransformer):
 
         for i in range(1, len(pts) - 1):
             cur, prev, nxt = pts[i], pts[i - 1], pts[i + 1]
+            if self._is_fixed(cur):
+                continue
             extreme = cur.point.h in (h_max, h_min)
             if self._importance(cur, first, last) >= 1000 and not extreme:
-                continue  # a point fixed by the user
+                continue  # a POI that is not the highest / lowest point
             d0, h0 = prev.accumulated_distance, prev.point.h
             d2, h2 = nxt.accumulated_distance, nxt.point.h
             base_err = self._profile_error(
@@ -182,13 +191,24 @@ class DouglasPeuckerTransformer(PathTransformer):
     min_gap_steep = 50
     """... unless they are closer than this [in meters]."""
 
+    @staticmethod
+    def _at(pt: WayPoint, points: Path) -> bool:
+        return any(
+            abs(p.accumulated_distance - pt.accumulated_distance) < 1
+            for p in points.way_points
+        )
+
+    def _is_fixed(self, pt: WayPoint) -> bool:
+        return self._at(pt, self.fixed)
+
+    def _is_extreme(self, pt: WayPoint) -> bool:
+        """The highest or lowest point of the route (a POI that may give way to a landmark next to it)."""
+        return pt.point.h in self._h_extremes and not self._is_fixed(pt)
+
     def _importance(self, pt: WayPoint, first: WayPoint, last: WayPoint) -> float:
         if pt is first or pt is last:
             return math.inf
-        if any(
-            abs(poi.accumulated_distance - pt.accumulated_distance) < 1
-            for poi in self.pois.way_points
-        ):
+        if self._at(pt, self.pois) or self._is_fixed(pt):
             return 1000.0  # highest / lowest point or a point fixed by the user
         landmark = getattr(pt, "landmark", None)
         return landmark.score if landmark is not None else 0.0
@@ -205,7 +225,8 @@ class DouglasPeuckerTransformer(PathTransformer):
             return None
         for extreme, other in ((a, b), (b, a)):
             if (
-                self._importance(extreme, first, None) == 1000.0
+                self._is_extreme(extreme)
+                and self._importance(extreme, first, None) == 1000.0
                 and getattr(other, "landmark", None) is not None
                 and self._importance(other, first, None) < 1000.0
             ):
@@ -232,9 +253,25 @@ class DouglasPeuckerTransformer(PathTransformer):
             if not close or (pt is last and prev is first):
                 kept.append(pt)
             elif pt is last:
-                kept[-1] = pt  # the end is always kept
+                # the end is always kept, and so is a fixed point before it (a highest / lowest point right
+                # before the end is at almost the same height, the end represents it)
+                if self._is_fixed(prev):
+                    kept.append(pt)
+                else:
+                    kept[-1] = pt
             elif self._landmark_at_extreme(prev, pt, first) is not None:
                 kept[-1] = self._landmark_at_extreme(prev, pt, first)
+            elif self._is_fixed(pt) or (
+                prev is not first
+                and min(
+                    self._importance(prev, first, last),
+                    self._importance(pt, first, last),
+                )
+                >= 1000
+            ):
+                kept.append(
+                    pt
+                )  # both must stay (fixed points, highest and lowest point)
             elif self._importance(pt, first, last) > self._importance(
                 prev, first, last
             ):
@@ -258,12 +295,19 @@ class DouglasPeuckerTransformer(PathTransformer):
         gap (landmark score minus 0.05 per meter from the middle), or the point in the middle if there is none.
         """
 
+        unfillable = (
+            set()
+        )  # gaps (by their start distance) without a route point near their middle
         while way_points.number_of_waypoints < self.number_of_waypoints:
             pts = way_points.way_points
-            gap, i = max(
+            gaps = [
                 (b.accumulated_distance - a.accumulated_distance, i)
                 for i, (a, b) in enumerate(zip(pts, pts[1:]))
-            )
+                if a.accumulated_distance not in unfillable
+            ]
+            if not gaps:
+                break
+            gap, i = max(gaps)
             if gap <= self.max_gap:
                 break
 
@@ -275,7 +319,8 @@ class DouglasPeuckerTransformer(PathTransformer):
                 if start + margin <= p.accumulated_distance <= end - margin
             ]
             if not inside:
-                break
+                unfillable.add(start)
+                continue
             landmarks = [p for p in inside if p.landmark is not None]
             if landmarks:
                 best = max(

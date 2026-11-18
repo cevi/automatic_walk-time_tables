@@ -5,6 +5,8 @@ from typing import Callable
 
 DEFAULT_CORRIDOR = 25
 MAX_CORRIDOR = 100
+SEGMENTS_PER_QUERY = 20
+"""Route segments (about 10 m each) that share one query of the index."""
 
 
 def _distance_to_segment(e0, n0, e1, n1, e, n) -> float:
@@ -32,17 +34,36 @@ def features_along_route(
     segments = list(zip(route, route[1:])) or [(route[0], route[0])]
 
     found = {}  # key -> (offset, object)
-    for (e0, n0), (e1, n1) in segments:
+    # one index query per chunk of segments: a query per segment would query the same objects again and again
+    for c in range(0, len(segments), SEGMENTS_PER_QUERY):
+        chunk = [
+            (
+                e0,
+                n0,
+                e1,
+                n1,
+                min(e0, e1) - corridor,
+                min(n0, n1) - corridor,
+                max(e0, e1) + corridor,
+                max(n0, n1) + corridor,
+            )
+            for (e0, n0), (e1, n1) in segments[c : c + SEGMENTS_PER_QUERY]
+        ]
         bbox = (
-            min(e0, e1) - corridor,
-            min(n0, n1) - corridor,
-            max(e0, e1) + corridor,
-            max(n0, n1) + corridor,
+            min(s[4] for s in chunk),
+            min(s[5] for s in chunk),
+            max(s[6] for s in chunk),
+            max(s[7] for s in chunk),
         )
         for obj in query_bbox(*bbox):
-            offset = _distance_to_segment(e0, n0, e1, n1, obj.x, obj.y)
-            if offset > corridor:
+            offsets = [
+                _distance_to_segment(e0, n0, e1, n1, obj.x, obj.y)
+                for e0, n0, e1, n1, b0, b1, b2, b3 in chunk
+                if b0 <= obj.x <= b2 and b1 <= obj.y <= b3
+            ]
+            if not offsets or min(offsets) > corridor:
                 continue
+            offset = min(offsets)
             key = (obj.name, obj.object_type, obj.x, obj.y)
             if key not in found or offset < found[key][0]:
                 found[key] = (offset, obj)

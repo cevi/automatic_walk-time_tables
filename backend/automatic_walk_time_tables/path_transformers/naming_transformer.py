@@ -54,7 +54,7 @@ class NamingTransformer(PathTransformer):
                 # a station, hut, summit, ... is named after itself, even if the naming service ranks
                 # something else nearby higher (e.g. a hotel next to the cable car station)
                 wp.name = landmark.name
-                wp.name_type = landmark.types[0] if landmark.types else ""
+                wp.name_type = landmark.name_type or ""
             if not wp.name and self.use_default_name:
                 wp.name = f"{round(e)}, {round(n)}"
 

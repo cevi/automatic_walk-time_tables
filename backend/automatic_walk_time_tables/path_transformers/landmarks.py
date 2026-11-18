@@ -120,6 +120,7 @@ class Landmark:
     name: str | None = (
         None  # the landmark's own name, if it has one (see OWN_NAME_TYPES)
     )
+    name_type: str | None = None  # the object type of the feature the name belongs to
 
     def to_json(self):
         return {"score": self.score, "types": self.types, "reasons": self.reasons}
@@ -200,6 +201,7 @@ def mark_landmarks(path: Path, features: List[dict], max_offset=MAX_OFFSET) -> i
             types=types,
             reasons=reasons,
             name=own_name or None,
+            name_type=best["object_type"] if own_name else None,
         )
 
     return len(groups)

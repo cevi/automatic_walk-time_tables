@@ -96,8 +96,13 @@ def auto_waypoints():
     if not body or "route" not in body:
         return _error("Die Route fehlt.", 400)
     try:
+        fixed = body.get("fixed_distances") or []
+        if not isinstance(fixed, list) or not all(
+            isinstance(d, (int, float)) and not isinstance(d, bool) for d in fixed
+        ):
+            return _error("fixed_distances muss eine Liste von Distanzen sein.", 400)
         path = extract_path(body, "route", "elevation")
-        selected = waypoints.select_waypoints(path, body.get("fixed_distances"))
+        selected = waypoints.select_waypoints(path, fixed)
         return _json_response(
             {
                 "status": GeneratorStatus.SUCCESS,
@@ -128,6 +133,8 @@ def manual_waypoints():
     body = request.get_json(silent=True)
     if not body or "route" not in body or not isinstance(body.get("waypoints"), list):
         return _error("Die Route oder die Wegpunkte fehlen.", 400)
+    if len(body["waypoints"]) > MAX_NAME_POINTS:
+        return _error(f"Höchstens {MAX_NAME_POINTS} Wegpunkte pro Anfrage.", 400)
     for wp in body["waypoints"]:
         if not isinstance(wp, dict) or (
             wp.get("accumulated_distance") is None
@@ -155,6 +162,17 @@ def manual_waypoints():
         return _error("Die Wegpunkte konnten nicht gesetzt werden.", 500)
 
 
+MAX_NAME_POINTS = 500
+
+
+def _is_coordinate(p) -> bool:
+    return (
+        isinstance(p, list)
+        and len(p) == 2
+        and all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in p)
+    )
+
+
 @app.route("/names", methods=["POST"])
 def names():
     """
@@ -168,6 +186,10 @@ def names():
     points = body.get("points")
     if not isinstance(points, list):
         return _error("Die Koordinaten fehlen.", 400)
+    if len(points) > MAX_NAME_POINTS:
+        return _error(f"Höchstens {MAX_NAME_POINTS} Koordinaten pro Anfrage.", 400)
+    if not all(_is_coordinate(p) for p in points):
+        return _error("Koordinaten müssen [E, N] in LV95 sein.", 400)
     try:
         return _json_response(
             {

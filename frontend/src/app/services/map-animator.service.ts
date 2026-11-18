@@ -223,6 +223,7 @@ export class MapAnimatorService implements OnDestroy {
   }
 
   public clear() {
+    this.cancel_waypoint_request();
     this.state.clearAll();
     this.history.clearHistories();
   }
@@ -582,6 +583,7 @@ export class MapAnimatorService implements OnDestroy {
     // Ensure we're in manual mode after any user-initiated POI change
     this.state.auto_waypoints = false;
     this.state.auto_waypoints_untouched = false;
+    const was_loading = this.cancel_waypoint_request();
 
     pkt.name = 'Lade...';
     // Insert the new POI in sorted order by accumulated_distance
@@ -593,18 +595,20 @@ export class MapAnimatorService implements OnDestroy {
 
     // The way point stays exactly where the user clicked; the backend only names it
     // (as in the automatic mode, e.g. after the station or hut at that point)
+    // Only the stretch of the route around the point is sent: enough to find the landmark at the point,
+    // without fetching heights and objects for the whole route on every click
     let name = '';
     try {
-      const position = this.path_has_distances()
-        ? pkt
-        : { x: pkt.x, y: pkt.y, accumulated_distance: undefined };
-      const [named] = await this.api.manualWaypoints(this.state.path, [
-        position,
-      ]);
+      const [named] = await this.api.manualWaypoints(
+        this.path_stretch_around(pkt, 150),
+        [{ x: pkt.x, y: pkt.y, accumulated_distance: undefined }],
+      );
       name = named?.name || '';
     } catch {
       name = '';
     }
+    // a route change while the way point was added: put the way points onto the new route
+    if (was_loading) this.regenerateWalkTimeTable();
 
     const pois = this.state.pois;
     const target = pois.find(
@@ -614,6 +618,29 @@ export class MapAnimatorService implements OnDestroy {
     target.name = name;
     target.auto_name = name;
     this.state.updatePOIs([...pois]);
+  }
+
+  /** The points of the path within `radius` meters (in a straight line, along the path) of its point nearest to p. */
+  private path_stretch_around(
+    p: LV95_Coordinates,
+    radius: number,
+  ): LV95_Waypoint[] {
+    const path = this.state.path;
+    if (path.length === 0) return [];
+    const d = (a: LV95_Coordinates, b: LV95_Coordinates) =>
+      Math.hypot(a.x - b.x, a.y - b.y);
+    let k = 0;
+    for (let i = 1; i < path.length; i++) {
+      if (d(path[i], p) < d(path[k], p)) k = i;
+    }
+    let a = k,
+      b = k;
+    for (let run = 0; a > 0 && run <= radius; a--)
+      run += d(path[a], path[a - 1]);
+    for (let run = 0; b < path.length - 1 && run <= radius; b++)
+      run += d(path[b], path[b + 1]);
+    const stretch = path.slice(a, b + 1);
+    return stretch.length >= 2 ? stretch : path.slice(0, 2);
   }
 
   /**
@@ -754,6 +781,7 @@ export class MapAnimatorService implements OnDestroy {
   }
   public regenerateWalkTimeTable() {
     if (this.state.anchor_points.length < 2) {
+      this.cancel_waypoint_request();
       this.state.route_stats$.next(null);
       this.state.updatePOIs([]);
       // no route left: the next route starts with the automatic selection again
@@ -774,6 +802,18 @@ export class MapAnimatorService implements OnDestroy {
    * points are put onto the (possibly changed) route. Both come back named.
    */
   private waypoint_request = 0;
+  private waypoint_request_pending = false;
+
+  /**
+   * Drops the answer of a way point request that is still running, as the user changed the way points (or the
+   * route was cleared) after it was sent. Returns whether a request was running.
+   */
+  private cancel_waypoint_request(): boolean {
+    const pending = this.waypoint_request_pending;
+    this.waypoint_request++;
+    this.waypoint_request_pending = false;
+    return pending;
+  }
 
   /**
    * fetch_waypoints, but resolves with null if another request was started in the meantime, so a slow answer for
@@ -784,23 +824,33 @@ export class MapAnimatorService implements OnDestroy {
     pois: LV95_Waypoint[],
   ): Promise<ApiWaypoint[] | null> {
     const request = ++this.waypoint_request;
-    return this.fetch_waypoints(path, pois).then((waypoints) =>
-      request === this.waypoint_request ? waypoints : null,
+    this.waypoint_request_pending = true;
+    const auto =
+      this.state.auto_waypoints || this.state.auto_waypoints_untouched;
+    return this.fetch_waypoints(path, pois, auto).then(
+      (waypoints) => {
+        if (request !== this.waypoint_request) return null;
+        this.waypoint_request_pending = false;
+        // the way points are the automatic selection until the user changes them
+        if (auto) this.state.auto_waypoints_untouched = true;
+        return waypoints;
+      },
+      (err) => {
+        if (request === this.waypoint_request)
+          this.waypoint_request_pending = false;
+        throw err;
+      },
     );
   }
 
   private fetch_waypoints(
     path: LV95_Waypoint[],
     pois: LV95_Waypoint[],
+    auto: boolean,
   ): Promise<ApiWaypoint[]> {
     // As long as the user has not changed the automatic selection, a changed route (e.g. the next point while
     // drawing) gets a new automatic selection for the whole route, not just the way points of the first stretch.
-    if (this.state.auto_waypoints || this.state.auto_waypoints_untouched) {
-      return this.api.autoWaypoints(path).then((waypoints) => {
-        this.state.auto_waypoints_untouched = true;
-        return waypoints;
-      });
-    }
+    if (auto) return this.api.autoWaypoints(path);
     // While drawing, distances change whenever a point is inserted: send the way points by coordinates then
     const by_distance = this.path_has_distances();
     const positions = [...pois]
@@ -1050,23 +1100,24 @@ export class MapAnimatorService implements OnDestroy {
   }
 
   public delete_poi(point: LV95_Waypoint) {
-    // Lock manual mode and update state purely locally — no backend call.
-    this.state.auto_waypoints = false;
-    this.state.auto_waypoints_untouched = false;
-
+    // Lock manual mode and update state purely locally — no backend call, unless the way points of a changed
+    // route are still loading: they are then placed again (in manual mode), without the deleted one.
     const pois = this.state.pois;
 
     // Never delete the first or last POI (route start/end)
     if (pois.length <= 2) return;
     const idx = pois.findIndex((p) => GeometryUtils.pointsMatch(p, point));
-    if (idx === 0 || idx === pois.length - 1) return;
+    if (idx <= 0 || idx === pois.length - 1) return;
 
-    if (idx !== -1) {
-      const new_pois = [...pois];
-      new_pois.splice(idx, 1);
-      this.state.updatePOIs(new_pois);
-      this._recalculate_route_stats(new_pois);
-    }
+    this.state.auto_waypoints = false;
+    this.state.auto_waypoints_untouched = false;
+    const was_loading = this.cancel_waypoint_request();
+
+    const new_pois = [...pois];
+    new_pois.splice(idx, 1);
+    this.state.updatePOIs(new_pois);
+    this._recalculate_route_stats(new_pois);
+    if (was_loading) this.regenerateWalkTimeTable();
   }
 
   public update_poi_names(pois: LV95_Waypoint[]) {
@@ -1076,7 +1127,10 @@ export class MapAnimatorService implements OnDestroy {
   set_automatic_waypoint_selection(val: boolean) {
     this.state.auto_waypoints = val;
     // switching to manual mode (e.g. because the user renamed a way point) keeps the way points as they are
-    if (!val) this.state.auto_waypoints_untouched = false;
+    if (!val) {
+      this.state.auto_waypoints_untouched = false;
+      if (this.cancel_waypoint_request()) this.regenerateWalkTimeTable();
+    }
     // Only call the backend when switching TO auto mode (to generate new waypoints).
     // Switching to manual mode is just locking in the current state — no backend call needed.
     if (val) {

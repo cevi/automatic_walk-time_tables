@@ -35,14 +35,22 @@ TOLERANCE = 3
 """The ends of a structure are where the profile comes within this of the structure's height [in meters]."""
 MAX_HALF_LENGTH = 300
 """The ends must be at most this far from the structure's point [in meters], otherwise nothing is corrected."""
+MAX_DETOUR = 1.2
+"""Bridges and tunnels are (almost) straight: the route between the ends may be at most this much longer than the
+straight line between them. Otherwise the route does not run along the structure, e.g. a path that passes under a
+bridge and winds up to the level of its deck."""
 
 
 def correct_heights(
-    dist: np.ndarray, heights: np.ndarray, structures: List[Tuple[int, bool, float]]
+    dist: np.ndarray,
+    heights: np.ndarray,
+    structures: List[Tuple[int, bool, float]],
+    xy: np.ndarray | None = None,
 ) -> np.ndarray:
     """
     structures: (index of the route point at the structure, True for a bridge / False for a tunnel, height of the
-    structure). Returns the corrected heights.
+    structure). xy: the LV95 coordinates of the route points, to check that the route runs straight along the
+    structure (see MAX_DETOUR). Returns the corrected heights.
     """
     h = heights.astype(float).copy()
     for k, is_bridge, level in structures:
@@ -64,6 +72,10 @@ def correct_heights(
             b += 1
         if not (reaches(a) and reaches(b)) or b - a < 2:
             continue  # the ends are not found close by: the data do not match, keep the profile
+        if xy is not None:
+            chord = float(np.hypot(*(xy[b] - xy[a])))
+            if chord <= 0 or (dist[b] - dist[a]) > MAX_DETOUR * chord:
+                continue  # the route does not run along the structure
 
         line = h[a] + (h[b] - h[a]) * (dist[a : b + 1] - dist[a]) / (dist[b] - dist[a])
         h[a : b + 1] = line
@@ -97,7 +109,7 @@ class StructureHeightTransformer(PathTransformer):
 
         dist = np.array([wp.accumulated_distance for wp in pts], dtype=float)
         heights = np.array([wp.point.h for wp in pts], dtype=float)
-        corrected = correct_heights(dist, heights, structures)
+        corrected = correct_heights(dist, heights, structures, xy)
         changed = 0
         for wp, h_old, h_new in zip(pts, heights, corrected):
             if abs(h_new - h_old) > 0.5:
