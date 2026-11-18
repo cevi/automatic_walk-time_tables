@@ -40,7 +40,24 @@
   }
 }
 
+.option-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+
+  .result-icon {
+    flex: none;
+    color: #8a8a8a;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    margin: 0 !important;
+  }
+}
+
 .option-content {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -51,8 +68,11 @@
     font-weight: 500;
     font-size: 15px;
     color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 
-    ::ng-deep b {
+    b {
       color: #e57373;
     }
   }
@@ -78,4 +98,9 @@
     max-width: none;
     transform: none;
   }
+}
+
+// show more than the default 256px of results, the rows have two lines now
+::ng-deep .premium-autocomplete.mat-mdc-autocomplete-panel {
+  max-height: min(440px, 60vh);
 }

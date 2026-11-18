@@ -38,7 +38,7 @@ describe("Map search", () => {
   });
 
   it("should query places, public transport stops and order the results by relevance", () => {
-    cy.get(SEARCH_INPUT).type("Wald");
+    cy.get(SEARCH_INPUT).type("Wald", { delay: 0 });
 
     cy.wait("@search").then(({ request }) => {
       expect(request.query["searchText"]).to.eq("Wald");
@@ -62,7 +62,15 @@ describe("Map search", () => {
       .should("have.text", "Wald (ZH), Bahnhof");
     cy.get("mat-option .result-label")
       .eq(2)
-      .should("have.text", "Flurname Waldhof (ZH)");
+      .should("have.text", "Waldhof (ZH)");
+
+    // the category of the API label is shown as the type of the result
+    cy.get("mat-option .result-details").eq(0).should("have.text", "Gemeinde");
+    cy.get("mat-option .result-details")
+      .eq(1)
+      .should("have.text", "Haltestelle · Zug");
+    cy.get("mat-option .result-details").eq(2).should("have.text", "Flurname");
+    cy.get("mat-option mat-icon").eq(1).should("have.text", "train");
 
     // only the search term gets highlighted
     cy.get("mat-option .result-label")
@@ -72,15 +80,25 @@ describe("Map search", () => {
       .and("have.text", "Wald");
   });
 
+  it("should highlight every word of the search on its own", () => {
+    cy.get(SEARCH_INPUT).type("Bahnhof Wald", { delay: 0 });
+    cy.wait("@search").its("request.query.lang").should("eq", "de");
+
+    cy.contains("mat-option", "Wald (ZH), Bahnhof")
+      .find(".result-label b")
+      .then((marks) => [...marks].map((b) => b.textContent))
+      .should("deep.equal", ["Wald", "Bahnhof"]);
+  });
+
   it("should not search for less than two characters", () => {
-    cy.get(SEARCH_INPUT).type("W");
+    cy.get(SEARCH_INPUT).type("W", { delay: 0 });
     cy.wait(1000);
     cy.get("@search.all").should("have.length", 0);
     cy.get("mat-option").should("not.exist");
   });
 
   it("should jump to a selected stop and mark it on the map", () => {
-    cy.get(SEARCH_INPUT).type("Wald");
+    cy.get(SEARCH_INPUT).type("Wald", { delay: 0 });
     cy.contains("mat-option", "Wald (ZH), Bahnhof").click();
 
     cy.get(SEARCH_INPUT).should("have.value", "Wald (ZH), Bahnhof");
@@ -99,8 +117,8 @@ describe("Map search", () => {
   });
 
   it("should fit the map to the extent of a selected municipality", () => {
-    cy.get(SEARCH_INPUT).type("Wald");
-    cy.contains("mat-option", /^\s*Wald \(ZH\)\s*$/).click();
+    cy.get(SEARCH_INPUT).type("Wald", { delay: 0 });
+    cy.contains("mat-option .result-label", /^\s*Wald \(ZH\)\s*$/).click();
 
     cy.get(SEARCH_INPUT).should("have.value", "Wald (ZH)");
 
@@ -121,7 +139,7 @@ describe("Map search", () => {
   });
 
   it("should remove the marker when the search is cleared", () => {
-    cy.get(SEARCH_INPUT).type("Wald");
+    cy.get(SEARCH_INPUT).type("Wald", { delay: 0 });
     cy.contains("mat-option", "Wald (ZH), Bahnhof").click();
     expect_search_markers(1);
 
@@ -134,7 +152,7 @@ describe("Map search", () => {
 
   it("should show no results if nothing was found", () => {
     cy.intercept("GET", SEARCH_API, { results: [] }).as("empty_search");
-    cy.get(SEARCH_INPUT).type("Nirgendwo");
+    cy.get(SEARCH_INPUT).type("Nirgendwo", { delay: 0 });
 
     cy.wait("@empty_search");
     cy.get("mat-option").should("not.exist");
@@ -163,7 +181,7 @@ describe("Map search", () => {
 
     for (const [name, query, label, east, north] of cases) {
       it(`should jump to ${name} coordinates without querying the API`, () => {
-        cy.get(SEARCH_INPUT).type(query);
+        cy.get(SEARCH_INPUT).type(query, { delay: 0 });
 
         cy.get("mat-option").should("have.length", 1);
         cy.get("mat-option .result-label").should("have.text", label);
@@ -188,7 +206,7 @@ describe("Map search", () => {
     }
 
     it("should search names for numbers outside of Switzerland", () => {
-      cy.get(SEARCH_INPUT).type("2023 2024");
+      cy.get(SEARCH_INPUT).type("2023 2024", { delay: 0 });
       cy.wait("@search")
         .its("request.query.searchText")
         .should("eq", "2023 2024");

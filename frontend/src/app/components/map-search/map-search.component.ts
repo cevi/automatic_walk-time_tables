@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import {
+  map,
   debounceTime,
   distinctUntilChanged,
   switchMap,
@@ -22,6 +23,16 @@ import {
   formatWgs84,
   parseCoordinate,
 } from '../../helpers/coordinate-parser';
+import {
+  highlightParts,
+  presentSearchResult,
+  SearchResultPresentation,
+} from '../../helpers/search-result-presentation';
+
+export interface SearchResultRow {
+  result: SwisstopoSearchResult;
+  view: SearchResultPresentation;
+}
 
 /** Resolution (m/px) used when jumping to a typed coordinate, ~1:25'000 */
 const COORDINATE_RESOLUTION = 2.5;
@@ -35,7 +46,7 @@ const COORDINATE_RESOLUTION = 2.5;
 })
 export class MapSearchComponent implements OnInit {
   searchControl = new FormControl('');
-  results$: Observable<SwisstopoSearchResult[]> = of([]);
+  results$: Observable<SearchResultRow[]> = of([]);
   isLoading = false;
   private searchMarkerLayer: VectorLayer<any> | null = null;
 
@@ -77,6 +88,12 @@ export class MapSearchComponent implements OnInit {
           .searchLocations(value)
           .pipe(tap(() => (this.isLoading = false)));
       }),
+      map((results) =>
+        results.map((result) => ({
+          result,
+          view: presentSearchResult(result),
+        })),
+      ),
     );
   }
 
@@ -113,12 +130,10 @@ export class MapSearchComponent implements OnInit {
   }
 
   displayFn(result: SwisstopoSearchResult): string {
-    if (!result) return '';
-    // Strip HTML from label since API returns <b> tags
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = result.attrs.label;
-    return tempDiv.textContent || result.attrs.label || '';
+    return result ? presentSearchResult(result).title : '';
   }
+
+  highlight = highlightParts;
 
   jumpToResult(result: SwisstopoSearchResult, animate: boolean = true) {
     if (!result?.attrs) return;
@@ -208,22 +223,5 @@ export class MapSearchComponent implements OnInit {
       const result: SwisstopoSearchResult = event.option.value;
       this.jumpToResult(result, false);
     }
-  }
-
-  highlightLabel(label: string, query: string | null): string {
-    if (!label) return '';
-
-    // Strip original HTML (Swisstopo's arbitrary <b> and <i> tags)
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = label;
-    let cleanText = tempDiv.textContent || label || '';
-
-    if (!query || query.length < 2 || parseCoordinate(query)) return cleanText;
-
-    // Highlight the actual search term input by the user
-    // Escape special regex characters in the query
-    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp(`(${escapedQuery})`, 'gi');
-    return cleanText.replace(regex, '<b>$1</b>');
   }
 }

@@ -49,6 +49,8 @@ export class SwisstopoSearchService {
       type: 'locations',
       searchText: query,
       sr: '2056',
+      // otherwise the categories (<i>Zug</i>, <i>Gipfel</i>) follow the browser language
+      lang: 'de',
     };
 
     // We do two separate queries because the SearchServer limits results to 50,

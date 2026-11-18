@@ -25,22 +25,25 @@
       class="premium-autocomplete"
     >
       <mat-option
-        *ngFor="let result of results$ | async"
-        [value]="result"
+        *ngFor="let row of results$ | async"
+        [value]="row.result"
         class="search-option"
       >
-        <div class="option-content">
-          <div
-            class="result-label"
-            [innerHTML]="
-              highlightLabel(result.attrs.label, searchControl.value)
-            "
-          ></div>
-          <div
-            *ngIf="result.attrs.origin === 'coordinate'"
-            class="result-details"
-          >
-            {{ result.attrs.detail }}
+        <div class="option-row">
+          <mat-icon class="result-icon">{{ row.view.icon }}</mat-icon>
+          <div class="option-content">
+            <div class="result-label">
+              <ng-container
+                *ngFor="
+                  let part of highlight(row.view.title, searchControl.value)
+                "
+                ><b *ngIf="part.match">{{ part.text }}</b
+                ><ng-container *ngIf="!part.match">{{
+                  part.text
+                }}</ng-container></ng-container
+              >
+            </div>
+            <div class="result-details">{{ row.view.type }}</div>
           </div>
         </div>
       </mat-option>
