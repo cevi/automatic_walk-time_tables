@@ -393,6 +393,10 @@ export class MapService extends SwisstopoMap implements OnDestroy {
             saturations[this.sentinelCoverLabel] ?? 1.0,
           );
           cover.set('name', 'sentinel-cover');
+        } else {
+          // the previous background can't be drawn (e.g. an unknown satellite
+          // image): nothing to cover with, nothing to wait for
+          this.sentinelCoverLabel = null;
         }
       }
     } else {
