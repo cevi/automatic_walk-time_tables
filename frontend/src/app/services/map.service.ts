@@ -1,4 +1,4 @@
-import { Injectable, OnDestroy } from '@angular/core';
+import { inject, Injectable, OnDestroy } from '@angular/core';
 import { Layer } from 'ol/layer';
 import Map from 'ol/Map';
 import { Feature } from 'ol';
@@ -18,6 +18,10 @@ import TileLayer from 'ol/layer/Tile';
 import XYZ from 'ol/source/XYZ';
 import GeoJSON from 'ol/format/GeoJSON';
 import { LV95_Coordinates, LV95_Waypoint } from '../helpers/coordinates';
+import {
+  SENTINEL_LAYER_PREFIX,
+  SentinelLayersService,
+} from './sentinel-layers.service';
 
 export interface MapOverlays {
   fountains: boolean;
@@ -37,6 +41,8 @@ export interface MapOverlays {
   providedIn: 'root',
 })
 export class MapService extends SwisstopoMap implements OnDestroy {
+  private sentinelLayers = inject(SentinelLayersService);
+
   public zoom_to_route_area(path: (LV95_Coordinates | LV95_Waypoint)[]) {
     if (!this.map || !path || path.length === 0) return;
 
@@ -212,9 +218,25 @@ export class MapService extends SwisstopoMap implements OnDestroy {
     }
 
     const bgLayer = layerLabel;
+    const layers: Layer[] = [];
 
     let wmtsLayer: Layer | null = null;
-    if (bgLayer === 'opentopomap') {
+    if (bgLayer.startsWith(SENTINEL_LAYER_PREFIX)) {
+      // a single satellite pass only covers part of Switzerland,
+      // so the grey map fills in the rest
+      const underlay = this.get_base_WMTS_layer('pixelkarte-grau');
+      if (underlay) {
+        underlay.set('name', 'sentinel-underlay');
+        layers.push(underlay);
+      }
+      const scene = this.sentinelLayers.sceneForLabel(bgLayer);
+      const catalog = this.sentinelLayers.catalog$.value;
+      if (scene && catalog) {
+        wmtsLayer =
+          this.get_sentinel_layer(bgLayer, scene.url, catalog.attribution) ||
+          null;
+      }
+    } else if (bgLayer === 'opentopomap') {
       wmtsLayer = new TileLayer({
         source: new XYZ({
           url: 'https://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png',
@@ -227,7 +249,6 @@ export class MapService extends SwisstopoMap implements OnDestroy {
       wmtsLayer = this.get_base_WMTS_layer(layerLabel) || null;
     }
 
-    const layers: Layer[] = [];
     if (wmtsLayer) {
       wmtsLayer.set('name', layerLabel);
       wmtsLayer.set('saturation', saturations[layerLabel] ?? 1.0);

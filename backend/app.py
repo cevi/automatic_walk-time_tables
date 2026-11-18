@@ -54,6 +54,7 @@ from automatic_walk_time_tables.generator import AutomatedWalkTableGenerator
 from automatic_walk_time_tables.utils.file_parser import GeoFileParser
 
 from automatic_walk_time_tables.generator_status import GeneratorStatus
+from automatic_walk_time_tables.sentinel_scenes import SentinelCatalog
 
 logger = logging.getLogger(__name__)
 
@@ -541,6 +542,25 @@ def download(uuid):
 def generate_qr_image(uuid):
     qr_data = build_qr_code_image_string(uuid, raw=True)
     return send_file(io.BytesIO(qr_data), mimetype="image/jpg")
+
+
+sentinel_catalog = SentinelCatalog()
+sentinel_catalog.warm_up()
+
+
+@app.route("/sentinel/layers")
+def sentinel_layers():
+    """The Sentinel-2 satellite images offered as background maps."""
+    try:
+        body = sentinel_catalog.layers()
+    except Exception as exc:
+        logger.error("Error retrieving Sentinel-2 scenes: %s", exc)
+        return app.response_class(
+            response=json.dumps({"layers": []}), status=502, mimetype="application/json"
+        )
+    response = jsonify(body)
+    response.headers["Cache-Control"] = "public, max-age=600"
+    return response
 
 
 @app.route("/statistics")

@@ -177,6 +177,29 @@
               />
             </div>
             <button
+              *ngIf="sentinelScenes.length > 0"
+              mat-menu-item
+              [matMenuTriggerFor]="sentinelMenu"
+              class="custom-menu-item"
+            >
+              <div class="menu-item-content">
+                <mat-icon class="type-icon basis-icon">public</mat-icon>
+                <mat-icon *ngIf="isSentinelLayer()" class="check-icon"
+                  >check_circle</mat-icon
+                >
+                <mat-icon *ngIf="!isSentinelLayer()" class="uncheck-icon"
+                  >radio_button_unchecked</mat-icon
+                >
+                <span class="item-label">Satellitenbild (Sentinel-2)</span>
+                <span
+                  *ngIf="selectedSentinelScene() as scene"
+                  class="item-meta"
+                >
+                  {{ scene.datetime | date: "dd.MM.yyyy" }}
+                </span>
+              </div>
+            </button>
+            <button
               mat-menu-item
               (click)="setMapLayer('keine')"
               class="custom-menu-item"
@@ -659,6 +682,37 @@
                 (input)="setOpacity('shelter', $any($event.target).value)"
               />
             </div>
+          </mat-menu>
+          <mat-menu #sentinelMenu="matMenu" class="premium-map-menu">
+            <div class="menu-section-title">Aufnahmen</div>
+            <button
+              *ngFor="let scene of sentinelScenes; let i = index"
+              mat-menu-item
+              (click)="setMapLayer('sentinel-' + i)"
+              class="custom-menu-item"
+            >
+              <div class="menu-item-content">
+                <mat-icon
+                  *ngIf="currentLayer === 'sentinel-' + i"
+                  class="check-icon"
+                  >check_circle</mat-icon
+                >
+                <mat-icon
+                  *ngIf="currentLayer !== 'sentinel-' + i"
+                  class="uncheck-icon"
+                  >radio_button_unchecked</mat-icon
+                >
+                <span class="item-label">
+                  {{ scene.datetime | date: "dd.MM.yyyy" }}
+                </span>
+                <span
+                  class="item-meta"
+                  matTooltip="Anteil der abgedeckten Fläche ohne Wolken"
+                  >{{ scene.clear_ratio * 100 | number: "1.0-0" }}%
+                  wolkenfrei</span
+                >
+              </div>
+            </button>
           </mat-menu>
         </div>
 
