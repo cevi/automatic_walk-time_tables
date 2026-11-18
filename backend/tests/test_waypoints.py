@@ -424,6 +424,36 @@ class WaypointApiTest(unittest.TestCase):
             r = self.client.post("/names", json={"points": points})
             self.assertEqual(r.status_code, 400, points[:1])
 
+    def test_fetched_elevation_is_returned_for_the_next_request(
+        self, _features, _names
+    ):
+        path = straight_path(1000)
+        body = {"route": encoded(path)["route"]}
+        with mock.patch(
+            "app.HeightFetcherTransformer.transform", return_value=path
+        ) as fetch:
+            r = self.client.post("/waypoints/auto", json=body)
+        self.assertEqual(r.status_code, 200)
+        fetch.assert_called_once()
+        self.assertEqual(r.get_json()["elevation"], encoded(path)["elevation"])
+        # with elevation, nothing is fetched and nothing is returned
+        r = self.client.post("/waypoints/auto", json=encoded(path))
+        self.assertNotIn("elevation", r.get_json())
+
+    def test_unavailable_elevation_service_is_a_temporary_error(
+        self, _features, _names
+    ):
+        from automatic_walk_time_tables.utils.error import ElevationServiceUnavailable
+
+        body = {"route": encoded(straight_path(1000))["route"], "waypoints": []}
+        with mock.patch(
+            "app.HeightFetcherTransformer.transform",
+            side_effect=ElevationServiceUnavailable(),
+        ):
+            for endpoint in ("/waypoints/auto", "/waypoints/manual"):
+                r = self.client.post(endpoint, json=body)
+                self.assertEqual(r.status_code, 503, endpoint)
+
     def test_way_point_without_position_is_a_bad_request(self, _features, _names):
         body = encoded(straight_path(3000))
         body["waypoints"] = [{"accumulated_distance": None}]

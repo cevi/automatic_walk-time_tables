@@ -8,6 +8,7 @@ import pathlib
 import shutil
 import threading
 import time
+import traceback
 import uuid as uuid_factory
 import zipfile
 from threading import Thread
@@ -33,7 +34,10 @@ from automatic_walk_time_tables.path_transformers.structure_heights import (
 )
 from automatic_walk_time_tables import waypoints
 from automatic_walk_time_tables.utils import swiss_tlm_api
-from automatic_walk_time_tables.utils.error import UserException
+from automatic_walk_time_tables.utils.error import (
+    ElevationServiceUnavailable,
+    UserException,
+)
 from automatic_walk_time_tables.utils.gpx_creator import (
     create_gpx_file,
     fetch_data_for_uuid,
@@ -71,6 +75,14 @@ app.url_map.converters["export_uuid"] = ExportUUIDConverter
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
 
+@app.route("/health")
+def health():
+    # Used by the docker HEALTHCHECK: answers as soon as a worker serves requests.
+    return app.response_class(
+        response=json.dumps({"status": "ok"}), status=200, mimetype="application/json"
+    )
+
+
 def _json_response(data: dict, status: int = 200):
     return app.response_class(
         response=json.dumps(data), status=status, mimetype="application/json"
@@ -79,6 +91,16 @@ def _json_response(data: dict, status: int = 200):
 
 def _error(message: str, status: int):
     return _json_response({"status": GeneratorStatus.ERROR, "message": message}, status)
+
+
+def _fetched_elevation(body: dict, path) -> dict:
+    """
+    If the request had no elevation, the profile fetched from geo.admin.ch (route and elevation, as in the request),
+    so the frontend can send it with the next request for the same route instead of fetching it again.
+    """
+    if "elevation" in body:
+        return {}
+    return {"route": path.to_polyline(), "elevation": path.to_elevation_polyline()}
 
 
 @app.route("/waypoints/auto", methods=["POST"])
@@ -90,7 +112,9 @@ def auto_waypoints():
         route:           polyline (precision 0) of the LV95 route coordinates
         elevation:       optional polyline (precision 0) of [accumulated distance in m, height] per route point
         fixed_distances: optional accumulated distances [m] of way points that must be kept
-    Response: {"status": "success", "waypoints": [way point, ...]}, see waypoints.waypoint_to_json
+    Response: {"status": "success", "waypoints": [way point, ...]}, see waypoints.waypoint_to_json; without
+        elevation in the request also route and elevation of the fetched profile (to send with the next request).
+        503 if the elevation service is unavailable.
     """
     body = request.get_json(silent=True)
     if not body or "route" not in body:
@@ -109,8 +133,11 @@ def auto_waypoints():
                 "waypoints": [
                     waypoints.waypoint_to_json(wp) for wp in selected.way_points
                 ],
+                **_fetched_elevation(body, path),
             }
         )
+    except ElevationServiceUnavailable:
+        return elevation_unavailable_response()
     except UserException as e:
         logger.error(e)
         return _error(str(e), 500)
@@ -128,7 +155,8 @@ def manual_waypoints():
         route, elevation: as for /waypoints/auto
         waypoints:        [{"accumulated_distance": m} or {"x": e, "y": n}, ...] (LV95)
         include_start_end: optional, also return the start and end of the route if no way point is there yet
-    Response: {"status": "success", "waypoints": [way point, ...]} in the order of the request
+    Response: {"status": "success", "waypoints": [way point, ...]} in the order of the request, plus route and
+        elevation as for /waypoints/auto
     """
     body = request.get_json(silent=True)
     if not body or "route" not in body or not isinstance(body.get("waypoints"), list):
@@ -152,8 +180,11 @@ def manual_waypoints():
             {
                 "status": GeneratorStatus.SUCCESS,
                 "waypoints": [waypoints.waypoint_to_json(wp) for wp in placed],
+                **_fetched_elevation(body, path),
             }
         )
+    except ElevationServiceUnavailable:
+        return elevation_unavailable_response()
     except UserException as e:
         logger.error(e)
         return _error(str(e), 500)
@@ -226,7 +257,7 @@ def get_map_numbers():
         headers = {"Content-Type": "application/json"}
 
         # we send a GET with body to the swiss-tml-api
-        req = requests.request("GET", url, headers=headers, data=payload)
+        req = requests.request("GET", url, headers=headers, data=payload, timeout=5)
         resp = req.text
         return jsonify({"map_numbers": resp})
 
@@ -278,6 +309,8 @@ def parse_route():
         return app.response_class(
             response=json.dumps(result_json), status=200, mimetype="application/json"
         )
+    except ElevationServiceUnavailable:
+        return elevation_unavailable_response()
     except UserException as e:
         logger.error(e)
         return app.response_class(
@@ -319,6 +352,7 @@ def create_walk_time_table():
             start = time.time()
 
             path = extract_path(options)
+            elevation_was_fetched = "elevation_data" not in options
 
             end = time.time()
             logger.info("Decoding polyline took {} seconds.".format(end - start))
@@ -360,6 +394,14 @@ def create_walk_time_table():
                 "pois": pois.to_polyline(),
                 "pois_elevation": pois.to_elevation_polyline(),
             }
+
+            # Return the fetched elevation profile so the frontend can reuse it
+            # for follow-up requests on the same route instead of triggering
+            # another (rate-limited) call to geo.admin.ch.
+            if elevation_was_fetched:
+                result_json["route"] = path.to_polyline()
+                result_json["elevation_data"] = path.to_elevation_polyline()
+
             return app.response_class(
                 response=json.dumps(result_json),
                 status=200,
@@ -377,6 +419,8 @@ def create_walk_time_table():
                 status=400,
                 mimetype="application/json",
             )
+    except ElevationServiceUnavailable:
+        return elevation_unavailable_response()
     except UserException as e:
         logger.error(e)
         response = json.dumps({"status": GeneratorStatus.ERROR, "message": str(e)})
@@ -392,6 +436,21 @@ def create_walk_time_table():
         return app.response_class(
             response=response, status=500, mimetype="application/json"
         )
+
+
+def elevation_unavailable_response():
+    # 503 tells the client the failure is temporary and worth retrying
+    return app.response_class(
+        response=json.dumps(
+            {
+                "status": GeneratorStatus.ERROR,
+                "message": ElevationServiceUnavailable.MESSAGE,
+            }
+        ),
+        status=503,
+        mimetype="application/json",
+        headers={"Retry-After": "5"},
+    )
 
 
 def extract_path(options, coords_field="route", elevation_field="elevation_data"):

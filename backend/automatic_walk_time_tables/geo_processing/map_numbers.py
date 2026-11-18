@@ -19,9 +19,9 @@ def fetch_map_numbers(path_: path.Path) -> str:
     headers = {"Content-Type": "application/json"}
 
     try:
-        req = requests.request("GET", url, headers=headers, data=payload)
+        req = requests.request("GET", url, headers=headers, data=payload, timeout=5)
         return req.text
-    except requests.exceptions.ConnectionError:
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
         logger.error(
             "Connection error while fetching map numbers from awt-swiss-tml-api"
         )

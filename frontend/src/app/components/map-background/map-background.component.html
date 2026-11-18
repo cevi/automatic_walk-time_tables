@@ -1,21 +1,14 @@
 <div class="main-content">
-  @if (setHorizontal) {
-    <ng-container
-      *ngTemplateOutlet="
-        splitterContent;
-        context: { direction: 'horizontal', width: 450, minWidth: 450 }
-      "
-    ></ng-container>
-  } @else {
-    <as-split direction="vertical" [unit]="'pixel'">
-      <ng-container
-        *ngTemplateOutlet="
-          splitterContent;
-          context: { direction: 'vertical', width: 35, minWidth: 35 }
-        "
-      ></ng-container>
-    </as-split>
-  }
+  <ng-container
+    *ngTemplateOutlet="
+      splitterContent;
+      context: {
+        direction: setHorizontal ? 'horizontal' : 'vertical',
+        width: drawerSize,
+        minWidth: setHorizontal ? 300 : 150,
+      }
+    "
+  ></ng-container>
 
   <ng-template
     #splitterContent
@@ -43,38 +36,6 @@
           src="../../../assets/logo_with_claim.png"
         />
         <img routerLink="/" id="logo_small" src="../../../assets/logo.png" />
-
-        <div
-          class="stats-overlay"
-          *ngIf="mapAnimator.route_stats$ | async as stats"
-          [class.hidden]="!mapAnimator.has_route"
-        >
-          <div class="stat-item" matTooltip="Distanz">
-            <mat-icon>straighten</mat-icon>
-            <span>{{ stats.dist | number: "1.1-1" }} km</span>
-          </div>
-          <div class="stat-item" matTooltip="Leistungskilometer">
-            <mat-icon>speed</mat-icon>
-            <span
-              >{{
-                stats.dist + stats.up / 100 + stats.down / 300 | number: "1.1-1"
-              }}
-              Lkm</span
-            >
-          </div>
-          <div class="stat-item" matTooltip="Aufstieg">
-            <mat-icon>trending_up</mat-icon>
-            <span>{{ stats.up | number: "1.0-0" }} m</span>
-          </div>
-          <div class="stat-item" matTooltip="Abstieg">
-            <mat-icon>trending_down</mat-icon>
-            <span>{{ stats.down | number: "1.0-0" }} m</span>
-          </div>
-          <div class="stat-item" matTooltip="Wanderzeit">
-            <mat-icon>schedule</mat-icon>
-            <span>{{ mapAnimator.formatDuration(stats.duration) }}</span>
-          </div>
-        </div>
 
         <div class="bottom-left-controls">
           <button
@@ -701,110 +662,147 @@
           </mat-menu>
         </div>
 
-        <div class="drawing-toolbar">
-          <div class="mode-toggle">
-            <div
-              class="mode-icon"
-              [class.active]="(mapAnimator.app_mode$ | async) === 'view'"
-              (click)="setAppMode('view')"
-              matTooltip="Ansichts-Modus"
-            >
-              <mat-icon>visibility</mat-icon>
+        <div class="bottom-right-stack">
+          <div
+            class="stats-overlay"
+            *ngIf="mapAnimator.route_stats$ | async as stats"
+            [class.hidden]="!mapAnimator.has_route"
+          >
+            <div class="stat-item" matTooltip="Distanz">
+              <mat-icon>straighten</mat-icon>
+              <span>{{ stats.dist | number: "1.1-1" }} km</span>
             </div>
-            <div
-              class="mode-icon"
-              [class.active]="(mapAnimator.app_mode$ | async) === 'edit'"
-              (click)="setAppMode('edit')"
-              matTooltip="Zeichnen-Modus"
-            >
-              <mat-icon>edit</mat-icon>
+            <div class="stat-item" matTooltip="Leistungskilometer">
+              <mat-icon>speed</mat-icon>
+              <span
+                >{{
+                  stats.dist + stats.up / 100 + stats.down / 300
+                    | number: "1.1-1"
+                }}
+                Lkm</span
+              >
             </div>
-            <div
-              class="mode-icon"
-              [class.active]="(mapAnimator.app_mode$ | async) === 'table'"
-              (click)="setAppMode('table')"
-              matTooltip="Marschzeittabellen-Modus"
-            >
-              <mat-icon>table_chart</mat-icon>
+            <div class="stat-item" matTooltip="Aufstieg">
+              <mat-icon>trending_up</mat-icon>
+              <span>{{ stats.up | number: "1.0-0" }} m</span>
+            </div>
+            <div class="stat-item" matTooltip="Abstieg">
+              <mat-icon>trending_down</mat-icon>
+              <span>{{ stats.down | number: "1.0-0" }} m</span>
+            </div>
+            <div class="stat-item" matTooltip="Wanderzeit">
+              <mat-icon>schedule</mat-icon>
+              <span>{{ mapAnimator.formatDuration(stats.duration) }}</span>
             </div>
           </div>
 
-          <ng-container *ngIf="!(mapAnimator.export_mode$ | async)">
-            <div class="toolbar-divider"></div>
-            <button
-              mat-icon-button
-              class="icon-magnet"
-              [class.active]="mapAnimator.magnetic_paths"
-              (click)="mapAnimator.toggle_magnetic_paths()"
-              matTooltip="Magnetisches Zeichnen"
-            >
-              <mat-icon
-                [style.color]="mapAnimator.magnetic_paths ? '#e57373' : 'grey'"
-                >auto_fix_high</mat-icon
+          <div class="drawing-toolbar">
+            <div class="mode-toggle">
+              <div
+                class="mode-icon"
+                [class.active]="(mapAnimator.app_mode$ | async) === 'view'"
+                (click)="setAppMode('view')"
+                matTooltip="Ansichts-Modus"
               >
-            </button>
-            <div class="toolbar-divider"></div>
-            <button
-              mat-icon-button
-              (click)="mapAnimator.invert_route()"
-              matTooltip="Tour umkehren"
-              [disabled]="!has_valid_path"
-            >
-              <mat-icon [style.color]="!has_valid_path ? 'grey' : '#e57373'"
-                >sync_alt</mat-icon
+                <mat-icon>visibility</mat-icon>
+              </div>
+              <div
+                class="mode-icon"
+                [class.active]="(mapAnimator.app_mode$ | async) === 'edit'"
+                (click)="setAppMode('edit')"
+                matTooltip="Zeichnen-Modus"
               >
-            </button>
-            <div class="toolbar-divider"></div>
-            <button
-              mat-icon-button
-              (click)="mapAnimator.undo()"
-              matTooltip="Rückgängig machen"
-              [disabled]="!mapAnimator.can_undo()"
-            >
-              <mat-icon
-                [style.color]="!mapAnimator.can_undo() ? 'grey' : '#e57373'"
-                >undo</mat-icon
+                <mat-icon>edit</mat-icon>
+              </div>
+              <div
+                class="mode-icon"
+                [class.active]="(mapAnimator.app_mode$ | async) === 'table'"
+                (click)="setAppMode('table')"
+                matTooltip="Marschzeittabellen-Modus"
               >
-            </button>
-            <div class="toolbar-divider"></div>
-            <button
-              mat-icon-button
-              (click)="mapAnimator.redo()"
-              matTooltip="Wiederherstellen"
-              [disabled]="!mapAnimator.can_redo()"
-            >
-              <mat-icon
-                [style.color]="!mapAnimator.can_redo() ? 'grey' : '#e57373'"
-                >redo</mat-icon
+                <mat-icon>table_chart</mat-icon>
+              </div>
+            </div>
+
+            <div class="edit-tools" *ngIf="!(mapAnimator.export_mode$ | async)">
+              <div class="toolbar-divider"></div>
+              <button
+                mat-icon-button
+                class="icon-magnet"
+                [class.active]="mapAnimator.magnetic_paths"
+                (click)="mapAnimator.toggle_magnetic_paths()"
+                matTooltip="Magnetisches Zeichnen"
               >
-            </button>
-            <div class="toolbar-divider"></div>
-            <button
-              mat-icon-button
-              (click)="mapAnimator.clear()"
-              matTooltip="Route verwerfen"
-              color="warn"
-              [disabled]="!has_valid_path"
-            >
-              <mat-icon>delete_outline</mat-icon>
-            </button>
-            <div class="toolbar-divider"></div>
-            <input
-              type="file"
-              id="gpx_upload_input"
-              style="display: none"
-              (change)="onFileSelected($event)"
-              accept=".gpx,.kml"
-            />
-            <button
-              mat-icon-button
-              (click)="triggerUpload()"
-              matTooltip="GPX/KML Route importieren"
-              color="primary"
-            >
-              <mat-icon>upload_file</mat-icon>
-            </button>
-          </ng-container>
+                <mat-icon
+                  [style.color]="
+                    mapAnimator.magnetic_paths ? '#e57373' : 'grey'
+                  "
+                  >auto_fix_high</mat-icon
+                >
+              </button>
+              <div class="toolbar-divider"></div>
+              <button
+                mat-icon-button
+                (click)="mapAnimator.invert_route()"
+                matTooltip="Tour umkehren"
+                [disabled]="!has_valid_path"
+              >
+                <mat-icon [style.color]="!has_valid_path ? 'grey' : '#e57373'"
+                  >sync_alt</mat-icon
+                >
+              </button>
+              <div class="toolbar-divider"></div>
+              <button
+                mat-icon-button
+                (click)="mapAnimator.undo()"
+                matTooltip="Rückgängig machen"
+                [disabled]="!mapAnimator.can_undo()"
+              >
+                <mat-icon
+                  [style.color]="!mapAnimator.can_undo() ? 'grey' : '#e57373'"
+                  >undo</mat-icon
+                >
+              </button>
+              <div class="toolbar-divider"></div>
+              <button
+                mat-icon-button
+                (click)="mapAnimator.redo()"
+                matTooltip="Wiederherstellen"
+                [disabled]="!mapAnimator.can_redo()"
+              >
+                <mat-icon
+                  [style.color]="!mapAnimator.can_redo() ? 'grey' : '#e57373'"
+                  >redo</mat-icon
+                >
+              </button>
+              <div class="toolbar-divider"></div>
+              <button
+                mat-icon-button
+                (click)="mapAnimator.clear()"
+                matTooltip="Route verwerfen"
+                color="warn"
+                [disabled]="!has_valid_path"
+              >
+                <mat-icon>delete_outline</mat-icon>
+              </button>
+              <div class="toolbar-divider"></div>
+              <input
+                type="file"
+                id="gpx_upload_input"
+                style="display: none"
+                (change)="onFileSelected($event)"
+                accept=".gpx,.kml"
+              />
+              <button
+                mat-icon-button
+                (click)="triggerUpload()"
+                matTooltip="GPX/KML Route importieren"
+                color="primary"
+              >
+                <mat-icon>upload_file</mat-icon>
+              </button>
+            </div>
+          </div>
         </div>
       </as-split-area>
 

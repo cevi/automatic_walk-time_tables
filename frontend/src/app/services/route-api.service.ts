@@ -43,6 +43,23 @@ export interface RouteGenerationStatistics {
 export class RouteApiService {
   private static readonly VALHALLA_URL = environment.VALHALLA_URL;
   private static readonly BASE_URL = environment.API_URL;
+  private static readonly ELEVATION_CACHE_SIZE = 20;
+
+  // The backend already retries geo.admin.ch itself, so we only retry once
+  // on top of that to avoid amplifying a rate limit.
+  private static readonly MAX_ATTEMPTS = 2;
+  private static readonly RETRY_STATUS = [502, 503, 504];
+  private static readonly DEFAULT_RETRY_DELAY_MS = 3_000;
+  private static readonly MAX_RETRY_DELAY_MS = 10_000;
+
+  // Elevation profiles the backend fetched from geo.admin.ch, keyed by the
+  // encoded route they were fetched for. Lets us skip the (rate-limited)
+  // elevation lookup when the same geometry is requested again, e.g. after
+  // undo/redo or when toggling the automatic waypoint selection.
+  private readonly elevationCache = new Map<
+    string,
+    { route: string; elevation_data: string }
+  >();
 
   public async fetchValhallaRoute(
     locations: LV95_Coordinates[],
@@ -149,43 +166,47 @@ export class RouteApiService {
     );
     formData.append('file_content', fileContent);
 
-    const response = await fetch(RouteApiService.BASE_URL + 'parse_route', {
-      method: 'POST',
-      headers: { Accept: 'application/json' },
-      body: formData,
-    });
-    return response.json();
+    return this.postToBackend('parse_route', formData);
   }
 
-  /** The route as sent to the /waypoints endpoints (LV95 polyline, plus elevation if known). */
-  private static encodeRoute(path: LV95_Waypoint[]): any {
-    const data: any = {
-      route: encode(
-        path.map((p) => [p.x, p.y]),
-        0,
-      ),
-    };
+  /**
+   * The route as sent to the /waypoints endpoints (LV95 polyline, plus elevation if known). Without elevation (while
+   * drawing), the profile the backend fetched for the same route before is reused, see cacheElevation.
+   */
+  private encodeRoute(path: LV95_Waypoint[]): {
+    key: string;
+    data: { route: string; elevation?: string };
+  } {
+    const route = encode(
+      path.map((p) => [p.x, p.y]),
+      0,
+    );
     if (!path.some((p) => p.h === 0)) {
-      data.elevation = encode(
+      const elevation = encode(
         path.map((p) => [p.accumulated_distance * 1_000, p.h]),
         0,
       );
+      return { key: route, data: { route, elevation } };
     }
-    return data;
+    const cached = this.elevationCache.get(route);
+    return {
+      key: route,
+      data: cached
+        ? { route: cached.route, elevation: cached.elevation_data }
+        : { route },
+    };
   }
 
-  private static async postJson(endpoint: string, body: any): Promise<any> {
-    const response = await fetch(RouteApiService.BASE_URL + endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
-    const result = await response.json();
-    if (!response.ok || result?.status === 'error') {
-      throw new Error(result?.message || 'Ein Fehler ist aufgetreten.');
+  /** POSTs a route to a /waypoints endpoint and keeps the elevation profile the backend fetched for it. */
+  private async postRoute(
+    endpoint: string,
+    path: LV95_Waypoint[],
+    body: object,
+  ): Promise<any> {
+    const { key, data } = this.encodeRoute(path);
+    const result = await this.postToBackend(endpoint, { ...data, ...body });
+    if (result?.route && result?.elevation) {
+      this.cacheElevation(key, result.route, result.elevation);
     }
     return result;
   }
@@ -195,10 +216,7 @@ export class RouteApiService {
    */
   public async autoWaypoints(path: LV95_Waypoint[]): Promise<ApiWaypoint[]> {
     if (path.length === 0) return [];
-    const result = await RouteApiService.postJson(
-      'waypoints/auto',
-      RouteApiService.encodeRoute(path),
-    );
+    const result = await this.postRoute('waypoints/auto', path, {});
     return result.waypoints;
   }
 
@@ -215,8 +233,7 @@ export class RouteApiService {
     includeStartEnd = false,
   ): Promise<ApiWaypoint[]> {
     if (path.length === 0) return [];
-    const result = await RouteApiService.postJson('waypoints/manual', {
-      ...RouteApiService.encodeRoute(path),
+    const result = await this.postRoute('waypoints/manual', path, {
       waypoints: positions.map((p) =>
         Number.isFinite(p.accumulated_distance)
           ? { accumulated_distance: (p.accumulated_distance as number) * 1_000 }
@@ -230,10 +247,84 @@ export class RouteApiService {
   /** Names for LV95 coordinates, '' where nothing is close enough. */
   public async names(points: LV95_Coordinates[]): Promise<string[]> {
     if (points.length === 0) return [];
-    const result = await RouteApiService.postJson('names', {
+    const result = await this.postToBackend('names', {
       points: points.map((p) => [p.x, p.y]),
     });
     return result.names.map((n: any) => n.name || '');
+  }
+
+  /**
+   * POSTs to the backend (a form or, for any other body, JSON) and returns the parsed JSON body. Retries once on
+   * temporary failures (gateway errors, unavailable elevation service, network errors) and throws an Error carrying
+   * the backend's message otherwise.
+   */
+  private async postToBackend(
+    endpoint: string,
+    body: FormData | object,
+  ): Promise<any> {
+    const is_form = body instanceof FormData;
+    const headers: Record<string, string> = { Accept: 'application/json' };
+    if (!is_form) headers['Content-Type'] = 'application/json';
+    const payload = is_form ? body : JSON.stringify(body);
+
+    for (let attempt = 1; ; attempt++) {
+      const is_last_attempt = attempt >= RouteApiService.MAX_ATTEMPTS;
+
+      let response: Response;
+      try {
+        response = await fetch(RouteApiService.BASE_URL + endpoint, {
+          method: 'POST',
+          headers,
+          body: payload,
+        });
+      } catch (err) {
+        if (is_last_attempt) {
+          throw new Error(
+            'Der Server ist nicht erreichbar. Bitte prüfe deine Internetverbindung.',
+          );
+        }
+        await this.sleep(RouteApiService.DEFAULT_RETRY_DELAY_MS);
+        continue;
+      }
+
+      if (response.ok) return response.json();
+
+      if (
+        !is_last_attempt &&
+        RouteApiService.RETRY_STATUS.includes(response.status)
+      ) {
+        await this.sleep(this.retryDelay(response));
+        continue;
+      }
+
+      const result = await response.json().catch(() => null);
+      throw new Error(
+        result?.message ||
+          `Ein Fehler ist aufgetreten (Server-Antwort ${response.status}).`,
+      );
+    }
+  }
+
+  private retryDelay(response: Response): number {
+    const retry_after = Number(response.headers.get('Retry-After'));
+    const delay =
+      retry_after > 0
+        ? retry_after * 1_000
+        : RouteApiService.DEFAULT_RETRY_DELAY_MS;
+    return Math.min(delay, RouteApiService.MAX_RETRY_DELAY_MS);
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private cacheElevation(key: string, route: string, elevation_data: string) {
+    this.elevationCache.delete(key);
+    this.elevationCache.set(key, { route, elevation_data });
+    if (this.elevationCache.size > RouteApiService.ELEVATION_CACHE_SIZE) {
+      const oldest = this.elevationCache.keys().next().value;
+      if (oldest !== undefined) this.elevationCache.delete(oldest);
+    }
   }
 
   public async retrieveDataStatus(uuid: string): Promise<number> {

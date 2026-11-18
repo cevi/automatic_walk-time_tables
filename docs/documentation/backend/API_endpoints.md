@@ -1,5 +1,10 @@
 # API Documentation
 
+## /health [GET]
+
+Returns `{"status": "ok"}` as soon as the backend serves requests. Used by the docker `HEALTHCHECK` of the backend
+container.
+
 ## /parse_route [POST]
 
 Parses a GeoFile and returns a JSON containing the route.
@@ -132,7 +137,8 @@ of two way points closer than 200 m (with less than 30 m height difference) only
 }
 ```
 
-`fixed_distances` (optional) are accumulated distances [m] of way points that must be kept.
+`fixed_distances` (optional) are accumulated distances [m] of way points that must be kept, in addition to the start,
+the end and the highest and lowest point.
 
 Response:
 
@@ -142,6 +148,10 @@ Response:
   "waypoints": [{...}, ...]
 }
 ```
+
+Without `elevation` in the request, the backend fetches the profile from geo.admin.ch and also returns `route` and
+`elevation`; send them with the next request for the same route to skip the lookup. If geo.admin.ch is unavailable,
+the response is 503 with a `Retry-After` header.
 
 ### /waypoints/manual [POST]
 
@@ -184,7 +194,7 @@ Response:
 }
 ```
 
-`name` is empty if no named object is within 100 m.
+`name` is empty if no named object is within 100 m. At most 500 points per request.
 
 ### Deprecated: /create-walk-time-table [POST] and /get_name [POST]
 

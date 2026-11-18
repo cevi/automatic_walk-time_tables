@@ -8,6 +8,7 @@ import {
   Output,
   EventEmitter,
   ChangeDetectorRef,
+  ChangeDetectionStrategy
 } from '@angular/core';
 import { UntypedFormGroup } from '@angular/forms';
 import { MapAnimatorService } from '../../services/map-animator.service';
@@ -28,6 +29,7 @@ export interface TableRow {
   selector: 'app-walk-time-table',
   templateUrl: './walk-time-table.component.html',
   styleUrls: ['./walk-time-table.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false,
 })
 export class WalkTimeTableComponent implements OnInit, OnDestroy, OnChanges {

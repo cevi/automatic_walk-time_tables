@@ -1,4 +1,9 @@
-<div class="table-container" *ngIf="formGroup" [formGroup]="formGroup">
+<div
+  class="table-container"
+  lang="de"
+  *ngIf="formGroup"
+  [formGroup]="formGroup"
+>
   <table class="marschzeit-table excel-header">
     <thead>
       <tr class="header-row-1">
@@ -114,25 +119,27 @@
             >
           </div>
         </td>
-        <td class="text-right">{{ row.waypoint.h | number: "1.0-0" }}</td>
-        <td class="text-right">
+        <td class="text-right" data-label="Höhe">
+          {{ row.waypoint.h | number: "1.0-0" }}
+        </td>
+        <td class="text-right" data-label="hm">
           {{ first ? "" : (row.delta_h | number: "1.0-0") }}
         </td>
-        <td class="text-right">
+        <td class="text-right" data-label="km">
           {{ first ? "" : (row.delta_dist | number: "1.1-1") }}
         </td>
-        <td class="text-right sum-col">
+        <td class="text-right sum-col" data-label="Lkm">
           {{ first ? "" : (row.lkm | number: "1.1-1") }}
         </td>
-        <td class="text-right">
+        <td class="text-right" data-label="h:mm">
           {{ first ? "" : formatDuration(row.time_hours) }}
         </td>
-        <td class="highlight-col">
+        <td class="highlight-col" data-label="hh:mm">
           <span class="time-badge">{{
             row.planned_arrival | date: "HH:mm"
           }}</span>
         </td>
-        <td class="col-break">
+        <td class="col-break" data-label="Pausen">
           <input
             type="number"
             [disabled]="autoWaypoints"

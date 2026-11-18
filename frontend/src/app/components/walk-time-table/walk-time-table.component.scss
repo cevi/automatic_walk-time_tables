@@ -1,6 +1,9 @@
 .table-container {
   width: 100%;
   background: #ffffff;
+  // the table switches to a card layout if there is not enough space
+  container-type: inline-size;
+  container-name: walk-time-table;
 }
 
 .marschzeit-table {
@@ -286,5 +289,155 @@
     letter-spacing: 0.3px;
     font-weight: 600;
     // Basic fallback or mat-flat-button standard shadow
+  }
+}
+
+// Card layout for narrow containers (phones, or the default drawer width):
+// the header fields are stacked as label / value pairs and every way point
+// becomes a card with labelled values.
+@container walk-time-table (max-width: 820px) {
+  .marschzeit-table {
+    display: block;
+    white-space: normal;
+
+    thead {
+      position: static;
+      display: grid;
+      grid-template-columns: minmax(96px, 35%) minmax(0, 1fr);
+      box-shadow: none;
+      border-bottom: 1px solid #e2e8f0;
+
+      tr {
+        display: contents;
+
+        &.header-row-1,
+        &.header-row-2,
+        &.header-row-3,
+        &.header-row-4 {
+          th {
+            border-right: none;
+            display: flex;
+            align-items: center;
+            min-width: 0;
+
+            &.label-cell {
+              padding: 8px 8px 8px 12px;
+              hyphens: auto;
+              overflow-wrap: break-word;
+            }
+
+            &.input-cell {
+              border-right: none;
+
+              &.map-number-cell {
+                padding: 12px 16px;
+              }
+            }
+          }
+        }
+
+        // the speed factor is moved below the other fields
+        &.header-row-1 th:nth-child(3) {
+          grid-row: 5;
+          grid-column: 1;
+          border-left: none !important;
+        }
+
+        &.header-row-2 th:nth-child(3) {
+          grid-row: 5;
+          grid-column: 2;
+          border-left: none !important;
+          justify-content: flex-start;
+
+          input.export-input {
+            text-align: left;
+          }
+        }
+
+        &.column-names {
+          display: none;
+        }
+      }
+    }
+
+    tbody {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 8px;
+      background-color: #f8fafc;
+
+      tr {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 4px 8px;
+        padding: 8px 12px 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+
+        &:nth-child(even) {
+          background-color: #ffffff;
+        }
+
+        td {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 2px;
+          padding: 4px 0;
+          border-bottom: none;
+          min-width: 0;
+
+          &:first-child,
+          &:last-child {
+            padding-left: 0;
+            padding-right: 0;
+          }
+
+          &[data-label]::before {
+            content: attr(data-label);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+          }
+
+          &.col-name {
+            grid-column: 1 / -1;
+            width: auto;
+
+            input[type="text"] {
+              padding-left: 4px;
+              font-weight: 600;
+            }
+          }
+
+          &.col-break {
+            grid-column: span 2;
+            width: auto;
+
+            input[type="number"] {
+              text-align: left;
+              padding: 6px 8px;
+              border-color: #e2e8f0;
+            }
+          }
+
+          &.empty-state {
+            grid-column: 1 / -1;
+            align-items: center;
+            padding: 32px 8px !important;
+          }
+        }
+
+        // the empty state is not a card
+        &:has(.empty-state) {
+          display: block;
+          border: none;
+          background: transparent;
+        }
+      }
+    }
   }
 }
