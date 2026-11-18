@@ -19,6 +19,15 @@ A complete, technical changelog is available at [GitHub](https://github.com/cevi
 - Automatic map scale selection works again (7.0.0)
 - Special characters in waypoint names are exported correctly (7.0.0)
 - Security fixes: route ids and file names are validated (7.0.0)
+- Security updates: Node.js 24 for the frontend and docs builds (October 2026 Node.js security release), updated base images and dependencies (7.0.1)
+- Automatic waypoints prefer points you can recognise on the ground or on the map: stations, huts, summits, passes, bridges, junctions and spot heights, at most 1.5 km apart (7.1.0)
+- Better waypoint names: huts and remote inns, bridges named after the river they cross ("Brücke (Linth)"), forks named after the nearby field name (7.1.0)
+- Manually added waypoints stay exactly where you click; the 21-waypoint limit no longer blocks drawing a long route (7.1.0)
+- Elevation profiles follow bridges and tunnels instead of the terrain below or above them (7.1.0)
+- GPX export: heights above sea level instead of ellipsoidal heights (about 50 m too high) (7.1.0)
+- Sentinel-2 satellite images as an additional background map, with a choice of the image date (7.1.0)
+- Updated name index (swissTLM3D 2026-02, swissNAMES3D 2025) (7.1.0)
+- Angular 22 and TypeScript 6 (7.1.0)
 - Bug fixes
 - Dependency updates
 
