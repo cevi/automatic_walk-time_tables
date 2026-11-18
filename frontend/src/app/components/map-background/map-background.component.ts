@@ -1,7 +1,17 @@
-import { AfterViewInit, Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  OnInit,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { MapAnimatorService } from '../../services/map-animator.service';
 import { MapService } from '../../services/map.service';
 import { Router } from '@angular/router';
+import {
+  SENTINEL_LAYER_PREFIX,
+  SentinelLayersService,
+  SentinelScene,
+} from '../../services/sentinel-layers.service';
 
 @Component({
   selector: 'app-map-background',
@@ -21,7 +31,14 @@ export class MapBackgroundComponent implements OnInit, AfterViewInit {
     public mapAnimator: MapAnimatorService,
     private mapService: MapService,
     private router: Router,
+    private sentinelLayers: SentinelLayersService,
   ) {}
+
+  /** newest first; selectable as `sentinel-<index>` */
+  public sentinelScenes: SentinelScene[] = [];
+  /** the Sentinel-2 background is still loading */
+  public sentinelLoading = false;
+  private viewInitialized = false;
 
   ngOnInit(): void {
     const url = new URL(window.location.href);
@@ -52,6 +69,20 @@ export class MapBackgroundComponent implements OnInit, AfterViewInit {
 
     this.mapAnimator.path$.subscribe((path) => {
       this.has_valid_path = path.length > 0;
+    });
+
+    this.mapService.sentinelLoading$.subscribe(
+      (loading) => (this.sentinelLoading = loading),
+    );
+
+    this.sentinelLayers.catalog$.subscribe((catalog) => {
+      this.sentinelScenes = catalog?.layers ?? [];
+      // a shared link may select a satellite layer before the list has loaded
+      if (
+        this.viewInitialized &&
+        this.currentLayer.startsWith(SENTINEL_LAYER_PREFIX)
+      )
+        this.redrawMap();
     });
 
     this.updateLayout();
@@ -146,7 +177,16 @@ export class MapBackgroundComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit() {
+    this.viewInitialized = true;
     this.redrawMap();
+  }
+
+  isSentinelLayer(): boolean {
+    return this.currentLayer.startsWith(SENTINEL_LAYER_PREFIX);
+  }
+
+  selectedSentinelScene(): SentinelScene | undefined {
+    return this.sentinelLayers.sceneForLabel(this.currentLayer);
   }
 
   setMapLayer(layer: string) {
