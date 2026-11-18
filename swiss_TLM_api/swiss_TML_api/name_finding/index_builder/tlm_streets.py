@@ -115,28 +115,4 @@ class TLM_Streets(IndexBuilder):
                         )
                         self.index.insert(id=0, coordinates=geo[0:2], obj=swiss_name)
 
-        shp_file = self.base_path + "swissTLM3D_TLM_STRASSE.shp"
-
-        with fiona.open(shp_file) as src:
-            for obj in src:
-                if (
-                    obj["properties"]["KUNSTBAUTE"] not in ("Keine", "k_W")
-                    and obj["geometry"]["type"] == "LineString"
-                ):
-                    geo = obj["geometry"]["coordinates"]
-                    obj_type = obj["properties"]["KUNSTBAUTE"]
-                    wanderweg = obj["properties"]["WANDERWEGE"]
-
-                    name = obj_type + (" ({})".format(wanderweg) if wanderweg else "")
-
-                    for pkt in geo:
-                        swiss_name = SwissName(
-                            name=name,
-                            object_type=obj_type,
-                            x=int(pkt[0]),
-                            y=int(pkt[1]),
-                            h=int(pkt[2]),
-                        )
-                        self.index.insert(
-                            id=0, coordinates=(pkt[0], pkt[1]), obj=swiss_name
-                        )
+        # bridges, underpasses, tunnels, ... are inserted by the Bridges builder (bridges.py)

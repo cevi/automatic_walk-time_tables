@@ -5,7 +5,7 @@ import { take, filter, takeUntil } from 'rxjs/operators';
 import { Router, NavigationEnd } from '@angular/router';
 import { MapStateService } from './map-state.service';
 import { RouteHistoryService } from './route-history.service';
-import { RouteApiService } from './route-api.service';
+import { ApiWaypoint, RouteApiService } from './route-api.service';
 import { GeometryUtils } from '../utils/geometry.utils';
 import { decode } from '@googlemaps/polyline-codec';
 import { environment } from '../../environments/environment';
@@ -245,19 +245,15 @@ export class MapAnimatorService implements OnDestroy {
   }
 
   public clear() {
+    this.cancel_waypoint_request();
     this.state.clearAll();
     this.history.clearHistories();
   }
 
   public async add_way_point(point: LV95_Coordinates) {
     if (this.export_mode) return;
-
-    if (this.state.pois.length >= 21) {
-      this.snackBar.open('Maximal 21 Wegpunkte erlaubt', 'Schliessen', {
-        duration: 3000,
-      });
-      return;
-    }
+    // No limit here: these are points of the route, not of the walk-time table. The table is limited to
+    // 21 way points by the automatic selection, the backend and add_point_of_interest.
 
     const current_path = this.state.path;
     const current_anchors = this.state.anchor_points;
@@ -437,13 +433,6 @@ export class MapAnimatorService implements OnDestroy {
     const { new_coords, dragged_anchor, mousedown_coord } = event;
     const isInsert = !dragged_anchor;
 
-    if (isInsert && this.state.pois.length >= 21) {
-      this.snackBar.open('Maximal 21 Wegpunkte erlaubt', 'Schliessen', {
-        duration: 3000,
-      });
-      return;
-    }
-
     const current_path = this.state.path;
     const current_anchors = this.state.anchor_points;
 
@@ -615,6 +604,8 @@ export class MapAnimatorService implements OnDestroy {
     }
     // Ensure we're in manual mode after any user-initiated POI change
     this.state.auto_waypoints = false;
+    this.state.auto_waypoints_untouched = false;
+    const was_loading = this.cancel_waypoint_request();
 
     pkt.name = 'Lade...';
     // Insert the new POI in sorted order by accumulated_distance
@@ -624,28 +615,99 @@ export class MapAnimatorService implements OnDestroy {
     this.state.updatePOIs(new_pois);
     this._recalculate_route_stats(new_pois);
 
-    // Fetch the name — purely local update, no backend call
+    // The way point stays exactly where the user clicked; the backend only names it
+    // (as in the automatic mode, e.g. after the station or hut at that point)
+    // Only the stretch of the route around the point is sent: enough to find the landmark at the point,
+    // without fetching heights and objects for the whole route on every click
+    let name = '';
     try {
-      const resp = await this.get_name_from_coords(pkt.x, pkt.y);
-      const pois = this.state.pois;
-      const target = pois.find(
-        (p) => Math.abs(p.x - pkt.x) < 0.1 && Math.abs(p.y - pkt.y) < 0.1,
+      const [named] = await this.api.manualWaypoints(
+        this.path_stretch_around(pkt, 150),
+        [{ x: pkt.x, y: pkt.y, accumulated_distance: undefined }],
       );
-      if (target) {
-        target.name = resp || '';
-        target.auto_name = target.name;
-      }
-      this.state.updatePOIs([...pois]);
+      name = named?.name || '';
     } catch {
-      const pois = this.state.pois;
-      const target = pois.find(
-        (p) => Math.abs(p.x - pkt.x) < 0.1 && Math.abs(p.y - pkt.y) < 0.1,
-      );
-      if (target) {
-        target.name = '';
-      }
-      this.state.updatePOIs([...pois]);
+      name = '';
     }
+    // a route change while the way point was added: put the way points onto the new route
+    if (was_loading) this.regenerateWalkTimeTable();
+
+    const pois = this.state.pois;
+    const target = pois.find(
+      (p) => Math.abs(p.x - pkt.x) < 0.1 && Math.abs(p.y - pkt.y) < 0.1,
+    );
+    if (!target) return; // removed while loading
+    target.name = name;
+    target.auto_name = name;
+    this.state.updatePOIs([...pois]);
+  }
+
+  /** The points of the path within `radius` meters (in a straight line, along the path) of its point nearest to p. */
+  private path_stretch_around(
+    p: LV95_Coordinates,
+    radius: number,
+  ): LV95_Waypoint[] {
+    const path = this.state.path;
+    if (path.length === 0) return [];
+    const d = (a: LV95_Coordinates, b: LV95_Coordinates) =>
+      Math.hypot(a.x - b.x, a.y - b.y);
+    let k = 0;
+    for (let i = 1; i < path.length; i++) {
+      if (d(path[i], p) < d(path[k], p)) k = i;
+    }
+    let a = k,
+      b = k;
+    for (let run = 0; a > 0 && run <= radius; a--)
+      run += d(path[a], path[a - 1]);
+    for (let run = 0; b < path.length - 1 && run <= radius; b++)
+      run += d(path[b], path[b + 1]);
+    const stretch = path.slice(a, b + 1);
+    return stretch.length >= 2 ? stretch : path.slice(0, 2);
+  }
+
+  /**
+   * Whether the points of the current path carry distances along the route. While a route is drawn, its points
+   * come from Valhalla with a distance of 0 (or none); the distances exist once the route was parsed.
+   */
+  private path_has_distances(): boolean {
+    const path = this.state.path;
+    if (path.length < 2) return false;
+    for (let i = 0; i < path.length; i++) {
+      const d = path[i].accumulated_distance;
+      if (!Number.isFinite(d)) return false;
+      if (i > 0 && d < path[i - 1].accumulated_distance) return false;
+    }
+    return path[path.length - 1].accumulated_distance > 0;
+  }
+
+  /** Accumulated distance [km] of a way point: the path's while it has distances, otherwise the backend's. */
+  private distance_of(path_point: LV95_Waypoint, wp: ApiWaypoint): number {
+    return this.path_has_distances()
+      ? path_point.accumulated_distance
+      : wp.accumulated_distance / 1000;
+  }
+
+  /**
+   * The point of the current path at a way point returned by the backend. The backend receives the route rounded
+   * to meters, so the way point is matched by its distance along the route, or by its coordinates while the path
+   * has no distances (drawing).
+   */
+  private path_point_at(wp: ApiWaypoint): LV95_Waypoint | undefined {
+    const path = this.state.path;
+    if (path.length === 0) return undefined;
+
+    const has_distances = this.path_has_distances();
+    const d = wp.accumulated_distance / 1000;
+    const offset = (p: LV95_Waypoint) =>
+      has_distances
+        ? Math.abs(p.accumulated_distance - d)
+        : Math.hypot(p.x - wp.x, p.y - wp.y);
+
+    let best = path[0];
+    for (const p of path) {
+      if (offset(p) < offset(best)) best = p;
+    }
+    return best;
   }
 
   public async retrieve_data(uuid: string): Promise<number> {
@@ -741,32 +803,92 @@ export class MapAnimatorService implements OnDestroy {
   }
   public regenerateWalkTimeTable() {
     if (this.state.anchor_points.length < 2) {
+      this.cancel_waypoint_request();
       this.state.route_stats$.next(null);
       this.state.updatePOIs([]);
+      // no route left: the next route starts with the automatic selection again
+      this.state.auto_waypoints = true;
+      this.state.auto_waypoints_untouched = false;
       return;
     }
 
-    this.api
-      .createWalkTimeTable(
-        this.state.path,
-        this.state.pois,
-        this.state.auto_waypoints,
-      )
-      .then((resp) => {
-        if (!resp) return;
-        this.applyWalkTimeTableResponse(resp);
-        this.clear_error();
+    this.fetch_latest_waypoints(this.state.path, this.state.pois)
+      .then((waypoints) => {
+        if (waypoints) this.applyWaypoints(waypoints);
       })
       .catch((err) =>
         this.report_error(err, () => this.regenerateWalkTimeTable()),
       );
   }
 
-  private applyWalkTimeTableResponse(resp: any) {
-    if (resp?.status === 'error') throw new Error(resp.message);
-    if (!resp?.selected_way_points && !resp?.pois) {
-      throw new Error('Unvollständige Antwort vom Server.');
-    }
+  /**
+   * Way points for the current mode: in automatic mode the backend selects them, in manual mode the user's way
+   * points are put onto the (possibly changed) route. Both come back named.
+   */
+  private waypoint_request = 0;
+  private waypoint_request_pending = false;
+
+  /**
+   * Drops the answer of a way point request that is still running, as the user changed the way points (or the
+   * route was cleared) after it was sent. Returns whether a request was running.
+   */
+  private cancel_waypoint_request(): boolean {
+    const pending = this.waypoint_request_pending;
+    this.waypoint_request++;
+    this.waypoint_request_pending = false;
+    return pending;
+  }
+
+  /**
+   * fetch_waypoints, but resolves with null if another request was started in the meantime, so a slow answer for
+   * an older route (e.g. while drawing) does not overwrite the way points of the current one.
+   */
+  private fetch_latest_waypoints(
+    path: LV95_Waypoint[],
+    pois: LV95_Waypoint[],
+  ): Promise<ApiWaypoint[] | null> {
+    const request = ++this.waypoint_request;
+    this.waypoint_request_pending = true;
+    const auto =
+      this.state.auto_waypoints || this.state.auto_waypoints_untouched;
+    return this.fetch_waypoints(path, pois, auto).then(
+      (waypoints) => {
+        if (request !== this.waypoint_request) return null;
+        this.waypoint_request_pending = false;
+        // the way points are the automatic selection until the user changes them
+        if (auto) this.state.auto_waypoints_untouched = true;
+        return waypoints;
+      },
+      (err) => {
+        if (request === this.waypoint_request)
+          this.waypoint_request_pending = false;
+        throw err;
+      },
+    );
+  }
+
+  private fetch_waypoints(
+    path: LV95_Waypoint[],
+    pois: LV95_Waypoint[],
+    auto: boolean,
+  ): Promise<ApiWaypoint[]> {
+    // As long as the user has not changed the automatic selection, a changed route (e.g. the next point while
+    // drawing) gets a new automatic selection for the whole route, not just the way points of the first stretch.
+    if (auto) return this.api.autoWaypoints(path);
+    // While drawing, distances change whenever a point is inserted: send the way points by coordinates then
+    const by_distance = this.path_has_distances();
+    const positions = [...pois]
+      .sort(
+        (a, b) => (a.accumulated_distance || 0) - (b.accumulated_distance || 0),
+      )
+      .map((p) =>
+        by_distance ? p : { x: p.x, y: p.y, accumulated_distance: undefined },
+      );
+    return this.api.manualWaypoints(path, positions, true);
+  }
+
+  private applyWaypoints(waypoints: ApiWaypoint[]) {
+    if (waypoints.length === 0) return;
 
     // If we are in auto mode, we "bake" the waypoints now by switching to manual mode.
     // This ensures that any subsequent user edits (like deletions) don't trigger another auto-generation.
@@ -775,81 +897,43 @@ export class MapAnimatorService implements OnDestroy {
       this.auto_waypoints_baked$.next();
     }
 
-    const pois_coords = decode(resp.selected_way_points || resp.pois, 0);
-    const pois_elev = decode(
-      resp.selected_way_points_elevation || resp.pois_elevation,
-      0,
-    );
+    const pois: LV95_Waypoint[] = [];
+    // de-duplicate by path point, not by coordinates: start and end of a loop are at the same place
+    const used = new Set<LV95_Waypoint>();
+    for (const wp of waypoints) {
+      const p = this.path_point_at(wp);
+      if (!p || used.has(p)) continue;
+      used.add(p);
 
-    const tasks: Promise<any>[] = [];
-
-    const pois: LV95_Waypoint[] = pois_coords.map((p, i) => {
-      const x = p[0];
-      const y = p[1];
-      let name = '';
-      let auto_name = '';
-      let break_duration = '';
-      let is_waypoint = true;
-
-      const old_wp = this.state.pois.find((w) =>
-        GeometryUtils.pointsMatch(w, { x, y }),
-      );
-      if (old_wp) {
-        name = old_wp.name || '';
-        auto_name = old_wp.auto_name || '';
-        break_duration = old_wp.break_duration || '';
-        is_waypoint = old_wp.is_waypoint;
-      }
-
-      const needs_naming = !name && !auto_name;
-      if (needs_naming) {
-        name = 'Lade...';
-        const task = this.get_name_from_coords(x, y)
-          .then((title) => {
-            return { x, y, title };
-          })
-          .catch(() => {
-            return { x, y, title: '' };
-          });
-        tasks.push(task);
-      }
-
-      return {
-        x,
-        y,
-        h: pois_elev[i][1],
-        accumulated_distance: pois_elev[i][0] / 1000,
-        is_waypoint,
-        name,
-        auto_name,
-        break_duration,
-      };
-    });
+      // keep what the user entered (or cleared) for a way point that stays where it was;
+      // at the same place (start and end of a loop), the one at the closest distance along the route
+      const d = this.distance_of(p, wp);
+      const old_wp = this.state.pois
+        .filter((w) => GeometryUtils.pointsMatch(w, p))
+        .sort(
+          (a, b) =>
+            Math.abs((a.accumulated_distance ?? d) - d) -
+            Math.abs((b.accumulated_distance ?? d) - d),
+        )[0];
+      // only a name the user changed (or cleared) is kept; an automatic name is replaced by the current one
+      const user_named =
+        !!old_wp && (old_wp.name || '') !== (old_wp.auto_name || '');
+      pois.push({
+        x: p.x,
+        y: p.y,
+        h: p.h,
+        accumulated_distance: d,
+        is_waypoint: old_wp ? old_wp.is_waypoint : true,
+        name: user_named ? old_wp!.name || '' : wp.name || '',
+        auto_name: wp.name || '',
+        break_duration: old_wp?.break_duration || '',
+      });
+    }
 
     this.state.updatePOIs(pois);
     this._recalculate_route_stats(pois);
-
-    // BATCH NAMING: Wait for all naming tasks to complete before updating state again
-    if (tasks.length > 0) {
-      Promise.all(tasks).then((results) => {
-        const current_pois = this.state.pois;
-        results.forEach((res: any) => {
-          const target = current_pois.find(
-            (p) => Math.abs(p.x - res.x) < 0.1 && Math.abs(p.y - res.y) < 0.1,
-          );
-          if (target && target.name === 'Lade...') {
-            target.name = res.title || '';
-            target.auto_name = target.name;
-          }
-        });
-        this.state.updatePOIs([...current_pois]);
-        this.generateRouteName();
-        this.fetchMapNumbers();
-      });
-    } else {
-      this.generateRouteName();
-      this.fetchMapNumbers();
-    }
+    this.generateRouteName();
+    this.fetchMapNumbers();
   }
 
   public async fetchMapNumbers() {
@@ -1029,10 +1113,9 @@ export class MapAnimatorService implements OnDestroy {
         .subscribe((data: any) => {
           const path_val = data[0];
           const pois_val = data[1];
-          this.api
-            .createWalkTimeTable(path_val, pois_val, this.auto_waypoints)
-            .then((resp) => {
-              this.applyWalkTimeTableResponse(resp);
+          this.fetch_latest_waypoints(path_val, pois_val)
+            .then((waypoints) => {
+              if (waypoints) this.applyWaypoints(waypoints);
               resolve();
             })
             .catch((err: any) => reject(err));
@@ -1041,22 +1124,24 @@ export class MapAnimatorService implements OnDestroy {
   }
 
   public delete_poi(point: LV95_Waypoint) {
-    // Lock manual mode and update state purely locally — no backend call.
-    this.state.auto_waypoints = false;
-
+    // Lock manual mode and update state purely locally — no backend call, unless the way points of a changed
+    // route are still loading: they are then placed again (in manual mode), without the deleted one.
     const pois = this.state.pois;
 
     // Never delete the first or last POI (route start/end)
     if (pois.length <= 2) return;
     const idx = pois.findIndex((p) => GeometryUtils.pointsMatch(p, point));
-    if (idx === 0 || idx === pois.length - 1) return;
+    if (idx <= 0 || idx === pois.length - 1) return;
 
-    if (idx !== -1) {
-      const new_pois = [...pois];
-      new_pois.splice(idx, 1);
-      this.state.updatePOIs(new_pois);
-      this._recalculate_route_stats(new_pois);
-    }
+    this.state.auto_waypoints = false;
+    this.state.auto_waypoints_untouched = false;
+    const was_loading = this.cancel_waypoint_request();
+
+    const new_pois = [...pois];
+    new_pois.splice(idx, 1);
+    this.state.updatePOIs(new_pois);
+    this._recalculate_route_stats(new_pois);
+    if (was_loading) this.regenerateWalkTimeTable();
   }
 
   public update_poi_names(pois: LV95_Waypoint[]) {
@@ -1065,6 +1150,11 @@ export class MapAnimatorService implements OnDestroy {
 
   set_automatic_waypoint_selection(val: boolean) {
     this.state.auto_waypoints = val;
+    // switching to manual mode (e.g. because the user renamed a way point) keeps the way points as they are
+    if (!val) {
+      this.state.auto_waypoints_untouched = false;
+      if (this.cancel_waypoint_request()) this.regenerateWalkTimeTable();
+    }
     // Only call the backend when switching TO auto mode (to generate new waypoints).
     // Switching to manual mode is just locking in the current state — no backend call needed.
     if (val) {
@@ -1088,15 +1178,11 @@ export class MapAnimatorService implements OnDestroy {
     this._recalculate_route_stats(this.state.pois);
   }
 
-  public async get_name_from_coords(lat: number, lon: number): Promise<string> {
+  /** Name for an LV95 coordinate (x = E, y = N), '' if nothing is close enough. */
+  public async get_name_from_coords(x: number, y: number): Promise<string> {
     try {
-      const resp = await fetch(environment.API_URL + 'get_name', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lat, lon }),
-      });
-      const data = await resp.json();
-      return data.name || '';
+      const [name] = await this.api.names([{ x, y }]);
+      return name || '';
     } catch {
       return '';
     }

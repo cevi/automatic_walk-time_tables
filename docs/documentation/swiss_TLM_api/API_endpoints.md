@@ -2,7 +2,30 @@
 
 ## Endpoints
 
+### /names [POST]
+
+Names a list of LV95 coordinates.
+
+- Body: `{"points": [[e, n], ...]}`
+- Returns `{"names": [...]}` with one description per point, in the same order. The fields are the same as for
+  `/swiss_name` below.
+
+The name is chosen among the objects of the index around the point: an object at the point (within 15 m) is preferred
+over anything nearby, and huts, passes, lakes and summits win within their radius. A fork named after a single street
+(`Weggabelung Letziweg`) is named after the nearest field name within 100 m instead (`Weggabelung bei Ob der Hueb`),
+as street names are not printed on the 1:25'000 map.
+
+### /features_along_route [POST]
+
+All objects of the index close to a route, used by the backend to find landmarks for the way point selection.
+
+- Body: `{"route": [[e, n], ...], "corridor": 25}` (LV95; corridor in meters, at most 100)
+- Returns `{"features": [{"name", "object_type", "e", "n", "h", "offset"}, ...]}`; `offset` is the distance of the
+  object to the route in meters.
+
 ### /swiss_name [GET]
+
+Deprecated, use `/names`.
 
 For a list of coordinates this API endpoint returns a list of descriptions for the corresponding points.
 

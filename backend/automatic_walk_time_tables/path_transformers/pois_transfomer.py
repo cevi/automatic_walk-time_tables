@@ -109,19 +109,12 @@ class POIsTransformer(PathTransformer):
         max_index = np.argmax([p.point.h for p in path.way_points])
         min_index = np.argmin([p.point.h for p in path.way_points])
 
-        # we add extremums to the list of points of interest if they are at least 100m away from the endpoint
-        if (
-            path.way_points[max_index].point.distance(path.way_points[0].point) >= 100
-            and path.way_points[min_index].point.distance(path.way_points[0].point)
-            >= 100
-        ):
-            pois.insert(path.way_points[max_index])
-        if (
-            path.way_points[min_index].point.distance(path.way_points[-1].point) >= 100
-            and path.way_points[max_index].point.distance(path.way_points[-1].point)
-            >= 100
-        ):
-            pois.insert(path.way_points[min_index])
+        # we add the extremums to the list of points of interest if they are at least 100m away from both ends
+        start, end = path.way_points[0].point, path.way_points[-1].point
+        for index in sorted({int(max_index), int(min_index)}):
+            p = path.way_points[index]
+            if p.point.distance(start) >= 100 and p.point.distance(end) >= 100:
+                pois.insert(p)
 
         # add endpoint to list of points of interest
         pois.append(path.way_points[-1])
