@@ -18,6 +18,7 @@ import { DownloadModule } from './modules/download-module/download.module';
 import { NgxEchartsModule } from 'ngx-echarts';
 import { ElevationProfileComponent } from './components/elevation-profile/elevation-profile.component';
 import { WalkTimeTableComponent } from './components/walk-time-table/walk-time-table.component';
+import { RouteStylePickerComponent } from './components/route-style-picker/route-style-picker.component';
 import { AngularSplitModule } from 'angular-split';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
@@ -53,6 +54,7 @@ import { StatisticsPageComponent } from './pages/statistics-page/statistics-page
     UploadAreaComponent,
     ElevationProfileComponent,
     WalkTimeTableComponent,
+    RouteStylePickerComponent,
   ],
   imports: [
     BrowserModule,
