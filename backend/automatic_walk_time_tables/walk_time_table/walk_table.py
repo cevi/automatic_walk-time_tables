@@ -105,10 +105,14 @@ def create_walk_table(
     route_name: str,
     creator_name: str,
     map_numbers: str,
+    number_points: bool = False,
 ):
     """
 
     Saves the Excel file as .output/Marschzeittabelle_{{file_name}}.xlsx'
+
+    If number_points is set, every location gets the number it carries on the map
+    as a prefix, e.g. "3: Uto Kulm".
 
     """
     # print the current path to debug
@@ -186,12 +190,14 @@ def create_walk_table(
             + pt.name
         )
 
-        if pt.name:
-            sheet["A" + str(8 + i)] = pt.name
-        else:
-            sheet["A" + str(8 + i)] = (
-                "(" + str(int(lv95.lat)) + ", " + str(int(lv95.lon)) + ")"
-            )
+        location = (
+            pt.name
+            if pt.name
+            else "(" + str(int(lv95.lat)) + ", " + str(int(lv95.lon)) + ")"
+        )
+        if number_points:
+            location = str(i + 1) + ": " + location
+        sheet["A" + str(8 + i)] = location
 
         sheet["C" + str(8 + i)] = int(lv95.h)
 
