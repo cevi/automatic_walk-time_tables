@@ -6,7 +6,10 @@ from multiprocessing import Process
 from matplotlib import pyplot as plt
 import copy
 
+import requests
+
 import openpyxl
+from openpyxl.styles import Font
 from openpyxl.worksheet.pagebreak import Break
 
 from automatic_walk_time_tables.utils import path, error
@@ -14,6 +17,9 @@ from automatic_walk_time_tables.utils.path import Path
 from automatic_walk_time_tables.utils.point import Point_LV03
 
 logger = logging.getLogger(__name__)
+
+GOTENBERG_URL = os.environ.get("GOTENBERG_URL", "")
+"""Gotenberg (https://gotenberg.dev), which prints the walk-time table as PDF with LibreOffice."""
 
 WAY_POINTS_PER_PAGE = 21
 """Rows of the J+S template (one A4 page): the data rows 8 to 28."""
@@ -336,9 +342,46 @@ def create_walk_table(
     if not os.path.exists("output"):
         os.mkdir("output")
 
+    # the font of the title (Frutiger) is rarely installed, the rest of the sheet uses Arial
+    sheet["A1"].font = Font(name="Arial", size=sheet["A1"].font.size, bold=True)
+
     xfile.save(file_name + "_Marschzeittabelle.xlsx")
 
     logger.info("Marschzeittabelle saved as " + file_name + "_Marschzeittabelle.xlsx")
+
+    convert_to_pdf(file_name + "_Marschzeittabelle.xlsx")
+
+
+def convert_to_pdf(xlsx_file: str, timeout: int = 60):
+    """
+    Saves a PDF version of the walk-time table next to the Excel file (same name, .pdf), printed by LibreOffice
+    in the Gotenberg service: the formulas are calculated and the print settings of the template (A4 pages,
+    header rows on every page) apply. Returns the path of the PDF, or None if no PDF was created; the export
+    goes on without the PDF in that case.
+    """
+    if not GOTENBERG_URL:
+        logger.warning(
+            "GOTENBERG_URL is not set, the walk-time table is not exported as PDF."
+        )
+        return None
+
+    pdf_file = os.path.splitext(xlsx_file)[0] + ".pdf"
+    try:
+        with open(xlsx_file, "rb") as f:
+            response = requests.post(
+                GOTENBERG_URL.rstrip("/") + "/forms/libreoffice/convert",
+                files={"files": (os.path.basename(xlsx_file), f)},
+                timeout=timeout,
+            )
+        response.raise_for_status()
+    except requests.RequestException as e:
+        logger.error("Converting the walk-time table to PDF failed: %s", e)
+        return None
+
+    with open(pdf_file, "wb") as f:
+        f.write(response.content)
+    logger.info("Marschzeittabelle saved as %s", pdf_file)
+    return pdf_file
 
 
 def calc_walk_time(delta_height, delta_dist, speed):
