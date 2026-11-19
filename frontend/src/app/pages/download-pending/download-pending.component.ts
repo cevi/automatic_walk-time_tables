@@ -1,13 +1,14 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { ActivatedRoute, Router } from '@angular/router';
-import { StatusManagerService } from 'src/app/services/status-manager.service';
+import { StatusManagerService } from '../../services/status-manager.service';
 import { MapAnimatorService } from '../../services/map-animator.service';
 
 @Component({
   selector: 'app-download-pending',
   templateUrl: './download-pending.component.html',
   styleUrls: ['./download-pending.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false,
 })
 export class DownloadPendingComponent implements OnInit {

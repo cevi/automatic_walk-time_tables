@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map, forkJoin } from 'rxjs';
+import { Observable, catchError, forkJoin, map, of, throwError } from 'rxjs';
 
 export interface SwisstopoSearchResult {
   id: number;
@@ -37,10 +37,34 @@ export class SwisstopoSearchService {
     kantone: 5, // Kantone
     district: 4, // Bezirke
     haltestellen: 3, // ÖV-Haltestellen (Bus/Train)
-    address: 2, // Adressen
-    gazetteer: 1, // Flurnamen, SwissNames3D
+    // Named places (peaks, hamlets, field names) matter more than street
+    // addresses when planning a hike
+    gazetteer: 2, // Flurnamen, SwissNames3D
+    address: 1, // Adressen
     parcel: 0, // Parzellen
   };
+
+  // Extra bonus within the named places, by the <i>category</i> of the label
+  private static readonly categoryBonus: [RegExp, number][] = [
+    [/gipfel|huegel|^pass$|^grat$/i, 0.5], // Gipfel, Hauptgipfel, Haupthuegel, …
+    [/^ort$|^weiler$|^alp/i, 0.3],
+    [/^flurname/i, 0.1],
+  ];
+
+  static score(result: SwisstopoSearchResult): number {
+    const originBonus =
+      SwisstopoSearchService.originBonus[result.attrs.origin] ?? 0;
+    let categoryBonus = 0;
+    if (result.attrs.origin === 'gazetteer') {
+      const category =
+        result.attrs.label?.match(/^\s*<i>(.*?)<\/i>/i)?.[1] ?? '';
+      categoryBonus =
+        SwisstopoSearchService.categoryBonus.find(([re]) =>
+          re.test(category),
+        )?.[1] ?? 0;
+    }
+    return result.weight + originBonus + categoryBonus;
+  }
 
   constructor(private http: HttpClient) {}
 
@@ -49,6 +73,8 @@ export class SwisstopoSearchService {
       type: 'locations',
       searchText: query,
       sr: '2056',
+      // otherwise the categories (<i>Zug</i>, <i>Gipfel</i>) follow the browser language
+      lang: 'de',
     };
 
     // We do two separate queries because the SearchServer limits results to 50,
@@ -63,18 +89,21 @@ export class SwisstopoSearchService {
       params: { ...defaultParams, origins: 'haltestellen' },
     });
 
-    return forkJoin([req1, req2]).pipe(
+    // One failing request should not hide the results of the other one
+    const failed = null;
+    const tolerant = (req: Observable<SwisstopoSearchResponse>) =>
+      req.pipe(catchError(() => of(failed)));
+
+    return forkJoin([tolerant(req1), tolerant(req2)]).pipe(
       map(([res1, res2]) => {
-        const combined = [...(res1.results || []), ...(res2.results || [])];
-        return combined.sort((a, b) => {
-          const bonusA =
-            SwisstopoSearchService.originBonus[a.attrs.origin] ?? 0;
-          const bonusB =
-            SwisstopoSearchService.originBonus[b.attrs.origin] ?? 0;
-          const scoreA = a.weight + bonusA;
-          const scoreB = b.weight + bonusB;
-          return scoreB - scoreA;
-        });
+        if (res1 === failed && res2 === failed) {
+          throw new Error('Swisstopo search is not available');
+        }
+        const combined = [...(res1?.results || []), ...(res2?.results || [])];
+        return combined.sort(
+          (a, b) =>
+            SwisstopoSearchService.score(b) - SwisstopoSearchService.score(a),
+        );
       }),
     );
   }

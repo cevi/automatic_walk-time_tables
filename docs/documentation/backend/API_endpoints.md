@@ -87,42 +87,120 @@ Response:
 }
 ```
 
-## /create-walk-time-table [POST]
+## Way points
 
-Creates a walk walk-time-table for a given route, i.e. it calculates the POIs and optimal waypoints of the route.
+The frontend has two modes for the way points of the walk-time table, each with its own endpoint. Both take the route
+as JSON and return named way points.
+
+The route is passed as
+
+- `route`: encoded polyline (precision 0) of the LV95 coordinates of the route
+- `elevation` (optional): encoded polyline (precision 0) of `[accumulated distance in m, height]` for every point of
+  the route; fetched from swisstopo if missing
+
+and every returned way point is a point of the route:
 
 ```json
 {
-  "encoding": "polyline",
-  "auto_waypoints": false,
-  "route": "...",
-  "elevation_data": "...",
-  "pois_distance": "0, 0, 1352, 1734, 3031"
+  "x": 2644311,
+  "y": 1136160,
+  "h": 2075,
+  "accumulated_distance": 0,
+  "name": "Weggabelung bei Nessel",
+  "name_type": "Weggabelung",
+  "landmark": {
+    "score": 60,
+    "types": ["Weggabelung"],
+    "reasons": ["Weggabelung"]
+  }
 }
 ```
 
-### Example
+`landmark` is `null` if there is nothing recognisable at the way point (see below). `name` is empty if nothing named
+is close enough (see the naming service, `/names`). Two different places of a route get different names: the second
+one gets the next best name of the naming service, or its height if there is none ("Weggabelung bei X (812)").
 
-Request
+### /waypoints/auto [POST]
 
-```bash
-curl 'http://localhost:5000/create-walk-time-table' \
-  -H 'Accept: application/json' \
-  -H 'Content-Type: multipart/form-data; boundary=----WebKitFormBoundary' \
-  --data-raw $'------WebKitFormBoundary\r\nContent-Disposition: form-data; name="options"\r\n\r\n{"encoding":"polyline","route":"ueccDsi|jAOHULSJSLOHSLSJSLUJSLOHSJSLQHSLSJSLSJQJSJSJSLSJOJUJSLSJSLOHSLUJSJOJSJSLSJQJSJSLSJSLQHSJSLSJSLSJQJSJSLOHSJSLUJSLOHSLSJSLQHSLSJSJSLSJQJSJSLSJQJSJSLSJOHSLUJSLSJOJSJSLSJULSJOHSLSJQJSJSLSJOHULSJSLSJOJSJULSJSLSJOHSLUJOJSJSLSJSLQHSLSJSJQJSJSLSJSLSJSLQHSLSJOHSLSJULOHSLSJSLSJQHSLSJSLSJSLQHSLSJOJUJSJSLSJOJSJSLUJOJSJSLSJSJULSJOJSJQJSJSLSJSLOHUJSLSJSLOHSLUJSLSJSLOHSJSLQHSLSJSLQHSLSJSJSLOHULSJSLSJSLSJQJSJOHSLSJSLUJOJSJSLSJSLQHSJSLSJSLSJQJSJOJSJSJULSJOJSJSLSJULOHSLSJSJSLUJSLOHSLQHSLSJSLOHSJULSJSLOHSLSJSLUJSLSJOHSLQHSLSJSLSJQJSJSJSLSJA@","elevation_data":"?ag@S?W?W?W?S?WAW?W?W?W?S?W?WAS@WAWCW@W?S?W?WAWAW?S?WAW?W?WAS?WAWAWASAWCWAWAS?WAWAWAWAS@WEW?WAWAWASCW?WES?WCWAWAWAS?WAWCWAS?WAWAWAWAW?SAW?WAWAS?W?WAWASEWCW?WAWCSAWCWAWCWCWASCWEWCSAWAWAWCSAWCWCW?W?SGWAWCWAW@WCS?W?WCSAWAWAWAWASCWAWCW?SAW@WCW@W@W@W@S?W?W@SAWFWDW@S@W?WDW@W?SBW@W?W?WAW@S?W?WAS?WCWAW@WBS?WDW@WBSDWFWBWDWDW@WDS@W@S@W@W@W?W@SDWGWAW?WASAWAWCWCWCWAS?W?WAS?WAW?WAS?W?WAWAW?SAW?WAW?W?W?W?S?W@S?W@W@W@W@S@W@W@W?W?S?W@W?W?W@W?S@W?S@W?W@W?W@S?WBW@W@WBS@W?WFWFW@W?WDSCW?SAW@WAW?SNW?W?W?W?SDWDW@W@W@WCWES?W?S?W?W?W?W?SAWAW?WAW@A?","pois_distance":"0, 0, 1352, 1734, 3031"}\r\n------WebKitFormBoundary--\r\n' \
+Automatic mode: selects up to 21 way points for the route.
+
+The selection represents the elevation profile (start, end, highest and lowest point, changes of gradient) and prefers
+landmarks: places that can be recognised when walking past them or that are printed on the 1:25'000 map, e.g.
+junctions, bridges, stops, summits and spot heights. A landmark counts as deviating up to 20 m more from the profile
+than a point where there is nothing to see. No stretch of the route is longer than 1.5 km without a way point, and
+of two way points closer than 200 m (with less than 30 m height difference) only the more important one is kept.
+
+```json
+{
+  "route": "...",
+  "elevation": "...",
+  "fixed_distances": [0, 1352]
+}
 ```
 
-Response
+`fixed_distances` (optional) are accumulated distances [m] of way points that must be kept, in addition to the start,
+the end and the highest and lowest point.
+
+Response:
 
 ```json
 {
   "status": "success",
-  "selected_way_points": "...",
-  "selected_way_points_elevation": "...",
-  "pois": "...",
-  "pois_elevation": "..."
+  "waypoints": [{...}, ...]
 }
 ```
+
+Without `elevation` in the request, the backend fetches the profile from geo.admin.ch and also returns `route` and
+`elevation`; send them with the next request for the same route to skip the lookup. If geo.admin.ch is unavailable,
+the response is 503 with a `Retry-After` header.
+
+### /waypoints/manual [POST]
+
+Manual mode: puts way points chosen by the user onto the route, exactly where the user put them, and names them.
+A way point at a landmark is named after it, as in the automatic mode.
+
+```json
+{
+  "route": "...",
+  "elevation": "...",
+  "waypoints": [{"accumulated_distance": 2486}, {"x": 2645830, "y": 1137370}],
+  "include_start_end": false
+}
+```
+
+- `waypoints`: positions given as accumulated distance [m] or LV95 coordinates; each is placed on the nearest point
+  of the route
+- `include_start_end` (optional, default false): also returns the start and end of the route if no way point is
+  there, e.g. after the route was changed. Without way points, it returns the start, the highest and lowest point and
+  the end.
+
+The response has the same format as `/waypoints/auto`, with the way points in the order of the request.
+
+### /names [POST]
+
+Names for LV95 coordinates.
+
+```json
+{
+  "points": [[2633700, 1252830]]
+}
+```
+
+Response:
+
+```json
+{
+  "status": "success",
+  "names": [{"name": "Cholholz", "object_type": "Ort", "offset": 75}]
+}
+```
+
+`name` is empty if nothing named is close enough. At most 500 points per request.
+
+### Deprecated: /create-walk-time-table [POST] and /get_name [POST]
+
+Replaced by `/waypoints/auto`, `/waypoints/manual` and `/names`. They are kept for one release for frontends that were
+loaded before the update.
 
 ## /create_map [POST]
 

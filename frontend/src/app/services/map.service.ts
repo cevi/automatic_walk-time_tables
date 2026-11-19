@@ -1,4 +1,4 @@
-import { Injectable, OnDestroy } from '@angular/core';
+import { inject, Injectable, OnDestroy } from '@angular/core';
 import { Layer } from 'ol/layer';
 import Map from 'ol/Map';
 import { Feature } from 'ol';
@@ -18,6 +18,13 @@ import TileLayer from 'ol/layer/Tile';
 import XYZ from 'ol/source/XYZ';
 import GeoJSON from 'ol/format/GeoJSON';
 import { LV95_Coordinates, LV95_Waypoint } from '../helpers/coordinates';
+import { BehaviorSubject } from 'rxjs';
+import DataTileSource from 'ol/source/DataTile';
+import { unByKey } from 'ol/Observable';
+import {
+  SENTINEL_LAYER_PREFIX,
+  SentinelLayersService,
+} from './sentinel-layers.service';
 
 export interface MapOverlays {
   fountains: boolean;
@@ -37,6 +44,16 @@ export interface MapOverlays {
   providedIn: 'root',
 })
 export class MapService extends SwisstopoMap implements OnDestroy {
+  private sentinelLayers = inject(SentinelLayersService);
+
+  /** True while the Sentinel-2 background is noticeably slow to load. */
+  public readonly sentinelLoading$ = new BehaviorSubject<boolean>(false);
+  private sentinelLoadingGeneration = 0;
+  /** background shown by the last `draw_map` call */
+  private currentBgLabel: string | undefined;
+  /** previous background, kept visible until the satellite image is loaded */
+  private sentinelCoverLabel: string | null = null;
+
   public zoom_to_route_area(path: (LV95_Coordinates | LV95_Waypoint)[]) {
     if (!this.map || !path || path.length === 0) return;
 
@@ -194,6 +211,123 @@ export class MapService extends SwisstopoMap implements OnDestroy {
     this.map.render();
   }
 
+  private create_background_layer(
+    label: string,
+    opacities: Record<string, number>,
+  ): Layer | null {
+    if (label === 'keine') return null;
+    if (label === 'opentopomap') {
+      return new TileLayer({
+        source: new XYZ({
+          url: 'https://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png',
+          attributions:
+            'Map data: &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org" target="_blank">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org" target="_blank">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank">CC-BY-SA</a>)',
+        }),
+        opacity: opacities['opentopomap'] ?? 1.0,
+      });
+    }
+    if (label.startsWith(SENTINEL_LAYER_PREFIX)) {
+      const scene = this.sentinelLayers.sceneForLabel(label);
+      const catalog = this.sentinelLayers.catalog$.value;
+      if (!scene || !catalog) return null;
+      return (
+        this.get_sentinel_layer(label, scene.url, catalog.attribution) || null
+      );
+    }
+    return this.get_base_WMTS_layer(label) || null;
+  }
+
+  private apply_saturation(layer: Layer, saturation: number) {
+    layer.set('saturation', saturation);
+    layer.on('prerender', (evt: any) => {
+      const ctx = evt.context as CanvasRenderingContext2D;
+      if (ctx) {
+        const sat = layer.get('saturation') ?? 1.0;
+        if (sat !== 1.0) ctx.filter = `saturate(${sat * 100}%)`;
+      }
+    });
+    layer.on('postrender', (evt: any) => {
+      const ctx = evt.context as CanvasRenderingContext2D;
+      if (ctx && layer.get('saturation') !== 1.0) ctx.filter = 'none';
+    });
+  }
+
+  /**
+   * Removes the previous background (`cover`) once the satellite image is
+   * fully rendered: its header is read and every visible tile is loaded.
+   */
+  private remove_cover_when_ready(
+    map: Map,
+    cover: Layer,
+    source: DataTileSource,
+  ) {
+    const generation = this.sentinelLoadingGeneration;
+    const remove = () => {
+      if (generation !== this.sentinelLoadingGeneration) return;
+      map.removeLayer(cover);
+      this.sentinelCoverLabel = null;
+      this.sentinelLoading$.next(false);
+    };
+    const onSourceState = () => {
+      const state = source.getState();
+      if (state === 'error') {
+        remove();
+      } else if (state === 'ready') {
+        unByKey(key);
+        map.once('rendercomplete', remove);
+      }
+    };
+    const key = source.on('change', onSourceState);
+    onSourceState();
+  }
+
+  /**
+   * Reports `sentinelLoading$` while the GeoTIFF header or any of its tiles
+   * are loading. Short loads (< 300 ms, e.g. from the browser cache) are not
+   * reported, so the indicator doesn't flicker while panning.
+   */
+  private trackSentinelLoading(source: DataTileSource) {
+    const generation = ++this.sentinelLoadingGeneration;
+    let pending = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    // the previous background stays until the image is fully rendered
+    const busy = () =>
+      pending > 0 ||
+      source.getState() === 'loading' ||
+      this.sentinelCoverLabel !== null;
+
+    const update = () => {
+      if (generation !== this.sentinelLoadingGeneration) return;
+      clearTimeout(timer);
+      if (!busy()) {
+        this.sentinelLoading$.next(false);
+      } else if (!this.sentinelLoading$.value) {
+        timer = setTimeout(() => {
+          // the cover may have been removed in the meantime (remove_cover_when_ready)
+          if (generation === this.sentinelLoadingGeneration && busy())
+            this.sentinelLoading$.next(true);
+        }, 300);
+      }
+    };
+
+    source.on('tileloadstart', () => {
+      pending++;
+      update();
+    });
+    source.on(['tileloadend', 'tileloaderror'], () => {
+      pending = Math.max(0, pending - 1);
+      update();
+    });
+    source.on('change', update);
+    update();
+  }
+
+  private stopSentinelLoadingTracking() {
+    this.sentinelLoadingGeneration++;
+    this.sentinelLoading$.next(false);
+  }
+
   public draw_map(
     layerLabel: string = 'pixelkarte',
     overlays: Partial<MapOverlays> = {},
@@ -212,38 +346,69 @@ export class MapService extends SwisstopoMap implements OnDestroy {
     }
 
     const bgLayer = layerLabel;
+    const layers: Layer[] = [];
+    this.stopSentinelLoadingTracking();
+
+    // While a satellite image loads, the previous background stays on top of
+    // it and is removed in one step as soon as the image is ready.
+    const isSentinel = bgLayer.startsWith(SENTINEL_LAYER_PREFIX);
+    if (!isSentinel) {
+      this.sentinelCoverLabel = null;
+    } else if (this.currentBgLabel !== bgLayer) {
+      this.sentinelCoverLabel =
+        this.currentBgLabel && this.currentBgLabel !== 'keine'
+          ? this.currentBgLabel
+          : null;
+    } // else: redrawn while loading, keep the cover
+    this.currentBgLabel = bgLayer;
 
     let wmtsLayer: Layer | null = null;
-    if (bgLayer === 'opentopomap') {
-      wmtsLayer = new TileLayer({
-        source: new XYZ({
-          url: 'https://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png',
-          attributions:
-            'Map data: &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org" target="_blank">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org" target="_blank">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank">CC-BY-SA</a>)',
-        }),
-        opacity: opacities['opentopomap'] ?? 1.0,
-      });
-    } else if (layerLabel !== 'keine') {
-      wmtsLayer = this.get_base_WMTS_layer(layerLabel) || null;
+    let cover: Layer | null = null;
+    let sentinelSource: DataTileSource | null = null;
+    if (isSentinel) {
+      // a single satellite pass only covers part of Switzerland,
+      // so the grey map fills in the rest
+      const underlay = this.get_base_WMTS_layer('pixelkarte-grau');
+      if (underlay) {
+        underlay.set('name', 'sentinel-underlay');
+        layers.push(underlay);
+      }
+      wmtsLayer = this.create_background_layer(bgLayer, opacities);
+      if (wmtsLayer) {
+        sentinelSource = wmtsLayer.getSource() as DataTileSource;
+        this.trackSentinelLoading(sentinelSource);
+      } else {
+        // the list of images hasn't arrived yet; an unknown scene (e.g. an
+        // old shared link) shows only the grey map
+        this.sentinelLoading$.next(this.sentinelLayers.catalog$.value === null);
+      }
+      if (this.sentinelCoverLabel) {
+        cover = this.create_background_layer(
+          this.sentinelCoverLabel,
+          opacities,
+        );
+        if (cover) {
+          this.apply_saturation(
+            cover,
+            saturations[this.sentinelCoverLabel] ?? 1.0,
+          );
+          cover.set('name', 'sentinel-cover');
+        } else {
+          // the previous background can't be drawn (e.g. an unknown satellite
+          // image): nothing to cover with, nothing to wait for
+          this.sentinelCoverLabel = null;
+        }
+      }
+    } else {
+      wmtsLayer = this.create_background_layer(bgLayer, opacities);
     }
 
-    const layers: Layer[] = [];
     if (wmtsLayer) {
       wmtsLayer.set('name', layerLabel);
-      wmtsLayer.set('saturation', saturations[layerLabel] ?? 1.0);
-      wmtsLayer.on('prerender', (evt: any) => {
-        const ctx = evt.context as CanvasRenderingContext2D;
-        if (ctx) {
-          const sat = wmtsLayer!.get('saturation') ?? 1.0;
-          if (sat !== 1.0) ctx.filter = `saturate(${sat * 100}%)`;
-        }
-      });
-      wmtsLayer.on('postrender', (evt: any) => {
-        const ctx = evt.context as CanvasRenderingContext2D;
-        if (ctx && wmtsLayer!.get('saturation') !== 1.0) ctx.filter = 'none';
-      });
+      this.apply_saturation(wmtsLayer, saturations[layerLabel] ?? 1.0);
       layers.push(wmtsLayer);
     }
+    if (cover) layers.push(cover);
 
     const overlayKeys: (keyof MapOverlays)[] = [
       'hangneigung',
@@ -522,6 +687,9 @@ export class MapService extends SwisstopoMap implements OnDestroy {
     }
 
     this.map = this.create_map_from_layers(layers, target_canvas);
+
+    if (cover && sentinelSource)
+      this.remove_cover_when_ready(this.map, cover, sentinelSource);
 
     const popupContainer = document.getElementById('feature-popup');
     const popupContent = document.getElementById('feature-popup-content');

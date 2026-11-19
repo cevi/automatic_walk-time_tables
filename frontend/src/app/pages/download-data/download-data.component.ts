@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { ActivatedRoute } from '@angular/router';
 import { StatusManagerService } from '../../services/status-manager.service';
@@ -9,6 +9,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
   selector: 'app-download-data',
   templateUrl: './download-data.component.html',
   styleUrls: ['./download-data.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false,
 })
 export class DownloadDataComponent implements OnInit {

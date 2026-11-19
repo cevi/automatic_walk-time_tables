@@ -47,6 +47,11 @@ export class MapStateService {
 
   // Settings
   public auto_waypoints: boolean = true;
+  /**
+   * The way points are the automatic selection, not yet changed by the user. While this is true, a changed route
+   * gets a new automatic selection for the whole route (instead of keeping the way points of the first stretch).
+   */
+  public auto_waypoints_untouched: boolean = false;
   public magnetic_paths: boolean = true;
   public is_modifying: boolean = false;
   private _drawer_open: boolean = false;
@@ -112,6 +117,9 @@ export class MapStateService {
   }
 
   public clearAll(): void {
+    // a new route starts with the automatic way point selection, whatever the user did with the previous one
+    this.auto_waypoints = true;
+    this.auto_waypoints_untouched = false;
     this._path$.next([]);
     this._anchor_points$.next([]);
     this._pois$.next([]);

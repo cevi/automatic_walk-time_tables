@@ -2,6 +2,8 @@ import { Layer, Tile } from 'ol/layer';
 import { get, Projection, ProjectionLike } from 'ol/proj';
 import { WMTS } from 'ol/source';
 import WMTSTileGrid from 'ol/tilegrid/WMTS';
+import WebGLTileLayer from 'ol/layer/WebGLTile';
+import GeoTIFF from 'ol/source/GeoTIFF';
 import proj4 from 'proj4';
 import { register } from 'ol/proj/proj4';
 import Map from 'ol/Map';
@@ -169,6 +171,31 @@ export class SwisstopoMap {
       opacity: opacity,
       className: `ol-layer-${layerLabel}`,
       source: this.createWMTSSource(this.layer_configs[layerLabel], projection),
+    });
+  }
+
+  /**
+   * Background layer showing a Sentinel-2 image. The browser reads the
+   * Cloud-Optimized GeoTIFF directly from swisstopo, fetching only the parts
+   * and zoom levels it needs.
+   */
+  protected get_sentinel_layer(
+    layerLabel: string,
+    url: string,
+    attribution: string,
+  ) {
+    return new WebGLTileLayer({
+      className: `ol-layer-${layerLabel}`,
+      source: new GeoTIFF({
+        // 8-bit true-colour image: keep the values as they are
+        sources: [{ url: url, min: 0, max: 255 }],
+        // the image is JPEG-compressed in YCbCr, convert it back to RGB
+        convertToRGB: true,
+        attributions:
+          '<a href="https://www.swisstopo.admin.ch/de/satellitenbild-swisseo-s2-sr" target="_blank">' +
+          attribution +
+          '</a>',
+      }),
     });
   }
 

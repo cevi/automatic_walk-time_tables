@@ -29,6 +29,11 @@ from automatic_walk_time_tables.path_transformers.heigth_fetcher_transfomer impo
     HeightFetcherTransformer,
 )
 from automatic_walk_time_tables.path_transformers.pois_transfomer import POIsTransformer
+from automatic_walk_time_tables.path_transformers.structure_heights import (
+    StructureHeightTransformer,
+)
+from automatic_walk_time_tables import waypoints
+from automatic_walk_time_tables.utils import swiss_tlm_api
 from automatic_walk_time_tables.utils.error import (
     ElevationServiceUnavailable,
     UserException,
@@ -54,6 +59,7 @@ from automatic_walk_time_tables.generator import AutomatedWalkTableGenerator
 from automatic_walk_time_tables.utils.file_parser import GeoFileParser
 
 from automatic_walk_time_tables.generator_status import GeneratorStatus
+from automatic_walk_time_tables.sentinel_scenes import SentinelCatalog
 
 logger = logging.getLogger(__name__)
 
@@ -78,27 +84,165 @@ def health():
     )
 
 
+def _json_response(data: dict, status: int = 200):
+    return app.response_class(
+        response=json.dumps(data), status=status, mimetype="application/json"
+    )
+
+
+def _error(message: str, status: int):
+    return _json_response({"status": GeneratorStatus.ERROR, "message": message}, status)
+
+
+def _fetched_elevation(body: dict, path) -> dict:
+    """
+    If the request had no elevation, the profile fetched from geo.admin.ch (route and elevation, as in the request),
+    so the frontend can send it with the next request for the same route instead of fetching it again.
+    """
+    if "elevation" in body:
+        return {}
+    return {"route": path.to_polyline(), "elevation": path.to_elevation_polyline()}
+
+
+@app.route("/waypoints/auto", methods=["POST"])
+def auto_waypoints():
+    """
+    Automatic mode: selects and names the way points of a walk-time table.
+
+    Body (JSON):
+        route:           polyline (precision 0) of the LV95 route coordinates
+        elevation:       optional polyline (precision 0) of [accumulated distance in m, height] per route point
+        fixed_distances: optional accumulated distances [m] of way points that must be kept
+    Response: {"status": "success", "waypoints": [way point, ...]}, see waypoints.waypoint_to_json; without
+        elevation in the request also route and elevation of the fetched profile (to send with the next request).
+        503 if the elevation service is unavailable.
+    """
+    body = request.get_json(silent=True)
+    if not body or "route" not in body:
+        return _error("Die Route fehlt.", 400)
+    try:
+        fixed = body.get("fixed_distances") or []
+        if not isinstance(fixed, list) or not all(
+            isinstance(d, (int, float)) and not isinstance(d, bool) for d in fixed
+        ):
+            return _error("fixed_distances muss eine Liste von Distanzen sein.", 400)
+        path = extract_path(body, "route", "elevation")
+        selected = waypoints.select_waypoints(path, fixed)
+        return _json_response(
+            {
+                "status": GeneratorStatus.SUCCESS,
+                "waypoints": [
+                    waypoints.waypoint_to_json(wp) for wp in selected.way_points
+                ],
+                **_fetched_elevation(body, path),
+            }
+        )
+    except ElevationServiceUnavailable:
+        return elevation_unavailable_response()
+    except UserException as e:
+        logger.error(e)
+        return _error(str(e), 500)
+    except Exception as e:
+        logger.exception(e)
+        return _error("Die Wegpunkte konnten nicht berechnet werden.", 500)
+
+
+@app.route("/waypoints/manual", methods=["POST"])
+def manual_waypoints():
+    """
+    Manual mode: puts way points chosen by the user onto the route, exactly where the user put them, and names them.
+
+    Body (JSON):
+        route, elevation: as for /waypoints/auto
+        waypoints:        [{"accumulated_distance": m} or {"x": e, "y": n}, ...] (LV95)
+        include_start_end: optional, also return the start and end of the route if no way point is there yet
+    Response: {"status": "success", "waypoints": [way point, ...]} in the order of the request, plus route and
+        elevation as for /waypoints/auto
+    """
+    body = request.get_json(silent=True)
+    if not body or "route" not in body or not isinstance(body.get("waypoints"), list):
+        return _error("Die Route oder die Wegpunkte fehlen.", 400)
+    if len(body["waypoints"]) > MAX_NAME_POINTS:
+        return _error(f"Höchstens {MAX_NAME_POINTS} Wegpunkte pro Anfrage.", 400)
+    for wp in body["waypoints"]:
+        if not isinstance(wp, dict) or (
+            wp.get("accumulated_distance") is None
+            and (wp.get("x") is None or wp.get("y") is None)
+        ):
+            return _error("Jeder Wegpunkt braucht eine Distanz oder Koordinaten.", 400)
+    try:
+        path = extract_path(body, "route", "elevation")
+        placed = waypoints.place_waypoints(
+            path,
+            body["waypoints"],
+            include_start_end=bool(body.get("include_start_end")),
+        )
+        return _json_response(
+            {
+                "status": GeneratorStatus.SUCCESS,
+                "waypoints": [waypoints.waypoint_to_json(wp) for wp in placed],
+                **_fetched_elevation(body, path),
+            }
+        )
+    except ElevationServiceUnavailable:
+        return elevation_unavailable_response()
+    except UserException as e:
+        logger.error(e)
+        return _error(str(e), 500)
+    except Exception as e:
+        logger.exception(e)
+        return _error("Die Wegpunkte konnten nicht gesetzt werden.", 500)
+
+
+MAX_NAME_POINTS = 500
+
+
+def _is_coordinate(p) -> bool:
+    return (
+        isinstance(p, list)
+        and len(p) == 2
+        and all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in p)
+    )
+
+
+@app.route("/names", methods=["POST"])
+def names():
+    """
+    Names for LV95 coordinates.
+
+    Body (JSON): {"points": [[e, n], ...]}
+    Response: {"status": "success", "names": [{"name", "object_type", "offset"}, ...]} in the order of the points;
+        name is "" if no object is close enough.
+    """
+    body = request.get_json(silent=True) or {}
+    points = body.get("points")
+    if not isinstance(points, list):
+        return _error("Die Koordinaten fehlen.", 400)
+    if len(points) > MAX_NAME_POINTS:
+        return _error(f"Höchstens {MAX_NAME_POINTS} Koordinaten pro Anfrage.", 400)
+    if not all(_is_coordinate(p) for p in points):
+        return _error("Koordinaten müssen [E, N] in LV95 sein.", 400)
+    try:
+        return _json_response(
+            {
+                "status": GeneratorStatus.SUCCESS,
+                "names": swiss_tlm_api.fetch_names(points),
+            }
+        )
+    except requests.exceptions.RequestException as e:
+        logger.error("Error while fetching names: %s", e)
+        return _error("Die Namen konnten nicht geladen werden.", 502)
+
+
 @app.route("/get_name", methods=["POST"])
 def get_name():
+    """Deprecated, use POST /names. Kept for frontends loaded before the API change."""
     try:
         data = request.json
-        lat = data.get("lat")
-        lon = data.get("lon")
-
-        url = "http://awt-swiss-tml-api:1848/swiss_name"
-        payload = json.dumps([[lat, lon]])
-        headers = {"Content-Type": "application/json"}
-
-        req = requests.request("GET", url, headers=headers, data=payload, timeout=5)
-        resp = req.json()
-
-        name = ""
-        if len(resp) > 0 and resp[0]["offset"] <= 100:
-            name = resp[0]["swiss_name"]
-
-        return jsonify({"name": name})
+        result = swiss_tlm_api.fetch_names([[data.get("lat"), data.get("lon")]])
+        return jsonify({"name": result[0]["name"] if result else ""})
     except Exception:
-        traceback.print_exc()
+        logger.exception("Error while fetching a name")
         return jsonify({"name": ""})
 
 
@@ -119,8 +263,7 @@ def get_map_numbers():
         return jsonify({"map_numbers": resp})
 
     except Exception:
-        logger.error("Error retrieving map_numbers")
-        traceback.print_exc()
+        logger.exception("Error retrieving map_numbers")
         return jsonify({"map_numbers": ""})
 
 
@@ -145,6 +288,10 @@ def parse_route():
 
         equidistant_transformer = EquidistantTransformer(equidistant_distance=10)
         path = equidistant_transformer.transform(path)
+
+        # the elevation model gives the terrain below bridges and above tunnels
+        if path.has_elevation_for_all_points():
+            path = StructureHeightTransformer().transform(path)
 
         route = (
             path.to_polyline()
@@ -186,6 +333,7 @@ def parse_route():
 
 @app.route("/create-walk-time-table", methods=["POST"])
 def create_walk_time_table():
+    """Deprecated, use POST /waypoints/auto or /waypoints/manual. Kept for frontends loaded before the API change."""
     try:
         if request.is_json:
             options = request.get_json()
@@ -541,6 +689,25 @@ def download(uuid):
 def generate_qr_image(uuid):
     qr_data = build_qr_code_image_string(uuid, raw=True)
     return send_file(io.BytesIO(qr_data), mimetype="image/jpg")
+
+
+sentinel_catalog = SentinelCatalog()
+sentinel_catalog.warm_up()
+
+
+@app.route("/sentinel/layers")
+def sentinel_layers():
+    """The Sentinel-2 satellite images offered as background maps."""
+    try:
+        body = sentinel_catalog.layers()
+    except Exception as exc:
+        logger.error("Error retrieving Sentinel-2 scenes: %s", exc)
+        return app.response_class(
+            response=json.dumps({"layers": []}), status=502, mimetype="application/json"
+        )
+    response = jsonify(body)
+    response.headers["Cache-Control"] = "public, max-age=600"
+    return response
 
 
 @app.route("/statistics")

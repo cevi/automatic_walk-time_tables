@@ -30,6 +30,96 @@ def GetSpacedElements(array, numElems=4):
     return list(np.array(array)[indices])
 
 
+BASE_DPI = 508
+"""Native resolution of the swisstopo raster maps (1.25 m per pixel at 1:25'000)."""
+
+MAX_DPI = 635
+"""Highest DPI we ask mapfish for. Must match `maxDpi` in mapfish_print_server/swisstopo_config/config.yaml."""
+
+OGC_PIXEL_SIZE_M = 0.00028
+"""WMTS defines `scaleDenominator` for a pixel size of 0.28 mm."""
+
+
+def select_print_dpi(map_scaling: float, matrices: List[dict]) -> float:
+    """
+    Returns the DPI at which one printed pixel matches one tile pixel of a WMTS zoom level.
+
+    If no zoom level matches the map scale at BASE_DPI, mapfish takes the closest
+    level and resamples the tiles, which blurs lines and text. Example: at 1:25'000
+    and 508 dpi a pixel covers 1.25 m, but swisstopo only serves 1.5 m and 1.0 m
+    levels. Printing at 635 dpi makes a pixel cover exactly 1.0 m, so the tiles are
+    placed without resampling.
+
+    We take the lowest DPI between BASE_DPI and MAX_DPI that matches a zoom level,
+    and fall back to BASE_DPI if none does.
+    """
+
+    resolutions = {
+        round(matrix["scaleDenominator"] * OGC_PIXEL_SIZE_M, 6) for matrix in matrices
+    }
+    matching_dpis = [
+        map_scaling * 0.0254 / resolution
+        for resolution in resolutions
+        if BASE_DPI - 1e-6 <= map_scaling * 0.0254 / resolution <= MAX_DPI + 1e-6
+    ]
+
+    if not matching_dpis:
+        return float(BASE_DPI)
+
+    return min(round(min(matching_dpis), 3), MAX_DPI)
+
+
+def _route_line(color: str, width: float, opacity: float) -> dict:
+    return {
+        "type": "line",
+        "strokeColor": color,
+        "strokeOpacity": opacity,
+        "strokeWidth": width,
+        "strokeLinecap": "round",
+        "strokeLinejoin": "round",
+    }
+
+
+ROUTE_STYLES = {
+    # the look of the export before the style could be chosen
+    "classic": {
+        "base_map_opacity": 0.85,
+        "symbolizers": [
+            {
+                "type": "line",
+                "strokeColor": "#ffffff",
+                "strokeOpacity": 0.75,
+                "strokeWidth": 2.5,
+            },
+            {
+                "type": "line",
+                "strokeColor": "#efa038",
+                "strokeOpacity": 0.5,
+                "strokeWidth": 1.25,
+            },
+        ],
+    },
+    "magenta": {
+        "base_map_opacity": 1.0,
+        "symbolizers": [
+            _route_line("#ffffff", 3.5, 0.9),
+            _route_line("#d4007f", 2.0, 0.9),
+        ],
+    },
+    "highlighter": {
+        "base_map_opacity": 1.0,
+        "symbolizers": [_route_line("#8e24aa", 6.0, 0.4)],
+    },
+}
+"""
+Route line styles the user can choose for the export, together with the opacity of the
+map layers underneath. The classic style fades the map so the light orange route stands
+out; the other styles have enough contrast to keep the map at full strength.
+"""
+
+DEFAULT_ROUTE_STYLE = "classic"
+
+
 class MapCreator:
     A4_HEIGHT_FACTOR = 4.5 / 25.0
     """
@@ -56,6 +146,11 @@ class MapCreator:
             args["number_points_in_export"]
             if "number_points_in_export" in args
             else False
+        )
+
+        # unknown values (e.g. from an older or newer frontend) fall back to the default
+        self.route_style = ROUTE_STYLES.get(
+            args.get("route_style"), ROUTE_STYLES[DEFAULT_ROUTE_STYLE]
         )
 
     def auto_select_map_scaling(self) -> int:
@@ -312,20 +407,7 @@ class MapCreator:
             "style": {
                 "version": 2,
                 "[_ngeo_style = '1,2']": {
-                    "symbolizers": [
-                        {
-                            "type": "line",
-                            "strokeColor": "#ffffff",
-                            "strokeOpacity": 0.75,
-                            "strokeWidth": 2.5,
-                        },
-                        {
-                            "type": "line",
-                            "strokeColor": "#efa038",
-                            "strokeOpacity": 0.5,
-                            "strokeWidth": 1.25,
-                        },
-                    ]
+                    "symbolizers": self.route_style["symbolizers"]
                 },
             },
             "type": "geojson",
@@ -343,14 +425,18 @@ class MapCreator:
         for i, point in enumerate(way_points.way_points):
             lv95 = point.point.to_LV95()
 
+            # Must match the numbers in the walk-time table (create_walk_table).
+            # Don't overwrite point.name, the GPX export still needs the name.
+            label = ""
             if self.number_points_in_export:
-                point.name = str(i + 1)
+                label = str(i + 1)
+            elif self.name_points_in_export:
+                label = point.name
 
             point_layer = self.create_point_json(
                 lv95,
-                point,
                 color="#d32f2f",
-                label=self.name_points_in_export or self.number_points_in_export,
+                label=label,
             )
             point_layers.append(point_layer)
 
@@ -359,9 +445,12 @@ class MapCreator:
 
             point_layer = self.create_point_json(
                 lv95,
-                point,
                 color="#d32f2f",
-                label=self.name_points_in_export or self.number_points_in_export,
+                label=(
+                    point.name
+                    if self.name_points_in_export or self.number_points_in_export
+                    else ""
+                ),
             )
             point_layers.append(point_layer)
 
@@ -379,7 +468,7 @@ class MapCreator:
             "map": {
                 "center": center,
                 "scale": map_scaling,
-                "dpi": 508,
+                "dpi": select_print_dpi(map_scaling, default_matrices),
                 "pdfA": True,
                 "projection": "EPSG:2056",
                 "rotation": 0,
@@ -400,9 +489,7 @@ class MapCreator:
 
         return query_json
 
-    def create_point_json(
-        self, lv95, point, color="#FF0000", pointRadius=3, label=False
-    ):
+    def create_point_json(self, lv95, color="#FF0000", pointRadius=3, label=""):
         point_layer = {
             "geoJson": {
                 "type": "FeatureCollection",
@@ -446,7 +533,7 @@ class MapCreator:
                             "haloColor": "#ffffff",
                             "haloOpacity": "1",
                             "haloRadius": "3",
-                            "label": point.name if label else "",
+                            "label": label or "",
                             "fillColor": color,
                             "fillOpacity": 0,
                             "labelAlign": "cm",
@@ -487,7 +574,7 @@ class MapCreator:
             "imageFormat": "image/" + image_type,
             "layer": layer,
             "matrixSet": "2056",
-            "opacity": 0.85,
+            "opacity": self.route_style["base_map_opacity"],
             "requestEncoding": "REST",
             "matrices": default_matrices,
             "style": "default",

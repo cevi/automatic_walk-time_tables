@@ -1,14 +1,15 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { ActivatedRoute } from '@angular/router';
 import { StatusManagerService } from '../../services/status-manager.service';
-import { MapAnimatorService } from 'src/app/services/map-animator.service';
+import { MapAnimatorService } from '../../services/map-animator.service';
 import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-retrieve-data',
   templateUrl: './retrieve-data.component.html',
   styleUrls: ['./retrieve-data.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false,
 })
 export class RetrieveDataComponent implements OnInit {

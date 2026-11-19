@@ -17,6 +17,17 @@ export interface DailyRouteStatistic {
   totalLengthM: number;
 }
 
+/** A way point as returned by the /waypoints endpoints (LV95, distances in meters). */
+export interface ApiWaypoint {
+  x: number;
+  y: number;
+  h: number;
+  accumulated_distance: number;
+  name: string;
+  name_type: string;
+  landmark: { score: number; types: string[]; reasons: string[] } | null;
+}
+
 export interface RouteGenerationStatistics {
   days: number;
   rangeStart: string;
@@ -158,57 +169,104 @@ export class RouteApiService {
     return this.postToBackend('parse_route', formData);
   }
 
-  public async createWalkTimeTable(
-    path: LV95_Waypoint[],
-    pois: LV95_Waypoint[],
-    auto_waypoints: boolean,
-  ): Promise<any> {
-    if (path.length === 0) return null;
-
+  /**
+   * The route as sent to the /waypoints endpoints (LV95 polyline, plus elevation if known). Without elevation (while
+   * drawing), the profile the backend fetched for the same route before is reused, see cacheElevation.
+   */
+  private encodeRoute(path: LV95_Waypoint[]): {
+    key: string;
+    data: { route: string; elevation?: string };
+  } {
     const route = encode(
       path.map((p) => [p.x, p.y]),
       0,
     );
-
-    let data: any = {
-      encoding: 'polyline',
-      route: route,
-      auto_waypoints: auto_waypoints,
-      pois_distance: pois
-        .sort((a, b) => a.accumulated_distance - b.accumulated_distance)
-        .map((p) => `${p.accumulated_distance * 1_000}`)
-        .join(','),
-    };
-
     if (!path.some((p) => p.h === 0)) {
-      data['elevation_data'] = encode(
+      const elevation = encode(
         path.map((p) => [p.accumulated_distance * 1_000, p.h]),
         0,
       );
-    } else {
-      const cached = this.elevationCache.get(route);
-      if (cached) {
-        data['route'] = cached.route;
-        data['elevation_data'] = cached.elevation_data;
-      }
+      return { key: route, data: { route, elevation } };
     }
+    const cached = this.elevationCache.get(route);
+    return {
+      key: route,
+      data: cached
+        ? { route: cached.route, elevation: cached.elevation_data }
+        : { route },
+    };
+  }
 
-    const formData = new FormData();
-    formData.append('options', JSON.stringify(data));
-
-    const result = await this.postToBackend('create-walk-time-table', formData);
-    if (result?.route && result?.elevation_data) {
-      this.cacheElevation(route, result.route, result.elevation_data);
+  /** POSTs a route to a /waypoints endpoint and keeps the elevation profile the backend fetched for it. */
+  private async postRoute(
+    endpoint: string,
+    path: LV95_Waypoint[],
+    body: object,
+  ): Promise<any> {
+    const { key, data } = this.encodeRoute(path);
+    const result = await this.postToBackend(endpoint, { ...data, ...body });
+    if (result?.route && result?.elevation) {
+      this.cacheElevation(key, result.route, result.elevation);
     }
     return result;
   }
 
   /**
-   * POSTs to the backend and returns the parsed JSON body. Retries once on
-   * temporary failures (gateway errors, unavailable elevation service, network
-   * errors) and throws an Error carrying the backend's message otherwise.
+   * Automatic mode: the backend selects and names the way points of the route.
    */
-  private async postToBackend(endpoint: string, body: FormData): Promise<any> {
+  public async autoWaypoints(path: LV95_Waypoint[]): Promise<ApiWaypoint[]> {
+    if (path.length === 0) return [];
+    const result = await this.postRoute('waypoints/auto', path, {});
+    return result.waypoints;
+  }
+
+  /**
+   * Manual mode: places way points chosen by the user on the route and names them.
+   *
+   * @param positions the way points, by accumulated distance [km] or, if that is not known yet (while drawing),
+   *   by coordinates
+   * @param includeStartEnd also return the start and end of the route if no way point is there
+   */
+  public async manualWaypoints(
+    path: LV95_Waypoint[],
+    positions: (LV95_Coordinates & { accumulated_distance?: number })[],
+    includeStartEnd = false,
+  ): Promise<ApiWaypoint[]> {
+    if (path.length === 0) return [];
+    const result = await this.postRoute('waypoints/manual', path, {
+      waypoints: positions.map((p) =>
+        Number.isFinite(p.accumulated_distance)
+          ? { accumulated_distance: (p.accumulated_distance as number) * 1_000 }
+          : { x: p.x, y: p.y },
+      ),
+      include_start_end: includeStartEnd,
+    });
+    return result.waypoints;
+  }
+
+  /** Names for LV95 coordinates, '' where nothing is close enough. */
+  public async names(points: LV95_Coordinates[]): Promise<string[]> {
+    if (points.length === 0) return [];
+    const result = await this.postToBackend('names', {
+      points: points.map((p) => [p.x, p.y]),
+    });
+    return result.names.map((n: any) => n.name || '');
+  }
+
+  /**
+   * POSTs to the backend (a form or, for any other body, JSON) and returns the parsed JSON body. Retries once on
+   * temporary failures (gateway errors, unavailable elevation service, network errors) and throws an Error carrying
+   * the backend's message otherwise.
+   */
+  private async postToBackend(
+    endpoint: string,
+    body: FormData | object,
+  ): Promise<any> {
+    const is_form = body instanceof FormData;
+    const headers: Record<string, string> = { Accept: 'application/json' };
+    if (!is_form) headers['Content-Type'] = 'application/json';
+    const payload = is_form ? body : JSON.stringify(body);
+
     for (let attempt = 1; ; attempt++) {
       const is_last_attempt = attempt >= RouteApiService.MAX_ATTEMPTS;
 
@@ -216,8 +274,8 @@ export class RouteApiService {
       try {
         response = await fetch(RouteApiService.BASE_URL + endpoint, {
           method: 'POST',
-          headers: { Accept: 'application/json' },
-          body,
+          headers,
+          body: payload,
         });
       } catch (err) {
         if (is_last_attempt) {

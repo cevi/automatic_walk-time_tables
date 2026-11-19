@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { MapAnimatorService } from '../../services/map-animator.service';
 import { LV95_Waypoint } from '../../helpers/coordinates';
 import { graphic } from 'echarts/core';
@@ -9,6 +9,7 @@ import { take } from 'rxjs/operators';
   selector: 'app-elevation-profile',
   templateUrl: './elevation-profile.component.html',
   styleUrls: ['./elevation-profile.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false,
 })
 export class ElevationProfileComponent {

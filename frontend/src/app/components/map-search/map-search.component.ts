@@ -1,6 +1,17 @@
-import { Component, OnInit } from '@angular/core';
-import { FormControl } from '@angular/forms';
 import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  HostListener,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+} from '@angular/core';
+import { FormControl } from '@angular/forms';
+import { MatAutocompleteTrigger } from '@angular/material/autocomplete';
+import {
+  catchError,
+  map,
   debounceTime,
   distinctUntilChanged,
   switchMap,
@@ -17,17 +28,57 @@ import Point from 'ol/geom/Point';
 import VectorSource from 'ol/source/Vector';
 import VectorLayer from 'ol/layer/Vector';
 import { Style, Icon } from 'ol/style';
+import {
+  formatLv95,
+  formatWgs84,
+  parseCoordinate,
+} from '../../helpers/coordinate-parser';
+import {
+  highlightParts,
+  presentSearchResult,
+  SearchResultPresentation,
+} from '../../helpers/search-result-presentation';
+
+export interface SearchResultRow {
+  result: SwisstopoSearchResult;
+  view: SearchResultPresentation;
+}
+
+export interface SearchState {
+  rows: SearchResultRow[];
+  /** shown instead of results, e.g. when nothing was found */
+  message: string | null;
+}
+
+const toState = (
+  results: SwisstopoSearchResult[],
+  message: string | null = null,
+): SearchState => ({
+  rows: results.map((result) => ({
+    result,
+    view: presentSearchResult(result),
+  })),
+  message,
+});
+
+/** Resolution (m/px) used when jumping to a typed coordinate, ~1:25'000 */
+const COORDINATE_RESOLUTION = 2.5;
 
 @Component({
   selector: 'app-map-search',
   templateUrl: './map-search.component.html',
   styleUrls: ['./map-search.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false,
 })
-export class MapSearchComponent implements OnInit {
+export class MapSearchComponent implements OnInit, OnDestroy {
   searchControl = new FormControl('');
-  results$: Observable<SwisstopoSearchResult[]> = of([]);
+  state$: Observable<SearchState> = of(toState([]));
   isLoading = false;
+  @ViewChild('searchInput', { static: true })
+  searchInput!: ElementRef<HTMLInputElement>;
+  @ViewChild(MatAutocompleteTrigger, { static: true })
+  autocompleteTrigger!: MatAutocompleteTrigger;
   private searchMarkerLayer: VectorLayer<any> | null = null;
 
   constructor(
@@ -36,40 +87,125 @@ export class MapSearchComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.results$ = this.searchControl.valueChanges.pipe(
+    this.searchInput.nativeElement.addEventListener(
+      'keydown',
+      this.onEscapeCapture,
+      { capture: true },
+    );
+    this.state$ = this.searchControl.valueChanges.pipe(
       debounceTime(300),
       distinctUntilChanged(),
-      tap(() => (this.isLoading = true)),
       switchMap((value) => {
+        // a previous search may have been cancelled while loading
+        this.isLoading = false;
         if (typeof value === 'object' && value !== null) {
-          this.isLoading = false;
-          return of([]);
+          return of(toState([]));
         }
 
-        if (!value || typeof value !== 'string' || value.length < 2) {
-          this.isLoading = false;
-          if (this.searchMarkerLayer) {
-            const source = this.searchMarkerLayer.getSource();
-            if (source) {
-              source.clear();
-            }
-          }
-          return of([]);
+        if (!value || typeof value !== 'string' || value.trim().length < 2) {
+          this.searchMarkerLayer?.getSource()?.clear();
+          return of(toState([]));
         }
-        return this.searchService
-          .searchLocations(value)
-          .pipe(tap(() => (this.isLoading = false)));
+
+        // Coordinates are resolved locally, like on map.geo.admin.ch
+        const coordinate = parseCoordinate(value);
+        if (coordinate) {
+          return of(toState([this.coordinateResult(value, coordinate)]));
+        }
+
+        this.isLoading = true;
+        return this.searchService.searchLocations(value).pipe(
+          map((results) =>
+            toState(
+              results,
+              results.length ? null : `Keine Ergebnisse für «${value.trim()}»`,
+            ),
+          ),
+          // a failed search must not end the stream, the next one may work again
+          catchError(() =>
+            of(toState([], 'Die Suche ist gerade nicht verfügbar')),
+          ),
+          tap(() => (this.isLoading = false)),
+        );
       }),
     );
   }
 
-  displayFn(result: SwisstopoSearchResult): string {
-    if (!result) return '';
-    // Strip HTML from label since API returns <b> tags
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = result.attrs.label;
-    return tempDiv.textContent || result.attrs.label || '';
+  ngOnDestroy() {
+    this.searchInput.nativeElement.removeEventListener(
+      'keydown',
+      this.onEscapeCapture,
+      { capture: true },
+    );
   }
+
+  /** label of the shortcut badge, e.g. "⌘K" on macOS */
+  readonly shortcutLabel = /Mac|iPhone|iPad/.test(navigator.userAgent)
+    ? '⌘K'
+    : 'Ctrl K';
+
+  /** Ctrl+K / ⌘K focuses the search, the common shortcut of web search fields */
+  @HostListener('document:keydown', ['$event'])
+  onDocumentKeydown(event: KeyboardEvent) {
+    const modifier = event.ctrlKey || event.metaKey;
+    if (!modifier || event.altKey || event.shiftKey) return;
+    if (event.key.toLowerCase() !== 'k') return;
+    event.preventDefault();
+    this.searchInput.nativeElement.focus();
+    this.searchInput.nativeElement.select();
+  }
+
+  /**
+   * Esc closes the result list first (done by the autocomplete), then clears
+   * the search, then leaves the field. Runs in the capture phase, before the
+   * autocomplete closes its panel, to know whether the list was open.
+   */
+  onEscapeCapture = (event: KeyboardEvent) => {
+    if (event.key !== 'Escape' || this.autocompleteTrigger.panelOpen) return;
+    if (this.searchControl.value) {
+      this.searchControl.setValue('');
+    } else {
+      this.searchInput.nativeElement.blur();
+    }
+  };
+
+  private coordinateResult(
+    query: string,
+    coordinate: NonNullable<ReturnType<typeof parseCoordinate>>,
+  ): SwisstopoSearchResult {
+    const lv95 = formatLv95(coordinate.lv95);
+    const wgs84 = formatWgs84(coordinate.wgs84);
+    const label = coordinate.system === 'WGS84' ? wgs84 : lv95;
+    const systemName = { LV95: 'LV95', LV03: 'LV03', WGS84: 'WGS 84' }[
+      coordinate.system
+    ];
+    const detail =
+      coordinate.system === 'WGS84'
+        ? `Koordinate (${systemName}) · LV95: ${lv95}`
+        : `Koordinate (${systemName}) · WGS 84: ${wgs84}`;
+    return {
+      id: -1,
+      weight: 0,
+      attrs: {
+        detail,
+        featureId: '',
+        label,
+        lat: coordinate.wgs84[1],
+        lon: coordinate.wgs84[0],
+        x: coordinate.lv95[1],
+        y: coordinate.lv95[0],
+        origin: 'coordinate',
+        zoomlevel: 0,
+        geom_st_box2d: '',
+      },
+    };
+  }
+
+  displayFn(result: SwisstopoSearchResult): string {
+    return result ? presentSearchResult(result).title : '';
+  }
+
+  highlight = highlightParts;
 
   jumpToResult(result: SwisstopoSearchResult, animate: boolean = true) {
     if (!result?.attrs) return;
@@ -111,9 +247,15 @@ export class MapSearchComponent implements OnInit {
       const northing = result.attrs.x;
       markerCoord = [easting, northing];
 
+      const target =
+        result.attrs.origin === 'coordinate'
+          ? { resolution: COORDINATE_RESOLUTION }
+          : {
+              zoom: result.attrs.zoomlevel < 100 ? result.attrs.zoomlevel : 13,
+            };
       map.getView().animate({
         center: markerCoord,
-        zoom: result.attrs.zoomlevel < 100 ? result.attrs.zoomlevel : 13,
+        ...target,
         duration: animate ? 1000 : 0,
       });
     }
@@ -153,22 +295,5 @@ export class MapSearchComponent implements OnInit {
       const result: SwisstopoSearchResult = event.option.value;
       this.jumpToResult(result, false);
     }
-  }
-
-  highlightLabel(label: string, query: string | null): string {
-    if (!label) return '';
-
-    // Strip original HTML (Swisstopo's arbitrary <b> and <i> tags)
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = label;
-    let cleanText = tempDiv.textContent || label || '';
-
-    if (!query || query.length < 2) return cleanText;
-
-    // Highlight the actual search term input by the user
-    // Escape special regex characters in the query
-    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp(`(${escapedQuery})`, 'gi');
-    return cleanText.replace(regex, '<b>$1</b>');
   }
 }

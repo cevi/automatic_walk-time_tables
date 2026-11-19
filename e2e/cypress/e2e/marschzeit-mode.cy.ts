@@ -46,6 +46,25 @@ describe("Marschzeittabellen Mode - Waypoint Management", () => {
         expect(initialPoiCount).to.be.gt(0);
       });
 
+    // Zoom the map to the route: the automatic selection puts a way point at least every 1.5 km and on every
+    // landmark, so at the initial zoom (the whole route ~200 px) no spot of the route is far from a way point
+    cy.window().then((win: any) => {
+      const path = win.mapAnimator.path;
+      const map = win.mapService.get_map();
+      const xs = path.map((p: any) => p.x);
+      const ys = path.map((p: any) => p.y);
+      map
+        .getView()
+        .fit(
+          [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)],
+          {
+            size: map.getSize(),
+            padding: [150, 150, 150, 150],
+          },
+        );
+    });
+    cy.wait(1500);
+
     let targetPixel: number[] | null = null;
     let targetCoord: { x: number; y: number } | null = null;
 

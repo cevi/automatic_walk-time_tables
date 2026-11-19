@@ -8,6 +8,7 @@ import {
   Output,
   EventEmitter,
   ChangeDetectorRef,
+  ChangeDetectionStrategy
 } from '@angular/core';
 import { UntypedFormGroup } from '@angular/forms';
 import { MapAnimatorService } from '../../services/map-animator.service';
@@ -28,6 +29,7 @@ export interface TableRow {
   selector: 'app-walk-time-table',
   templateUrl: './walk-time-table.component.html',
   styleUrls: ['./walk-time-table.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false,
 })
 export class WalkTimeTableComponent implements OnInit, OnDestroy, OnChanges {
@@ -138,6 +140,13 @@ export class WalkTimeTableComponent implements OnInit, OnDestroy, OnChanges {
   async autoName(row: TableRow) {
     if (!row.waypoint) return;
     if (this.isAutoNamed(row)) return;
+
+    // the name the selection gave the way point (e.g. after the station or hut at the point)
+    if (row.waypoint.auto_name) {
+      row.waypoint.name = row.waypoint.auto_name;
+      this.onFieldChange();
+      return;
+    }
 
     const oldName = row.waypoint.name || '';
     row.waypoint.name = 'Lade...';

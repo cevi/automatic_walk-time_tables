@@ -39,18 +39,48 @@ class DouglasPeuckerTransformer(PathTransformer):
     closeness_threshold = 0.03
     maximum_poi_error = 50
 
-    def __init__(self, pois: Path = None, number_of_waypoints=21):
+    gap_fill_margin = 0.25
+    """A point that fills a gap lies at least this fraction of the gap away from both ends."""
+
+    def __init__(
+        self,
+        pois: Path = None,
+        number_of_waypoints=21,
+        landmark_bonus: float = 0.0,
+        max_gap: float | None = None,
+        min_gap: float | None = None,
+        fixed: Path | None = None,
+    ):
+        """
+        landmark_bonus: way points with a landmark (way_point.landmark, see landmarks.mark_landmarks) count as
+            deviating up to this many meters more from the secant, so they are kept longer than a point of equal
+            deviation where there is nothing to see. 0 disables the bias.
+        max_gap: after the selection, stretches longer than this [in meters] get an additional way point, preferably
+            a landmark near the middle. None disables it.
+        min_gap: after the selection, of two way points closer than this [in meters] and with less than
+            min_gap_height meters height difference, the less important one is dropped (start, end and fixed points
+            are kept, the highest and lowest point unless they are next to the start or end; otherwise the higher
+            landmark score wins). None disables it.
+        fixed: way points chosen by the user (a subset of pois). They are never moved, replaced or dropped.
+        """
         super().__init__()
 
         self.number_of_waypoints = number_of_waypoints
+        self.landmark_bonus = landmark_bonus
+        self.max_gap = max_gap
+        self.min_gap = min_gap
         self.__logger = logging.getLogger(__name__)
 
         if pois is None:
             pois = Path(points=[])
 
         self.pois = pois
+        self.fixed = fixed if fixed is not None else Path(points=[])
+        self._h_extremes: tuple = ()
 
     def transform(self, path: Path) -> Path:
+        heights = [p.point.h for p in path.way_points]
+        self._h_extremes = (max(heights), min(heights)) if heights else ()
         way_points = self.douglas_peucker(path.copy())
         self.__logger.debug(
             "%d way point selected for final walk time table",
@@ -60,6 +90,247 @@ class DouglasPeuckerTransformer(PathTransformer):
 
         way_points = self.replace_with_close_by_pois(way_points, path)
         way_points = self.add_pois(way_points)
+
+        if self.min_gap:
+            way_points = self.thin_out(way_points)
+            if self.landmark_bonus:
+                way_points = self.move_to_landmarks(way_points, path)
+        if self.max_gap:
+            way_points = self.fill_gaps(way_points, path)
+
+        return way_points
+
+    move_penalty = 0.05
+    """Score a landmark loses per meter it is away from the selected way point (see move_to_landmarks)."""
+    move_margin = 10
+    """A landmark must score this much more than the selected way point to replace it."""
+    move_profile_slack = 10
+    """Moving may increase the deviation of the profile between the neighbours by at most this [in meters]."""
+    extreme_move_distance = 250
+    """The highest / lowest point of the route may move at most this far [in meters] to a landmark ..."""
+    extreme_move_height = 25
+    """... that is at most this much [in meters] lower / higher, e.g. from the top of the elevation model to the
+    pass or summit next to it, which is the high point a hiker recognises."""
+
+    @staticmethod
+    def _profile_error(dist, heights, d0, h0, d1, h1, d2, h2) -> float:
+        """Max vertical distance of the route profile from the secants (d0, h0)-(d1, h1)-(d2, h2)."""
+        err = 0.0
+        for (a, ha), (b, hb) in (((d0, h0), (d1, h1)), ((d1, h1), (d2, h2))):
+            mask = (dist > a) & (dist < b)
+            if b > a and mask.any():
+                line = ha + (hb - ha) * (dist[mask] - a) / (b - a)
+                err = max(err, float(np.max(np.abs(heights[mask] - line))))
+        return err
+
+    def move_to_landmarks(self, way_points: Path, path: Path) -> Path:
+        """
+        Replaces a selected way point by a clearly better landmark between its neighbours, e.g. a fork by the
+        mountain inn 400 m further on, if the elevation profile is represented as well (see the move_* settings).
+        The highest and lowest point of the route only move to a landmark close by at almost the same height
+        (see extreme_move_*). Start, end and points fixed by the user stay.
+        """
+
+        pts = list(way_points.way_points)
+        if len(pts) < 3:
+            return way_points
+        dist = np.array([p.accumulated_distance for p in path.way_points])
+        heights = np.array([p.point.h for p in path.way_points])
+        h_max, h_min = float(np.max(heights)), float(np.min(heights))
+        landmarks = [p for p in path.way_points if p.landmark is not None]
+        first, last = pts[0], pts[-1]
+        gap = self.min_gap or 0
+
+        for i in range(1, len(pts) - 1):
+            cur, prev, nxt = pts[i], pts[i - 1], pts[i + 1]
+            if self._is_fixed(cur):
+                continue
+            extreme = cur.point.h in (h_max, h_min)
+            if self._importance(cur, first, last) >= 1000 and not extreme:
+                continue  # a POI that is not the highest / lowest point
+            d0, h0 = prev.accumulated_distance, prev.point.h
+            d2, h2 = nxt.accumulated_distance, nxt.point.h
+            base_err = self._profile_error(
+                dist, heights, d0, h0, cur.accumulated_distance, cur.point.h, d2, h2
+            )
+            cur_score = cur.landmark.score if cur.landmark is not None else 0.0
+
+            best, best_score = None, cur_score + self.move_margin
+            for lm in landmarks:
+                d = lm.accumulated_distance
+                if not (d0 + gap <= d <= d2 - gap) or lm is cur:
+                    continue
+                if extreme and (
+                    abs(d - cur.accumulated_distance) > self.extreme_move_distance
+                    or abs(lm.point.h - cur.point.h) > self.extreme_move_height
+                ):
+                    continue
+                score = lm.landmark.score - self.move_penalty * abs(
+                    d - cur.accumulated_distance
+                )
+                if score <= best_score:
+                    continue
+                if extreme:
+                    # the height limit bounds what is lost (at most extreme_move_height of ascent); the profile
+                    # deviation is no measure here, as the top of the elevation model is cut off by design
+                    best, best_score = lm, score
+                    continue
+                err = self._profile_error(dist, heights, d0, h0, d, lm.point.h, d2, h2)
+                if err <= base_err + self.move_profile_slack:
+                    best, best_score = lm, score
+            if best is not None:
+                pts[i] = best
+
+        moved = Path()
+        for p in pts:
+            moved.append(p)
+        return moved
+
+    min_gap_height = 30
+    """Way points closer than min_gap are both kept if their heights differ by at least this [in meters] ..."""
+    min_gap_steep = 50
+    """... unless they are closer than this [in meters]."""
+
+    @staticmethod
+    def _at(pt: WayPoint, points: Path) -> bool:
+        return any(
+            abs(p.accumulated_distance - pt.accumulated_distance) < 1
+            for p in points.way_points
+        )
+
+    def _is_fixed(self, pt: WayPoint) -> bool:
+        return self._at(pt, self.fixed)
+
+    def _is_extreme(self, pt: WayPoint) -> bool:
+        """The highest or lowest point of the route (a POI that may give way to a landmark next to it)."""
+        return pt.point.h in self._h_extremes and not self._is_fixed(pt)
+
+    def _importance(self, pt: WayPoint, first: WayPoint, last: WayPoint) -> float:
+        if pt is first or pt is last:
+            return math.inf
+        if self._at(pt, self.pois) or self._is_fixed(pt):
+            return 1000.0  # highest / lowest point or a point fixed by the user
+        landmark = getattr(pt, "landmark", None)
+        return landmark.score if landmark is not None else 0.0
+
+    extreme_landmark_height = 10
+    """A landmark replaces a close highest / lowest point if their heights differ by at most this [in meters]."""
+
+    def _landmark_at_extreme(self, a: WayPoint, b: WayPoint, first: WayPoint):
+        """
+        Of a highest / lowest point and a landmark next to it at almost the same height, returns the landmark:
+        it represents the profile as well and can be recognised. None if that is not the case.
+        """
+        if first in (a, b) or abs(a.point.h - b.point.h) > self.extreme_landmark_height:
+            return None
+        for extreme, other in ((a, b), (b, a)):
+            if (
+                self._is_extreme(extreme)
+                and self._importance(extreme, first, None) == 1000.0
+                and getattr(other, "landmark", None) is not None
+                and self._importance(other, first, None) < 1000.0
+            ):
+                return other
+        return None
+
+    def thin_out(self, way_points: Path) -> Path:
+        """Drops the less important of two way points that are closer than min_gap (see __init__)."""
+
+        pts = list(way_points.way_points)
+        if len(pts) < 3:
+            return way_points
+        first, last = pts[0], pts[-1]
+
+        kept = [first]
+        for pt in pts[1:]:
+            prev = kept[-1]
+            gap = pt.accumulated_distance - prev.accumulated_distance
+            close = gap < self.min_gap and (
+                abs(pt.point.h - prev.point.h) < self.min_gap_height
+                # a height difference over a few meters is noise of the elevation data, not a climb
+                or gap < self.min_gap_steep
+            )
+            if not close or (pt is last and prev is first):
+                kept.append(pt)
+            elif pt is last:
+                # the end is always kept, and so is a fixed point before it (a highest / lowest point right
+                # before the end is at almost the same height, the end represents it)
+                if self._is_fixed(prev):
+                    kept.append(pt)
+                else:
+                    kept[-1] = pt
+            elif self._landmark_at_extreme(prev, pt, first) is not None:
+                kept[-1] = self._landmark_at_extreme(prev, pt, first)
+            elif self._is_fixed(pt) or (
+                prev is not first
+                and min(
+                    self._importance(prev, first, last),
+                    self._importance(pt, first, last),
+                )
+                >= 1000
+            ):
+                kept.append(
+                    pt
+                )  # both must stay (fixed points, highest and lowest point)
+            elif self._importance(pt, first, last) > self._importance(
+                prev, first, last
+            ):
+                kept[-1] = pt
+            # else: drop pt
+
+        for pt in pts:
+            if pt not in kept:
+                way_points.remove(pt)
+        return way_points
+
+    def bonus(self, pt: WayPoint) -> float:
+        landmark = getattr(pt, "landmark", None)
+        if landmark is None or not self.landmark_bonus:
+            return 0.0
+        return self.landmark_bonus * landmark.score / 100
+
+    def fill_gaps(self, way_points: Path, path: Path) -> Path:
+        """
+        While two consecutive way points are more than max_gap apart, add the best landmark near the middle of the
+        gap (landmark score minus 0.05 per meter from the middle), or the point in the middle if there is none.
+        """
+
+        unfillable = (
+            set()
+        )  # gaps (by their start distance) without a route point near their middle
+        while way_points.number_of_waypoints < self.number_of_waypoints:
+            pts = way_points.way_points
+            gaps = [
+                (b.accumulated_distance - a.accumulated_distance, i)
+                for i, (a, b) in enumerate(zip(pts, pts[1:]))
+                if a.accumulated_distance not in unfillable
+            ]
+            if not gaps:
+                break
+            gap, i = max(gaps)
+            if gap <= self.max_gap:
+                break
+
+            start, end = pts[i].accumulated_distance, pts[i + 1].accumulated_distance
+            mid, margin = (start + end) / 2, self.gap_fill_margin * gap
+            inside = [
+                p
+                for p in path.way_points
+                if start + margin <= p.accumulated_distance <= end - margin
+            ]
+            if not inside:
+                unfillable.add(start)
+                continue
+            landmarks = [p for p in inside if p.landmark is not None]
+            if landmarks:
+                best = max(
+                    landmarks,
+                    key=lambda p: p.landmark.score
+                    - 0.05 * abs(p.accumulated_distance - mid),
+                )
+            else:
+                best = min(inside, key=lambda p: abs(p.accumulated_distance - mid))
+            way_points.insert(best, i + 1)
 
         return way_points
 
@@ -279,12 +550,12 @@ class DouglasPeuckerTransformer(PathTransformer):
                 m, b = calc_secant_line(pt_a, pt_c)
                 secant_elev = calc_secant_elevation(m, b, pt_b)
 
-                if abs(secant_elev - pt_b.point.h) < drv_limit:
+                if abs(secant_elev - pt_b.point.h) + self.bonus(pt_b) < drv_limit:
                     # Check if B must be replaced by a previously dropped point D
                     pt_d = None
                     for pt in self.points_between(pt_a, pt_c, pts_dropped.way_points):
                         secant_elev = calc_secant_elevation(m, b, pt)
-                        if abs(secant_elev - pt.point.h) >= drv_limit:
+                        if abs(secant_elev - pt.point.h) + self.bonus(pt) >= drv_limit:
                             pt_d = pt
                             break
 
