@@ -3,13 +3,14 @@ import unittest
 from swiss_TML_api.name_finding.name_ranking import (
     FIELD_NAME,
     HUT,
+    CROSSING,
     JUNCTION,
-    LAKE,
+    LINE_CROSSING,
     PASS,
+    SMALL_LAKE,
     SPOT_HEIGHT,
     STOP,
     classify,
-    is_lake,
     rank,
 )
 
@@ -27,7 +28,6 @@ def best(*candidates):
 class ClassifyTest(unittest.TestCase):
     def test_street_name_does_not_turn_a_junction_into_a_lake(self):
         self.assertIs(classify("Weggabelung Route du Lac", "Weggabelung"), JUNCTION)
-        self.assertFalse(is_lake("Weggabelung Route du Lac", "Weggabelung"))
 
     def test_street_name_does_not_turn_a_junction_into_a_pass(self):
         self.assertIs(
@@ -46,9 +46,23 @@ class ClassifyTest(unittest.TestCase):
 
     def test_keywords_in_names_of_named_objects(self):
         self.assertIs(classify("Lämmerenhütte SAC", "Lokalname swisstopo"), HUT)
-        self.assertIs(classify("Daubensee", "Flurname swisstopo"), LAKE)
-        self.assertIs(classify("Lej da Segl", "Flurname swisstopo"), LAKE)
         self.assertIs(classify("Seematt", "Flurname swisstopo"), FIELD_NAME)
+
+    def test_field_name_that_sounds_like_a_lake_is_a_field_name(self):
+        # "Obem See" (above the lake) at the Stadlersee: a field name, no lake; lakes come from swissNAMES3D_PLY
+        self.assertIs(classify("Obem See", "Flurname swisstopo"), FIELD_NAME)
+        self.assertIs(classify("Lej da Segl", "Flurname swisstopo"), FIELD_NAME)
+
+    def test_shore_of_a_small_lake(self):
+        self.assertIs(classify("Stadlersee", "See"), SMALL_LAKE)
+
+    def test_stream_crossing_without_a_name_is_below_a_junction(self):
+        self.assertIs(classify("Gewässerquerung", "Fliessgewaesser"), CROSSING)
+        self.assertLess(CROSSING.priority, JUNCTION.priority)
+        self.assertIs(
+            classify("Gewässerquerung (Riale di Molge)", "Fliessgewaesser"),
+            LINE_CROSSING,
+        )
 
     def test_spot_height(self):
         self.assertIs(classify("Punkt 661", "Kotierter Punkt"), SPOT_HEIGHT)
@@ -115,7 +129,53 @@ class RankTest(unittest.TestCase):
         )
 
     def test_objects_out_of_range_are_ignored(self):
-        self.assertIsNone(best(("Punkt 545", "Kotierter Punkt", 11)))
+        self.assertIsNone(best(("Punkt 545", "Kotierter Punkt", 26)))
+
+    def test_spot_height_a_few_meters_off_the_junction_beats_it(self):
+        # the way point is named from the junction's point of the index, the printed spot height is 8 to 25 m away
+        self.assertEqual(
+            best(
+                ("Kreuzung Route du Golf, Route de Ballègue", "Kreuzung", 0),
+                ("Punkt 846", "Kotierter Punkt", 17),
+            ),
+            "Punkt 846",
+        )
+
+    def test_named_bridge_beats_a_spot_height_beside_it(self):
+        self.assertEqual(
+            best(
+                ("Bruecke (Gantrischsense)", "Bruecke", 0),
+                ("Punkt 1310", "Kotierter Punkt", 14),
+            ),
+            "Bruecke (Gantrischsense)",
+        )
+
+    def test_junction_beats_a_stream_crossing_without_a_name(self):
+        self.assertEqual(
+            best(
+                ("Gewässerquerung", "Fliessgewaesser", 3),
+                ("Weggabelung bei Schüepenloch", "Weggabelung", 1),
+            ),
+            "Weggabelung bei Schüepenloch",
+        )
+
+    def test_small_lake_beats_junction_and_spot_height_but_not_a_stop(self):
+        self.assertEqual(
+            best(
+                ("Stadlersee", "See", 25),
+                ("Weggabelung Hochfelderstrasse", "Weggabelung", 0),
+                ("Punkt 418", "Kotierter Punkt", 5),
+            ),
+            "Stadlersee",
+        )
+        self.assertEqual(
+            best(
+                ("Lago della Piazza", "See", 10),
+                ("Gotthard Passhöhe", "Haltestelle Bus", 12),
+            ),
+            "Gotthard Passhöhe",
+        )
+        self.assertIsNone(best(("Stadlersee", "See", 31)))
 
 
 if __name__ == "__main__":

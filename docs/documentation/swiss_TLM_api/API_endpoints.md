@@ -11,9 +11,20 @@ Names a list of LV95 coordinates.
   `/swiss_name` below.
 
 The name is chosen among the objects of the index around the point: an object at the point (within 15 m) is preferred
-over anything nearby, and huts, passes, lakes and summits win within their radius. A fork named after a single street
-(`Weggabelung Letziweg`) is named after the nearest field name within 100 m instead (`Weggabelung bei Ob der Hueb`),
-as street names are not printed on the 1:25'000 map.
+over anything nearby, and huts, passes and summits win within their radius. The aim is a name printed on the
+1:25'000 map:
+
+- A fork named after a single street (`Weggabelung Letziweg`) is named after the nearest field or place name within
+  100 m instead (`Weggabelung bei Ob der Hueb`, `Weggabelung bei Lettenhof`), as street names are not printed.
+- A spot height within 25 m beats a junction and a stream crossing without a name (`Punkt 846`), and gets the nearest
+  village or hamlet within 250 m, else the nearest field name: `Punkt 584 (Banco)`. A bus stop with a spot height
+  within 15 m is named after the spot height, as bus stop names are not printed.
+- The shore of a small lake (at most 400 m long, see `index_builder/swissnames_areas.py`) names the points within
+  30 m: `Stadlersee`. Larger lakes are not in the index, they would name many points of a route the same.
+- If no object is within its radius, the nearest named object within 100 m is used, else the name is empty.
+
+Each description also has `alternatives`: the next best other names (`[{"swiss_name", "object_type", "offset"}]`).
+The backend uses them for a second place of a route that would get the same name.
 
 ### /features_along_route [POST]
 

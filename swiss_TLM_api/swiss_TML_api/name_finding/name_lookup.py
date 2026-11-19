@@ -4,7 +4,7 @@ import logging
 import math
 from typing import Iterable
 
-from swiss_TML_api.name_finding.name_ranking import classify, is_lake, rank
+from swiss_TML_api.name_finding.name_ranking import AT_POINT_RADIUS, classify, rank
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +65,7 @@ def _translations(candidates: list) -> set:
     return result
 
 
-PLACE_TYPES = ("Ort", "Ortsteil")
+PLACE_TYPES = ("Ort", "Ortsteil", "Siedlung")
 """Hamlets and parts of villages ("Lettenhof"): printed on the map like field names."""
 
 
@@ -75,12 +75,19 @@ def _is_local_name(obj) -> bool:
     return "flurname" in t.lower() or "lokalname" in t.lower() or t in PLACE_TYPES
 
 
+SPOT_HEIGHT_PLACE_RADIUS = 250
+"""A spot height is completed with the nearest place or field name within this distance [in meters]."""
+
 STREET_FORK_FIELD_NAME_RADIUS = 100
 """
 A fork named after a single street ("Weggabelung Letziweg") is renamed after the nearest field or place name within
 this distance [in meters] ("Weggabelung bei Ob der Hueb", "Weggabelung bei Lettenhof"). Street names are not printed
 on the 1:25'000 map and repeat along the whole street, field and place names are and do not.
 """
+
+
+MAX_FALLBACK_DISTANCE = 100
+"""Without a candidate within its radius, the nearest named object is used only up to this distance [in meters]."""
 
 
 def _dist(e: float, n: float, obj) -> float:
@@ -99,16 +106,22 @@ def _nearest(candidates: Iterable, e: float, n: float, types, max_dist: float):
     return best
 
 
+MAX_ALTERNATIVES = 4
+"""Number of other names returned with a name, best first (see find_name)."""
+
+
 def find_name(candidates: list, e: float, n: float) -> dict:
     """
     Chooses the name for the LV95 coordinate (e, n) among the candidates of the name index (sorted by distance).
 
-    Returns {"lv95_coord", "offset", "swiss_name", "object_type"}; offset is the distance in meters between the
-    requested coordinate and the named object.
+    Returns {"lv95_coord", "offset", "swiss_name", "object_type", "alternatives"}; offset is the distance in meters
+    between the requested coordinate and the named object. alternatives are the next best names
+    ([{"swiss_name", "object_type", "offset"}, ...], other names only): a walk-time table uses one of them for a
+    second place that would get the same name.
     """
 
     translations = _translations(candidates)
-    best_n, best_rank = None, None
+    ranked = []
     for c in candidates:
         if c.object_type in IGNORED_TYPES:
             continue
@@ -116,28 +129,75 @@ def find_name(candidates: list, e: float, n: float) -> dict:
             continue  # "Mont Cervin" next to "Matterhorn | Mont Cervin | Monte Cervino": not the official name
         if c.name and "fliessgewaesser (keine brücke)" in c.name.lower():
             c.name = c.name.replace("Fliessgewaesser (Keine Brücke)", "Gewässerquerung")
+        if not c.name or not str(c.name).strip():
+            continue
 
         category = classify(c.name, c.object_type)
         dist = round(_dist(e, n, c))
         if dist <= category.max_distance:
-            r = rank(category, dist)
-            if best_rank is None or r > best_rank:
-                best_n, best_rank = c, r
+            ranked.append((rank(category, dist), c))
+    ranked.sort(key=lambda rc: rc[0], reverse=True)
+    best = [c for _, c in ranked]
 
-    if best_n is None:
-        # nothing within its radius: fall back to the nearest object that has a name
-        named = [c for c in candidates if c.name and str(c.name).strip()]
-        best_n = named[0] if named else candidates[0]
+    if not best:
+        # nothing within its radius: fall back to the nearest object that has a name, if it is close enough
+        best = [
+            c
+            for c in candidates
+            if c.name
+            and str(c.name).strip()
+            and _dist(e, n, c) <= MAX_FALLBACK_DISTANCE
+        ][:1]
+        if not best:
+            return {
+                "lv95_coord": (e, n),
+                "offset": 0,
+                "swiss_name": "",
+                "object_type": "",
+                "alternatives": [],
+            }
 
+    names = []
+    for c in best:
+        c = _spot_height_at_bus_stop(c, candidates, e, n) or c
+        name = _final_name(c, candidates, e, n)
+        if name and name not in (x[0] for x in names):
+            names.append((name, c))
+        if len(names) > MAX_ALTERNATIVES:
+            break
+
+    name, best_n = names[0]
+    return {
+        "lv95_coord": (best_n.x, best_n.y),
+        "offset": round(_dist(e, n, best_n)),
+        "swiss_name": name,
+        "object_type": best_n.object_type,
+        "alternatives": [
+            {
+                "swiss_name": nm,
+                "object_type": c.object_type,
+                "offset": round(_dist(e, n, c)),
+            }
+            for nm, c in names[1:]
+        ],
+    }
+
+
+def _spot_height_at_bus_stop(obj, candidates: list, e: float, n: float):
+    """
+    A spot height printed at a bus stop: names of bus stops are not printed on the map ("Horgenberg, Nordecke"),
+    the spot height is, so the point is named after it ("Punkt 620 (Hinter Horgenberg)").
+    """
+    if obj.object_type != "Haltestelle Bus":
+        return None
+    spot = _nearest(candidates, e, n, ("Kotierter Punkt",), AT_POINT_RADIUS)
+    return spot if spot and spot.name and spot.name.startswith("Punkt ") else None
+
+
+def _final_name(best_n, candidates: list, e: float, n: float) -> str:
+    """The name of the coordinate (e, n) if it is named after best_n, completed with the objects around it."""
     name = pretty_name(best_n.name)
     others = [c for c in candidates if c is not best_n]
-
-    if (
-        is_lake(name, best_n.object_type)
-        and f"({int(best_n.h)})" not in name
-        and best_n.h > 0
-    ):
-        name = f"{name} ({int(best_n.h)})"
 
     if best_n.object_type == "Gipfelkreuz":
         peak = _nearest(others, e, n, ("Hauptgipfel", "Gipfel"), 250)
@@ -145,7 +205,11 @@ def find_name(candidates: list, e: float, n: float) -> dict:
             name = f"Gipfelkreuz {peak.name}"
 
     if best_n.object_type == "Kotierter Punkt" or name.startswith("Punkt "):
-        field = _nearest(others, e, n, _is_local_name, 250)
+        # a village or hamlet is printed larger than a field name: "Punkt 584 (Banco)", not "(I Vignòo)"
+        place = _nearest(others, e, n, PLACE_TYPES, SPOT_HEIGHT_PLACE_RADIUS)
+        field = place or _nearest(
+            others, e, n, _is_local_name, SPOT_HEIGHT_PLACE_RADIUS
+        )
         if field:
             name = f"{name} ({field.name})"
 
@@ -166,9 +230,4 @@ def find_name(candidates: list, e: float, n: float) -> dict:
             if field:
                 name = "Weggabelung bei " + field.name
 
-    return {
-        "lv95_coord": (best_n.x, best_n.y),
-        "offset": round(_dist(e, n, best_n)),
-        "swiss_name": name,
-        "object_type": best_n.object_type,
-    }
+    return name

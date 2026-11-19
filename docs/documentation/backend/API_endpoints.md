@@ -116,8 +116,9 @@ and every returned way point is a point of the route:
 }
 ```
 
-`landmark` is `null` if there is nothing recognisable at the way point (see below). `name` is empty if no named
-object is within 100 m.
+`landmark` is `null` if there is nothing recognisable at the way point (see below). `name` is empty if nothing named
+is close enough (see the naming service, `/names`). Two different places of a route get different names: the second
+one gets the next best name of the naming service, or its height if there is none ("Weggabelung bei X (812)").
 
 ### /waypoints/auto [POST]
 
@@ -194,7 +195,7 @@ Response:
 }
 ```
 
-`name` is empty if no named object is within 100 m. At most 500 points per request.
+`name` is empty if nothing named is close enough. At most 500 points per request.
 
 ### Deprecated: /create-walk-time-table [POST] and /get_name [POST]
 

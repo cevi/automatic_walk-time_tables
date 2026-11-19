@@ -24,8 +24,14 @@ DEFAULT = Category(0, 50)
 
 HUT = Category(100, 200)
 PASS = Category(90, 200)
-LAKE = Category(85, 250)
 SUMMIT = Category(80, 150)
+SMALL_LAKE = Category(65, 30)
+"""
+The shore of a small lake ("Stadlersee", "Seebergsee"): the index has its shore points for lakes up to 400 m long
+(index_builder/small_lakes.py), so a point on the shore of such a lake is named after it, before a junction or a spot
+height, but not before a stop or an inn. Larger lakes are not in the index: "Zürichsee" or "Oberer Chatzensee" would
+name many points of a route the same.
+"""
 NAMED_HUT = Category(85, 60)
 """
 A named building that is a hut ("Blattihütte", "Refuge de la Christine"): a landmark, but only close by, as there are
@@ -39,7 +45,11 @@ name ("...hütte", "SAC") are HUT.
 """
 DAM = Category(70, 100)
 STOP = Category(70, 50)
-SPOT_HEIGHT = Category(60, 10)
+SPOT_HEIGHT = Category(60, 25)
+"""
+A spot height is printed exactly at a junction or a bend of a path, but its point in the index can be some meters off
+the junction's: within its radius it counts as "at the point" (see rank).
+"""
 PLACE = Category(55, 100)
 FIELD_NAME = Category(50, 120)
 HILL = Category(50, 60)
@@ -48,6 +58,9 @@ DISTRICT = Category(40, 60)
 NATIONAL_PARK = Category(30, 50)
 AREAL = Category(30, 30)
 LINE_CROSSING = Category(20, 20)
+SPOT_HEIGHT_EXACT_RADIUS = 10
+NEAR_SPOT_HEIGHT_PRIORITY = 25
+"""Priority of a spot height 10 to 25 m away: above junctions and stream crossings, below named bridges."""
 SPORT = Category(15, 20)
 JUNCTION = Category(10, 25)
 # Bridges, footbridges, fords, underpasses: visible on the ground, but the index has no name for them ("Bruecke"),
@@ -81,6 +94,7 @@ OBJECT_TYPES = {
     "Schutzhuette": INN,
     "Gebaeude": INN,  # named building without a recorded use, e.g. "Blattihütte"
     "Aussichtsturm": BUILDING,
+    "See": SMALL_LAKE,
     "Pass": PASS,
     "Strassenpass": PASS,
     "Hauptgipfel": SUMMIT,
@@ -97,6 +111,7 @@ OBJECT_TYPES = {
     "Uebrige Bahnen": STOP,
     "Kotierter Punkt": SPOT_HEIGHT,
     "Ort": PLACE,
+    "Siedlung": PLACE,  # villages and towns of swissNAMES3D_PLY (index_builder/swissnames_areas.py)
     "Ortsteil": PLACE,
     "Flurname swisstopo": FIELD_NAME,
     "Lokalname swisstopo": FIELD_NAME,
@@ -186,11 +201,6 @@ GENERIC_HUT_NAMES = {
 Names that are just a kind of hut, e.g. the 65 buildings called "Refuge" (mostly forest shelters in the Jura): there
 are many of each, so they name a point only right next to it (BUILDING) and are no landmark.
 """
-_LAKE = re.compile(r"\b(lac|lai|lago|lej) |see$|\bsee |\blac$|\blai$")
-
-
-def is_lake(name: str | None, object_type: str | None) -> bool:
-    return classify(name, object_type) is LAKE
 
 
 def classify(name: str | None, object_type: str | None) -> Category:
@@ -209,6 +219,9 @@ def classify(name: str | None, object_type: str | None) -> Category:
 
     if name_lower.startswith("punkt "):
         return SPOT_HEIGHT
+
+    if object_type == "Fliessgewaesser" and "(" not in name_lower:
+        return CROSSING  # "Gewässerquerung": a stream without a name, mostly a culvert, says less than a junction
 
     category = OBJECT_TYPES.get(object_type)
     if category is None:
@@ -232,8 +245,6 @@ def classify(name: str | None, object_type: str | None) -> Category:
     if category in KEYWORD_NAME_TYPES:
         if _CLUB_HUT.search(name or ""):
             return HUT
-        if _LAKE.search(name_lower):
-            return LAKE
 
     return category
 
@@ -250,7 +261,11 @@ def rank(category: Category, distance: float) -> tuple:
     """
 
     is_landmark = category.priority >= LANDMARK_PRIORITY
-    is_at_point = category is STOP or (
+    is_at_point = category in (STOP, SMALL_LAKE, SPOT_HEIGHT) or (
         category.priority > PATH_END.priority and distance <= AT_POINT_RADIUS
     )
-    return is_landmark, is_at_point, category.priority, -distance
+    priority = category.priority
+    if category is SPOT_HEIGHT and distance > SPOT_HEIGHT_EXACT_RADIUS:
+        # a few meters off the junction: before the junction or an unnamed stream crossing, after a named bridge
+        priority = NEAR_SPOT_HEIGHT_PRIORITY
+    return is_landmark, is_at_point, priority, -distance

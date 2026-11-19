@@ -236,6 +236,59 @@ class FindNameTest(unittest.TestCase):
             "Weggabelung bei X",
         )
 
+    def test_no_name_without_an_object_close_enough(self):
+        result = find_name([obj("Ob der Hueb", "Flurname swisstopo", 180)], E, N)
+        self.assertEqual(result["swiss_name"], "")
+        self.assertEqual(result["alternatives"], [])
+
+    def test_spot_height_at_a_bus_stop_names_the_point(self):
+        # bus stop names are not printed on the map, the spot height is
+        self.assertEqual(
+            name_at(
+                obj("Banco, Paese", "Haltestelle Bus", 2),
+                obj("Punkt 584", "Kotierter Punkt", 9),
+                obj("Banco", "Siedlung", 80),
+                obj("I Vignòo", "Flurname swisstopo", 40),
+            ),
+            "Punkt 584 (Banco)",
+        )
+        self.assertEqual(
+            name_at(obj("Banco, Paese", "Haltestelle Bus", 2)), "Banco, Paese"
+        )
+
+    def test_spot_height_prefers_a_place_name(self):
+        self.assertEqual(
+            name_at(
+                obj("Punkt 415", "Kotierter Punkt"),
+                obj("Castelrotto", "Siedlung", 160),
+                obj("Luzzo", "Flurname swisstopo", 90),
+            ),
+            "Punkt 415 (Castelrotto)",
+        )
+
+    def test_small_lake_without_height(self):
+        self.assertEqual(
+            name_at(
+                obj("Stadlersee", "See", 0, 20),
+                obj("Weggabelung Hochfelderstrasse", "Weggabelung"),
+                obj("Obem See", "Flurname swisstopo", 150, 70),
+            ),
+            "Stadlersee",
+        )
+
+    def test_alternatives_are_the_next_best_other_names(self):
+        result = find_name(
+            [
+                obj("Weggabelung bei Unter Stock", "Weggabelung", 1),
+                obj("Stock", "Haupthuegel", 50, 15),
+                obj("Weggabelung bei Unter Stock", "Weggabelung", 48),
+            ],
+            E,
+            N,
+        )
+        self.assertEqual(result["swiss_name"], "Weggabelung bei Unter Stock")
+        self.assertEqual([a["swiss_name"] for a in result["alternatives"]], ["Stock"])
+
     def test_offset_is_the_distance_to_the_named_object(self):
         result = find_name([obj("Gemmipass", "Pass", 30, 40)], E, N)
         self.assertEqual(result["offset"], 50)
