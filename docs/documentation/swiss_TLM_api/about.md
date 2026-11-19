@@ -46,8 +46,8 @@ Processing Swisstopo's massive datasets into a high-performance memory-mapped KD
   downloads the archive again when `INDEX_CACHE_VERSION` changes. To publish a new index:
   1. Build it: run `python scripts/fetch_hoehenpunkte.py` (spot heights), then
      `NameIndex(force_rebuild=True, reduced=False)` in the swiss_TLM_api image with `resources/` and `index_cache/`
-     mounted. The builders log errors and continue, so check the log for `ERROR` and for "Inserted ... named
-     buildings" (about 3,500).
+     mounted. The builders log errors and continue, so check the log for `ERROR`, for "Inserted ... named
+     buildings" (about 3,500) and for "Added ... settlements and ... small lakes".
   2. Pack `swissname_data_index.dat`, `swissname_data_index.idx` and `.version` at the top level of
      `index_cache.tar.xz` (no folder).
   3. Upload it to Google Drive (shared drive, "Anyone with the link: Viewer"): either as a new version of the

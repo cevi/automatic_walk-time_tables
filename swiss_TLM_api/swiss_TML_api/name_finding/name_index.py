@@ -27,6 +27,7 @@ from swiss_TML_api.name_finding.index_builder.intersections import Intersections
 from swiss_TML_api.name_finding.index_builder.hoehenpunkt import Hoehenpunkt
 from swiss_TML_api.name_finding.index_builder.named_buildings import NamedBuildings
 from swiss_TML_api.name_finding.index_builder.bridges import Bridges
+from swiss_TML_api.name_finding.index_builder.swissnames_areas import SwissNamesAreas
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -56,7 +57,7 @@ class NameIndex:
         # we redownload the index from Google Drive
         file_id = "1gESYkWDCrAJ06ADBwM-c2SrEpri6I5P0"
         INDEX_CACHE_VERSION = (
-            "v2-2026-11-18"  # Bump this string to force production to redownload
+            "v3-2026-11-19"  # Bump this string to force production to redownload
         )
 
         version_file = "./index_cache/.version"
@@ -241,6 +242,7 @@ class NameIndex:
             Hoehenpunkt,
             NamedBuildings,
             Bridges,
+            SwissNamesAreas,
         )
         for index_part in index_parts:
             start = time.time()
