@@ -21,13 +21,7 @@ fi
 if [ "$NEEDS_DOWNLOAD" = true ]; then
   echo "Index version mismatch or missing local files. Pulling default graph from GDrive..."
 
-  # Install dependencies for downloading files
-  sudo apt update
-  sudo apt install python3-pip -y
-  python3 -m pip install --break-system-packages gdown
-
-  # pip install gdown
-  export PATH=$PATH:/home/valhalla/.local/bin
+  # gdown is installed in the image (see Dockerfile)
 
   # clear /custom_files safely
   find /custom_files -mindepth 1 | grep -Ev '^/custom_files/(\.gitkeep|file_hashes\.txt)$' | xargs sudo rm -rf
