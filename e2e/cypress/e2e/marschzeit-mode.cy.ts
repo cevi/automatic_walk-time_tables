@@ -150,11 +150,11 @@ describe("Marschzeittabellen Mode - Waypoint Management", () => {
     });
 
     // 5. Add a Waypoint via Elevation Profile Click
-    // Hover first, then click on the chart canvas
+    // Hover first, then click on the chart canvas (in its middle: the plot area, not the axis labels)
     cy.get("#chart canvas")
-      .trigger("mousemove", 200, 200, { force: true })
+      .trigger("mousemove", "center", { force: true })
       .wait(500)
-      .click(200, 200, { force: true });
+      .click("center", { force: true });
     cy.wait(2000);
 
     // Verify POI count increased by 1
@@ -166,9 +166,9 @@ describe("Marschzeittabellen Mode - Waypoint Management", () => {
     // 6. Remove that Waypoint via Elevation Profile Click
     // Hover the waypoint first (to set hover_snapped_poi), then click to delete
     cy.get("#chart canvas")
-      .trigger("mousemove", 200, 200, { force: true })
+      .trigger("mousemove", "center", { force: true })
       .wait(500)
-      .click(200, 200, { force: true });
+      .click("center", { force: true });
     cy.wait(2000);
 
     // Verify POI count decreased back by 1
@@ -179,9 +179,9 @@ describe("Marschzeittabellen Mode - Waypoint Management", () => {
 
     // 7. Add a Waypoint again to test Table Deletion
     cy.get("#chart canvas")
-      .trigger("mousemove", 200, 200, { force: true })
+      .trigger("mousemove", "center", { force: true })
       .wait(500)
-      .click(200, 200, { force: true });
+      .click("center", { force: true });
     cy.wait(2000);
 
     // Verify POI count increased by 1
@@ -192,7 +192,8 @@ describe("Marschzeittabellen Mode - Waypoint Management", () => {
 
     // 8. Remove the Waypoint via Table Action (delete button)
     cy.get(".delete-icon").should("exist");
-    cy.get(".delete-icon").first().click();
+    // the row actions are shown on hover, which Cypress cannot do
+    cy.get(".delete-icon").first().click({ force: true });
     cy.wait(2000);
 
     // Verify POI count decreased back by 1
