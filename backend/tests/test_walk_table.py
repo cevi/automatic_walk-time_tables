@@ -168,5 +168,6 @@ class TestWalkTableLocations(unittest.TestCase):
             ["1: Start", "2: (2601000, 1200000)", "3: Ziel"],
         )
 
+
 if __name__ == "__main__":
     unittest.main()
