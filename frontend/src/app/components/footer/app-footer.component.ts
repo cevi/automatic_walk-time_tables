@@ -16,10 +16,10 @@ export class AppFooterComponent implements OnInit {
   public buildDate;
 
   constructor() {
-    this.buildDate =
-      new Date(buildInfo.timestamp).toISOString().substr(0, 10) +
-      ' ' +
-      new Date(buildInfo.timestamp).toLocaleTimeString();
+    this.buildDate = new Date(buildInfo.timestamp).toLocaleString('de-CH', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    });
   }
 
   ngOnInit(): void {}

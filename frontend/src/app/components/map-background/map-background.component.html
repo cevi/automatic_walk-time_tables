@@ -42,7 +42,7 @@
             mat-icon-button
             (click)="toggle_drawer_guide()"
             matTooltip="So funktioniert es!"
-            color="primary"
+            matTooltipPosition="left"
           >
             <mat-icon>help_outline</mat-icon>
           </button>
@@ -51,16 +51,15 @@
             mat-icon-button
             (click)="toggle_drawer_statistics()"
             matTooltip="Statistiken"
-            color="primary"
+            matTooltipPosition="left"
           >
-            <mat-icon>monitoring</mat-icon>
+            <mat-icon>bar_chart</mat-icon>
           </button>
           <div class="toolbar-divider"></div>
           <button
             mat-icon-button
             [matMenuTriggerFor]="mapMenu"
             matTooltip="Hintergrundkarte"
-            color="primary"
             class="layers-button"
             [class.sentinel-loading]="sentinelLoading"
           >
@@ -99,7 +98,7 @@
                   class="material-icons settings-btn"
                   [class.disabled]="currentLayer !== 'pixelkarte'"
                   (click)="handleSettingsClick('pixelkarte', $event)"
-                  >settings</span
+                  >tune</span
                 >
               </div>
             </button>
@@ -163,7 +162,7 @@
                   class="material-icons settings-btn"
                   [class.disabled]="currentLayer !== 'luftbild'"
                   (click)="handleSettingsClick('luftbild', $event)"
-                  >settings</span
+                  >tune</span
                 >
               </div>
             </button>
@@ -233,7 +232,7 @@
               class="custom-menu-item"
             >
               <div class="menu-item-content">
-                <mat-icon class="type-icon oev-icon">directions_bus</mat-icon>
+                <mat-icon class="type-icon layer-oev">directions_bus</mat-icon>
                 <mat-icon *ngIf="showHaltestellen" class="check-icon"
                   >check_box</mat-icon
                 >
@@ -245,7 +244,7 @@
                   class="material-icons settings-btn"
                   [class.disabled]="!showHaltestellen"
                   (click)="handleSettingsClick('haltestellen', $event)"
-                  >settings</span
+                  >tune</span
                 >
               </div>
             </button>
@@ -274,7 +273,7 @@
               class="custom-menu-item"
             >
               <div class="menu-item-content">
-                <mat-icon class="type-icon danger-icon">landscape</mat-icon>
+                <mat-icon class="type-icon layer-slope">landscape</mat-icon>
                 <mat-icon *ngIf="showHangneigung" class="check-icon"
                   >check_box</mat-icon
                 >
@@ -286,7 +285,7 @@
                   class="material-icons settings-btn"
                   [class.disabled]="!showHangneigung"
                   (click)="handleSettingsClick('hangneigung', $event)"
-                  >settings</span
+                  >tune</span
                 >
               </div>
             </button>
@@ -315,7 +314,7 @@
               class="custom-menu-item"
             >
               <div class="menu-item-content">
-                <mat-icon class="type-icon trail-icon"
+                <mat-icon class="type-icon layer-trail"
                   >directions_walk</mat-icon
                 >
                 <mat-icon *ngIf="showWanderwege" class="check-icon"
@@ -329,7 +328,7 @@
                   class="material-icons settings-btn"
                   [class.disabled]="!showWanderwege"
                   (click)="handleSettingsClick('wanderwege', $event)"
-                  >settings</span
+                  >tune</span
                 >
               </div>
             </button>
@@ -358,7 +357,7 @@
               class="custom-menu-item"
             >
               <div class="menu-item-content">
-                <mat-icon class="type-icon warn-icon">warning</mat-icon>
+                <mat-icon class="type-icon layer-closure">warning</mat-icon>
                 <mat-icon *ngIf="showSperrungen" class="check-icon"
                   >check_box</mat-icon
                 >
@@ -370,7 +369,7 @@
                   class="material-icons settings-btn"
                   [class.disabled]="!showSperrungen"
                   (click)="handleSettingsClick('sperrungen', $event)"
-                  >settings</span
+                  >tune</span
                 >
               </div>
             </button>
@@ -399,7 +398,7 @@
               class="custom-menu-item"
             >
               <div class="menu-item-content">
-                <mat-icon class="type-icon eco-icon">eco</mat-icon>
+                <mat-icon class="type-icon layer-protected">eco</mat-icon>
                 <mat-icon *ngIf="showSchutzgebiete" class="check-icon"
                   >check_box</mat-icon
                 >
@@ -411,7 +410,7 @@
                   class="material-icons settings-btn"
                   [class.disabled]="!showSchutzgebiete"
                   (click)="handleSettingsClick('schutzgebiete', $event)"
-                  >settings</span
+                  >tune</span
                 >
               </div>
             </button>
@@ -440,7 +439,9 @@
               class="custom-menu-item"
             >
               <div class="menu-item-content">
-                <mat-icon class="type-icon danger-icon">crisis_alert</mat-icon>
+                <mat-icon class="type-icon layer-shooting"
+                  >crisis_alert</mat-icon
+                >
                 <mat-icon *ngIf="showSchiessanzeigen" class="check-icon"
                   >check_box</mat-icon
                 >
@@ -452,7 +453,7 @@
                   class="material-icons settings-btn"
                   [class.disabled]="!showSchiessanzeigen"
                   (click)="handleSettingsClick('schiessanzeigen', $event)"
-                  >settings</span
+                  >tune</span
                 >
               </div>
             </button>
@@ -485,7 +486,7 @@
               class="custom-menu-item"
             >
               <div class="menu-item-content">
-                <mat-icon class="type-icon pets-icon">pets</mat-icon>
+                <mat-icon class="type-icon layer-dogs">pets</mat-icon>
                 <mat-icon *ngIf="showHerdenschutzhunde" class="check-icon"
                   >check_box</mat-icon
                 >
@@ -497,7 +498,7 @@
                   class="material-icons settings-btn"
                   [class.disabled]="!showHerdenschutzhunde"
                   (click)="handleSettingsClick('herdenschutzhunde', $event)"
-                  >settings</span
+                  >tune</span
                 >
               </div>
             </button>
@@ -532,7 +533,7 @@
               class="custom-menu-item"
             >
               <div class="menu-item-content">
-                <mat-icon class="type-icon water-icon">water_drop</mat-icon>
+                <mat-icon class="type-icon layer-water">water_drop</mat-icon>
                 <mat-icon *ngIf="showFountains" class="check-icon"
                   >check_box</mat-icon
                 >
@@ -544,7 +545,7 @@
                   class="material-icons settings-btn"
                   [class.disabled]="!showFountains"
                   (click)="handleSettingsClick('fountains', $event)"
-                  >settings</span
+                  >tune</span
                 >
               </div>
             </button>
@@ -573,7 +574,7 @@
               class="custom-menu-item"
             >
               <div class="menu-item-content">
-                <mat-icon class="type-icon danger-icon"
+                <mat-icon class="type-icon layer-medical"
                   >medical_services</mat-icon
                 >
                 <mat-icon *ngIf="showNotfall" class="check-icon"
@@ -587,7 +588,7 @@
                   class="material-icons settings-btn"
                   [class.disabled]="!showNotfall"
                   (click)="handleSettingsClick('notfall', $event)"
-                  >settings</span
+                  >tune</span
                 >
               </div>
             </button>
@@ -616,7 +617,7 @@
               class="custom-menu-item"
             >
               <div class="menu-item-content">
-                <mat-icon class="type-icon fire-icon">outdoor_grill</mat-icon>
+                <mat-icon class="type-icon layer-fire">outdoor_grill</mat-icon>
                 <mat-icon *ngIf="showFeuerstellen" class="check-icon"
                   >check_box</mat-icon
                 >
@@ -628,7 +629,7 @@
                   class="material-icons settings-btn"
                   [class.disabled]="!showFeuerstellen"
                   (click)="handleSettingsClick('feuerstellen', $event)"
-                  >settings</span
+                  >tune</span
                 >
               </div>
             </button>
@@ -657,7 +658,7 @@
               class="custom-menu-item"
             >
               <div class="menu-item-content">
-                <mat-icon class="type-icon eco-icon">cabin</mat-icon>
+                <mat-icon class="type-icon layer-shelter">cabin</mat-icon>
                 <mat-icon *ngIf="showShelter" class="check-icon"
                   >check_box</mat-icon
                 >
@@ -669,7 +670,7 @@
                   class="material-icons settings-btn"
                   [class.disabled]="!showShelter"
                   (click)="handleSettingsClick('shelter', $event)"
-                  >settings</span
+                  >tune</span
                 >
               </div>
             </button>
@@ -738,13 +739,7 @@
             </div>
             <div class="stat-item" matTooltip="Leistungskilometer">
               <mat-icon>speed</mat-icon>
-              <span
-                >{{
-                  stats.dist + stats.up / 100 + stats.down / 300
-                    | number: "1.1-1"
-                }}
-                Lkm</span
-              >
+              <span>{{ stats.lkm | number: "1.1-1" }} Lkm</span>
             </div>
             <div class="stat-item" matTooltip="Aufstieg">
               <mat-icon>trending_up</mat-icon>

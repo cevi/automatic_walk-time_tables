@@ -38,6 +38,7 @@ export function test_without_interaction(file: string) {
     timeout: 10_000,
   }).should("be.enabled");
   cy.get("#export-button").click();
+  cy.get("#confirm-export-button").click();
 
   cy.url({ timeout: 10_000 }).should("contain", "/pending");
   cy.url({ timeout: 180_000 }).should("contain", "/download");
@@ -97,7 +98,7 @@ function wait_for_stable_way_points(previous = "", attempts = 20) {
  */
 export function open_table_mode() {
   cy.get(".mode-toggle").contains("table_chart").click();
-  cy.get(".marschzeit-table tbody tr .col-name input", {
+  cy.get(".marschzeit-table .stop .col-name input", {
     timeout: 20_000,
   }).should("have.length.gte", 2);
   wait_for_stable_way_points();
@@ -109,6 +110,8 @@ export function open_table_mode() {
  */
 export function export_route() {
   cy.get("#export-button", { timeout: 10_000 }).should("be.enabled").click();
+  // the map settings are confirmed in a dialog
+  cy.get("#confirm-export-button").click();
 
   cy.url({ timeout: 10_000 }).should("contain", "/pending");
   cy.url({ timeout: 180_000 }).should("contain", "/download");

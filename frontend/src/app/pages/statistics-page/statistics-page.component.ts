@@ -70,7 +70,7 @@ export class StatisticsPageComponent implements OnInit {
 
     return {
       animationDuration: 250,
-      color: ['#1d6f8c', '#e39b2d'],
+      color: ['#d32f2f', '#efa038'],
       tooltip: {
         trigger: 'axis',
         axisPointer: {

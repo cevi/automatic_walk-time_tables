@@ -1,5 +1,40 @@
 .elevation-map {
   display: block;
-  padding: 16px 24px 24px 24px;
+  padding: 16px 0 0;
   border-top: 1px solid #e2e8f0;
+}
+
+// the profile sits right under the route totals, so it stays compact
+#chart {
+  height: 220px;
+}
+
+.surface-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  color: #475569;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+  }
+}
+
+.hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #64748b;
 }

@@ -120,9 +120,9 @@ $compact-height: 520px;
   }
 
   .toolbar-divider {
-    width: 2px;
+    width: 1px;
     height: 24px;
-    background-color: #d32f2f;
+    background-color: #e2e8f0;
     margin: 0 5px;
   }
 
@@ -197,9 +197,9 @@ $compact-height: 520px;
   margin-top: 0;
 
   .toolbar-divider {
-    width: 2px;
+    width: 1px;
     height: 24px;
-    background-color: #d32f2f;
+    background-color: #e2e8f0;
     margin: 0 5px;
   }
 
@@ -275,6 +275,15 @@ $compact-height: 520px;
     font-family: "Open Sans", "Inter", sans-serif;
   }
 
+  // the selected base map
+  .custom-menu-item:has(.basis-icon):has(.check-icon) {
+    background-color: var(--awt-accent-soft);
+
+    .item-label {
+      font-weight: 600;
+    }
+  }
+
   .custom-menu-item {
     height: 44px;
     line-height: 44px;
@@ -295,48 +304,68 @@ $compact-height: 520px;
       width: 100%;
     }
 
+    // Icon tiles: base maps on grey, every overlay in the colour of its marker on the map, on a soft tint
+    // of that colour. Red is reserved for what is switched on (radio, checkbox).
     .type-icon {
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
-      line-height: 20px;
+      --layer-color: #475569;
+      flex-shrink: 0;
+      box-sizing: content-box;
+      font-size: 19px;
+      width: 19px;
+      height: 19px;
+      line-height: 19px;
+      padding: 5px;
+      border-radius: 7px;
       display: inline-flex;
       justify-content: center;
       align-items: center;
+      color: var(--layer-color);
+      background: color-mix(in srgb, var(--layer-color) 12%, transparent);
 
       &.basis-icon {
-        color: #555;
+        background: #f1f5f9;
       }
-      &.oev-icon {
-        color: #1976d2;
+      // the colours of the markers drawn by MapService (ÖV, OSM infrastructure); the swisstopo overlays
+      // get a colour of their own topic
+      &.layer-oev {
+        --layer-color: #2a5ba8;
       }
-      &.danger-icon {
-        color: #d32f2f;
+      &.layer-slope {
+        --layer-color: #8e24aa;
       }
-      &.trail-icon {
-        color: #4caf50;
+      &.layer-trail {
+        --layer-color: #c49000;
       }
-      &.warn-icon {
-        color: #ff9800;
+      &.layer-closure {
+        --layer-color: #ef6c00;
       }
-      &.eco-icon {
-        color: #8bc34a;
+      &.layer-protected {
+        --layer-color: #558b2f;
       }
-      &.water-icon {
-        color: #0070ff;
+      &.layer-shooting {
+        --layer-color: #ad1457;
       }
-      &.fire-icon {
-        color: #f57c00;
+      &.layer-dogs {
+        --layer-color: #6d4c41;
       }
-      &.pets-icon {
-        color: #8d6e63;
+      &.layer-water {
+        --layer-color: #0070ff;
+      }
+      &.layer-medical {
+        --layer-color: #d32f2f;
+      }
+      &.layer-fire {
+        --layer-color: #f57c00;
+      }
+      &.layer-shelter {
+        --layer-color: #388e3c;
       }
     }
 
     .item-label {
       flex: 1;
       font-size: 14px;
-      color: #333;
+      color: #1e293b;
       font-weight: 500;
       white-space: nowrap;
       text-overflow: ellipsis;
@@ -352,7 +381,7 @@ $compact-height: 520px;
     }
 
     .settings-btn {
-      color: #999;
+      color: #94a3b8;
       margin-left: 8px;
       font-size: 18px;
       width: 18px;
@@ -365,8 +394,7 @@ $compact-height: 520px;
         opacity 0.2s ease;
 
       &:hover:not(.disabled) {
-        color: #333;
-        transform: rotate(45deg);
+        color: var(--awt-accent);
       }
 
       &.disabled {
@@ -376,13 +404,13 @@ $compact-height: 520px;
     }
 
     .check-icon {
-      color: #1976d2;
+      color: var(--awt-accent);
       font-size: 20px;
       width: 20px;
     }
 
     .uncheck-icon {
-      color: #ccc;
+      color: #94a3b8;
       font-size: 20px;
       width: 20px;
     }
@@ -407,7 +435,7 @@ $compact-height: 520px;
 
     .opacity-slider {
       width: 100%;
-      accent-color: #1976d2;
+      accent-color: var(--awt-accent);
       cursor: pointer;
       margin: 0;
       height: 4px;
@@ -653,9 +681,9 @@ $compact-height: 520px;
     position: absolute;
     inset: 4px;
     border-radius: 50%;
-    border: 3px solid rgba(63, 81, 181, 0.15);
-    border-top-color: #3f51b5;
-    border-right-color: #3f51b5;
+    border: 3px solid var(--awt-focus-ring);
+    border-top-color: var(--awt-accent);
+    border-right-color: var(--awt-accent);
     animation: layers-ring-spin 0.9s linear infinite;
     pointer-events: none;
   }
@@ -709,5 +737,15 @@ $compact-height: 520px;
   .layers-button .loading-label {
     top: auto;
     bottom: calc(100% + 16px);
+  }
+}
+
+// The toolbar at the map: neutral icons, the open one (menu or dialog) in the accent colour
+.bottom-left-controls button[mat-icon-button] {
+  color: #475569;
+
+  &[aria-expanded="true"] {
+    color: var(--awt-accent);
+    background-color: var(--awt-accent-soft);
   }
 }

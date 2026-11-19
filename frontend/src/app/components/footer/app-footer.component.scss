@@ -1,18 +1,20 @@
 .footer {
-  display: grid;
-  text-align: center;
-  align-content: center;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px 6px;
+  padding: 16px;
+  font-family: "Open Sans", "Inter", "Roboto", sans-serif;
+  font-size: 11px;
+  color: #94a3b8;
 
-  bottom: 10px;
-  right: 10px;
+  a {
+    color: #64748b;
+    text-decoration: none;
 
-  font-size: 10px;
-  height: 4em;
-
-  padding-top: 0.5em;
-}
-
-.disclaimer-link {
-  text-decoration: none;
-  color: black;
+    &:hover {
+      color: var(--awt-accent);
+      text-decoration: underline;
+    }
+  }
 }

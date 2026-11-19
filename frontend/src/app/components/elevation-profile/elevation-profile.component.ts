@@ -17,6 +17,14 @@ export class ElevationProfileComponent {
   number_of_way_points: number = 0;
   number_of_pois: number = 0;
 
+  /** colours of the surfaces on the profile line, see the series below */
+  readonly surfaceLegend = [
+    { label: 'Naturbelag', color: '#9e6231' },
+    { label: 'Teilw. befestigt', color: '#B38B6D' },
+    { label: 'Befestigt', color: '#888888' },
+    { label: 'Unbekannt', color: '#e0e0e0' },
+  ];
+
   private echartsInstance: any = null;
   private hover_snapped_poi: LV95_Waypoint | null = null;
 
@@ -113,7 +121,8 @@ export class ElevationProfileComponent {
           },
           grid: {
             top: 15,
-            bottom: 60,
+            // room for the x-axis labels
+            bottom: 30,
             left: 45,
             right: 15,
           },
@@ -131,8 +140,9 @@ export class ElevationProfileComponent {
             max: yMax,
             axisLine: { onZero: false },
           },
+          // the legend of the surfaces is HTML below the chart, it wraps on narrow drawers
           legend: {
-            show: true,
+            show: false,
             bottom: 5,
             left: 'center',
             itemWidth: 14,

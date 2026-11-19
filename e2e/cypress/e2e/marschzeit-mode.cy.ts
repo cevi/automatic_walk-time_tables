@@ -37,14 +37,12 @@ describe("Marschzeittabellen Mode - Waypoint Management", () => {
     cy.get("#control-area").should("be.visible");
     cy.get(".marschzeit-table").should("exist");
 
-    // Capture initial POI count from the badge
+    // Capture initial POI count from the heading of the way points ("8 / 42")
     let initialPoiCount = 0;
-    cy.contains("Wegpunkte:")
-      .find("strong")
-      .then(($el) => {
-        initialPoiCount = parseInt($el.text());
-        expect(initialPoiCount).to.be.gt(0);
-      });
+    cy.get(".way-point-count").then(($el) => {
+      initialPoiCount = parseInt($el.text());
+      expect(initialPoiCount).to.be.gt(0);
+    });
 
     // Zoom the map to the route: the automatic selection puts a way point at least every 1.5 km and on every
     // landmark, so at the initial zoom (the whole route ~200 px) no spot of the route is far from a way point
@@ -111,12 +109,10 @@ describe("Marschzeittabellen Mode - Waypoint Management", () => {
     });
 
     // Verify POI count increased by 1
-    cy.contains("Wegpunkte:")
-      .find("strong")
-      .then(($el) => {
-        const countAfterMapClick = parseInt($el.text());
-        expect(countAfterMapClick).to.eq(initialPoiCount + 1);
-      });
+    cy.get(".way-point-count").then(($el) => {
+      const countAfterMapClick = parseInt($el.text());
+      expect(countAfterMapClick).to.eq(initialPoiCount + 1);
+    });
 
     // 4. Click at the EXACT SAME screen pixel location to DELETE that custom waypoint
     cy.window().then((win: any) => {
@@ -148,12 +144,10 @@ describe("Marschzeittabellen Mode - Waypoint Management", () => {
     });
 
     // Verify POI count decreased back by 1
-    cy.contains("Wegpunkte:")
-      .find("strong")
-      .then(($el) => {
-        const countAfterMapDelete = parseInt($el.text());
-        expect(countAfterMapDelete).to.eq(initialPoiCount);
-      });
+    cy.get(".way-point-count").then(($el) => {
+      const countAfterMapDelete = parseInt($el.text());
+      expect(countAfterMapDelete).to.eq(initialPoiCount);
+    });
 
     // 5. Add a Waypoint via Elevation Profile Click
     // Hover first, then click on the chart canvas
@@ -164,12 +158,10 @@ describe("Marschzeittabellen Mode - Waypoint Management", () => {
     cy.wait(2000);
 
     // Verify POI count increased by 1
-    cy.contains("Wegpunkte:")
-      .find("strong")
-      .then(($el) => {
-        const countAfterChartClick = parseInt($el.text());
-        expect(countAfterChartClick).to.eq(initialPoiCount + 1);
-      });
+    cy.get(".way-point-count").then(($el) => {
+      const countAfterChartClick = parseInt($el.text());
+      expect(countAfterChartClick).to.eq(initialPoiCount + 1);
+    });
 
     // 6. Remove that Waypoint via Elevation Profile Click
     // Hover the waypoint first (to set hover_snapped_poi), then click to delete
@@ -180,12 +172,10 @@ describe("Marschzeittabellen Mode - Waypoint Management", () => {
     cy.wait(2000);
 
     // Verify POI count decreased back by 1
-    cy.contains("Wegpunkte:")
-      .find("strong")
-      .then(($el) => {
-        const countAfterChartDelete = parseInt($el.text());
-        expect(countAfterChartDelete).to.eq(initialPoiCount);
-      });
+    cy.get(".way-point-count").then(($el) => {
+      const countAfterChartDelete = parseInt($el.text());
+      expect(countAfterChartDelete).to.eq(initialPoiCount);
+    });
 
     // 7. Add a Waypoint again to test Table Deletion
     cy.get("#chart canvas")
@@ -195,12 +185,10 @@ describe("Marschzeittabellen Mode - Waypoint Management", () => {
     cy.wait(2000);
 
     // Verify POI count increased by 1
-    cy.contains("Wegpunkte:")
-      .find("strong")
-      .then(($el) => {
-        const count = parseInt($el.text());
-        expect(count).to.eq(initialPoiCount + 1);
-      });
+    cy.get(".way-point-count").then(($el) => {
+      const count = parseInt($el.text());
+      expect(count).to.eq(initialPoiCount + 1);
+    });
 
     // 8. Remove the Waypoint via Table Action (delete button)
     cy.get(".delete-icon").should("exist");
@@ -208,11 +196,9 @@ describe("Marschzeittabellen Mode - Waypoint Management", () => {
     cy.wait(2000);
 
     // Verify POI count decreased back by 1
-    cy.contains("Wegpunkte:")
-      .find("strong")
-      .then(($el) => {
-        const countAfterDelete = parseInt($el.text());
-        expect(countAfterDelete).to.eq(initialPoiCount);
-      });
+    cy.get(".way-point-count").then(($el) => {
+      const countAfterDelete = parseInt($el.text());
+      expect(countAfterDelete).to.eq(initialPoiCount);
+    });
   });
 });

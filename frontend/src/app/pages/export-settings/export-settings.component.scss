@@ -1,21 +1,5 @@
-.marschzeit-card {
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.04),
-    0 1px 4px rgba(0, 0, 0, 0.02);
-  border: 1px solid #e2e8f0;
-  margin-bottom: 24px;
-}
-
 h2 {
-  margin-top: 40px;
-}
-
-#export-button {
-  margin-top: 25px;
-  border-radius: 24px;
-  padding: 0 24px;
+  margin-top: 24px;
 }
 
 .mat-select {
@@ -67,20 +51,6 @@ h2 {
   }
 }
 
-.btn-advanced {
-  border-radius: 999px !important;
-  color: #5f6368 !important;
-  font-weight: 500 !important;
-  padding: 0 16px 0 8px !important;
-  background-color: #f1f3f4 !important;
-  transition: all 0.2s ease !important;
-
-  &:hover {
-    background-color: #e8eaed !important;
-    color: #202124 !important;
-  }
-}
-
 .export-dialog h2 {
   font-family: "Open Sans", "Inter", "Roboto", sans-serif;
   font-weight: 600;
@@ -92,107 +62,113 @@ h2 {
 .settings-form-container {
   display: flex;
   flex-direction: column;
-  gap: 48px;
 }
 
+// a section of the panel, separated by a divider like the sections of the walk-time table
 .settings-section {
   display: flex;
   flex-direction: column;
+  padding: 20px 0 24px;
+  border-top: 1px solid #e2e8f0;
 }
 
 .section-title {
+  margin: 0 0 12px;
   font-family: inherit;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: #1e293b;
-  margin-bottom: 24px;
-  letter-spacing: -0.2px;
 }
 
-.settings-grid {
-  display: grid;
-  // two columns if the drawer is wide enough, independent of the window size
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
-  gap: 32px;
-  align-items: stretch;
-}
-
-.settings-card {
+.map-settings-summary {
   display: flex;
-  flex-direction: column;
-  gap: 20px;
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.04),
-    0 1px 4px rgba(0, 0, 0, 0.02);
-  border: 1px solid #e2e8f0;
-  padding: clamp(16px, 5%, 32px);
-  align-items: flex-start;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   text-align: left;
 
-  p {
+  strong {
+    display: block;
+    font-size: 14px;
     color: #334155;
     font-weight: 600;
-    margin-bottom: 12px;
-    margin-top: 0;
   }
 
-  .mat-mdc-slide-toggle {
-    margin-top: 6px;
-    margin-bottom: 6px;
+  span {
+    font-size: 13px;
+    color: #64748b;
+  }
+
+  button {
+    flex-shrink: 0;
+    border-radius: 999px;
   }
 }
 
-// the route style previews need the full width of the drawer
-.route-style-card {
-  grid-column: 1 / -1;
-}
-
-.slider-container {
-  width: 100%;
-  margin-top: 16px;
+// the download button stays at the bottom of the drawer while the user scrolls
+.download-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 12px 16px;
+  background: #ffffff;
+  margin: 0 -20px;
+  border-top: 1px solid #e2e8f0;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
+  font-family: "Open Sans", "Inter", "Roboto", sans-serif;
+  font-size: 14px;
+  color: #334155;
+  text-align: left;
 
-  label {
-    font-weight: 500;
-    color: #334155;
-    margin-bottom: 16px;
+  strong {
+    color: #0f172a;
+    font-variant-numeric: tabular-nums;
   }
 
-  mat-slider {
-    // the margin leaves room for the thumb at both ends
-    width: auto;
-    margin: 0 8px;
-    --mdc-slider-handle-color: #3f51b5;
-    --mdc-slider-active-track-color: #3f51b5;
-    --mdc-slider-focus-handle-color: #3f51b5;
-    --mdc-slider-hover-handle-color: #3f51b5;
-    --mdc-slider-label-container-color: #3f51b5;
+  .sep {
+    margin: 0 4px;
   }
-}
-
-// Override slide-toggle to use indigo instead of default pink
-::ng-deep .mat-mdc-slide-toggle {
-  --mdc-switch-selected-track-color: #3f51b5 !important;
-  --mdc-switch-selected-handle-color: #fff !important;
-  --mdc-switch-selected-hover-track-color: #3949ab !important;
-  --mdc-switch-selected-focus-track-color: #3949ab !important;
-  --mdc-switch-selected-pressed-track-color: #3949ab !important;
-}
-
-.export-action-section {
-  display: flex;
-  justify-content: flex-end;
-  padding: 24px 0 64px 0;
-  margin-top: 16px;
 
   #export-button {
-    width: auto !important;
-    min-width: 200px;
-    margin: 0;
+    margin: 0 0 0 auto;
+    min-width: 180px;
+    height: 44px;
+  }
+}
+
+.export-dialog {
+  // the panel's side margin; the download bar spans the full width
+  padding: 0 20px;
+  font-family: "Open Sans", "Inter", "Roboto", sans-serif;
+  // the drawer centers its content below the map (phones), the panel reads left aligned everywhere
+  text-align: left;
+  container-type: inline-size;
+  container-name: export-dialog;
+}
+
+// narrow drawers and phones: one compact line, as the drawer has little height
+@container export-dialog (max-width: 520px) {
+  .download-bar {
+    flex-wrap: nowrap;
+    padding: 8px 12px;
+    margin-top: 16px;
+    font-size: 13px;
+
+    .long {
+      display: none;
+    }
+
+    #export-button {
+      min-width: 0;
+      height: 40px;
+      padding: 0 16px !important;
+      flex-shrink: 0;
+    }
   }
 }
 

@@ -107,9 +107,10 @@
       }
     }
 
+    // the step that is running: dark and bold, red is reserved for errors
     &.running {
-      color: #1a73e8;
-      font-weight: 500;
+      color: #202124;
+      font-weight: 600;
     }
   }
 }
