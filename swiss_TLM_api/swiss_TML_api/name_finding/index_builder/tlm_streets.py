@@ -52,7 +52,9 @@ class TLM_Streets(IndexBuilder):
                     list_of_street_names = " " if len(street_names) else ""
                     # sorted: a set of strings has another order in every process, so each build named a crossing
                     # differently ("Kreuzung A, B" or "Kreuzung B, A")
-                    list_of_street_names += ", ".join(sorted(str(s) for s in street_names))
+                    list_of_street_names += ", ".join(
+                        sorted(str(s) for s in street_names)
+                    )
 
                     is_roundabout = any(
                         [
