@@ -2,8 +2,8 @@
 
 # The Google Drive ID for the pre-built routing graph container archive (valhalla_tiles.tar).
 # If you build a new graph locally, upload it to drive and swap this string!
-VALHALLA_TILE_ID="1lkrS268Mphtifxmdw0UHVnR9_cNErNks"
-INDEX_CACHE_VERSION="v3-2026-04-07" # Bump this to force download
+VALHALLA_TILE_ID="11LscmY2ihQUlOfCJjiZsZtpjfn9-7-dG"
+INDEX_CACHE_VERSION="v4-2026-11-18" # Bump this to force download
 
 VERSION_FILE="/custom_files/.version"
 CURRENT_VERSION=""
@@ -34,7 +34,7 @@ if [ "$NEEDS_DOWNLOAD" = true ]; then
   sudo chmod 777 /custom_files
 
   # download pre-computed valhalla tiles
-  # these tiles are generated based on swissTLM3D released at 2026-04
+  # these tiles are generated based on swissTLM3D release 2026-02 (built 2026-11-18)
   gdown $VALHALLA_TILE_ID -O /custom_files/
   
   # rename the downloaded file
