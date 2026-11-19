@@ -1,15 +1,14 @@
-<div class="footer">
-  <span
-    ><a href="{{ DOCS_URL }}changelog/changelog.html"
-      >Version {{ buildInfo.version }}</a
-    >
-    -
-    <a href="https://github.com/cevi/automatic_walk-time_tables"
-      >Quelle auf Github</a
-    ></span
+<footer class="footer">
+  <a href="{{ DOCS_URL }}changelog/changelog.html"
+    >Version {{ buildInfo.version }}</a
   >
+  <span aria-hidden="true">·</span>
+  <a href="https://github.com/cevi/automatic_walk-time_tables" target="_blank"
+    >Quelle auf GitHub</a
+  >
+  <span aria-hidden="true">·</span>
   <span
-    >Build:
+    >Build
     <a
       target="_blank"
       href="https://github.com/cevi/automatic_walk-time_tables/tree/{{
@@ -19,4 +18,4 @@
     >
     vom {{ buildDate }}</span
   >
-</div>
+</footer>

@@ -8,13 +8,17 @@ import {
   Output,
   EventEmitter,
   ChangeDetectorRef,
-  ChangeDetectionStrategy
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { UntypedFormGroup } from '@angular/forms';
 import { MapAnimatorService } from '../../services/map-animator.service';
 import { LV95_Waypoint } from '../../helpers/coordinates';
 import { Subscription } from 'rxjs';
 import { MapService } from '../../services/map.service';
+import {
+  leistungskilometer,
+  MAX_WAY_POINTS,
+} from '../../utils/walk-time.utils';
 
 export interface TableRow {
   waypoint: LV95_Waypoint;
@@ -24,6 +28,25 @@ export interface TableRow {
   time_hours: number;
   planned_arrival: Date;
 }
+
+export interface WalkTimeTotals {
+  distance: number;
+  ascent: number;
+  descent: number;
+  lkm: number;
+  /** walking time without the breaks */
+  walk_hours: number;
+  arrival: Date | null;
+}
+
+const EMPTY_TOTALS: WalkTimeTotals = {
+  distance: 0,
+  ascent: 0,
+  descent: 0,
+  lkm: 0,
+  walk_hours: 0,
+  arrival: null,
+};
 
 @Component({
   selector: 'app-walk-time-table',
@@ -36,6 +59,9 @@ export class WalkTimeTableComponent implements OnInit, OnDestroy, OnChanges {
   @Input() formGroup!: UntypedFormGroup;
 
   @Output() userEdited = new EventEmitter<void>();
+
+  /** Totals of the route, shown in the summary and in the download bar. */
+  @Output() totalsChange = new EventEmitter<WalkTimeTotals>();
 
   get velocity(): number {
     return this.formGroup?.value?.velocity || 4.5;
@@ -50,6 +76,8 @@ export class WalkTimeTableComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   rows: TableRow[] = [];
+  readonly maxWayPoints = MAX_WAY_POINTS;
+  totals: WalkTimeTotals = EMPTY_TOTALS;
   highlightedRowIndex: number = -1;
   private sub: Subscription | null = null;
   private pointerSub: Subscription | null = null;
@@ -190,7 +218,10 @@ export class WalkTimeTableComponent implements OnInit, OnDestroy, OnChanges {
 
   recalculate(wps: LV95_Waypoint[]) {
     this.rows = [];
-    if (!wps || wps.length === 0) return;
+    if (!wps || wps.length === 0) {
+      this.setTotals(EMPTY_TOTALS);
+      return;
+    }
 
     let sum_dist = 0;
     let sum_lkm = 0;
@@ -216,7 +247,7 @@ export class WalkTimeTableComponent implements OnInit, OnDestroy, OnChanges {
           pt.accumulated_distance - oldPoint.accumulated_distance,
         );
 
-        lkm = delta_dist + (delta_h > 0 ? delta_h / 100.0 : 0);
+        lkm = leistungskilometer(delta_dist, delta_h);
         time_hours = lkm / (this.velocity || 4.5);
       }
 
@@ -244,5 +275,19 @@ export class WalkTimeTableComponent implements OnInit, OnDestroy, OnChanges {
 
       oldPoint = pt;
     }
+
+    this.setTotals({
+      distance: this.rows.reduce((sum, r) => sum + r.delta_dist, 0),
+      ascent: this.rows.reduce((sum, r) => sum + Math.max(r.delta_h, 0), 0),
+      descent: this.rows.reduce((sum, r) => sum - Math.min(r.delta_h, 0), 0),
+      lkm: this.rows.reduce((sum, r) => sum + r.lkm, 0),
+      walk_hours: accumulated_time_hours,
+      arrival: this.rows[this.rows.length - 1].planned_arrival,
+    });
+  }
+
+  private setTotals(totals: WalkTimeTotals) {
+    this.totals = totals;
+    this.totalsChange.emit(totals);
   }
 }

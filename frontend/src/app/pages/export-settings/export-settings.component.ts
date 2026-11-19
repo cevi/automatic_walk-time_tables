@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
 import {
   FormControl,
   UntypedFormBuilder,
@@ -8,6 +8,21 @@ import {
 import { MapAnimatorService } from '../../services/map-animator.service';
 import { Router } from '@angular/router';
 import { MapService } from '../../services/map.service';
+import { WalkTimeTotals } from '../../components/walk-time-table/walk-time-table.component';
+import { MatDialog } from '@angular/material/dialog';
+import {
+  MapExportDialogComponent,
+  MapExportDialogData,
+  MapExportDialogResult,
+} from './map-export-dialog/map-export-dialog.component';
+import { mapLayerLabel } from './map-export-dialog/map-layers';
+
+/** short names of the route styles, see RouteStylePickerComponent */
+const ROUTE_STYLE_LABELS: Record<string, string> = {
+  classic: 'orange',
+  magenta: 'magenta',
+  highlighter: 'als Textmarker',
+};
 
 @Component({
   selector: 'app-export-settings',
@@ -26,14 +41,17 @@ export class ExportSettingsComponent {
   public loading = false;
   public error_message: string = '';
   public has_valid_path: boolean = false;
-  public showAdvancedSettings: boolean = false;
   private _suppress_auto_waypoint_trigger: boolean = false;
+
+  /** Totals of the walk time table, shown beside the download button. */
+  public totals = signal<WalkTimeTotals | null>(null);
 
   constructor(
     private mapAnimator: MapAnimatorService,
     fb: UntypedFormBuilder,
     private router: Router,
     private mapService: MapService,
+    private dialog: MatDialog,
   ) {
     this.mapAnimator.error$.subscribe((err) => {
       this.error_message = err;
@@ -158,6 +176,47 @@ export class ExportSettingsComponent {
     this.mapAnimator.clear();
   }
 
+  /** e.g. "Basiskarte Farbig · 1:15 000" */
+  get mapSettingsSummary(): string {
+    const value = this.options.value;
+    const scale = value.auto_scale
+      ? 'Massstab automatisch'
+      : '1:' + value.map_scaling;
+    return `${mapLayerLabel(value.map_layers)} · ${scale}`;
+  }
+
+  get pointLabelsSummary(): string {
+    const value = this.options.value;
+    const route = ROUTE_STYLE_LABELS[value.route_style as string] ?? '';
+    const points = value.name_points_in_export
+      ? 'Punkte mit Namen beschriftet'
+      : value.number_points_in_export
+        ? 'Punkte nummeriert'
+        : 'Punkte ohne Beschriftung';
+    return route ? `Route ${route} · ${points}` : points;
+  }
+
+  /** The map settings, in a dialog that starts the export ('export') or only changes them ('edit'). */
+  public openMapSettings(mode: 'export' | 'edit') {
+    this.dialog
+      .open<
+        MapExportDialogComponent,
+        MapExportDialogData,
+        MapExportDialogResult
+      >(MapExportDialogComponent, {
+        data: { options: this.options, mode },
+        panelClass: 'info-dialog',
+        width: '560px',
+        maxWidth: '100vw',
+        autoFocus: 'dialog',
+        ariaLabelledBy: 'info-dialog-title',
+      })
+      .afterClosed()
+      .subscribe((result) => {
+        if (result === 'download') this.download_map();
+      });
+  }
+
   public download_map() {
     console.log('Downloading map...');
     const settings = this.options.value;
@@ -165,6 +224,11 @@ export class ExportSettingsComponent {
       .download_map(settings)
       .then((uuid) => this.router.navigate(['pending', uuid]))
       .catch((err) => (this.error_message = err?.message ?? String(err)));
+  }
+
+  public formatDuration(hours: number): string {
+    const minutes = Math.round(hours * 60);
+    return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}`;
   }
 
   public retry_after_error() {

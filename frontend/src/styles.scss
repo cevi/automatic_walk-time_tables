@@ -1,3 +1,17 @@
+/*
+ * The colours of the app, taken from the map: the red of the way points and the active mode is the accent
+ * (actions, selected states, focus), the orange of the route line marks the route in the panel too.
+ * The Angular Material theme uses the same red, see theme.scss.
+ */
+:root {
+  --awt-accent: #d32f2f;
+  --awt-accent-dark: #b71c1c;
+  --awt-accent-soft: #fdecea;
+  --awt-accent-border: #f5c2c0;
+  --awt-focus-ring: rgba(211, 47, 47, 0.2);
+  --awt-route: #efa038;
+}
+
 /* You can add global styles to this file, and also import other style files */
 
 html,
@@ -47,4 +61,84 @@ h2 {
      We rely gracefully on the standard outline now, augmented by the new interactive click-highlights. */
   filter: grayscale(1) sepia(1) hue-rotate(240deg) saturate(3) brightness(0.9);
   opacity: 0.9 !important;
+}
+
+/* The guide and the statistics: a dialog over the map, full screen on phones */
+.info-dialog {
+  font-family: "Open Sans", "Inter", "Roboto", sans-serif;
+
+  .mat-mdc-dialog-surface {
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .dialog-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 12px 14px 24px;
+    border-bottom: 1px solid #e2e8f0;
+
+    .eyebrow {
+      display: block;
+      margin-bottom: 2px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 600;
+      line-height: 1.3;
+      color: #202124;
+    }
+  }
+
+  .mat-mdc-dialog-content.dialog-body {
+    max-height: calc(100vh - 180px);
+    max-height: calc(100dvh - 180px);
+    padding: 20px 24px 24px;
+  }
+}
+
+@media (max-width: 600px) {
+  .info-dialog {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100dvh;
+
+    .mat-mdc-dialog-surface {
+      border-radius: 0;
+    }
+
+    .dialog-head {
+      padding-left: 16px;
+
+      h1 {
+        font-size: 18px;
+      }
+    }
+
+    .mat-mdc-dialog-content.dialog-body {
+      flex: 1;
+      max-height: none;
+      padding: 16px;
+    }
+  }
+}
+
+/* Selected option of a button toggle group (map settings dialog), in the accent colour of the app */
+.info-dialog {
+  --mat-button-toggle-selected-state-background-color: var(--awt-accent-soft);
+  --mat-button-toggle-selected-state-text-color: var(--awt-accent);
+
+  .mat-button-toggle-checked {
+    font-weight: 600;
+  }
 }

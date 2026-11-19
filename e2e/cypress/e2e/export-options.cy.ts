@@ -7,14 +7,26 @@ import {
 
 const DOWNLOAD_ZIP = "cypress/downloads/Download.zip";
 
-function toggle(control: string) {
-  return cy.get(`mat-slide-toggle[formControlName="${control}"] button`);
+function open_map_settings() {
+  cy.get("#map-settings-button").click();
+  cy.get(".info-dialog").should("be.visible");
 }
 
-function select_option(control: string, option: string) {
-  cy.get(`mat-select[formControlName="${control}"]`).click();
-  cy.contains("mat-option", option).click();
-  cy.get("mat-option").should("not.exist");
+function select_layer(label: string) {
+  cy.contains(".info-dialog .layer-tile", label).click();
+}
+
+function choose(label: string) {
+  cy.contains(".info-dialog mat-button-toggle", label).click();
+}
+
+function apply_map_settings() {
+  cy.contains(".info-dialog button", "Übernehmen").click();
+  cy.get(".info-dialog").should("not.exist");
+}
+
+function map_settings_summary() {
+  return cy.get(".map-settings-summary");
 }
 
 /** Yields the names of the files in the downloaded zip file. */
@@ -43,59 +55,39 @@ describe("Export options", () => {
   });
 
   it("should either name or number the points", () => {
-    toggle("name_points_in_export").should("have.attr", "aria-checked", "true");
-    toggle("number_points_in_export").should(
-      "have.attr",
-      "aria-checked",
-      "false",
-    );
+    map_settings_summary().should("contain", "Punkte mit Namen beschriftet");
 
-    toggle("number_points_in_export").click();
-    toggle("number_points_in_export").should(
-      "have.attr",
-      "aria-checked",
-      "true",
-    );
-    toggle("name_points_in_export").should(
-      "have.attr",
-      "aria-checked",
-      "false",
-    );
-
-    toggle("name_points_in_export").click();
-    toggle("name_points_in_export").should("have.attr", "aria-checked", "true");
-    toggle("number_points_in_export").should(
-      "have.attr",
-      "aria-checked",
-      "false",
-    );
+    open_map_settings();
+    choose("Nummern");
+    apply_map_settings();
+    map_settings_summary().should("contain", "Punkte nummeriert");
 
     // the points may be exported without any label
-    toggle("name_points_in_export").click();
-    toggle("name_points_in_export").should(
-      "have.attr",
-      "aria-checked",
-      "false",
-    );
-    toggle("number_points_in_export").should(
-      "have.attr",
-      "aria-checked",
-      "false",
-    );
+    open_map_settings();
+    choose("Keine");
+    apply_map_settings();
+    map_settings_summary().should("contain", "Punkte ohne Beschriftung");
   });
 
-  it("should hide the advanced settings by default", () => {
-    cy.get('mat-select[formControlName="legend_position"]').should("not.exist");
+  it("should discard changed map settings when the dialog is cancelled", () => {
+    open_map_settings();
+    select_layer("Luftbild");
+    choose("Nummern");
+    cy.contains(".info-dialog button", "Abbrechen").click();
 
-    cy.contains("button", "Erweiterte Einstellungen").click();
-    // the settings open above the button, which may be scrolled to the top of the drawer
-    cy.get('mat-select[formControlName="legend_position"]')
-      .scrollIntoView()
-      .should("be.visible")
-      .and("contain", "Unten Rechts");
+    map_settings_summary()
+      .should("contain", "Basiskarte Farbig")
+      .and("contain", "Punkte mit Namen beschriftet");
+  });
 
-    cy.contains("button", "Erweiterte Einstellungen").click();
-    cy.get('mat-select[formControlName="legend_position"]').should("not.exist");
+  it("should choose the legend position in the map settings", () => {
+    open_map_settings();
+    cy.contains(".info-dialog mat-button-toggle", "Unten rechts").should(
+      "have.class",
+      "mat-button-toggle-checked",
+    );
+    choose("Oben links");
+    apply_map_settings();
   });
 
   it("should export with the default settings", () => {
@@ -125,17 +117,17 @@ describe("Export options", () => {
     cy.get('[formControlName="velocity"]').clear().type("3.5");
     cy.get('[formControlName="departure_time"]').type("2026-05-01T08:15");
 
-    select_option("map_layers", "Basiskarte S/W");
-    toggle("number_points_in_export").click();
+    open_map_settings();
+    select_layer("Basiskarte S/W");
+    choose("Nummern");
     cy.get('input[formControlName="map_scaling"]')
       .invoke("val", 25_000)
       .trigger("input")
       .trigger("change");
     cy.contains("label", "Kartenmassstab: 1:25000").should("exist");
     cy.get('[data-route-style="magenta"]').click();
-
-    cy.contains("button", "Erweiterte Einstellungen").click();
-    select_option("legend_position", "Oben Links");
+    choose("Oben links");
+    apply_map_settings();
 
     export_route();
 
@@ -169,8 +161,10 @@ describe("Export options", () => {
   });
 
   it("should export an aerial map with an automatically chosen scale", () => {
-    select_option("map_layers", "Luftbild");
-    toggle("auto_scale").click();
+    open_map_settings();
+    select_layer("Luftbild");
+    choose("Automatisch");
+    apply_map_settings();
 
     export_route();
 
@@ -186,18 +180,19 @@ describe("Export options", () => {
 
   it("should remember the settings of the last export", () => {
     cy.get('[formControlName="creator_name"]').clear().type("Cypress");
-    select_option("map_layers", "Basiskarte S/W");
+    open_map_settings();
+    select_layer("Basiskarte S/W");
     cy.get('[data-route-style="highlighter"]').click();
+    apply_map_settings();
 
     export_route();
 
     cy.visit("/");
     cy.get(".mode-toggle").contains("table_chart").click();
     cy.get('[formControlName="creator_name"]').should("have.value", "Cypress");
-    cy.get('mat-select[formControlName="map_layers"]').should(
-      "contain",
-      "Basiskarte S/W",
-    );
+    map_settings_summary().should("contain", "Basiskarte S/W");
+    // the route style is part of the map settings dialog
+    cy.get("#map-settings-button").click();
     cy.get('input[name="route_style"]:checked').should(
       "have.value",
       "highlighter",

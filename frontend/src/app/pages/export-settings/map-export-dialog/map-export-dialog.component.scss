@@ -1,0 +1,120 @@
+section {
+  margin-bottom: 22px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+h2 {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.layer-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  gap: 10px;
+}
+
+.layer-tile {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #ffffff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    border-color: #94a3b8;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--awt-accent);
+    outline-offset: 2px;
+  }
+
+  &.selected {
+    border: 2px solid var(--awt-accent);
+  }
+
+  .preview {
+    position: relative;
+    height: 72px;
+    background: #f8fafc;
+
+    img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  .name {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    padding: 6px 8px;
+    font-size: 13px;
+    color: #334155;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  &.selected .name {
+    color: var(--awt-accent);
+    font-weight: 600;
+  }
+}
+
+.slider-container {
+  display: flex;
+  flex-direction: column;
+  margin-top: 16px;
+
+  label {
+    font-size: 14px;
+    color: #334155;
+  }
+
+  mat-slider {
+    // the margin leaves room for the thumb at both ends
+    width: auto;
+    margin: 0 8px;
+  }
+}
+
+mat-dialog-actions {
+  padding: 12px 24px 16px;
+  border-top: 1px solid #e2e8f0;
+  gap: 8px;
+
+  button {
+    border-radius: 999px;
+  }
+}
+
+// four positions do not fit next to each other on phones: a 2 x 2 grid, like the corners they stand for
+@media (max-width: 600px) {
+  .legend-toggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+
+    mat-button-toggle {
+      border-bottom: solid 1px var(--mat-button-toggle-divider-color, #e0e0e0);
+    }
+  }
+}

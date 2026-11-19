@@ -1,14 +1,21 @@
-<div class="page-container">
-  <div class="statistics-header">
-    <div>
-      <p class="eyebrow">Auswertung</p>
-      <h1>Routenstatistik der letzten {{ defaultDays }} Tage</h1>
-      <p class="subtitle">
-        Überblick über generierte Routen und die total geplante Distanz im
-        ausgewählten Zeitraum.
-      </p>
-    </div>
+<div class="dialog-head">
+  <div>
+    <span class="eyebrow">Auswertung</span>
+    <h1 id="info-dialog-title">
+      Routenstatistik der letzten {{ defaultDays }} Tage
+    </h1>
+  </div>
+  <button mat-icon-button mat-dialog-close aria-label="Schliessen">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
 
+<mat-dialog-content class="dialog-body">
+  <div class="statistics-intro">
+    <p class="subtitle">
+      Überblick über generierte Routen und die total geplante Distanz im
+      ausgewählten Zeitraum.
+    </p>
     <button mat-stroked-button color="primary" (click)="refresh()">
       Aktualisieren
     </button>
@@ -26,38 +33,33 @@
     </div>
   } @else if (statistics) {
     <div class="summary-grid">
-      <section class="summary-card emphasis-card">
-        <p class="label">Geplante Gesamtdistanz</p>
+      <section class="summary-card">
         <p class="value">{{ totalLengthKm }} km</p>
+        <p class="label">Geplante Gesamtdistanz</p>
         <p class="hint">
           Summe aller erfolgreich geplanten Routen von
           {{ statistics.rangeStart }} bis {{ statistics.rangeEnd }}.
         </p>
       </section>
 
-      <section class="summary-card compact-card">
-        <p class="label">Generierte Routen</p>
+      <section class="summary-card">
         <p class="value">{{ statistics.totalRoutes }}</p>
+        <p class="label">Generierte Routen</p>
       </section>
 
-      <section class="summary-card compact-card">
-        <p class="label">Aktive Tage</p>
+      <section class="summary-card">
         <p class="value">{{ activeDays }}</p>
+        <p class="label">Aktive Tage</p>
       </section>
     </div>
 
     <section class="chart-card">
-      <div class="chart-header">
-        <div>
-          <h2>Generierte Routen pro Tag</h2>
-          <p>
-            Balken zeigen die Anzahl generierter Routen, die Linie die geplante
-            Distanz pro Tag in Kilometern.
-          </p>
-        </div>
-      </div>
-
+      <h2>Generierte Routen pro Tag</h2>
+      <p>
+        Balken zeigen die Anzahl generierter Routen, die Linie die geplante
+        Distanz pro Tag in Kilometern.
+      </p>
       <div echarts [options]="plotOptions" class="statistics-chart"></div>
     </section>
   }
-</div>
+</mat-dialog-content>

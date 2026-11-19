@@ -29,13 +29,13 @@
   }
 
   &.selected {
-    border-color: #3f51b5;
-    box-shadow: 0 0 0 1px #3f51b5;
-    background: #f5f6fd;
+    border-color: var(--awt-accent);
+    box-shadow: 0 0 0 1px var(--awt-accent);
+    background: var(--awt-accent-soft);
   }
 
   &:has(input:focus-visible) {
-    outline: 2px solid #3f51b5;
+    outline: 2px solid var(--awt-accent);
     outline-offset: 2px;
   }
 
@@ -62,7 +62,7 @@
     position: absolute;
     top: 6px;
     right: 6px;
-    color: #3f51b5;
+    color: var(--awt-accent);
     background: #ffffff;
     border-radius: 50%;
     font-size: 22px;

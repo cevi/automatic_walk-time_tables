@@ -1,6 +1,6 @@
 import { draw_route, get_map_canvas, MAP_URL, open_table_mode } from "./utils";
 
-const ROWS = ".marschzeit-table tbody tr";
+const ROWS = ".marschzeit-table .stop";
 
 /** Parses a duration (h:mm) or a time of day (HH:mm) into minutes. */
 function to_minutes(text: string): number {
@@ -16,10 +16,8 @@ function get_arrival_times() {
 
 function get_walk_times() {
   return cy
-    .get(`${ROWS} td:nth-child(6)`)
-    .then(($cells) =>
-      [...$cells].slice(1).map((el) => to_minutes(el.innerText)),
-    );
+    .get(`${ROWS} .leg-duration`)
+    .then(($cells) => [...$cells].map((el) => to_minutes(el.innerText)));
 }
 
 /**
@@ -78,28 +76,21 @@ describe("Editing the Marschzeittabelle", () => {
       expect($cell.text()).to.not.contain("Lade...");
     });
 
-    // the first row has no distance and time, the following rows do
-    cy.get(ROWS)
-      .first()
-      .find("td")
-      .eq(3)
-      .invoke("text")
-      .should("match", /^\s*$/);
+    // the first way point has no leg, the following ones do
+    cy.get(ROWS).first().find(".leg").should("not.exist");
     cy.get(ROWS)
       .last()
-      .find("td")
-      .eq(3)
+      .find(".leg-km")
       .invoke("text")
       .should("match", /\d+\.\d/);
     cy.get(ROWS)
       .last()
-      .find("td")
-      .eq(5)
+      .find(".leg-duration")
       .invoke("text")
       .should("match", /\d:\d\d/);
 
     // the height of every way point is known
-    cy.get(`${ROWS} td:nth-child(2)`).each(($cell) => {
+    cy.get(`${ROWS} .height`).each(($cell) => {
       expect(parseInt($cell.text().replace(/\D/g, ""))).to.be.gt(300);
     });
 
@@ -134,7 +125,7 @@ describe("Editing the Marschzeittabelle", () => {
       .should("match", /\d/);
 
     // the distance matches the sum of the distances in the table
-    cy.get(`${ROWS} td:nth-child(4)`).then(($cells) => {
+    cy.get(`${ROWS} .leg-km`).then(($cells) => {
       const table_distance = [...$cells]
         .map((el) => parseFloat(el.innerText) || 0)
         .reduce((a, b) => a + b, 0);

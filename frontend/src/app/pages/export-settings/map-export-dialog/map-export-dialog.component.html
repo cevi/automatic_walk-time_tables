@@ -1,0 +1,132 @@
+<div class="dialog-head">
+  <div>
+    <span class="eyebrow">Einstellungen zur Karte</span>
+    <h1 id="info-dialog-title">Karte exportieren</h1>
+  </div>
+  <button mat-icon-button (click)="close(undefined)" aria-label="Schliessen">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content class="dialog-body" [formGroup]="options">
+  <section>
+    <h2 id="map-layer-label">Kartenlayer</h2>
+    <div
+      class="layer-tiles"
+      role="radiogroup"
+      aria-labelledby="map-layer-label"
+    >
+      @for (layer of layers; track layer.value) {
+        <button
+          type="button"
+          class="layer-tile"
+          role="radio"
+          [attr.aria-checked]="options.value.map_layers === layer.value"
+          [class.selected]="options.value.map_layers === layer.value"
+          (click)="selectLayer(layer)"
+        >
+          <span class="preview">
+            @for (tile of previewTiles(layer); track tile) {
+              <img
+                [src]="tile"
+                alt=""
+                loading="lazy"
+                (error)="hideBrokenTile($event)"
+              />
+            }
+          </span>
+          <span class="name">
+            {{ layer.label }}
+            @if (options.value.map_layers === layer.value) {
+              <mat-icon>check_circle</mat-icon>
+            }
+          </span>
+        </button>
+      }
+    </div>
+  </section>
+
+  <section>
+    <h2>Darstellung der Route</h2>
+    <app-route-style-picker
+      formControlName="route_style"
+    ></app-route-style-picker>
+  </section>
+
+  <section>
+    <h2 id="scale-label">Massstab</h2>
+    <mat-button-toggle-group
+      formControlName="auto_scale"
+      aria-labelledby="scale-label"
+      hideSingleSelectionIndicator
+    >
+      <mat-button-toggle [value]="true">Automatisch</mat-button-toggle>
+      <mat-button-toggle [value]="false">Manuell</mat-button-toggle>
+    </mat-button-toggle-group>
+
+    @if (!options.value.auto_scale) {
+      <div class="slider-container">
+        <label for="map-scaling">Kartenmassstab: 1:{{ slider.value }}</label>
+        <mat-slider min="5000" max="100000" step="5000" discrete>
+          <input
+            matSliderThumb
+            #slider
+            id="map-scaling"
+            formControlName="map_scaling"
+          />
+        </mat-slider>
+      </div>
+    }
+  </section>
+
+  <section>
+    <h2 id="labels-label">Punkte auf der Karte</h2>
+    <mat-button-toggle-group
+      [value]="pointLabels"
+      (change)="setPointLabels($event.value)"
+      aria-labelledby="labels-label"
+      hideSingleSelectionIndicator
+    >
+      <mat-button-toggle value="names">Namen</mat-button-toggle>
+      <mat-button-toggle value="numbers">Nummern</mat-button-toggle>
+      <mat-button-toggle value="none">Keine</mat-button-toggle>
+    </mat-button-toggle-group>
+  </section>
+
+  <section>
+    <h2 id="legend-label">Legende im Höhenprofil</h2>
+    <mat-button-toggle-group
+      formControlName="legend_position"
+      aria-labelledby="legend-label"
+      hideSingleSelectionIndicator
+      class="legend-toggle"
+    >
+      @for (position of legendPositions; track position.value) {
+        <mat-button-toggle [value]="position.value">{{
+          position.label
+        }}</mat-button-toggle>
+      }
+    </mat-button-toggle-group>
+  </section>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-stroked-button color="primary" (click)="close(undefined)">
+    Abbrechen
+  </button>
+  @if (data.mode === "export") {
+    <button
+      mat-flat-button
+      color="primary"
+      id="confirm-export-button"
+      (click)="close('download')"
+    >
+      <mat-icon>download</mat-icon>
+      Herunterladen
+    </button>
+  } @else {
+    <button mat-flat-button color="primary" (click)="close('apply')">
+      Übernehmen
+    </button>
+  }
+</mat-dialog-actions>

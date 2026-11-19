@@ -1,3 +1,4 @@
+import { leistungskilometer, MAX_WAY_POINTS } from '../utils/walk-time.utils';
 import { Injectable, OnDestroy } from '@angular/core';
 import { LV95_Coordinates, LV95_Waypoint } from '../helpers/coordinates';
 import { combineLatest, Subject, BehaviorSubject } from 'rxjs';
@@ -253,7 +254,7 @@ export class MapAnimatorService implements OnDestroy {
   public async add_way_point(point: LV95_Coordinates) {
     if (this.export_mode) return;
     // No limit here: these are points of the route, not of the walk-time table. The table is limited to
-    // 21 way points by the automatic selection, the backend and add_point_of_interest.
+    // MAX_WAY_POINTS by add_point_of_interest and the backend (the automatic selection picks at most 21).
 
     const current_path = this.state.path;
     const current_anchors = this.state.anchor_points;
@@ -596,10 +597,14 @@ export class MapAnimatorService implements OnDestroy {
   }
 
   public async add_point_of_interest(pkt: LV95_Waypoint) {
-    if (this.state.pois.length >= 21) {
-      this.snackBar.open('Maximal 21 Wegpunkte erlaubt', 'Schliessen', {
-        duration: 3000,
-      });
+    if (this.state.pois.length >= MAX_WAY_POINTS) {
+      this.snackBar.open(
+        `Maximal ${MAX_WAY_POINTS} Wegpunkte erlaubt`,
+        'Schliessen',
+        {
+          duration: 3000,
+        },
+      );
       return;
     }
     // Ensure we're in manual mode after any user-initiated POI change
@@ -1196,7 +1201,7 @@ export class MapAnimatorService implements OnDestroy {
     let dist = wp[wp.length - 1].accumulated_distance;
     let up = 0;
     let down = 0;
-    let duration = 0;
+    let lkm = 0;
     const speed = this.state.velocity$.getValue() || 4.5;
 
     for (let i = 1; i < wp.length; i++) {
@@ -1207,9 +1212,15 @@ export class MapAnimatorService implements OnDestroy {
       if (dH > 0) up += dH;
       else down += Math.abs(dH);
 
-      duration += (dDist + (dH > 0 ? dH / 100 : 0)) / speed;
+      lkm += leistungskilometer(dDist, dH);
     }
-    this.state.route_stats$.next({ dist, up, down, duration });
+    this.state.route_stats$.next({
+      dist,
+      up,
+      down,
+      lkm,
+      duration: lkm / speed,
+    });
   }
 
   public formatDuration(hours: number): string {

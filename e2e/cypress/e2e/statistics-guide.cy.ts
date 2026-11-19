@@ -6,7 +6,7 @@ function open_statistics() {
   cy.visit("/");
   cy.get('button[matTooltip="Statistiken"]').click();
   cy.location("pathname").should("eq", "/statistics");
-  cy.get("#control-area").should("be.visible");
+  cy.get(".info-dialog").should("be.visible");
 }
 
 describe("Statistics page", () => {
@@ -122,7 +122,7 @@ describe("Statistics page", () => {
   });
 });
 
-describe("Statistics and guide drawer", () => {
+describe("Statistics and guide dialogs", () => {
   const query = "center=2708224.25%2C1240069.50&z=8.989";
 
   beforeEach(() => {
@@ -136,39 +136,54 @@ describe("Statistics and guide drawer", () => {
     cy.get('button[matTooltip="Statistiken"]').click();
     cy.location("pathname").should("eq", "/statistics");
     cy.location("search").should("contain", "z=8.989");
-    cy.get("#control-area").should("be.visible");
-    cy.get("h1").should("contain", "Routenstatistik");
+    cy.get(".info-dialog").should("be.visible");
+    cy.get(".info-dialog h1").should("contain", "Routenstatistik");
+    // the dialog opens over the map, the drawer stays as it was
+    cy.get("#control-area").should("not.be.visible");
 
-    cy.get('button[matTooltip="Statistiken"]').click();
+    cy.get('.info-dialog button[aria-label="Schliessen"]').click();
+    cy.get(".info-dialog").should("not.exist");
     cy.location("pathname").should("eq", "/");
     cy.location("search").should("contain", "z=8.989");
-    cy.get("#control-area").should("not.be.visible");
   });
 
   it("should open and close the user guide", () => {
     cy.get('button[matTooltip="So funktioniert es!"]').click();
     cy.location("pathname").should("eq", "/guide");
     cy.location("search").should("contain", "z=8.989");
-    cy.get("#control-area").should("be.visible");
-    cy.get("h1").should(
+    cy.get(".info-dialog h1").should(
       "contain",
       "J+S-Marschzeittabellen automatisiert generieren",
     );
     cy.contains("h2", "Woher erhalte ich eine GPX-Datei?").should("exist");
     cy.contains("h2", "Woher erhalte ich eine KML-Datei?").should("exist");
 
-    cy.get('button[matTooltip="So funktioniert es!"]').click();
+    cy.get("body").type("{esc}");
+    cy.get(".info-dialog").should("not.exist");
     cy.location("pathname").should("eq", "/");
-    cy.get("#control-area").should("not.be.visible");
   });
 
-  it("should switch between the guide and the statistics", () => {
-    cy.get('button[matTooltip="So funktioniert es!"]').click();
-    cy.location("pathname").should("eq", "/guide");
+  it("should open the guide from a link and close it with the back button", () => {
+    cy.visit("/guide?" + query);
+    cy.get(".info-dialog h1").should("contain", "J+S-Marschzeittabellen");
 
-    cy.get('button[matTooltip="Statistiken"]').click();
-    cy.location("pathname").should("eq", "/statistics");
+    cy.visit("/?" + query);
+    cy.get('button[matTooltip="So funktioniert es!"]').click();
+    cy.get(".info-dialog").should("be.visible");
+    cy.go("back");
+    cy.get(".info-dialog").should("not.exist");
+    cy.location("pathname").should("eq", "/");
+  });
+
+  it("should keep the route table while the guide is open", () => {
+    cy.get(".mode-toggle").contains("table_chart").click();
     cy.get("#control-area").should("be.visible");
-    cy.get("h1").should("contain", "Routenstatistik");
+
+    cy.get('button[matTooltip="So funktioniert es!"]').click();
+    cy.get(".info-dialog").should("be.visible");
+    cy.get('.info-dialog button[aria-label="Schliessen"]').click();
+
+    cy.get("#control-area").should("be.visible");
+    cy.get(".marschzeit-table").should("exist");
   });
 });

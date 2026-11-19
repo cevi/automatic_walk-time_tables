@@ -33,6 +33,9 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { RetrieveDataComponent } from './pages/retrieve-data/retrieve-data.component';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MapExportDialogComponent } from './pages/export-settings/map-export-dialog/map-export-dialog.component';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { HttpClientModule } from '@angular/common/http';
@@ -55,6 +58,7 @@ import { StatisticsPageComponent } from './pages/statistics-page/statistics-page
     ElevationProfileComponent,
     WalkTimeTableComponent,
     RouteStylePickerComponent,
+    MapExportDialogComponent,
   ],
   imports: [
     BrowserModule,
@@ -80,6 +84,8 @@ import { StatisticsPageComponent } from './pages/statistics-page/statistics-page
     MatProgressSpinnerModule,
     MatTooltipModule,
     MatMenuModule,
+    MatDialogModule,
+    MatButtonToggleModule,
     MatDividerModule,
     FormsModule,
     MatAutocompleteModule,

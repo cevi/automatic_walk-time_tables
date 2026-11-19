@@ -51,14 +51,13 @@ describe('Interactive Route Drawing, UI Settings Change and Export', () => {
             .clear()
             .type('4.5');
 
-        // 3. Toggle auto scale
-        cy.get('[formControlName="auto_scale"]').click();
-
         // Verify that the export button is enabled
         cy.get('#export-button').should('be.enabled');
 
-        // Click the export button
+        // Click the export button, choose an automatic scale in the dialog and export
         cy.get('#export-button').click();
+        cy.contains('.info-dialog mat-button-toggle', 'Automatisch').click();
+        cy.get('#confirm-export-button').click();
 
         // Verify redirection to /pending and /download
         cy.url({ timeout: 10_000 }).should('contain', '/pending');

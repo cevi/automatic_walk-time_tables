@@ -6,7 +6,18 @@ import {
 } from '@angular/core';
 import { MapAnimatorService } from '../../services/map-animator.service';
 import { MapService } from '../../services/map.service';
-import { Router } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { filter } from 'rxjs';
+import { UserGuideComponent } from '../../pages/user-guide/user-guide.component';
+import { StatisticsPageComponent } from '../../pages/statistics-page/statistics-page.component';
+
+type Overlay = 'guide' | 'statistics';
+
+const OVERLAYS: Record<Overlay, any> = {
+  guide: UserGuideComponent,
+  statistics: StatisticsPageComponent,
+};
 import {
   SENTINEL_LAYER_PREFIX,
   SentinelLayersService,
@@ -32,7 +43,12 @@ export class MapBackgroundComponent implements OnInit, AfterViewInit {
     private mapService: MapService,
     private router: Router,
     private sentinelLayers: SentinelLayersService,
+    private dialog: MatDialog,
   ) {}
+
+  /** the guide or the statistics, shown as a dialog over the map */
+  private overlay: Overlay | null = null;
+  private overlayRef: MatDialogRef<unknown> | null = null;
 
   /** newest first; selectable as `sentinel-<index>` */
   public sentinelScenes: SentinelScene[] = [];
@@ -41,6 +57,12 @@ export class MapBackgroundComponent implements OnInit, AfterViewInit {
   private viewInitialized = false;
 
   ngOnInit(): void {
+    // the URL decides which dialog is open, so links and the back button work
+    this.router.events
+      .pipe(filter((e) => e instanceof NavigationEnd))
+      .subscribe(() => this.syncOverlay());
+    this.syncOverlay();
+
     const url = new URL(window.location.href);
     const bgLayerUrl = url.searchParams.get('bgLayer');
     if (bgLayerUrl) {
@@ -272,32 +294,51 @@ export class MapBackgroundComponent implements OnInit, AfterViewInit {
     this.mapAnimator.setAppMode(mode);
   }
 
-  toggle_drawer_guide() {
-    const isGuideUrl = this.router.url.split('?')[0] === '/guide';
-    if (!isGuideUrl) {
-      this.router.navigate(['/guide'], { queryParamsHandling: 'preserve' });
-      this.mapAnimator.drawer_open = true;
-    } else {
-      this.mapAnimator.drawer_open = !this.mapAnimator.drawer_open;
-      if (!this.mapAnimator.drawer_open) {
+  private currentOverlay(): Overlay | null {
+    const path = this.router.url.split(/[?#]/)[0];
+    if (path === '/guide') return 'guide';
+    if (path === '/statistics') return 'statistics';
+    return null;
+  }
+
+  private syncOverlay() {
+    const wanted = this.currentOverlay();
+    if (wanted === this.overlay) return;
+
+    this.overlay = wanted;
+    this.overlayRef?.close();
+    this.overlayRef = null;
+    if (!wanted) return;
+
+    const ref = this.dialog.open(OVERLAYS[wanted], {
+      panelClass: 'info-dialog',
+      width: '760px',
+      maxWidth: '100vw',
+      autoFocus: 'dialog',
+      ariaLabelledBy: 'info-dialog-title',
+    });
+    this.overlayRef = ref;
+    ref.afterClosed().subscribe(() => {
+      // closed with the button, Esc or a click outside: leave the URL
+      if (this.overlayRef === ref) {
+        this.overlayRef = null;
+        this.overlay = null;
         this.router.navigate(['/'], { queryParamsHandling: 'preserve' });
       }
-    }
+    });
+  }
+
+  private toggleOverlay(overlay: Overlay) {
+    const target = this.currentOverlay() === overlay ? '/' : '/' + overlay;
+    this.router.navigate([target], { queryParamsHandling: 'preserve' });
+  }
+
+  toggle_drawer_guide() {
+    this.toggleOverlay('guide');
   }
 
   toggle_drawer_statistics() {
-    const isStatisticsUrl = this.router.url.split('?')[0] === '/statistics';
-    if (!isStatisticsUrl) {
-      this.router.navigate(['/statistics'], {
-        queryParamsHandling: 'preserve',
-      });
-      this.mapAnimator.drawer_open = true;
-    } else {
-      this.mapAnimator.drawer_open = !this.mapAnimator.drawer_open;
-      if (!this.mapAnimator.drawer_open) {
-        this.router.navigate(['/'], { queryParamsHandling: 'preserve' });
-      }
-    }
+    this.toggleOverlay('statistics');
   }
 
   handleToggle(event: Event, layerMethodName: string) {

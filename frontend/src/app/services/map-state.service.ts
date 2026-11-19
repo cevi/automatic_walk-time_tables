@@ -7,6 +7,8 @@ export interface RouteStats {
   dist: number;
   up: number;
   down: number;
+  /** Leistungskilometer as in the J+S template, see leistungskilometer() */
+  lkm: number;
   duration: number;
 }
 
