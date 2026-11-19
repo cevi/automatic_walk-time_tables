@@ -108,7 +108,7 @@ describe("Export options", () => {
       expect(response?.body.uuid).to.match(/^[0-9a-f]{32}$/);
     });
 
-    get_exported_files().should("have.length", 5);
+    get_exported_files().should("have.length", 4);
   });
 
   it("should export with customized settings", () => {
@@ -151,7 +151,6 @@ describe("Export options", () => {
       "Wanderung-am-See.gpx",
       "Wanderung-am-See_maps.pdf",
       "Wanderung-am-See_Marschzeittabelle.xlsx",
-      "Wanderung-am-See_Marschzeittabelle.pdf",
       "Wanderung-am-See_elevation_profile.png",
     ]);
 
@@ -176,7 +175,7 @@ describe("Export options", () => {
       });
     });
 
-    get_exported_files().should("have.length", 5);
+    get_exported_files().should("have.length", 4);
   });
 
   it("should remember the settings of the last export", () => {
@@ -225,7 +224,6 @@ describe("Export options", () => {
         `${file_name}.gpx`,
         `${file_name}_maps.pdf`,
         `${file_name}_Marschzeittabelle.xlsx`,
-        `${file_name}_Marschzeittabelle.pdf`,
         `${file_name}_elevation_profile.png`,
       ]);
     });

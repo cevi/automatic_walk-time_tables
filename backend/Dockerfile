@@ -1,15 +1,8 @@
-FROM python:3.11.18-slim-bookworm
+FROM python:3.11.2-slim
 
 ENV PIP_ROOT_USER_ACTION=ignore
 
 WORKDIR /app
-
-# LibreOffice prints the walk-time table (Excel) as PDF. Liberation and Carlito are metric compatible
-# with the Arial and Calibri fonts of the J+S template, the other fonts are substituted by the config.
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends libreoffice-calc-nogui fonts-liberation fonts-crosextra-carlito \
-    && rm -rf /var/lib/apt/lists/*
-COPY ./docker/template-fonts.conf /etc/fonts/conf.d/99-template-fonts.conf
 
 # Install requirements
 COPY ./requirements.txt /app

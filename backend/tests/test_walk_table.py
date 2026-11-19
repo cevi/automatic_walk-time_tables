@@ -1,11 +1,8 @@
 import os
-import shutil
 import tempfile
 import unittest
-from unittest import mock
 
 import openpyxl
-from pypdf import PdfReader
 
 from automatic_walk_time_tables.utils import error
 from automatic_walk_time_tables.utils.path import Path
@@ -81,44 +78,6 @@ class WalkTableTest(unittest.TestCase):
         )
         with self.assertRaises(error.UserException):
             self.export(MAX_WAY_POINTS + 1)
-
-
-class WalkTablePdfTest(unittest.TestCase):
-    def export(self, number_of_way_points: int) -> str:
-        name = os.path.join(tempfile.mkdtemp(), "test")
-        create_walk_table(
-            "2026-03-30T08:00",
-            4,
-            route(number_of_way_points),
-            name,
-            "Testroute",
-            "Test",
-            "Spitzmeilen (1154)",
-        )
-        return name
-
-    def test_export_without_libreoffice(self):
-        # the Excel file is exported even if the PDF cannot be created
-        with mock.patch(
-            "automatic_walk_time_tables.walk_time_table.walk_table.shutil.which",
-            return_value=None,
-        ):
-            name = self.export(5)
-        self.assertTrue(os.path.exists(name + "_Marschzeittabelle.xlsx"))
-        self.assertFalse(os.path.exists(name + "_Marschzeittabelle.pdf"))
-
-    @unittest.skipUnless(
-        shutil.which("soffice") or shutil.which("libreoffice"),
-        "LibreOffice is not installed",
-    )
-    def test_pdf_version_has_one_page_per_21_way_points(self):
-        for number_of_way_points, pages in ((21, 1), (30, 2)):
-            name = self.export(number_of_way_points)
-            pdf = PdfReader(name + "_Marschzeittabelle.pdf")
-            self.assertEqual(len(pdf.pages), pages)
-            text = pdf.pages[-1].extract_text()
-            self.assertIn(f"Punkt {number_of_way_points}", text)
-            self.assertIn("Summen", text)
 
 
 class LeistungskilometerTest(unittest.TestCase):

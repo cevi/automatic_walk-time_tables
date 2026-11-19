@@ -1,8 +1,5 @@
 import logging
 import os
-import shutil
-import subprocess
-import tempfile
 from datetime import timedelta, datetime
 from math import log
 from multiprocessing import Process
@@ -342,54 +339,6 @@ def create_walk_table(
     xfile.save(file_name + "_Marschzeittabelle.xlsx")
 
     logger.info("Marschzeittabelle saved as " + file_name + "_Marschzeittabelle.xlsx")
-
-    convert_to_pdf(file_name + "_Marschzeittabelle.xlsx")
-
-
-def convert_to_pdf(xlsx_file: str, timeout: int = 120):
-    """
-    Saves a PDF version of the walk-time table next to the Excel file (same name, .pdf), as printed by
-    LibreOffice: the formulas are calculated and the print settings of the template (A4 pages, header rows on
-    every page) apply. Returns the path of the PDF, or None if the conversion failed; the export goes on
-    without the PDF in that case.
-    """
-    soffice = shutil.which("soffice") or shutil.which("libreoffice")
-    if soffice is None:
-        logger.error(
-            "LibreOffice is not installed, the walk-time table is not exported as PDF."
-        )
-        return None
-
-    xlsx_file = os.path.abspath(xlsx_file)
-    pdf_file = os.path.splitext(xlsx_file)[0] + ".pdf"
-    # a profile per conversion, so that concurrent exports do not block each other
-    with tempfile.TemporaryDirectory(prefix="libreoffice-") as profile:
-        try:
-            subprocess.run(
-                [
-                    soffice,
-                    f"-env:UserInstallation=file://{profile}",
-                    "--headless",
-                    "--norestore",
-                    "--convert-to",
-                    "pdf",
-                    "--outdir",
-                    os.path.dirname(xlsx_file),
-                    xlsx_file,
-                ],
-                check=True,
-                capture_output=True,
-                timeout=timeout,
-            )
-        except (OSError, subprocess.SubprocessError) as e:
-            logger.error("Converting the walk-time table to PDF failed: %s", e)
-            return None
-
-    if not os.path.exists(pdf_file):
-        logger.error("LibreOffice did not create %s", pdf_file)
-        return None
-    logger.info("Marschzeittabelle saved as %s", pdf_file)
-    return pdf_file
 
 
 def calc_walk_time(delta_height, delta_dist, speed):
