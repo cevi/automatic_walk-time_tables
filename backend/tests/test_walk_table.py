@@ -1,13 +1,17 @@
 import os
 import tempfile
 import unittest
+from unittest import mock
 
 import openpyxl
+import requests
+from pypdf import PdfReader
 
 from automatic_walk_time_tables.utils import error
 from automatic_walk_time_tables.utils.path import Path
 from automatic_walk_time_tables.utils.point import Point_LV95
 from automatic_walk_time_tables.utils.way_point import WayPoint
+from automatic_walk_time_tables.walk_time_table import walk_table
 from automatic_walk_time_tables.walk_time_table.walk_table import (
     MAX_WAY_POINTS,
     create_walk_table,
@@ -78,6 +82,67 @@ class WalkTableTest(unittest.TestCase):
         )
         with self.assertRaises(error.UserException):
             self.export(MAX_WAY_POINTS + 1)
+
+
+class WalkTablePdfTest(unittest.TestCase):
+    """The PDF version is printed by Gotenberg (see GOTENBERG_URL)."""
+
+    def export(self, number_of_way_points: int) -> str:
+        name = os.path.join(tempfile.mkdtemp(), "test")
+        create_walk_table(
+            "2026-03-30T08:00",
+            4,
+            route(number_of_way_points),
+            name,
+            "Testroute",
+            "Test",
+            "Spitzmeilen (1154)",
+        )
+        return name
+
+    def test_pdf_from_gotenberg(self):
+        response = mock.Mock(status_code=200, content=b"%PDF-1.7 test")
+        with (
+            mock.patch.object(walk_table, "GOTENBERG_URL", "http://gotenberg:3000"),
+            mock.patch.object(
+                walk_table.requests, "post", return_value=response
+            ) as post,
+        ):
+            name = self.export(5)
+
+        url = post.call_args.args[0]
+        self.assertEqual(url, "http://gotenberg:3000/forms/libreoffice/convert")
+        self.assertIn("files", post.call_args.kwargs["files"])
+        with open(name + "_Marschzeittabelle.pdf", "rb") as f:
+            self.assertEqual(f.read(), b"%PDF-1.7 test")
+
+    def test_export_without_gotenberg(self):
+        # the Excel file is exported even if the PDF cannot be created
+        with (
+            mock.patch.object(walk_table, "GOTENBERG_URL", "http://gotenberg:3000"),
+            mock.patch.object(
+                walk_table.requests,
+                "post",
+                side_effect=requests.ConnectionError("down"),
+            ),
+        ):
+            name = self.export(5)
+        self.assertTrue(os.path.exists(name + "_Marschzeittabelle.xlsx"))
+        self.assertFalse(os.path.exists(name + "_Marschzeittabelle.pdf"))
+
+        with mock.patch.object(walk_table, "GOTENBERG_URL", ""):
+            name = self.export(5)
+        self.assertFalse(os.path.exists(name + "_Marschzeittabelle.pdf"))
+
+    @unittest.skipUnless(os.environ.get("GOTENBERG_URL"), "GOTENBERG_URL is not set")
+    def test_pdf_has_one_page_per_21_way_points(self):
+        for number_of_way_points, pages in ((21, 1), (30, 2)):
+            name = self.export(number_of_way_points)
+            pdf = PdfReader(name + "_Marschzeittabelle.pdf")
+            self.assertEqual(len(pdf.pages), pages)
+            text = pdf.pages[-1].extract_text()
+            self.assertIn(f"Punkt {number_of_way_points}", text)
+            self.assertIn("Summen", text)
 
 
 class LeistungskilometerTest(unittest.TestCase):
