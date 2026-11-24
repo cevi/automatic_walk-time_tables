@@ -71,6 +71,9 @@ export class SwisstopoMap {
       attributionUrl:
         'https://www.swisstopo.admin.ch/internet/swisstopo/fr/home.html',
       label: 'luftbild',
+      // SWISSIMAGE is served up to matrix 28 (10 cm/px, tile matrix set 2056_28),
+      // so extend the default grid instead of upscaling the 50 cm tiles.
+      resolutions: [...SwisstopoMap.RESOLUTIONS, 0.25, 0.1],
       timestamps: ['current'],
     },
     haltestellen: {
@@ -200,12 +203,9 @@ export class SwisstopoMap {
   }
 
   private createWMTSSource(layerConfig: any, projection: ProjectionLike): WMTS {
-    const matrixIds: string[] = [];
-    for (let i = 0; i < SwisstopoMap.RESOLUTIONS.length; i++) {
-      matrixIds.push(String(i));
-    }
-
-    const resolutions = layerConfig.resolutions || SwisstopoMap.RESOLUTIONS;
+    const resolutions: number[] =
+      layerConfig.resolutions || SwisstopoMap.RESOLUTIONS;
+    const matrixIds = resolutions.map((_, i) => String(i));
 
     const tileGrid = new WMTSTileGrid({
       origin: [SwisstopoMap.EXTEND[0], SwisstopoMap.EXTEND[3]],
