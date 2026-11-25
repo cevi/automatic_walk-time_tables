@@ -1,6 +1,6 @@
 import { Layer, Tile } from 'ol/layer';
 import { get, Projection, ProjectionLike } from 'ol/proj';
-import { WMTS } from 'ol/source';
+import { TileWMS, WMTS } from 'ol/source';
 import WMTSTileGrid from 'ol/tilegrid/WMTS';
 import WebGLTileLayer from 'ol/layer/WebGLTile';
 import GeoTIFF from 'ol/source/GeoTIFF';
@@ -108,7 +108,9 @@ export class SwisstopoMap {
       serverLayerName: 'ch.astra.wanderland-sperrungen_umleitungen',
       attributionUrl: 'https://www.astra.admin.ch/',
       label: 'Sperrungen',
-      timestamps: ['current'],
+      // geo.admin serves this layer only as WMS, not as WMTS tiles
+      type: 'wms',
+      gutter: 120,
     },
     naturschutzgebiete: {
       attribution: 'Pro Natura',
@@ -153,10 +155,13 @@ export class SwisstopoMap {
     herdenschutzhunde: {
       attribution: 'BAFU',
       format: 'png',
-      serverLayerName: 'ch.bafu.alpweiden-herdenschutzhunde',
+      // Replaces 'ch.bafu.alpweiden-herdenschutzhunde', whose data is frozen
+      // and which geo.admin removes from WMTS (release 26.08.2026).
+      serverLayerName: 'ch.bafu.alpweiden-mit_herdenschutzhunden',
       attributionUrl: 'https://www.bafu.admin.ch/',
       label: 'Herdenschutzhunde',
-      timestamps: ['current'],
+      // geo.admin serves this layer only as WMS, not as WMTS tiles
+      type: 'wms',
     },
   };
 
@@ -173,7 +178,39 @@ export class SwisstopoMap {
     return new Tile({
       opacity: opacity,
       className: `ol-layer-${layerLabel}`,
-      source: this.createWMTSSource(this.layer_configs[layerLabel], projection),
+      source: this.createTileSource(this.layer_configs[layerLabel], projection),
+    });
+  }
+
+  private createTileSource(layerConfig: any, projection: ProjectionLike) {
+    return layerConfig.type === 'wms'
+      ? this.createWMSSource(layerConfig, projection)
+      : this.createWMTSSource(layerConfig, projection);
+  }
+
+  /**
+   * Some geo.admin layers exist only as WMS. They are requested as WMS
+   * tiles on the same LV95 tile grid as the WMTS layers.
+   */
+  private createWMSSource(
+    layerConfig: any,
+    projection: ProjectionLike,
+  ): TileWMS {
+    return new TileWMS({
+      url: 'https://wms.geo.admin.ch/',
+      params: {
+        LAYERS: layerConfig.serverLayerName,
+        FORMAT: 'image/' + (layerConfig.format || 'png'),
+        TRANSPARENT: true,
+        VERSION: '1.3.0',
+        LANG: 'de',
+      },
+      // labels and symbols near tile edges are not cut off
+      gutter: layerConfig.gutter ?? 0,
+      projection: projection,
+      crossOrigin: 'anonymous',
+      attributions:
+        '<a href="https://www.admin.ch/gov/de/start/rechtliches.html" target="_blank">&copy; Daten: Swisstopo</a>',
     });
   }
 
