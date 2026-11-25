@@ -400,7 +400,8 @@ export class MapDrawingRenderer {
           const wmtsLayerNames: Record<string, string> = {
             haltestellen: 'ch.bav.haltestellen-oev',
             schiessanzeigen: 'ch.vbs.schiessanzeigen',
-            herdenschutzhunde: 'ch.bafu.alpweiden-herdenschutzhunde',
+            herdenschutzhunde: 'ch.bafu.alpweiden-mit_herdenschutzhunden',
+            sperrungen: 'ch.astra.wanderland-sperrungen_umleitungen',
             schutzgebiete_naturschutzgebiete: 'ch.pronatura.naturschutzgebiete',
             schutzgebiete_jagdbanngebiete: 'ch.bafu.wrz-jagdbanngebiete_select',
             schutzgebiete_wildruhezonen: 'ch.bafu.wrz-wildruhezonen_portal',
@@ -668,7 +669,8 @@ export class MapDrawingRenderer {
       const wmtsLayerNames: Record<string, string> = {
         haltestellen: 'ch.bav.haltestellen-oev',
         schiessanzeigen: 'ch.vbs.schiessanzeigen',
-        herdenschutzhunde: 'ch.bafu.alpweiden-herdenschutzhunde',
+        herdenschutzhunde: 'ch.bafu.alpweiden-mit_herdenschutzhunden',
+        sperrungen: 'ch.astra.wanderland-sperrungen_umleitungen',
         schutzgebiete_naturschutzgebiete: 'ch.pronatura.naturschutzgebiete',
         schutzgebiete_jagdbanngebiete: 'ch.bafu.wrz-jagdbanngebiete_select',
         schutzgebiete_wildruhezonen: 'ch.bafu.wrz-wildruhezonen_portal',
@@ -1135,8 +1137,10 @@ export class MapDrawingRenderer {
       // --- GENERIC POPOVER FOR OTHER LAYERS ---
       let title = layerId || 'Metadaten';
       if (title === 'ch.vbs.schiessanzeigen') title = 'Schiessanzeigen';
-      else if (title === 'ch.bafu.alpweiden-herdenschutzhunde')
+      else if (title === 'ch.bafu.alpweiden-mit_herdenschutzhunden')
         title = 'Herdenschutzhunde';
+      else if (title === 'ch.astra.wanderland-sperrungen_umleitungen')
+        title = props.sperrungen_type_de || 'Sperrung';
       else if (title.includes('schutzgebiete') || title.includes('wrz'))
         title = 'Schutzgebiet';
 
@@ -1224,97 +1228,6 @@ export class MapDrawingRenderer {
         if (key === 'transport_means_de') displayKey = 'Verkehrsmittel';
       }
 
-      if (layerBodId === 'ch.bafu.alpweiden-herdenschutzhunde') {
-        // ... (existing herdenschutzhunde handling)
-        const keyMap: Record<string, string> = {
-          code_refverhalten: 'Verhaltensregeln',
-          code_hundepraesenz: 'Anwesenheit Schutzhunde',
-          code_hinweis: 'Hinweis',
-          refmeldungbeweidungszone: 'Aktuelle Beweidungszone',
-          kontname: 'Kontakt Name',
-          konttel: 'Kontakt Telefon',
-          kontemail: 'Kontakt E-Mail',
-          name: 'Objektname',
-        };
-        if (keyMap[key]) displayKey = keyMap[key];
-
-        if (key === 'code_refverhalten') {
-          val =
-            'http://www.protectiondestroupeaux.ch/de/herdenschutzhunde/tourismus-und-herdenschutzhunde/sichere-begegnungen-mit-herdenschutzhunden/';
-        } else if (key === 'code_hundepraesenz') {
-          const pMap: Record<number, string> = {
-            1000: 'Es ist ganzjährig mit der Anwesenheit von Herdenschutzhunden zu rechnen.',
-            1001: 'In der Regel von Anfang Juni bis Ende September.',
-            1008: 'In der Regel von Anfang Juni bis Ende September. Beachten Sie nach Möglichkeit die aktuellen Präsenzangaben auf den Infotafeln vor Ort.',
-            1010: 'In der Regel zwischen Anfang Juni und Ende September.',
-            1011: 'In der Regel zwischen Anfang Juni und Mitte September. Beachten Sie nach Möglichkeit die aktuellen Präsenzangaben auf den Infotafeln vor Ort.',
-            1014: 'In der Regel zwischen Ende Mai bis Bettag (ca. Mitte September).',
-            1016: 'In der Regel zwischen Ende Mai und Ende September. Auf dem Alpinwanderweg Vorderjoch - Gandispitz - Zingel ist nicht mit Begegnungen mit Herdenschutzhunden zu rechnen.',
-            1017: 'In der Regel zwischen Ende Mai und Mitte Oktober.',
-            1018: 'In der Regel zwischen Mitte April und Anfang Dezember.',
-            1019: 'In der Regel zwischen Mitte Juni und Ende September.',
-            1020: 'In der Regel zwischen Mitte Juni und Ende September. Beachten Sie nach Möglichkeit die aktuellen Präsenzangaben auf den Infotafeln vor Ort.',
-            1021: 'In der Regel zwischen Mitte Juni und Mitte September.',
-            1022: 'Von Anfang August bis Mitte September ist auf dem Wanderweg von der Canalbrücke aus Richtung Zapporthütte damit zu rechnen, auf Herdenschutzhunde zu treffen.',
-            1024: 'In der Regel zwischen Anfang Juni und Mitte September.',
-            1025: 'In der Regel Ende Mai bis Ende Juni auf der Weide Lavanchy-Poy. Mitte Juni bis Ende September auf der Alp Taveyanne.',
-            1026: 'In der Regel Ende Mai bis Mitte Juni auf dem unteren Teil der Alpweide. Mitte August bis Anfang Oktober auf der ganzen Alp.',
-            1027: 'In der Regel Anfang Juni bis Mitte Oktober. Die Herde mit den Herdenschutzhunden befindet sich im August in der Region um die Seen.',
-            1028: 'Mitte April - Mitte Juni: Weiden Rossboden und Älpli bei Malans. Mitte Juni - Anfang Juli und September: Grüscheralp (Alpweide um Golrosa, Cavell, Schafbüel). Ab Juli - Anfang September: Alp Drusa (Alpweide rund um Carschinahütte und Schafberg).',
-            1032: 'In der Regel Mitte Mai bis Ende Juni (Gommer Höhenweg) und Ende September bis Ende Oktober (Hofmatte).',
-            1033: 'In der Regel zwischen Anfang Juni und Anfang Juli und im Oktober auf der Weiden zwischen Vercorin und Le Crêt du Midi. Und zwischen Anfang Juli bis Ende September auf der Weiden zwischen Le Crêt du Midi und le Roc d&#39;Orzival.',
-            1034: 'In der Regel von Anfang Mai bis Ende Mai für die Weiden um das Dorf Ramosch. Von Ende Mai bis Ende September für die Alp Russena. Und von Ende September bis Anfang November für die Alp Arina.',
-            1035: 'In der Regel von Anfang Juni bis Mitte Juli für den Sektor Cani und Sanalada und von Mitte Juli bis Ende September für den oberen Teil der Alp. Beachten Sie nach Möglichkeit die aktuellen Präsenzangaben auf den Infotafeln vor Ort.',
-            1036: 'Die Herde und die Herdenschutzhunde sind von Anfang Juni bis Mitte Septembre in Lavaz und von Mitte September bis Mitte Oktober in Val Plattas anzutreffen. Beachten Sie nach Möglichkeit die aktuellen Präsenzangaben auf den Infotafeln vor Ort.',
-            1037: 'In der Regel zwischen Mitte Mai und Ende September.',
-            1038: 'In der Regel zwischen Mitte Mai und Mitte Oktober.',
-            1039: 'In der Regel zwischen Ende Juli und Ende September.',
-            1040: 'In der Regel zwischen Mitte Juni und Ende Juli.',
-            1041: 'In der Regel Anfang Juni bis Mitte August auf der Alp Curtegns. Mitte August bis Ende September auf der Alp Val Nandro.',
-            1042: 'In der Regel, Anfang Juni - Mitte Juli und Anfang September - Mitte September: Alp Schärm Obergross Stäfe (Studen). Mitte Juli - Anfang September: Hochalp Silbern.',
-            1043: 'In der Regel zwischen Anfang Mai und Ende Oktober.',
-            1044: 'In der Regel zwischen Anfang Mai bis Ende Juni und im Oktober.',
-            1045: 'In der Regel zwischen Mitte Mai und Ende September.',
-            1046: 'In der Regel. Juni: Combi. Juli - September: Balachaux.',
-            1047: 'In der Regel zwischen Anfang Mai und Ende Mai. Und zwischen Anfang September und Mitte November.',
-            1048: 'In der Regel zwischen Anfang Juni und Mitte Oktober.',
-            1049: 'In der Regel zwischen Mitte Juni und Mitte Oktober.',
-            1050: 'In der Regel zwischen Mitte Juni und Ende September.',
-            1051: 'In der Regel zwischen Mitte Mai und Mitte Oktober.',
-            1052: 'In der Regel zwischen Anfang Juli und Ende September.',
-            1053: 'In der Regel zwischen Anfang Juni und Ende Oktober.',
-            1055: 'In der Regel zwischen Anfang Mai und Mitte November.',
-            1056: 'In der Regel zwischen Anfang Juli und Mitte Oktober.',
-          };
-          val = pMap[val as number] || val;
-        } else if (key === 'code_hinweis') {
-          const hMap: Record<number, string> = {
-            0: 'n.n.',
-            4: 'Der Wanderweg am Lag da Pigniu ist bei Anwesenheit der Herdenschutzhunde ausgezäunt, so dass Sie in der Regel nicht direkt auf die geschützte Herde treffen. Mit Begleithunden - unbedingt angeleint - bitte zügig an der geschützten Weide vorbeigehen.',
-            30: 'Der Weg durch die Combe de Dreveneuse ist während der Zeit, in der die Herde dort weidet, gesperrt.',
-            36: 'Der direkte Wanderweg zum Fürstein ist jeweils während der Beweidungsdauer (2 Wochen) temporär gesperrt. Der Wanderweg ist über die Ostseite umgeleitet.',
-            37: 'Um Interaktionen zwischen Herdenschutzhunden und Touristen zu minimieren, können einige Wanderwege vorübergehend geschlossen und umgeleitet werden.',
-            45: 'Der eingezäunten, geschützten Herde auf dem Guferli kann problemlos ausgewichen werden.',
-            51: 'Die Wanderwege sind ausgezäunt, so dass Sie in der Regel nicht direkt auf die geschützte Herde treffen. Mit Begleithunden - unbedingt angeleint - bitte zügig an der geschützten Weide vorbeigehen.',
-            60: 'Der Wanderweg südlich des Bärried ist abgezäunt. Mit Begleithunden - unbedingt angeleint - bitte zügig an der geschützten Weide vorbeigehen.',
-            77: 'Der WW vom Bruchgeereberg über Pkt. 1652 und weiter Richtung Chummli ist ausgezäunt. Einzig während rund 2 Wochen ist auf dem Wegabschnitt Pkt. 1652-Chummli damit zu rechnen, direkt auf die geschützte Herde zu treffen (Auskünfte: NP Diemtigtal).',
-            92: 'Empfehlungen zum korrekten Verhalten bei Begegnungen mit Mutterkuhherden finden Sie auf der Website der Schweizer Wanderwege.',
-            123: 'im Sektor Lavanchy-Poy, die Strasse ist ausgezäunt - es ist nicht damit zu rechnen, direkt auf die geschützte Herde zu treffen.',
-            135: 'Als Alternative zum Weg Unteri Rippa - Bremingard - Col du Chamois wird bei Präsenz Hunde die Route Unteri Rippa - Cerniets - Col du Chamois empfohlen. Zwischen dem Col du Chamois und Cerniets wurde diese Alternativroute im Feld neu gekennzeichnet.',
-            138: 'Der tiefer verlaufende Weg von der Niwenalp zum Stafel ist ausgezäunt; der höher parallel verlaufende Weg über Nibubedu hingegen quert in den Mt. Juni u. Sept. die geschützte Herde (Juli/Aug. befindet sich die Herde in höher gelegenen Weidesektoren).',
-            145: 'Die Herde und die Herdenschutzhunde sind zwar während dem Sommer einige Tage auf dem Kaiseregg-Pass, jedoch ausschliesslich unter der Woche.',
-            150: 'Der Weg vom Vord. Sänntum zum Turtmannsee (westl. der Turtmänna) sowie der Höhenweg über Biele zur Turtmannhütte (östl. der Turtmänna) sind ausgezäunt. Für Juli wird empfohlen, den Weg vom Vord. Sänntum über Holustei nach Biele nicht zu nutzen.',
-            154: 'Um die Sömmerung der Schafe auf der Alp Rappental zu ermöglichen, wurde der Herdenschutz verstärkt. Um Interaktionen zwischen den Herdenschutzhunden und den Touristen zu minimieren, werden einige Wanderwege vorübergehend umgeleitet oder gesperrt.',
-            163: 'Befindet sich die geschützte Herde in der Nähe des Wanderweges, so ist dieser ausgezäunt, so dass Sie in der Regel nicht auf die geschützte Herde treffen. Vom Mitführen von Hunden wird abgeraten.',
-            174: 'Um die Interaktionen zwischen den HSHs und den Touristen zu minimieren, wird der Wanderweg entlang des Glattgrats während der Beweidungsdauer (Anfang Juni bis Mitte Juli) vorübergehend umgeleitet.',
-            220: 'Auf dem markierten Gebiet im Val Segnas ist nur im Oktober damit zu rechnen, Herdenschutzhunde anzutreffen.',
-            226: 'Der Mountainbiketrail ist ausgezäunt, so dass Sie in der Regel nicht direkt auf die geschützte Herde treffen. Mit Begleithunden - unbedingt angeleint - bitte zügig an der geschützten Weide vorbeigehen.',
-            252: 'Der Bergwanderweg durch das Rappenloch ist von Anfang Juni bis Mitte Juni gesperrt.',
-          };
-          val = hMap[val as number] || val;
-        }
-      }
-
       // Language filter and clean key extraction
       if (
         key.endsWith('_fr') ||
@@ -1350,6 +1263,35 @@ export class MapDrawingRenderer {
           name: 'Name', // Fallback for nationalpark
         };
         if (keyMap[cleanKey]) displayKey = keyMap[cleanKey];
+      }
+
+      if (layerBodId === 'ch.bafu.alpweiden-mit_herdenschutzhunden') {
+        const keyMap: Record<string, string> = {
+          name: 'Objektname',
+          typzone: 'Zone',
+          hundepraesenz: 'Anwesenheit Schutzhunde',
+          hinweis: 'Hinweis',
+          refverhalten: 'Verhaltensregeln',
+          allginfo: 'Allgemeine Informationen',
+          kontname: 'Kontakt Name',
+          konttel: 'Kontakt Telefon',
+          kontemail: 'Kontakt E-Mail',
+        };
+        if (keyMap[cleanKey]) displayKey = keyMap[cleanKey];
+      }
+
+      if (layerBodId === 'ch.astra.wanderland-sperrungen_umleitungen') {
+        const keyMap: Record<string, string> = {
+          title: 'Ort',
+          duration: 'Dauer',
+          reason: 'Grund',
+          abstract: 'Beschreibung',
+          url1_link: 'Weitere Infos',
+          content_provider: 'Quelle',
+        };
+        // the type is already the popup title; the rest is internal
+        if (!keyMap[cleanKey]) continue;
+        displayKey = keyMap[cleanKey];
       }
 
       if (typeof val === 'string') {
