@@ -9,10 +9,9 @@ from typing import List
 import numpy as np
 import requests
 from pypdf import PdfWriter
-from pyclustering.cluster.kmeans import kmeans
-from pyclustering.utils.metric import type_metric, distance_metric
 
 import automatic_walk_time_tables.utils.geometry_utils
+from automatic_walk_time_tables.utils.kmeans import kmeans
 from automatic_walk_time_tables.generator_status import GeneratorStatus
 from automatic_walk_time_tables.utils import path
 from automatic_walk_time_tables.utils.point import Point_LV95
@@ -610,18 +609,11 @@ class MapCreator:
                 abs(point1[0] - point2[0]) / (w / 2),
                 abs(point1[1] - point2[1]) / (h / 2),
             )
-            metric = distance_metric(type_metric.USER_DEFINED, func=user_function)
-
-            # create K-Means algorithm with specific distance metric
+            # k-means with that metric
             start_centers = GetSpacedElements(points_for_clustering, n)
-            kmeans_instance = kmeans(
-                points_for_clustering, start_centers, metric=metric
+            clusters, final_centers = kmeans(
+                points_for_clustering, start_centers, user_function
             )
-
-            # Run cluster analysis and obtain results.
-            kmeans_instance.process()
-            clusters = kmeans_instance.get_clusters()
-            final_centers = kmeans_instance.get_centers()
 
             self.logger.debug("Number of clusters: {}".format(len(clusters)))
 

@@ -50,6 +50,15 @@ services:
       timeout: 1s
       retries: 300
 
+  # prints the walk-time table (Excel) as PDF with LibreOffice, see walk_table.convert_to_pdf
+  awt-gotenberg:
+    image: gotenberg/gotenberg:8.40.0-libreoffice
+    healthcheck:
+      test: "curl -f http://localhost:3000/health"
+      interval: 5s
+      timeout: 2s
+      retries: 60
+
   awt-backend:
     build:
       context: backend/.
@@ -65,6 +74,8 @@ services:
         condition: service_healthy
       awt-swiss-tml-api:
         condition: service_healthy
+      awt-gotenberg:
+        condition: service_started
 
     environment:
       TZ: Europe/Zurich
